@@ -3,8 +3,11 @@
 <head>
     @php $company = \App\Models\Company::first(); @endphp
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>@yield('title', $company?->metaTitle ?? $company?->name ?? 'Mobilya Takip')</title>
     @if($company?->metaDescription)<meta name="description" content="{{ $company->metaDescription }}">@endif
     <script src="https://cdn.tailwindcss.com"></script>
@@ -46,6 +49,7 @@
         .btn-primary:hover { background: #059669; }
         .btn-secondary { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: #f1f5f9; color: #475569; font-weight: 500; font-size: 0.9375rem; border-radius: 0.75rem; transition: background .15s; }
         .btn-secondary:hover { background: #e2e8f0; }
+        @media (max-width: 1023px) { .btn-primary, .btn-secondary { min-height: 44px; } }
         .page-title { font-size: 1.5rem; font-weight: 600; color: #0f172a; letter-spacing: -.02em; }
         .page-desc { font-size: 0.9375rem; color: #64748b; margin-top: 0.25rem; }
         .dark .page-title { color: #f1f5f9; }
@@ -63,18 +67,65 @@
         .dark .btn-secondary { background: #334155; color: #e2e8f0; }
         .dark .btn-secondary:hover { background: #475569; }
         [x-cloak] { display: none !important; }
+        .safe-area-padding { padding-left: env(safe-area-inset-left, 0); padding-right: env(safe-area-inset-right, 0); padding-top: max(0.875rem, env(safe-area-inset-top)); }
+        .main-offset { padding-top: calc(3.5rem + env(safe-area-inset-top, 0px)); }
+        .touch-manipulation { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+        @media (max-width: 1023px) { main { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); } }
         @media print { .no-print { display: none !important; } aside { display: none !important; } }
     </style>
 </head>
 <body class="bg-slate-50/80 dark:bg-slate-900 text-slate-800 dark:text-slate-200 min-h-screen transition-colors" x-data="{ sidebarOpen: false, dark: false }" x-init="dark = localStorage.getItem('theme-dark') === '1'; document.documentElement.classList.toggle('dark', dark)">
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[60] focus:px-4 focus:py-2 focus:bg-emerald-600 focus:text-white focus:rounded-xl">İçeriğe atla</a>
     <div class="flex min-h-screen">
-        {{-- Mobile menu button --}}
-        <button @click="sidebarOpen = !sidebarOpen" class="no-print lg:hidden fixed top-5 left-5 z-50 p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 shadow-lg" aria-label="Menü">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-        </button>
+        {{-- Üst bar: mobilde hamburger + ikonlar, masaüstünde sadece ikonlar (içerikle çakışmaz) --}}
+        <header class="no-print fixed top-0 left-0 right-0 lg:left-60 h-14 z-50 flex items-center justify-between px-4 gap-3 bg-white/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:supports-[backdrop-filter]:bg-slate-900/80 safe-area-padding">
+            <div class="flex items-center gap-2 min-w-0">
+                <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden flex items-center justify-center w-11 h-11 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors touch-manipulation" aria-label="Menü">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <span class="lg:hidden text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">Mobilya Takip</span>
+            </div>
+            <div class="flex items-center gap-1 shrink-0">
+                {{-- Bildirim --}}
+                <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+                    <button type="button" @click="open = !open" class="flex items-center justify-center w-11 h-11 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors touch-manipulation" aria-label="Bildirimler" :aria-expanded="open">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                        @if(session('success') || session('error'))
+                        <span class="absolute top-2 right-2 flex h-2.5 w-2.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 dark:bg-emerald-600"></span></span>
+                        @endif
+                    </button>
+                    <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="absolute right-0 mt-2 w-[min(320px,100vw-2rem)] rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 shadow-xl z-[60] overflow-hidden">
+                        <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/80">
+                            <h3 class="font-semibold text-slate-900 dark:text-slate-100">Bildirimler</h3>
+                        </div>
+                        <div class="max-h-72 overflow-y-auto">
+                            @if(session('success'))
+                            <div class="px-4 py-3 flex items-start gap-3 border-b border-slate-100 dark:border-slate-700 bg-emerald-50 dark:bg-emerald-900/20">
+                                <span class="shrink-0 w-8 h-8 rounded-full bg-emerald-500 dark:bg-emerald-600 flex items-center justify-center text-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></span>
+                                <p class="text-sm text-emerald-800 dark:text-emerald-200">{{ session('success') }}</p>
+                            </div>
+                            @endif
+                            @if(session('error'))
+                            <div class="px-4 py-3 flex items-start gap-3 border-b border-slate-100 dark:border-slate-700 bg-red-50 dark:bg-red-900/20">
+                                <span class="shrink-0 w-8 h-8 rounded-full bg-red-500 dark:bg-red-600 flex items-center justify-center text-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></span>
+                                <p class="text-sm text-red-800 dark:text-red-200">{{ session('error') }}</p>
+                            </div>
+                            @endif
+                            @if(!session('success') && !session('error'))
+                            <div class="px-4 py-8 text-center text-slate-500 dark:text-slate-400 text-sm">Yeni bildirim yok</div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                {{-- Tema (açık/koyu) --}}
+                <button type="button" @click="dark = !dark; document.documentElement.classList.toggle('dark', dark); localStorage.setItem('theme-dark', dark ? '1' : '0')" class="flex items-center justify-center w-11 h-11 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors touch-manipulation" aria-label="Tema değiştir">
+                    <svg x-show="!dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                    <svg x-show="dark" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                </button>
+            </div>
+        </header>
         <div x-show="sidebarOpen" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" @click="sidebarOpen = false" class="fixed inset-0 bg-black/40 z-40 lg:hidden backdrop-blur-sm"></div>
-        <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'" class="fixed lg:static inset-y-0 left-0 w-60 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 flex flex-col shrink-0 z-40 transform transition-transform duration-200 ease-out border-r border-slate-200 dark:border-slate-800">
+        <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'" class="fixed lg:static inset-y-0 left-0 w-60 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 flex flex-col shrink-0 z-40 transform transition-transform duration-200 ease-out border-r border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom)] lg:pb-0">
             <div class="p-5 border-b border-slate-200 dark:border-white/5">
                 <a href="{{ route('dashboard') }}" class="text-lg font-semibold text-slate-900 dark:text-white tracking-tight">Mobilya Takip</a>
             </div>
@@ -121,60 +172,20 @@
                 </form>
             </div>
         </aside>
-        {{-- Main content --}}
-        <main id="main-content" class="flex-1 overflow-auto" role="main">
-            <div class="p-6 lg:p-10 max-w-[1600px] mx-auto relative">
-                {{-- Üst bar: Bildirim + Tema (sabit sağ üst) --}}
-                <div class="no-print fixed top-5 right-5 z-50 flex items-center gap-2">
-                    {{-- Bildirim çanı + dropdown --}}
-                    <div class="relative" x-data="{ open: false }" @click.outside="open = false">
-                        <button type="button" @click="open = !open" class="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm transition-colors" aria-label="Bildirimler" :aria-expanded="open">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                            @if(session('success') || session('error'))
-                            <span class="absolute -top-0.5 -right-0.5 flex h-4 w-4"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 dark:bg-emerald-600"></span></span>
-                            @endif
-                        </button>
-                        <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="absolute right-0 mt-2 w-80 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 shadow-xl z-[60] overflow-hidden">
-                            <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/80">
-                                <h3 class="font-semibold text-slate-900 dark:text-slate-100">Bildirimler</h3>
-                            </div>
-                            <div class="max-h-72 overflow-y-auto">
-                                @if(session('success'))
-                                <div class="px-4 py-3 flex items-start gap-3 border-b border-slate-100 dark:border-slate-700 bg-emerald-50 dark:bg-emerald-900/20">
-                                    <span class="shrink-0 w-8 h-8 rounded-full bg-emerald-500 dark:bg-emerald-600 flex items-center justify-center text-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></span>
-                                    <p class="text-sm text-emerald-800 dark:text-emerald-200">{{ session('success') }}</p>
-                                </div>
-                                @endif
-                                @if(session('error'))
-                                <div class="px-4 py-3 flex items-start gap-3 border-b border-slate-100 dark:border-slate-700 bg-red-50 dark:bg-red-900/20">
-                                    <span class="shrink-0 w-8 h-8 rounded-full bg-red-500 dark:bg-red-600 flex items-center justify-center text-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></span>
-                                    <p class="text-sm text-red-800 dark:text-red-200">{{ session('error') }}</p>
-                                </div>
-                                @endif
-                                @if(!session('success') && !session('error'))
-                                <div class="px-4 py-8 text-center text-slate-500 dark:text-slate-400 text-sm">Yeni bildirim yok</div>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                    {{-- Tema toggle (açık/koyu) --}}
-                    <button type="button" @click="dark = !dark; document.documentElement.classList.toggle('dark', dark); localStorage.setItem('theme-dark', dark ? '1' : '0')" class="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm transition-colors" aria-label="Tema değiştir">
-                        <svg x-show="!dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
-                        <svg x-show="dark" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                    </button>
-                </div>
-
-                {{-- Toast bildirimler (çanın solunda, aynı hizada görünsün) --}}
+        {{-- Main content (üst bar yüksekliği + safe area) --}}
+        <main id="main-content" class="flex-1 overflow-auto pt-14 main-offset" role="main">
+            <div class="p-4 sm:p-6 lg:p-10 max-w-[1600px] mx-auto relative">
+                {{-- Toast bildirimler (üst barın hemen altında) --}}
                 @if(session('success'))
-                    <div class="no-print fixed top-5 right-24 z-[100] max-w-sm py-3 px-4 rounded-xl bg-emerald-500 dark:bg-emerald-600 text-white text-sm font-medium shadow-lg flex items-center justify-between gap-3 border border-emerald-600/20" role="alert" aria-live="polite" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+                    <div class="no-print fixed top-16 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm z-[100] py-3 px-4 rounded-xl bg-emerald-500 dark:bg-emerald-600 text-white text-sm font-medium shadow-lg flex items-center justify-between gap-3 border border-emerald-600/20" role="alert" aria-live="polite" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
                         <span>{{ session('success') }}</span>
-                        <button type="button" @click="show = false" class="shrink-0 p-1 rounded-lg hover:bg-white/20" aria-label="Kapat">&times;</button>
+                        <button type="button" @click="show = false" class="shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white/20 touch-manipulation" aria-label="Kapat">&times;</button>
                     </div>
                 @endif
                 @if(session('error'))
-                    <div class="no-print fixed top-5 right-24 z-[100] max-w-sm py-3 px-4 rounded-xl bg-red-500 dark:bg-red-600 text-white text-sm font-medium shadow-lg flex items-center justify-between gap-3 border border-red-600/20" role="alert" aria-live="polite" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 6000)" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+                    <div class="no-print fixed top-16 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm z-[100] py-3 px-4 rounded-xl bg-red-500 dark:bg-red-600 text-white text-sm font-medium shadow-lg flex items-center justify-between gap-3 border border-red-600/20" role="alert" aria-live="polite" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 6000)" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
                         <span>{{ session('error') }}</span>
-                        <button type="button" @click="show = false" class="shrink-0 p-1 rounded-lg hover:bg-white/20" aria-label="Kapat">&times;</button>
+                        <button type="button" @click="show = false" class="shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white/20 touch-manipulation" aria-label="Kapat">&times;</button>
                     </div>
                 @endif
 
