@@ -68,6 +68,7 @@
         .dark .btn-secondary:hover { background: #475569; }
         [x-cloak] { display: none !important; }
         .safe-area-padding { padding-left: env(safe-area-inset-left, 0); padding-right: env(safe-area-inset-right, 0); padding-top: max(0.875rem, env(safe-area-inset-top)); }
+        .safe-area-footer { padding-bottom: max(0.5rem, env(safe-area-inset-bottom)); }
         .main-offset { padding-top: calc(3.5rem + env(safe-area-inset-top, 0px)); }
         .touch-manipulation { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
         @media (max-width: 1023px) { main { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); } }
@@ -172,8 +173,8 @@
                 </form>
             </div>
         </aside>
-        {{-- Main content (üst bar yüksekliği + safe area) --}}
-        <main id="main-content" class="flex-1 overflow-auto pt-14 main-offset" role="main">
+        {{-- Main content (üst bar yüksekliği + safe area; mobilde alt menü için pb) --}}
+        <main id="main-content" class="flex-1 overflow-auto pt-14 main-offset pb-24 lg:pb-0" role="main">
             <div class="p-4 sm:p-6 lg:p-10 max-w-[1600px] mx-auto relative">
                 {{-- Toast bildirimler (üst barın hemen altında) --}}
                 @if(session('success'))
@@ -192,6 +193,29 @@
                 @yield('content')
             </div>
         </main>
+
+        {{-- Sabit alt menü (mobil / tablet): Teklif Ekle, Menü vb. --}}
+        <nav class="no-print lg:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around gap-1 px-2 py-2 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 safe-area-footer touch-manipulation" aria-label="Alt menü">
+            <a href="{{ route('dashboard') }}" class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] py-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 {{ request()->routeIs('dashboard') ? 'text-emerald-600 dark:text-emerald-400' : '' }}">
+                <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z"></path></svg>
+                <span class="text-[10px] font-medium">Ana Sayfa</span>
+            </a>
+            <a href="{{ route('customers.index') }}" class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] py-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 {{ request()->routeIs('customers.*') ? 'text-emerald-600 dark:text-emerald-400' : '' }}">
+                <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <span class="text-[10px] font-medium">Müşteriler</span>
+            </a>
+            <a href="{{ route('quotes.create') }}" class="flex items-center justify-center w-14 h-14 -mt-5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 transition-transform active:scale-95" aria-label="Yeni teklif">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+            </a>
+            <a href="{{ route('customer-payments.create') }}" class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] py-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 {{ request()->routeIs('customer-payments.*') ? 'text-emerald-600 dark:text-emerald-400' : '' }}">
+                <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                <span class="text-[10px] font-medium">Ödeme Al</span>
+            </a>
+            <button type="button" @click="sidebarOpen = true" class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] py-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 touch-manipulation" aria-label="Menüyü aç">
+                <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                <span class="text-[10px] font-medium">Menü</span>
+            </button>
+        </nav>
     </div>
 </body>
 </html>
