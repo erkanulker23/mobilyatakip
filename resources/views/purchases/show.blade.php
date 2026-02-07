@@ -10,7 +10,7 @@
                 <span class="text-slate-700">{{ $purchase->purchaseNumber }}</span>
             </div>
             <h1 class="text-2xl font-bold text-slate-900">{{ $purchase->purchaseNumber }} @if($purchase->isCancelled ?? false)<span class="ml-2 text-sm font-normal px-2 py-1 rounded-full bg-red-100 text-red-700">İptal</span>@endif</h1>
-            <p class="text-slate-600 mt-1">Alış faturası @if($purchase->supplier)· Tedarikçi: <a href="{{ route('suppliers.show', $purchase->supplier) }}" class="font-medium text-green-600 hover:text-green-700">{{ $purchase->supplier->name }}</a>@else· Tedarikçi: —@endif</p>
+            <p class="text-slate-600 mt-1">Alış faturası @if($purchase->supplier)· Tedarikçi: <a href="{{ route('suppliers.show', $purchase->supplier) }}" class="font-medium text-green-600 hover:text-green-700">{{ $purchase->supplier->name }}</a>@else· Tedarikçi: —@endif @if($purchase->warehouse)· Depo: {{ $purchase->warehouse->name }}@endif</p>
         </div>
         <div class="flex flex-wrap items-center gap-3">
             @if(!($purchase->isCancelled ?? false))

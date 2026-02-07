@@ -58,7 +58,7 @@ class ExpenseController extends Controller
             'category' => 'nullable|string|max:100',
             'kasaId' => 'nullable|exists:kasa,id',
         ]);
-        $validated['createdBy'] = auth()->id();
+        $validated['createdBy'] = auth()->id() ?: null;
         $validated['kdvIncluded'] = $request->boolean('kdvIncluded', true);
         $validated['kdvRate'] = isset($validated['kdvRate']) ? (float) $validated['kdvRate'] : 18;
         $amount = (float) $validated['amount'];
@@ -75,7 +75,7 @@ class ExpenseController extends Controller
                 'amount' => -(float) $validated['amount'],
                 'movementDate' => $validated['expenseDate'],
                 'description' => 'Gider - ' . ($validated['category'] ? $validated['category'] . ': ' : '') . ($validated['description'] ?? ''),
-                'createdBy' => auth()->id(),
+                'createdBy' => auth()->id() ?: null,
                 'refType' => 'expense',
                 'refId' => $expense->id,
             ]);
@@ -131,7 +131,7 @@ class ExpenseController extends Controller
                 'amount' => abs((float) $hareket->amount),
                 'movementDate' => $validated['expenseDate'],
                 'description' => 'Gider iptal - ' . ($expense->category ? $expense->category . ': ' : '') . $expense->description,
-                'createdBy' => auth()->id(),
+                'createdBy' => auth()->id() ?: null,
             ]);
             $hareket->delete();
         }
@@ -142,7 +142,7 @@ class ExpenseController extends Controller
                 'amount' => -(float) $validated['amount'],
                 'movementDate' => $validated['expenseDate'],
                 'description' => 'Gider - ' . ($validated['category'] ? $validated['category'] . ': ' : '') . ($validated['description'] ?? ''),
-                'createdBy' => auth()->id(),
+                'createdBy' => auth()->id() ?: null,
                 'refType' => 'expense',
                 'refId' => $expense->id,
             ]);
@@ -161,7 +161,7 @@ class ExpenseController extends Controller
                 'amount' => abs((float) $hareket->amount),
                 'movementDate' => now(),
                 'description' => 'Gider iptal - ' . ($expense->category ? $expense->category . ': ' : '') . $expense->description,
-                'createdBy' => auth()->id(),
+                'createdBy' => auth()->id() ?: null,
             ]);
             $hareket->delete();
         }

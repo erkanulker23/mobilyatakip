@@ -71,10 +71,8 @@ class TurkishTaxId implements ValidationRule
         }
         $oddSum = $digits[0] + $digits[2] + $digits[4] + $digits[6] + $digits[8];
         $evenSum = $digits[1] + $digits[3] + $digits[5] + $digits[7];
-        $digit10 = ($oddSum * 7 - $evenSum) % 10;
-        if ($digit10 < 0) {
-            $digit10 += 10;
-        }
+        // 10. hane: [(1+3+5+7+9)×7 - (2+4+6+8)] mod 10 (her zaman 0-9)
+        $digit10 = (($oddSum * 7 - $evenSum) % 10 + 10) % 10;
         if ($digit10 !== $digits[9]) {
             $fail('TC kimlik numarası geçersiz (10. hane hatalı).');
             return;

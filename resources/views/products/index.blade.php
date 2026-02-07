@@ -50,11 +50,30 @@
     </form>
 </div>
 
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" x-data="productsBulk" data-product-ids='{{ json_encode($productIds ?? []) }}'>
+    <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between gap-4 flex-wrap">
+        <span class="text-sm text-slate-600" x-show="selected.length > 0" x-text="selected.length + ' ürün seçildi'"></span>
+        <button type="button" x-show="selected.length > 0" @click="confirmBulkDelete = true"
+                class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium text-sm">
+            Seçilenleri sil
+        </button>
+    </div>
+    {{-- Toplu silme için ayrı form (tablo içinde tekil silme formları olduğu için form iç içe olmasın) --}}
+    <form id="products-bulk-form" method="POST" action="{{ route('products.bulk-destroy') }}" class="hidden">
+        @csrf
+        <div id="products-bulk-form-ids"></div>
+    </form>
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-200">
+            <table class="min-w-full divide-y divide-slate-200">
             <thead class="bg-slate-50">
                 <tr>
+                    <th class="px-4 py-3 text-left">
+                        <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" class="rounded border-slate-300 text-green-600 focus:ring-green-500"
+                                   @change="toggleAll($event.target.checked)" :checked="selected.length === items.length && items.length > 0">
+                            <span class="text-xs font-medium text-slate-600">Tümünü seç</span>
+                        </label>
+                    </th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Ürün</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">SKU</th>
                     <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Fiyat</th>
@@ -64,7 +83,11 @@
             </thead>
             <tbody class="divide-y divide-slate-200">
                 @forelse($products as $p)
-                <tr class="hover:bg-slate-50 transition-colors">
+                <tr class="hover:bg-slate-50 transition-colors" data-product-id="{{ $p->id }}">
+                    <td class="px-4 py-4">
+                        <input type="checkbox" name="ids[]" value="{{ $p->id }}" class="product-row-check rounded border-slate-300 text-green-600 focus:ring-green-500"
+                               @change="toggleRow('{{ $p->id }}', $event.target.checked)">
+                    </td>
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-3">
                             @php $img = is_array($p->images ?? null) ? ($p->images[0] ?? null) : ($p->images ?? null); @endphp
@@ -83,7 +106,7 @@
                         </div>
                     </td>
                     <td class="px-6 py-4 text-slate-600 font-mono text-sm">{{ $p->sku ?? '-' }}</td>
-                    <td class="px-6 py-4 text-right font-medium text-slate-900">{{ number_format($p->unitPrice ?? 0, 2, ',', '.') }} ₺</td>
+                    <td class="px-6 py-4 text-right font-medium text-slate-900">{{ number_format($p->unitPrice ?? 0, 0, ',', '.') }} ₺</td>
                     <td class="px-6 py-4 text-slate-600">{{ $p->supplier?->name ?? '-' }}</td>
                     <td class="px-6 py-4">
                         @include('partials.action-buttons', [
@@ -94,11 +117,70 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="5" class="px-6 py-12 text-center text-slate-500">Kayıt bulunamadı. <a href="{{ route('xml-feeds.index') }}" class="text-green-600 hover:underline">XML Feed</a> ile ürün çekebilirsiniz.</td></tr>
+                <tr><td colspan="6" class="px-6 py-12 text-center text-slate-500">Kayıt bulunamadı. <a href="{{ route('xml-feeds.index') }}" class="text-green-600 hover:underline">XML Feed</a> ile ürün çekebilirsiniz.</td></tr>
                 @endforelse
             </tbody>
         </table>
     </div>
     <div class="px-6 py-3 border-t border-slate-200">{{ $products->links() }}</div>
+
+    {{-- Toplu silme onay modal --}}
+    <div x-show="confirmBulkDelete" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+        <div x-show="confirmBulkDelete" x-transition class="fixed inset-0 bg-black/50" @click="confirmBulkDelete = false"></div>
+        <div x-show="confirmBulkDelete" x-transition class="relative bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-sm w-full p-6 border border-slate-200 dark:border-slate-700">
+            <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Toplu silme</h2>
+            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400" x-text="'Seçili ' + selected.length + ' ürün kalıcı olarak silinecek. Emin misiniz?'"></p>
+            <div class="mt-6 flex gap-3 justify-end">
+                <button type="button" @click="confirmBulkDelete = false" class="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 font-medium hover:bg-slate-300 dark:hover:bg-slate-500">İptal</button>
+                <button type="button" @click="submitBulkDelete()" class="px-4 py-2 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700">Sil</button>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+(function() {
+    function register() {
+        Alpine.data('productsBulk', function() {
+            var el = this.$el;
+            var idsJson = el && el.getAttribute ? el.getAttribute('data-product-ids') : '[]';
+            var items = [];
+            try { items = JSON.parse(idsJson || '[]'); } catch (e) {}
+            return {
+                items: items,
+                selected: [],
+                confirmBulkDelete: false,
+                toggleAll: function(checked) {
+                    this.selected = checked ? this.items.slice() : [];
+                    var self = this;
+                    this.$nextTick(function() {
+                        document.querySelectorAll('.product-row-check').forEach(function(el) { el.checked = checked; });
+                    });
+                },
+                toggleRow: function(id, checked) {
+                    if (checked) this.selected.push(id);
+                    else this.selected = this.selected.filter(function(x) { return x !== id; });
+                },
+                submitBulkDelete: function() {
+                    var sel = this.selected;
+                    var container = document.getElementById('products-bulk-form-ids');
+                    if (container) {
+                        container.innerHTML = '';
+                        sel.forEach(function(id) {
+                            var inp = document.createElement('input');
+                            inp.type = 'hidden';
+                            inp.name = 'ids[]';
+                            inp.value = id;
+                            container.appendChild(inp);
+                        });
+                    }
+                    document.getElementById('products-bulk-form').submit();
+                }
+            };
+        });
+    }
+    if (typeof Alpine !== 'undefined') register();
+    else document.addEventListener('alpine:init', register);
+})();
+</script>
 @endsection

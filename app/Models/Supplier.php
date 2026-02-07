@@ -16,6 +16,8 @@ class Supplier extends BaseModel
         'taxNumber',
         'taxOffice',
         'isActive',
+        'externalId',
+        'externalSource',
     ];
 
     protected $casts = [

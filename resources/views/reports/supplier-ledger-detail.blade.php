@@ -49,7 +49,7 @@
                 <td class="px-6 py-4 font-medium text-slate-700">Açılış bakiyesi</td>
                 <td class="px-6 py-4 text-right">—</td>
                 <td class="px-6 py-4 text-right">—</td>
-                <td class="px-6 py-4 text-right font-medium {{ $openingBalance > 0 ? 'text-red-600' : ($openingBalance < 0 ? 'text-green-600' : 'text-slate-600') }}">{{ number_format($openingBalance, 2, ',', '.') }} ₺</td>
+                <td class="px-6 py-4 text-right font-medium {{ $openingBalance > 0 ? 'text-red-600' : ($openingBalance < 0 ? 'text-green-600' : 'text-slate-600') }}">{{ number_format($openingBalance, 0, ',', '.') }} ₺</td>
             </tr>
             @endif
             @forelse($filteredRows as $r)
@@ -62,9 +62,9 @@
                     {{ $r->aciklama }}
                     @endif
                 </td>
-                <td class="px-6 py-4 text-right {{ $r->borc > 0 ? 'font-medium text-slate-800' : 'text-slate-400' }}">{{ $r->borc > 0 ? number_format($r->borc, 2, ',', '.') . ' ₺' : '—' }}</td>
-                <td class="px-6 py-4 text-right {{ $r->alacak > 0 ? 'font-medium text-green-600' : 'text-slate-400' }}">{{ $r->alacak > 0 ? number_format($r->alacak, 2, ',', '.') . ' ₺' : '—' }}</td>
-                <td class="px-6 py-4 text-right font-medium {{ $r->bakiye > 0 ? 'text-red-600' : ($r->bakiye < 0 ? 'text-green-600' : 'text-slate-600') }}">{{ number_format($r->bakiye, 2, ',', '.') }} ₺</td>
+                <td class="px-6 py-4 text-right {{ $r->borc > 0 ? 'font-medium text-slate-800' : 'text-slate-400' }}">{{ $r->borc > 0 ? number_format($r->borc, 0, ',', '.') . ' ₺' : '—' }}</td>
+                <td class="px-6 py-4 text-right {{ $r->alacak > 0 ? 'font-medium text-green-600' : 'text-slate-400' }}">{{ $r->alacak > 0 ? number_format($r->alacak, 0, ',', '.') . ' ₺' : '—' }}</td>
+                <td class="px-6 py-4 text-right font-medium {{ $r->bakiye > 0 ? 'text-red-600' : ($r->bakiye < 0 ? 'text-green-600' : 'text-slate-600') }}">{{ number_format($r->bakiye, 0, ',', '.') }} ₺</td>
             </tr>
             @empty
             <tr><td colspan="5" class="px-6 py-8 text-center text-slate-500">Bu tarih aralığında hareket yok.</td></tr>

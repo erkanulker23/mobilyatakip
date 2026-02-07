@@ -21,6 +21,8 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middl
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    Route::post('/api/customers/quick-store', [CustomerController::class, 'quickStore'])->name('api.customers.quick-store');
+    Route::post('/api/products/quick-store', [ProductController::class, 'quickStore'])->name('api.products.quick-store');
     Route::get('/customers/{customer}/print', [CustomerController::class, 'print'])->name('customers.print');
     Route::get('/customers/excel/export', [CustomerController::class, 'exportExcel'])->name('customers.excel.export');
     Route::post('/customers/excel/import', [CustomerController::class, 'importExcel'])->name('customers.excel.import');
@@ -28,7 +30,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/suppliers/{supplier}/print', [SupplierController::class, 'print'])->name('suppliers.print');
     Route::get('/suppliers/excel/export', [SupplierController::class, 'exportExcel'])->name('suppliers.excel.export');
     Route::post('/suppliers/excel/import', [SupplierController::class, 'importExcel'])->name('suppliers.excel.import');
+    Route::post('/suppliers/actions/bulk-destroy', [SupplierController::class, 'bulkDestroy'])->name('suppliers.bulk-destroy');
     Route::resource('suppliers', SupplierController::class);
+    Route::post('/products/actions/bulk-destroy', [ProductController::class, 'bulkDestroy'])->name('products.bulk-destroy');
     Route::resource('products', ProductController::class);
     Route::resource('warehouses', \App\Http\Controllers\WarehouseController::class);
     Route::resource('personnel', \App\Http\Controllers\PersonnelController::class);
@@ -62,6 +66,10 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/odeme-al', [\App\Http\Controllers\CustomerPaymentController::class, 'create'])->name('customer-payments.create');
     Route::post('/odeme-al', [\App\Http\Controllers\CustomerPaymentController::class, 'store'])->name('customer-payments.store');
+    Route::get('/customer-payments/{customerPayment}', [\App\Http\Controllers\CustomerPaymentController::class, 'show'])->name('customer-payments.show');
+    Route::get('/customer-payments/{customerPayment}/edit', [\App\Http\Controllers\CustomerPaymentController::class, 'edit'])->name('customer-payments.edit');
+    Route::put('/customer-payments/{customerPayment}', [\App\Http\Controllers\CustomerPaymentController::class, 'update'])->name('customer-payments.update');
+    Route::get('/customer-payments/{customerPayment}/print', [\App\Http\Controllers\CustomerPaymentController::class, 'print'])->name('customer-payments.print');
     Route::get('/odeme-yap', [\App\Http\Controllers\SupplierPaymentController::class, 'create'])->name('supplier-payments.create');
     Route::post('/odeme-yap', [\App\Http\Controllers\SupplierPaymentController::class, 'store'])->name('supplier-payments.store');
 

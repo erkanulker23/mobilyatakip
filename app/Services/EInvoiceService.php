@@ -219,7 +219,7 @@ class EInvoiceService
         return $line;
     }
 
-    private function append(DOMDocument $doc, DOMNode $parent, string $tag, string $value, array $attrs = []): void
+    private function append(DOMDocument $doc, \DOMNode $parent, string $tag, string $value, array $attrs = []): void
     {
         $parts = explode(':', $tag, 2);
         $ns = count($parts) === 2 ? ($parts[0] === 'cbc' ? self::CBC_NS : self::CAC_NS) : null;

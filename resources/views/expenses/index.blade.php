@@ -44,7 +44,7 @@
 </div>
 
 <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-    <p class="text-slate-700"><strong>Toplam (filtrelenen):</strong> <span class="text-lg font-semibold">{{ number_format($total, 2) }} ₺</span></p>
+    <p class="text-slate-700"><strong>Toplam (filtrelenen):</strong> <span class="text-lg font-semibold">{{ number_format($total, 0, ',', '.') }} ₺</span></p>
 </div>
 
 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -68,7 +68,7 @@
                 </td>
                 <td class="px-6 py-4 text-slate-600">{{ $e->category ?? '—' }}</td>
                 <td class="px-6 py-4 text-slate-600">{{ $e->kasa?->name ?? '—' }}</td>
-                <td class="px-6 py-4 text-right font-medium text-slate-900">{{ number_format($e->amount, 2) }} ₺</td>
+                <td class="px-6 py-4 text-right font-medium text-slate-900">{{ number_format($e->amount, 0, ',', '.') }} ₺</td>
                 <td class="px-6 py-4 text-right">
                     @include('partials.action-buttons', [
                         'show' => route('expenses.show', $e),

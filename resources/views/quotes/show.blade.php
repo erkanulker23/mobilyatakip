@@ -21,13 +21,8 @@
                 Düzenle
             </a>
             @if(!$quote->convertedSaleId && ($quote->status ?? '') == 'taslak')
-            <form method="POST" action="{{ route('quotes.convert', $quote) }}" class="inline-flex items-center gap-2">
+            <form method="POST" action="{{ route('quotes.convert', $quote) }}" class="inline-flex" onsubmit="return confirm('Bu teklifi satışa dönüştürmek istediğinize emin misiniz?');">
                 @csrf
-                <select name="warehouseId" required class="form-select form-input py-2 text-sm w-40">
-                    @foreach(\App\Models\Warehouse::orderBy('name')->get() as $w)
-                    <option value="{{ $w->id }}">{{ $w->name }}</option>
-                    @endforeach
-                </select>
                 <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Satışa Dönüştür</button>
             </form>
             @endif

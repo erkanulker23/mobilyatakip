@@ -4,8 +4,7 @@
 <div class="header">
     <h1>{{ $quote->quoteNumber }}</h1>
     @if(!$quote->convertedSaleId && $quote->status == 'taslak')
-    <form method="POST" action="{{ route('quotes.convert', $quote) }}" style="display:inline;">@csrf
-        <select name="warehouseId" required>@foreach(\App\Models\Warehouse::orderBy('name')->get() as $w)<option value="{{ $w->id }}">{{ $w->name }}</option>@endforeach</select>
+    <form method="POST" action="{{ route('quotes.convert', $quote) }}" style="display:inline;" onsubmit="return confirm('Bu teklifi satışa dönüştürmek istediğinize emin misiniz?');">@csrf
         <button type="submit" class="btn btn-primary">Satışa Dönüştür</button>
     </form>
     @endif

@@ -92,10 +92,9 @@ class QuoteController extends Controller
         return view('quotes.show', compact('quote'));
     }
 
-    public function convert(Request $request, Quote $quote)
+    public function convert(Quote $quote)
     {
-        $validated = $request->validate(['warehouseId' => 'required|exists:warehouses,id']);
-        $sale = $this->saleService->createFromQuote($quote->id, $validated['warehouseId']);
+        $sale = $this->saleService->createFromQuote($quote->id);
         return redirect()->route('sales.show', $sale)->with('success', 'Teklif satışa dönüştürüldü.');
     }
 

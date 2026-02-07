@@ -4,7 +4,7 @@
 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
     <div>
         <h1 class="page-title">Kasa</h1>
-        <p class="page-desc">Kasa ve banka hesapları – nakit akış takibi</p>
+        <p class="page-desc">Kasa ve banka hesapları – nakit akış takibi. Kasa detayında hareketleri ödeme tipine ve cariye (müşteri/tedarikçi) göre filtreleyebilirsiniz.</p>
     </div>
     <a href="{{ route('kasa.create') }}" class="btn-primary">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
@@ -42,6 +42,7 @@
                     <th class="table-th">Tip</th>
                     <th class="table-th">IBAN / Hesap</th>
                     <th class="table-th text-right">Açılış Bakiyesi</th>
+                    <th class="table-th text-right">Güncel Bakiye</th>
                     <th class="table-th text-right w-40">İşlem</th>
                 </tr>
             </thead>
@@ -56,7 +57,9 @@
                         <span class="inline-flex px-2 py-1 text-xs font-medium rounded-lg {{ $k->type === 'banka' ? 'bg-sky-50 text-sky-700' : 'bg-emerald-50 text-emerald-700' }}">{{ $k->type === 'banka' ? 'Banka' : 'Kasa' }}</span>
                     </td>
                     <td class="table-td font-mono text-sm">{{ $k->iban ?? $k->accountNumber ?? '-' }}</td>
-                    <td class="table-td text-right font-medium {{ ($k->openingBalance ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600' }}">{{ number_format($k->openingBalance ?? 0, 2, ',', '.') }} ₺</td>
+                    <td class="table-td text-right font-medium {{ ($k->openingBalance ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600' }}">{{ number_format((float)($k->openingBalance ?? 0), 2, ',', '.') }} ₺</td>
+                    @php $guncelBakiye = (float)($k->openingBalance ?? 0) + (float)($k->hareketler_sum_amount ?? 0); @endphp
+                    <td class="table-td text-right font-semibold {{ $guncelBakiye >= 0 ? 'text-emerald-600' : 'text-red-600' }}">{{ number_format($guncelBakiye, 2, ',', '.') }} ₺</td>
                     <td class="table-td">
                         @include('partials.action-buttons', [
                             'show' => route('kasa.show', $k),
@@ -65,7 +68,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="5" class="px-6 py-16 text-center text-slate-500 text-sm">Kayıt bulunamadı.</td></tr>
+                <tr><td colspan="6" class="px-6 py-16 text-center text-slate-500 text-sm">Kayıt bulunamadı.</td></tr>
                 @endforelse
             </tbody>
         </table>

@@ -32,11 +32,11 @@
             </tr>
         </thead>
         <tbody class="divide-y divide-slate-200">
-            <tr><td class="px-6 py-4 text-slate-700">Satış hasılatı (dönem)</td><td class="px-6 py-4 text-right font-medium">{{ number_format($gelir, 2) }} ₺</td></tr>
-            <tr><td class="px-6 py-4 text-slate-700">Tahsilat (dönem)</td><td class="px-6 py-4 text-right font-medium">{{ number_format($tahsilat, 2) }} ₺</td></tr>
-            <tr><td class="px-6 py-4 text-slate-700">Gider</td><td class="px-6 py-4 text-right font-medium">- {{ number_format($gider, 2) }} ₺</td></tr>
-            <tr><td class="px-6 py-4 text-slate-700">Tedarikçi ödemesi</td><td class="px-6 py-4 text-right font-medium">- {{ number_format($tedarikciOdeme, 2) }} ₺</td></tr>
-            <tr class="bg-slate-50 font-semibold"><td class="px-6 py-4 text-slate-800">Net nakit etkisi (tahsilat − gider − tedarikçi ödemesi)</td><td class="px-6 py-4 text-right">{{ number_format($tahsilat - $gider - $tedarikciOdeme, 2) }} ₺</td></tr>
+            <tr><td class="px-6 py-4 text-slate-700">Satış hasılatı (dönem)</td><td class="px-6 py-4 text-right font-medium">{{ number_format($gelir, 0, ',', '.') }} ₺</td></tr>
+            <tr><td class="px-6 py-4 text-slate-700">Tahsilat (dönem)</td><td class="px-6 py-4 text-right font-medium">{{ number_format($tahsilat, 0, ',', '.') }} ₺</td></tr>
+            <tr><td class="px-6 py-4 text-slate-700">Gider</td><td class="px-6 py-4 text-right font-medium">- {{ number_format($gider, 0, ',', '.') }} ₺</td></tr>
+            <tr><td class="px-6 py-4 text-slate-700">Tedarikçi ödemesi</td><td class="px-6 py-4 text-right font-medium">- {{ number_format($tedarikciOdeme, 0, ',', '.') }} ₺</td></tr>
+            <tr class="bg-slate-50 font-semibold"><td class="px-6 py-4 text-slate-800">Net nakit etkisi (tahsilat − gider − tedarikçi ödemesi)</td><td class="px-6 py-4 text-right">{{ number_format($tahsilat - $gider - $tedarikciOdeme, 0, ',', '.') }} ₺</td></tr>
         </tbody>
     </table>
 </div>

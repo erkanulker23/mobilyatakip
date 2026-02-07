@@ -62,7 +62,7 @@ class ServiceTicketController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'saleId' => 'required|exists:sales,id',
+            'saleId' => 'nullable|exists:sales,id',
             'customerId' => 'required|exists:customers,id',
             'issueType' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -71,7 +71,9 @@ class ServiceTicketController extends Controller
             'images' => 'nullable|array',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
-        Sale::findOrFail($validated['saleId']);
+        if (!empty($validated['saleId'])) {
+            Sale::findOrFail($validated['saleId']);
+        }
         $ticketNumber = 'SSH-' . date('Y') . '-' . str_pad((string) (ServiceTicket::whereYear('createdAt', date('Y'))->count() + 1), 5, '0', STR_PAD_LEFT);
 
         $images = [];
@@ -84,7 +86,7 @@ class ServiceTicketController extends Controller
 
         ServiceTicket::create([
             'ticketNumber' => $ticketNumber,
-            'saleId' => $validated['saleId'],
+            'saleId' => $validated['saleId'] ?? null,
             'customerId' => $validated['customerId'],
             'status' => 'acildi',
             'underWarranty' => $request->boolean('underWarranty'),
@@ -108,7 +110,7 @@ class ServiceTicketController extends Controller
     public function update(Request $request, ServiceTicket $serviceTicket)
     {
         $validated = $request->validate([
-            'saleId' => 'required|exists:sales,id',
+            'saleId' => 'nullable|exists:sales,id',
             'customerId' => 'required|exists:customers,id',
             'issueType' => 'required|string|max:255',
             'description' => 'nullable|string',

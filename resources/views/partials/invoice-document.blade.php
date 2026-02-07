@@ -62,16 +62,16 @@
                         <td class="px-4 py-3 text-sm text-slate-600">{{ $i + 1 }}</td>
                         <td class="px-4 py-3 font-medium text-slate-900">{{ $item['name'] ?? '-' }}</td>
                         @if(isset($showListPrice) && $showListPrice)
-                        <td class="px-4 py-3 text-right text-slate-600">{{ isset($item['listPrice']) && $item['listPrice'] !== null ? number_format($item['listPrice'], 2, ',', '.') . ' ₺' : '—' }}</td>
-                        <td class="px-4 py-3 text-right text-slate-600">{{ number_format($item['unitPrice'] ?? 0, 2, ',', '.') }} ₺</td>
+                        <td class="px-4 py-3 text-right text-slate-600">{{ isset($item['listPrice']) && $item['listPrice'] !== null ? number_format($item['listPrice'], 0, ',', '.') . ' ₺' : '—' }}</td>
+                        <td class="px-4 py-3 text-right text-slate-600">{{ number_format($item['unitPrice'] ?? 0, 0, ',', '.') }} ₺</td>
                         @else
-                        <td class="px-4 py-3 text-right text-slate-600">{{ number_format($item['unitPrice'] ?? 0, 2, ',', '.') }} ₺</td>
+                        <td class="px-4 py-3 text-right text-slate-600">{{ number_format($item['unitPrice'] ?? 0, 0, ',', '.') }} ₺</td>
                         @endif
                         <td class="px-4 py-3 text-center text-slate-600">{{ $item['quantity'] ?? 0 }}</td>
                         @if(isset($showKdv) && $showKdv)
                         <td class="px-4 py-3 text-right text-slate-600">%{{ number_format($item['kdvRate'] ?? 0, 0) }}</td>
                         @endif
-                        <td class="px-4 py-3 text-right font-medium text-slate-900">{{ number_format($item['lineTotal'] ?? 0, 2, ',', '.') }} ₺</td>
+                        <td class="px-4 py-3 text-right font-medium text-slate-900">{{ number_format($item['lineTotal'] ?? 0, 0, ',', '.') }} ₺</td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -83,33 +83,33 @@
             @if(isset($subtotal))
             <div class="flex justify-end gap-8 text-sm">
                 <span class="text-slate-600">Ara Toplam:</span>
-                <span class="font-medium w-32 text-right">{{ number_format($subtotal ?? 0, 2, ',', '.') }} ₺</span>
+                <span class="font-medium w-32 text-right">{{ number_format($subtotal ?? 0, 0, ',', '.') }} ₺</span>
             </div>
             @endif
             @if(isset($kdvTotal))
             <div class="flex justify-end gap-8 text-sm mt-1">
                 <span class="text-slate-600">KDV Toplam:</span>
-                <span class="font-medium w-32 text-right">{{ number_format($kdvTotal ?? 0, 2, ',', '.') }} ₺</span>
+                <span class="font-medium w-32 text-right">{{ number_format($kdvTotal ?? 0, 0, ',', '.') }} ₺</span>
             </div>
             @endif
             @if(isset($discount) && ($discount ?? 0) > 0)
             <div class="flex justify-end gap-8 text-sm mt-1">
                 <span class="text-slate-600">İndirim:</span>
-                <span class="font-medium w-32 text-right text-red-600">-{{ number_format($discount ?? 0, 2, ',', '.') }} ₺</span>
+                <span class="font-medium w-32 text-right text-red-600">-{{ number_format($discount ?? 0, 0, ',', '.') }} ₺</span>
             </div>
             @endif
             <div class="flex justify-end gap-8 text-base font-bold mt-3 pt-3 border-t-2 border-slate-200">
                 <span class="text-slate-900">Genel Toplam:</span>
-                <span class="text-emerald-600 w-32 text-right">{{ number_format($grandTotal ?? 0, 2, ',', '.') }} ₺</span>
+                <span class="text-emerald-600 w-32 text-right">{{ number_format($grandTotal ?? 0, 0, ',', '.') }} ₺</span>
             </div>
             @if(isset($paidAmount) && ($paidAmount ?? 0) > 0)
             <div class="flex justify-end gap-8 text-sm mt-2">
                 <span class="text-emerald-600">Ödenen:</span>
-                <span class="font-medium w-32 text-right text-emerald-600">{{ number_format($paidAmount ?? 0, 2, ',', '.') }} ₺</span>
+                <span class="font-medium w-32 text-right text-emerald-600">{{ number_format($paidAmount ?? 0, 0, ',', '.') }} ₺</span>
             </div>
             <div class="flex justify-end gap-8 text-sm mt-1">
                 <span class="text-slate-600">Kalan:</span>
-                <span class="font-medium w-32 text-right {{ (($grandTotal ?? 0) - ($paidAmount ?? 0)) > 0 ? 'text-red-600' : 'text-slate-600' }}">{{ number_format(($grandTotal ?? 0) - ($paidAmount ?? 0), 2, ',', '.') }} ₺</span>
+                <span class="font-medium w-32 text-right {{ (($grandTotal ?? 0) - ($paidAmount ?? 0)) > 0 ? 'text-red-600 dark:text-red-400' : ((($grandTotal ?? 0) - ($paidAmount ?? 0)) < 0 ? 'amount-negative' : 'text-slate-600 dark:text-slate-400') }}">{{ number_format(($grandTotal ?? 0) - ($paidAmount ?? 0), 0, ',', '.') }} ₺</span>
             </div>
             @endif
         </div>

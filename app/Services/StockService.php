@@ -24,6 +24,16 @@ class StockService
         return $stock;
     }
 
+    /** Ürünün yeterli stoku bulunan bir deposunu döner (en çok stok olan önce) */
+    public function findWarehouseWithStock(string $productId, int $quantity): ?string
+    {
+        $stock = Stock::where('productId', $productId)
+            ->whereRaw('(quantity - COALESCE(reservedQuantity, 0)) >= ?', [$quantity])
+            ->orderByRaw('(quantity - COALESCE(reservedQuantity, 0)) DESC')
+            ->first();
+        return $stock?->warehouseId;
+    }
+
     public function getByWarehouse(string $warehouseId)
     {
         return Stock::where('warehouseId', $warehouseId)

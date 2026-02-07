@@ -32,7 +32,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Toplam Alış</p>
-                <p class="text-xl font-semibold text-slate-900 dark:text-white mt-1 tracking-tight">{{ number_format($totalPurchases ?? 0, 2, ',', '.') }} ₺</p>
+                <p class="text-xl font-semibold text-slate-900 dark:text-white mt-1 tracking-tight">{{ number_format($totalPurchases ?? 0, 0, ',', '.') }} ₺</p>
             </div>
             <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-700">
                 <svg class="w-6 h-6 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
@@ -43,7 +43,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Toplam Ödenen</p>
-                <p class="text-xl font-semibold text-emerald-600 dark:text-emerald-400 mt-1 tracking-tight">{{ number_format($totalPayments ?? 0, 2, ',', '.') }} ₺</p>
+                <p class="text-xl font-semibold text-emerald-600 dark:text-emerald-400 mt-1 tracking-tight">{{ number_format($totalPayments ?? 0, 0, ',', '.') }} ₺</p>
             </div>
             <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/30">
                 <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
@@ -54,7 +54,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Bakiye</p>
-                <p class="text-xl font-semibold mt-1 tracking-tight {{ ($balance ?? 0) > 0 ? 'text-red-600 dark:text-red-400' : (($balance ?? 0) < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white') }}">{{ number_format($balance ?? 0, 2, ',', '.') }} ₺</p>
+                <p class="text-xl font-semibold mt-1 tracking-tight {{ ($balance ?? 0) > 0 ? 'text-red-600 dark:text-red-400' : (($balance ?? 0) < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white') }}">{{ number_format($balance ?? 0, 0, ',', '.') }} ₺</p>
                 @if(($balance ?? 0) != 0)<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ ($balance ?? 0) > 0 ? 'Tedarikçiye borç' : 'Tedarikçiden alacak' }}</p>@endif
             </div>
             <div class="p-3 rounded-xl {{ ($balance ?? 0) > 0 ? 'bg-red-50 dark:bg-red-900/20' : (($balance ?? 0) < 0 ? 'bg-emerald-50 dark:bg-emerald-900/30' : 'bg-slate-100 dark:bg-slate-700') }}">
@@ -91,7 +91,7 @@
                         <tr class="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
                             <td class="table-td"><a href="{{ route('products.show', $p) }}" class="font-medium text-emerald-600 dark:text-emerald-400 hover:underline">{{ $p->name }}</a></td>
                             <td class="table-td font-mono text-sm">{{ $p->sku ?? '—' }}</td>
-                            <td class="table-td text-right font-medium">{{ number_format($p->unitPrice ?? 0, 2, ',', '.') }} ₺</td>
+                            <td class="table-td text-right font-medium">{{ number_format($p->unitPrice ?? 0, 0, ',', '.') }} ₺</td>
                             <td class="table-td text-right">@include('partials.action-buttons', ['show' => route('products.show', $p), 'edit' => route('products.edit', $p)])</td>
                         </tr>
                         @empty
@@ -114,7 +114,7 @@
                         <tr class="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
                             <td class="table-td"><a href="{{ route('purchases.show', $p) }}" class="font-medium text-emerald-600 dark:text-emerald-400 hover:underline">{{ $p->purchaseNumber }}</a></td>
                             <td class="table-td">{{ $p->purchaseDate?->format('d.m.Y') }}</td>
-                            <td class="table-td text-right font-medium">{{ number_format($p->grandTotal, 2, ',', '.') }} ₺</td>
+                            <td class="table-td text-right font-medium">{{ number_format($p->grandTotal, 0, ',', '.') }} ₺</td>
                             <td class="table-td text-right">@include('partials.action-buttons', ['show' => route('purchases.show', $p), 'edit' => route('purchases.edit', $p), 'print' => route('purchases.print', $p)])</td>
                         </tr>
                         @empty
@@ -137,7 +137,7 @@
                         @forelse($supplier->payments->sortByDesc('paymentDate') as $pm)
                         <tr class="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
                             <td class="table-td">{{ $pm->paymentDate?->format('d.m.Y') }}</td>
-                            <td class="table-td text-right font-medium text-emerald-600 dark:text-emerald-400">{{ number_format($pm->amount ?? 0, 2, ',', '.') }} ₺</td>
+                            <td class="table-td text-right font-medium text-emerald-600 dark:text-emerald-400">{{ number_format($pm->amount ?? 0, 0, ',', '.') }} ₺</td>
                             <td class="table-td">{{ $pt[$pm->paymentType ?? ''] ?? ucfirst($pm->paymentType ?? '—') }}</td>
                             <td class="table-td">@if($pm->purchaseId && $pm->purchase)<a href="{{ route('purchases.show', $pm->purchase) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">{{ $pm->purchase->purchaseNumber }}</a>@else{{ $pm->reference ?? '—' }}@endif</td>
                         </tr>

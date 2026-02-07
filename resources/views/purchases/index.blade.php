@@ -60,7 +60,7 @@
                     <td class="px-6 py-4 font-medium text-slate-900">{{ $p->purchaseNumber }} @if($p->isCancelled ?? false)<span class="ml-1 text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700">İptal</span>@endif</td>
                     <td class="px-6 py-4 text-slate-600">{{ $p->supplier?->name ?? '-' }}</td>
                     <td class="px-6 py-4 text-slate-600">{{ $p->purchaseDate?->format('d.m.Y') ?? '-' }}</td>
-                    <td class="px-6 py-4 text-right font-medium">{{ number_format($p->grandTotal ?? 0, 2, ',', '.') }} ₺</td>
+                    <td class="px-6 py-4 text-right font-medium">{{ number_format($p->grandTotal ?? 0, 0, ',', '.') }} ₺</td>
                     <td class="px-6 py-4">
                         @include('partials.action-buttons', [
                             'show' => route('purchases.show', $p),

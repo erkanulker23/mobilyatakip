@@ -36,7 +36,7 @@
                 <p class="text-sm text-slate-600 mt-1">Garanti: <span class="font-medium">{{ $serviceTicket->underWarranty ? 'Evet' : 'Hayır' }}</span></p>
                 <p class="text-sm text-slate-600 mt-1">Teknisyen: <span class="font-medium">{{ $serviceTicket->assignedUser?->name ?? '-' }}</span></p>
                 @if($serviceTicket->serviceChargeAmount)
-                <p class="text-sm font-bold text-green-600 mt-2">Servis Ücreti: {{ number_format($serviceTicket->serviceChargeAmount, 2, ',', '.') }} ₺</p>
+                <p class="text-sm font-bold text-green-600 mt-2">Servis Ücreti: {{ number_format($serviceTicket->serviceChargeAmount, 0, ',', '.') }} ₺</p>
                 @endif
             </div>
         </div>

@@ -8,7 +8,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <title>@yield('title', $company?->metaTitle ?? $company?->name ?? 'Mobilya Takip')</title>
+    <title>@yield('title', $company?->metaTitle ?? $company?->name ?? $company?->appName ?? 'Mobilya Takip')</title>
     @if($company?->metaDescription)<meta name="description" content="{{ $company->metaDescription }}">@endif
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3/dist/cdn.min.js"></script>
@@ -37,9 +37,9 @@
         .dark .nav-link:hover { background: rgba(255,255,255,.08); color: #fff; }
         .dark .nav-link.active { background: rgba(16,185,129,.2); color: #34d399; }
         .form-label { display: block; font-size: 0.8125rem; font-weight: 500; color: #64748b; margin-bottom: 0.375rem; letter-spacing: .01em; }
-        .form-input, .form-select, .form-textarea { width: 100%; border-radius: 0.75rem; border: 1px solid #e2e8f0; padding: 0.625rem 0.875rem; font-size: 0.9375rem; background: #fff; transition: border-color .15s, box-shadow .15s; }
-        .form-input:hover, .form-select:hover, .form-textarea:hover { border-color: #cbd5e1; }
-        .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.12); }
+        .form-input, .form-select, .form-textarea { width: 100%; border-radius: 0.5rem; padding: 0.625rem 0.875rem; font-size: 0.9375rem; background: #f8fafc; transition: background .15s, box-shadow .15s; }
+        .form-input:hover, .form-select:hover, .form-textarea:hover { background: #f1f5f9; }
+        .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; background: #fff; box-shadow: 0 0 0 2px rgba(16,185,129,.2); }
         .form-textarea { min-height: 100px; resize: vertical; }
         .card { background: #fff; border-radius: 1rem; border: 1px solid #f1f5f9; }
         .card-header { padding: 1rem 1.25rem; border-bottom: 1px solid #f1f5f9; font-weight: 600; font-size: 0.9375rem; color: #0f172a; }
@@ -61,20 +61,28 @@
         .dark .table-td { color: #cbd5e1; }
         .dark .table-td .font-medium, .dark .table-td strong { color: #f1f5f9; }
         .dark .form-label { color: #94a3b8; }
-        .dark .form-input, .dark .form-select, .dark .form-textarea { background: #334155; border-color: #475569; color: #f1f5f9; }
-        .dark .form-input:focus, .dark .form-select:focus, .dark .form-textarea:focus { border-color: #10b981; }
+        .dark .form-input, .dark .form-select, .dark .form-textarea { background: #334155; color: #f1f5f9; }
+        .dark .form-input:hover, .dark .form-select:hover, .dark .form-textarea:hover { background: #475569; }
+        .dark .form-input:focus, .dark .form-select:focus, .dark .form-textarea:focus { background: #1e293b; box-shadow: 0 0 0 2px rgba(16,185,129,.3); }
         .dark .btn-primary { background: #059669; }
         .dark .btn-primary:hover { background: #047857; }
         .dark .btn-secondary { background: #334155; color: #e2e8f0; }
         .dark .btn-secondary:hover { background: #475569; }
+        .amount-negative, .text-negative { color: #dc2626 !important; }
+        .dark .amount-negative, .dark .text-negative { color: #f87171 !important; }
         [x-cloak] { display: none !important; }
         .safe-area-padding { padding-left: env(safe-area-inset-left, 0); padding-right: env(safe-area-inset-right, 0); padding-top: max(0.875rem, env(safe-area-inset-top)); }
         .safe-area-footer { padding-bottom: max(0.5rem, env(safe-area-inset-bottom)); }
         .main-offset { padding-top: calc(3.5rem + env(safe-area-inset-top, 0px)); }
         .touch-manipulation { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+        .form-items-section-box { border: 2px solid #cbd5e1; border-radius: 1rem; padding: 1.5rem; margin-top: 0.5rem; background: #f8fafc; }
+        .dark .form-items-section-box { border-color: #475569; background: #1e293b; }
+        .form-item-row { border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 1rem; background: #fff; }
+        .dark .form-item-row { border-color: #475569; background: #334155; }
         @media (max-width: 1023px) { main { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); } }
         @media print { .no-print { display: none !important; } aside { display: none !important; } }
     </style>
+    @stack('head')
 </head>
 <body class="bg-slate-50/80 dark:bg-slate-900 text-slate-800 dark:text-slate-200 min-h-screen transition-colors" x-data="{ sidebarOpen: false, dark: false }" x-init="dark = localStorage.getItem('theme-dark') === '1'; document.documentElement.classList.toggle('dark', dark)">
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[60] focus:px-4 focus:py-2 focus:bg-emerald-600 focus:text-white focus:rounded-xl">İçeriğe atla</a>
@@ -85,7 +93,7 @@
                 <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden flex items-center justify-center w-11 h-11 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors touch-manipulation" aria-label="Menü">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                 </button>
-                <span class="lg:hidden text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">Mobilya Takip</span>
+                <span class="lg:hidden text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{{ $company?->appName ?? 'Mobilya Takip' }}</span>
             </div>
             <div class="flex items-center gap-1 shrink-0">
                 {{-- Bildirim --}}
@@ -135,7 +143,7 @@
         <div x-show="sidebarOpen" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" @click="sidebarOpen = false" class="fixed inset-0 bg-black/40 z-40 lg:hidden backdrop-blur-sm"></div>
         <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'" class="fixed lg:static inset-y-0 left-0 w-60 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 flex flex-col shrink-0 z-40 transform transition-transform duration-200 ease-out border-r border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom)] lg:pb-0">
             <div class="p-5 border-b border-slate-200 dark:border-white/5">
-                <a href="{{ route('dashboard') }}" class="text-lg font-semibold text-slate-900 dark:text-white tracking-tight">Mobilya Takip</a>
+                <a href="{{ route('dashboard') }}" class="text-lg font-semibold text-slate-900 dark:text-white tracking-tight">{{ $company?->appName ?? 'Mobilya Takip' }}</a>
             </div>
             <nav class="flex-1 p-3 overflow-y-auto" aria-label="Ana menü">
                 <a href="{{ route('dashboard') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm {{ request()->routeIs('dashboard') ? 'active' : '' }}">

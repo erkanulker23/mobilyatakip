@@ -4,7 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Exports\SuppliersExport;
 use App\Imports\SuppliersImport;
+use App\Models\Product;
+use App\Models\Purchase;
+use App\Models\PurchaseItem;
+use App\Models\QuoteItem;
+use App\Models\ServicePart;
+use App\Models\Stock;
+use App\Models\StockMovement;
 use App\Models\Supplier;
+use App\Models\SupplierPayment;
 use App\Rules\TurkishTaxId;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -29,7 +37,28 @@ class SupplierController extends Controller
             $q->where('isActive', $request->boolean('isActive'));
         }
         $suppliers = $q->paginate(20)->withQueryString();
-        return view('suppliers.index', compact('suppliers'));
+        $supplierIds = $suppliers->getCollection()->pluck('id')->values()->all();
+
+        // Tedarikçi borç (alış toplamı) ve alacak (ödeme toplamı)
+        $borcBySupplier = [];
+        $alacakBySupplier = [];
+        if (!empty($supplierIds)) {
+            $borcBySupplier = Purchase::whereIn('supplierId', $supplierIds)
+                ->where('isCancelled', false)
+                ->selectRaw('supplierId, sum(grandTotal) as total')
+                ->groupBy('supplierId')
+                ->pluck('total', 'supplierId')
+                ->map(fn ($v) => (float) $v)
+                ->all();
+            $alacakBySupplier = SupplierPayment::whereIn('supplierId', $supplierIds)
+                ->selectRaw('supplierId, sum(amount) as total')
+                ->groupBy('supplierId')
+                ->pluck('total', 'supplierId')
+                ->map(fn ($v) => (float) $v)
+                ->all();
+        }
+
+        return view('suppliers.index', compact('suppliers', 'supplierIds', 'borcBySupplier', 'alacakBySupplier'));
     }
 
     public function create()
@@ -84,10 +113,55 @@ class SupplierController extends Controller
         return redirect()->route('suppliers.index')->with('success', 'Tedarikçi güncellendi.');
     }
 
-    public function destroy(Supplier $supplier)
+    public function destroy(Request $request, Supplier $supplier)
     {
+        if ($request->boolean('delete_products')) {
+            $this->deleteSupplierProductsAndDependents($supplier);
+        } else {
+            $supplier->products()->update(['supplierId' => null]);
+        }
         $supplier->delete();
         return redirect()->route('suppliers.index')->with('success', 'Tedarikçi silindi.');
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate(['ids' => 'required|array', 'ids.*' => 'required|uuid|exists:suppliers,id', 'delete_products' => 'nullable|boolean']);
+        $deleteProducts = $request->boolean('delete_products');
+        $count = 0;
+        foreach ($request->ids as $id) {
+            $supplier = Supplier::find($id);
+            if (!$supplier) {
+                continue;
+            }
+            if ($deleteProducts) {
+                $this->deleteSupplierProductsAndDependents($supplier);
+            } else {
+                $supplier->products()->update(['supplierId' => null]);
+            }
+            $supplier->delete();
+            $count++;
+        }
+        return redirect()->route('suppliers.index')->with('success', $count . ' tedarikçi silindi.');
+    }
+
+    /**
+     * Tedarikçiye ait ürünleri ve bu ürünlere bağlı kayıtları (teklif kalemleri, stok, vb.)
+     * foreign key kısıtları nedeniyle sırayla siler.
+     */
+    private function deleteSupplierProductsAndDependents(Supplier $supplier): void
+    {
+        $productIds = $supplier->products()->pluck('id')->all();
+        if (empty($productIds)) {
+            return;
+        }
+
+        QuoteItem::whereIn('productId', $productIds)->delete();
+        PurchaseItem::whereIn('productId', $productIds)->delete();
+        ServicePart::whereIn('productId', $productIds)->delete();
+        StockMovement::whereIn('productId', $productIds)->delete();
+        Stock::whereIn('productId', $productIds)->delete();
+        Product::whereIn('id', $productIds)->delete();
     }
 
     public function exportExcel(): BinaryFileResponse

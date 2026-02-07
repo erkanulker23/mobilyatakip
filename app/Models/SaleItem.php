@@ -11,9 +11,12 @@ class SaleItem extends BaseModel
     protected $fillable = [
         'saleId',
         'productId',
+        'productName',
         'unitPrice',
         'quantity',
         'kdvRate',
+        'lineDiscountPercent',
+        'lineDiscountAmount',
         'lineTotal',
     ];
 
@@ -21,6 +24,8 @@ class SaleItem extends BaseModel
         'unitPrice' => 'decimal:2',
         'lineTotal' => 'decimal:2',
         'kdvRate' => 'decimal:2',
+        'lineDiscountPercent' => 'decimal:2',
+        'lineDiscountAmount' => 'decimal:2',
         'quantity' => 'integer',
     ];
 

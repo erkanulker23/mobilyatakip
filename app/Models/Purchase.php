@@ -12,6 +12,7 @@ class Purchase extends BaseModel
     protected $fillable = [
         'purchaseNumber',
         'supplierId',
+        'warehouseId',
         'kdvIncluded',
         'supplierDiscountRate',
         'purchaseDate',
@@ -47,6 +48,11 @@ class Purchase extends BaseModel
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class, 'supplierId');
+    }
+
+    public function warehouse(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Warehouse::class, 'warehouseId');
     }
 
     public function items(): HasMany

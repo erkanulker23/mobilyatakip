@@ -72,7 +72,7 @@
                     <td class="px-6 py-4">
                         <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full {{ $q->status === 'taslak' ? 'bg-amber-100 text-amber-800' : ($q->status === 'onaylandi' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600') }}">{{ ucfirst($q->status ?? '-') }}</span>
                     </td>
-                    <td class="px-6 py-4 text-right font-medium">{{ number_format($q->grandTotal ?? 0, 2, ',', '.') }} ₺</td>
+                    <td class="px-6 py-4 text-right font-medium">{{ number_format($q->grandTotal ?? 0, 0, ',', '.') }} ₺</td>
                     <td class="px-6 py-4 text-slate-600">{{ $q->createdAt?->format('d.m.Y') ?? '-' }}</td>
                     <td class="px-6 py-4">
                         <div class="flex items-center justify-end gap-1">
@@ -83,13 +83,8 @@
                                 'destroy' => route('quotes.destroy', $q),
                             ])
                             @if(!$q->convertedSaleId && ($q->status ?? '') == 'taslak')
-                            <form method="POST" action="{{ route('quotes.convert', $q) }}" class="inline-flex items-center gap-1 ml-1" onsubmit="return confirm('Bu teklifi satışa dönüştürmek istediğinize emin misiniz?');">
+                            <form method="POST" action="{{ route('quotes.convert', $q) }}" class="inline-flex ml-1" onsubmit="return confirm('Bu teklifi satışa dönüştürmek istediğinize emin misiniz?');">
                                 @csrf
-                                <select name="warehouseId" required class="form-select py-1.5 text-sm w-28 rounded border-slate-300">
-                                    @foreach(\App\Models\Warehouse::orderBy('name')->get() as $w)
-                                    <option value="{{ $w->id }}">{{ $w->name }}</option>
-                                    @endforeach
-                                </select>
                                 <button type="submit" title="Satışa Dönüştür" class="p-2 rounded-lg bg-green-100 text-green-700 hover:bg-green-200">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                                 </button>

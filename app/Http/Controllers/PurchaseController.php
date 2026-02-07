@@ -6,13 +6,18 @@ use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use App\Models\Supplier;
 use App\Models\Product;
+use App\Models\Warehouse;
 use App\Services\AuditService;
+use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class PurchaseController extends Controller
 {
-    public function __construct(private AuditService $auditService) {}
+    public function __construct(
+        private AuditService $auditService,
+        private StockService $stockService
+    ) {}
     public function index(Request $request)
     {
         $q = Purchase::with('supplier')->orderBy('createdAt', 'desc');
@@ -41,13 +46,15 @@ class PurchaseController extends Controller
     {
         $suppliers = Supplier::orderBy('name')->get();
         $products = Product::orderBy('name')->get();
-        return view('purchases.create', compact('suppliers', 'products'));
+        $warehouses = Warehouse::orderBy('name')->get();
+        return view('purchases.create', compact('suppliers', 'products', 'warehouses'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'supplierId' => 'required|exists:suppliers,id',
+            'warehouseId' => 'required|exists:warehouses,id',
             'purchaseDate' => 'required|date',
             'dueDate' => 'nullable|date',
             'kdvIncluded' => 'nullable|boolean',
@@ -59,10 +66,13 @@ class PurchaseController extends Controller
             'items.*.unitPrice' => 'required|numeric|min:0',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.kdvRate' => 'nullable|numeric|min:0|max:100',
+            'items.*.lineDiscountPercent' => 'nullable|numeric|min:0|max:100',
+            'items.*.lineDiscountAmount' => 'nullable|numeric|min:0',
         ]);
         $kdvIncluded = $request->boolean('kdvIncluded');
+        $warehouseId = $validated['warehouseId'];
 
-        $purchase = DB::transaction(function () use ($validated, $kdvIncluded) {
+        $purchase = DB::transaction(function () use ($validated, $kdvIncluded, $warehouseId) {
             $last = Purchase::whereYear('createdAt', date('Y'))
                 ->orderBy('purchaseNumber', 'desc')
                 ->lockForUpdate()
@@ -73,6 +83,7 @@ class PurchaseController extends Controller
             $purchase = Purchase::create([
                 'purchaseNumber' => $purchaseNumber,
                 'supplierId' => $validated['supplierId'],
+                'warehouseId' => $warehouseId,
                 'purchaseDate' => $validated['purchaseDate'],
                 'dueDate' => $validated['dueDate'] ?? null,
                 'kdvIncluded' => $kdvIncluded,
@@ -90,15 +101,17 @@ class PurchaseController extends Controller
                 $listPrice = isset($row['listPrice']) && $row['listPrice'] !== '' ? (float) $row['listPrice'] : null;
                 $qty = (int) $row['quantity'];
                 $kdvRate = (float) ($row['kdvRate'] ?? 18);
+                $lineDiscPct = (float) ($row['lineDiscountPercent'] ?? 0);
+                $lineDiscAmt = (float) ($row['lineDiscountAmount'] ?? 0);
                 if ($kdvIncluded) {
-                    $lineNet = round($unitPrice * $qty / (1 + $kdvRate / 100), 2);
-                    $lineKdv = round($unitPrice * $qty - $lineNet, 2);
-                    $lineTotal = round($unitPrice * $qty, 2);
+                    $lineNet = $unitPrice * $qty / (1 + $kdvRate / 100);
                 } else {
-                    $lineNet = round($unitPrice * $qty, 2);
-                    $lineKdv = round($lineNet * ($kdvRate / 100), 2);
-                    $lineTotal = round($lineNet + $lineKdv, 2);
+                    $lineNet = $unitPrice * $qty;
                 }
+                $lineNet = $lineNet * (1 - $lineDiscPct / 100) - $lineDiscAmt;
+                $lineNet = round(max(0, $lineNet), 2);
+                $lineKdv = round($lineNet * ($kdvRate / 100), 2);
+                $lineTotal = round($lineNet + $lineKdv, 2);
                 $subtotal += $lineNet;
                 $kdvTotal += $lineKdv;
                 PurchaseItem::create([
@@ -108,8 +121,17 @@ class PurchaseController extends Controller
                     'listPrice' => $listPrice,
                     'quantity' => $qty,
                     'kdvRate' => $kdvRate,
+                    'lineDiscountPercent' => $lineDiscPct ?: null,
+                    'lineDiscountAmount' => $lineDiscAmt ?: null,
                     'lineTotal' => $lineTotal,
                 ]);
+                $this->stockService->movement(
+                    $row['productId'],
+                    $warehouseId,
+                    'giris',
+                    $qty,
+                    ['refType' => 'purchase', 'refId' => $purchase->id, 'description' => 'Alış: ' . $purchase->purchaseNumber]
+                );
             }
             $discRate = (float) ($purchase->supplierDiscountRate ?? 0);
             if ($discRate > 0 && $discRate <= 100) {
@@ -127,7 +149,7 @@ class PurchaseController extends Controller
 
     public function show(Purchase $purchase)
     {
-        $purchase->load(['supplier', 'items.product']);
+        $purchase->load(['supplier', 'warehouse', 'items.product']);
         return view('purchases.show', compact('purchase'));
     }
 
@@ -139,7 +161,7 @@ class PurchaseController extends Controller
 
     public function edit(Purchase $purchase)
     {
-        $purchase->load(['supplier', 'items.product']);
+        $purchase->load(['supplier', 'warehouse', 'items.product']);
         $suppliers = Supplier::orderBy('name')->get();
         $products = Product::orderBy('name')->get();
         return view('purchases.edit', compact('purchase', 'suppliers', 'products'));
@@ -160,6 +182,8 @@ class PurchaseController extends Controller
             'items.*.unitPrice' => 'required|numeric|min:0',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.kdvRate' => 'nullable|numeric|min:0|max:100',
+            'items.*.lineDiscountPercent' => 'nullable|numeric|min:0|max:100',
+            'items.*.lineDiscountAmount' => 'nullable|numeric|min:0',
         ]);
         $kdvIncluded = $request->boolean('kdvIncluded');
         $purchase->update([
@@ -178,15 +202,17 @@ class PurchaseController extends Controller
             $listPrice = isset($row['listPrice']) && $row['listPrice'] !== '' ? (float) $row['listPrice'] : null;
             $qty = (int) $row['quantity'];
             $kdvRate = (float) ($row['kdvRate'] ?? 18);
+            $lineDiscPct = (float) ($row['lineDiscountPercent'] ?? 0);
+            $lineDiscAmt = (float) ($row['lineDiscountAmount'] ?? 0);
             if ($kdvIncluded) {
-                $lineNet = round($unitPrice * $qty / (1 + $kdvRate / 100), 2);
-                $lineKdv = round($unitPrice * $qty - $lineNet, 2);
-                $lineTotal = round($unitPrice * $qty, 2);
+                $lineNet = $unitPrice * $qty / (1 + $kdvRate / 100);
             } else {
-                $lineNet = round($unitPrice * $qty, 2);
-                $lineKdv = round($lineNet * ($kdvRate / 100), 2);
-                $lineTotal = round($lineNet + $lineKdv, 2);
+                $lineNet = $unitPrice * $qty;
             }
+            $lineNet = $lineNet * (1 - $lineDiscPct / 100) - $lineDiscAmt;
+            $lineNet = round(max(0, $lineNet), 2);
+            $lineKdv = round($lineNet * ($kdvRate / 100), 2);
+            $lineTotal = round($lineNet + $lineKdv, 2);
             $subtotal += $lineNet;
             $kdvTotal += $lineKdv;
             PurchaseItem::create([
@@ -196,6 +222,8 @@ class PurchaseController extends Controller
                 'listPrice' => $listPrice,
                 'quantity' => $qty,
                 'kdvRate' => $kdvRate,
+                'lineDiscountPercent' => $lineDiscPct ?: null,
+                'lineDiscountAmount' => $lineDiscAmt ?: null,
                 'lineTotal' => $lineTotal,
             ]);
         }

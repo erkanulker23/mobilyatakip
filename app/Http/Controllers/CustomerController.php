@@ -37,6 +37,27 @@ class CustomerController extends Controller
         return view('customers.create');
     }
 
+    public function quickStore(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'nullable|email',
+                'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
+                'address' => 'nullable|string',
+            ], ['phone.regex' => 'Geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67)']);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => collect($e->errors())->flatten()->first()], 422);
+        }
+        $customer = Customer::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'] ?? null,
+            'phone' => $validated['phone'] ?? null,
+            'address' => $validated['address'] ?? null,
+        ]);
+        return response()->json(['id' => $customer->id, 'name' => $customer->name]);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([

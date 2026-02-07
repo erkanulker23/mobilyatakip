@@ -38,7 +38,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Toplam Satış</p>
-                <p class="text-xl font-semibold text-slate-900 dark:text-white mt-1 tracking-tight">{{ number_format($totalSales ?? 0, 2, ',', '.') }} ₺</p>
+                <p class="text-xl font-semibold text-slate-900 dark:text-white mt-1 tracking-tight">{{ number_format($totalSales ?? 0, 0, ',', '.') }} ₺</p>
             </div>
             <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-700">
                 <svg class="w-6 h-6 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
@@ -49,7 +49,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Toplam Ödenen</p>
-                <p class="text-xl font-semibold text-emerald-600 dark:text-emerald-400 mt-1 tracking-tight">{{ number_format($totalPaid ?? 0, 2, ',', '.') }} ₺</p>
+                <p class="text-xl font-semibold text-emerald-600 dark:text-emerald-400 mt-1 tracking-tight">{{ number_format($totalPaid ?? 0, 0, ',', '.') }} ₺</p>
             </div>
             <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/30">
                 <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
@@ -60,7 +60,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Kalan Borç</p>
-                <p class="text-xl font-semibold mt-1 tracking-tight {{ ($totalDebt ?? 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white' }}">{{ number_format($totalDebt ?? 0, 2, ',', '.') }} ₺</p>
+                <p class="text-xl font-semibold mt-1 tracking-tight {{ ($totalDebt ?? 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white' }}">{{ number_format($totalDebt ?? 0, 0, ',', '.') }} ₺</p>
             </div>
             <div class="p-3 rounded-xl {{ ($totalDebt ?? 0) > 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-slate-100 dark:bg-slate-700' }}">
                 <svg class="w-6 h-6 {{ ($totalDebt ?? 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-500 dark:text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -96,7 +96,7 @@
                         <tr class="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
                             <td class="table-td"><a href="{{ route('quotes.show', $q) }}" class="font-medium text-emerald-600 dark:text-emerald-400 hover:underline">{{ $q->quoteNumber }}</a></td>
                             <td class="table-td"><span class="text-xs px-2 py-1 rounded-full {{ ($q->status ?? '') === 'taslak' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300' : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300' }}">{{ ucfirst($q->status ?? '—') }}</span></td>
-                            <td class="table-td text-right font-medium">{{ number_format($q->grandTotal ?? 0, 2, ',', '.') }} ₺</td>
+                            <td class="table-td text-right font-medium">{{ number_format($q->grandTotal ?? 0, 0, ',', '.') }} ₺</td>
                             <td class="table-td text-right">@include('partials.action-buttons', ['show' => route('quotes.show', $q)])</td>
                         </tr>
                         @endforeach
@@ -106,22 +106,23 @@
         </div>
         @endif
         @if($customer->payments->count() > 0)
-        <div class="card overflow-hidden">
+        <div class="card overflow-hidden" id="tahsilatlar">
             <div class="card-header flex items-center justify-between">
                 <span>Tahsilatlar</span>
                 <span class="text-xs font-normal text-slate-500 dark:text-slate-400">{{ $customer->payments->count() }} tahsilat</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full">
-                    <thead><tr class="border-b border-slate-100 dark:border-slate-700"><th class="table-th">Tarih</th><th class="table-th">Tutar</th><th class="table-th">Tip</th><th class="table-th">İlgili Fatura</th></tr></thead>
+                    <thead><tr class="border-b border-slate-100 dark:border-slate-700"><th class="table-th">Tarih</th><th class="table-th">Tutar</th><th class="table-th">Tip</th><th class="table-th">İlgili Fatura</th><th class="table-th text-right">İşlem</th></tr></thead>
                     <tbody>
                         @php $pt = ['nakit'=>'Nakit','havale'=>'Havale','kredi_karti'=>'Kredi Kartı','cek'=>'Çek','senet'=>'Senet','diger'=>'Diğer']; @endphp
                         @foreach($customer->payments->sortByDesc('paymentDate')->take(15) as $p)
                         <tr class="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
-                            <td class="table-td">{{ $p->paymentDate?->format('d.m.Y') ?? '—' }}</td>
-                            <td class="table-td font-medium text-emerald-600 dark:text-emerald-400">{{ number_format($p->amount ?? 0, 2, ',', '.') }} ₺</td>
+                            <td class="table-td"><a href="{{ route('customer-payments.show', $p) }}" class="font-medium text-emerald-600 dark:text-emerald-400 hover:underline">{{ $p->paymentDate?->format('d.m.Y') ?? '—' }}</a></td>
+                            <td class="table-td"><a href="{{ route('customer-payments.show', $p) }}" class="font-medium text-emerald-600 dark:text-emerald-400 hover:underline">{{ number_format($p->amount ?? 0, 0, ',', '.') }} ₺</a></td>
                             <td class="table-td">{{ $pt[$p->paymentType ?? ''] ?? ucfirst($p->paymentType ?? '—') }}</td>
                             <td class="table-td">@if($p->saleId)<a href="{{ route('sales.show', $p->sale) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">{{ $p->sale?->saleNumber ?? '—' }}</a>@else—@endif</td>
+                            <td class="table-td text-right">@include('partials.action-buttons', ['show' => route('customer-payments.show', $p), 'edit' => route('customer-payments.edit', $p), 'print' => route('customer-payments.print', $p)])</td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -161,9 +162,9 @@
                         <tr class="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
                             <td class="table-td"><a href="{{ route('sales.show', $s) }}" class="font-medium text-emerald-600 dark:text-emerald-400 hover:underline">{{ $s->saleNumber }}</a></td>
                             <td class="table-td">{{ $s->saleDate?->format('d.m.Y') }}</td>
-                            <td class="table-td text-right font-medium">{{ number_format($s->grandTotal, 2, ',', '.') }} ₺</td>
-                            <td class="table-td text-right text-emerald-600 dark:text-emerald-400">{{ number_format($s->paidAmount ?? 0, 2, ',', '.') }} ₺</td>
-                            <td class="table-td text-right">{{ number_format(($s->grandTotal ?? 0) - ($s->paidAmount ?? 0), 2, ',', '.') }} ₺</td>
+                            <td class="table-td text-right font-medium">{{ number_format($s->grandTotal, 0, ',', '.') }} ₺</td>
+                            <td class="table-td text-right text-emerald-600 dark:text-emerald-400">{{ number_format($s->paidAmount ?? 0, 0, ',', '.') }} ₺</td>
+                            <td class="table-td text-right">{{ number_format(($s->grandTotal ?? 0) - ($s->paidAmount ?? 0), 0, ',', '.') }} ₺</td>
                         </tr>
                         @empty
                         <tr><td colspan="5" class="table-td text-center text-slate-500 dark:text-slate-400 py-8">Henüz satış yok.</td></tr>

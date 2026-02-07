@@ -83,7 +83,7 @@
                         <td class="table-td"><span class="font-medium text-slate-900">{{ $s->saleNumber }}</span></td>
                         <td class="table-td">{{ $s->customer?->name }}</td>
                         <td class="table-td">{{ $s->saleDate?->format('d.m.Y') }}</td>
-                        <td class="table-td font-medium text-slate-900">{{ number_format($s->grandTotal, 2, ',', '.') }} ₺</td>
+                        <td class="table-td font-medium text-slate-900">{{ number_format($s->grandTotal, 0, ',', '.') }} ₺</td>
                         <td class="table-td text-right">
                             <a href="{{ route('sales.show', $s) }}" class="text-emerald-600 hover:text-emerald-700 text-sm font-medium">Detay</a>
                         </td>

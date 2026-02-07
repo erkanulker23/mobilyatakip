@@ -89,6 +89,10 @@ class XmlFeedController extends Controller
         try {
             $result = $this->xmlFeedService->syncFeed($xmlFeed);
             $msg = sprintf('%d ürün eklendi, %d güncellendi.', $result['created'], $result['updated'] ?? 0);
+            $suppliersCreated = $result['suppliersCreated'] ?? 0;
+            if ($suppliersCreated > 0) {
+                $msg .= sprintf(' %d tedarikçi eklendi.', $suppliersCreated);
+            }
             if (!empty($result['errors'])) {
                 $msg .= ' Hatalar: ' . implode(', ', array_slice($result['errors'], 0, 3));
             }

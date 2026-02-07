@@ -65,16 +65,16 @@
             <textarea name="notes" rows="2" class="form-input form-textarea">{{ old('notes', $quote->notes) }}</textarea>
         </div>
 
-        <div class="border-t border-slate-200 pt-5">
-            <h3 class="text-lg font-semibold text-slate-900 mb-4">Teklif Kalemleri</h3>
+        <div class="form-items-section-box mt-5">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Teklif Kalemleri</h3>
             <div id="items" class="space-y-3">
                 @foreach($quote->items as $idx => $item)
-                <div class="item-row grid grid-cols-1 md:grid-cols-[1fr_100px_70px_70px_60px_60px_40px] gap-3 items-end">
+                <div class="item-row form-item-row grid grid-cols-1 md:grid-cols-[1fr_100px_70px_70px_60px_60px_40px] gap-3 items-end">
                     <div>
                         <label class="form-label">Ürün *</label>
                         <select name="items[{{ $idx }}][productId]" required class="form-select item-product">
                             @foreach($products as $p)
-                            <option value="{{ $p->id }}" data-price="{{ $p->unitPrice }}" data-kdv="{{ $p->kdvRate ?? 18 }}" {{ $item->productId == $p->id ? 'selected' : '' }}>{{ $p->name }} ({{ number_format($p->unitPrice, 2) }} ₺)</option>
+                            <option value="{{ $p->id }}" data-price="{{ $p->unitPrice }}" data-kdv="{{ $p->kdvRate ?? 18 }}" {{ $item->productId == $p->id ? 'selected' : '' }}>{{ $p->name }} ({{ number_format($p->unitPrice, 0, ',', '.') }} ₺)</option>
                             @endforeach
                         </select>
                     </div>
@@ -102,13 +102,13 @@
                 </div>
                 @endforeach
                 @if($quote->items->isEmpty())
-                <div class="item-row grid grid-cols-1 md:grid-cols-[1fr_100px_70px_70px_60px_60px_40px] gap-3 items-end">
+                <div class="item-row form-item-row grid grid-cols-1 md:grid-cols-[1fr_100px_70px_70px_60px_60px_40px] gap-3 items-end">
                     <div>
                         <label class="form-label">Ürün *</label>
                         <select name="items[0][productId]" required class="form-select item-product">
                             <option value="">Seçiniz</option>
                             @foreach($products as $p)
-                            <option value="{{ $p->id }}" data-price="{{ $p->unitPrice }}" data-kdv="{{ $p->kdvRate ?? 18 }}">{{ $p->name }} ({{ number_format($p->unitPrice, 2) }} ₺)</option>
+                            <option value="{{ $p->id }}" data-price="{{ $p->unitPrice }}" data-kdv="{{ $p->kdvRate ?? 18 }}">{{ $p->name }} ({{ number_format($p->unitPrice, 0, ',', '.') }} ₺)</option>
                             @endforeach
                         </select>
                     </div>

@@ -8,6 +8,7 @@ class Company extends BaseModel
 
     protected $fillable = [
         'name',
+        'appName',
         'address',
         'taxNumber',
         'taxOffice',

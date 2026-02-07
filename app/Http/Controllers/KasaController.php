@@ -2,14 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CustomerPayment;
 use App\Models\Kasa;
+use App\Models\SupplierPayment;
 use Illuminate\Http\Request;
 
 class KasaController extends Controller
 {
+    /** Ödeme tipi değerleri (filtre ve etiket için) */
+    private const PAYMENT_TYPES = [
+        'nakit' => 'Nakit',
+        'havale' => 'Havale',
+        'kredi_karti' => 'Kredi Kartı',
+        'cek' => 'Çek',
+        'senet' => 'Senet',
+        'diger' => 'Diğer',
+    ];
     public function index(Request $request)
     {
-        $q = Kasa::query()->orderBy('name');
+        $q = Kasa::query()->withSum('hareketler', 'amount')->orderBy('name');
         if ($request->filled('search')) {
             $s = $request->search;
             $q->where(function ($w) use ($s) {
@@ -28,12 +39,54 @@ class KasaController extends Controller
 
     public function show(Request $request, Kasa $kasa)
     {
-        $hareketler = $kasa->hareketler()
+        $hareketlerToplam = (float) $kasa->hareketler()->sum('amount');
+        $guncelBakiye = (float) ($kasa->openingBalance ?? 0) + $hareketlerToplam;
+
+        $q = $kasa->hareketler()
             ->orderBy('movementDate', 'desc')
-            ->orderBy('createdAt', 'desc')
-            ->paginate(20)
-            ->withQueryString();
-        return view('kasa.show', compact('kasa', 'hareketler'));
+            ->orderBy('createdAt', 'desc');
+
+        if ($request->filled('date_from')) {
+            $q->whereDate('movementDate', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $q->whereDate('movementDate', '<=', $request->date_to);
+        }
+        if ($request->filled('payment_type')) {
+            $pt = $request->payment_type;
+            $q->where(function ($w) use ($pt) {
+                $w->where(function ($w2) use ($pt) {
+                    $w2->where('refType', 'customer_payment')
+                        ->whereIn('refId', CustomerPayment::query()->select('id')->where('paymentType', $pt));
+                })->orWhere(function ($w2) use ($pt) {
+                    $w2->where('refType', 'supplier_payment')
+                        ->whereIn('refId', SupplierPayment::query()->select('id')->where('paymentType', $pt));
+                });
+            });
+        }
+        if ($request->filled('cari')) {
+            $cari = $request->cari;
+            $q->where(function ($w) use ($cari) {
+                $w->where(function ($w2) use ($cari) {
+                    $w2->where('refType', 'customer_payment')
+                        ->whereIn('refId', CustomerPayment::query()->select('id')->whereHas('customer', fn ($c) => $c->where('name', 'like', "%{$cari}%")));
+                })->orWhere(function ($w2) use ($cari) {
+                    $w2->where('refType', 'supplier_payment')
+                        ->whereIn('refId', SupplierPayment::query()->select('id')->whereHas('supplier', fn ($s) => $s->where('name', 'like', "%{$cari}%")));
+                });
+            });
+        }
+
+        $hareketler = $q->paginate(20)->withQueryString();
+
+        $customerPaymentIds = $hareketler->where('refType', 'customer_payment')->pluck('refId')->unique()->filter()->values()->all();
+        $supplierPaymentIds = $hareketler->where('refType', 'supplier_payment')->pluck('refId')->unique()->filter()->values()->all();
+        $customerPayments = CustomerPayment::with('customer')->whereIn('id', $customerPaymentIds)->get()->keyBy('id');
+        $supplierPayments = SupplierPayment::with('supplier')->whereIn('id', $supplierPaymentIds)->get()->keyBy('id');
+
+        return view('kasa.show', compact('kasa', 'hareketler', 'guncelBakiye', 'hareketlerToplam', 'customerPayments', 'supplierPayments') + [
+            'paymentTypes' => self::PAYMENT_TYPES,
+        ]);
     }
 
     public function create()

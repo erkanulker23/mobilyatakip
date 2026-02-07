@@ -46,7 +46,7 @@
                     <div><dt class="form-label">Teknisyen</dt><dd class="text-slate-800 dark:text-slate-200">{{ $serviceTicket->assignedUser?->name ?? '—' }}</dd></div>
                     @if($serviceTicket->assignedVehiclePlate)<div><dt class="form-label">Araç</dt><dd class="text-slate-800 dark:text-slate-200">{{ $serviceTicket->assignedVehiclePlate }}</dd></div>@endif
                     @if($serviceTicket->serviceChargeAmount)
-                    <div><dt class="form-label">Servis Ücreti</dt><dd class="font-semibold text-emerald-600 dark:text-emerald-400">{{ number_format($serviceTicket->serviceChargeAmount, 2, ',', '.') }} ₺</dd></div>
+                    <div><dt class="form-label">Servis Ücreti</dt><dd class="font-semibold text-emerald-600 dark:text-emerald-400">{{ number_format($serviceTicket->serviceChargeAmount, 0, ',', '.') }} ₺</dd></div>
                     @endif
                     <div><dt class="form-label">Açılış</dt><dd class="text-slate-800 dark:text-slate-200">{{ $serviceTicket->openedAt?->format('d.m.Y H:i') ?? '—' }}</dd></div>
                     @if($serviceTicket->closedAt)<div><dt class="form-label">Kapanış</dt><dd class="text-slate-800 dark:text-slate-200">{{ $serviceTicket->closedAt->format('d.m.Y H:i') }}</dd></div>@endif

@@ -76,4 +76,5 @@ class PersonnelController extends Controller
         $personnel->delete();
         return redirect()->route('personnel.index')->with('success', 'Personel silindi.');
     }
+
 }

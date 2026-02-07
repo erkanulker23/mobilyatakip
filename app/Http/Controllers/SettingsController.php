@@ -20,6 +20,7 @@ class SettingsController extends Controller
     {
         $validated = $request->validate([
             'name' => 'nullable|string|max:255',
+            'appName' => 'nullable|string|max:100',
             'address' => 'nullable|string',
             'taxNumber' => ['nullable', 'string', 'max:50', new TurkishTaxId('vkn')],
             'taxOffice' => 'nullable|string|max:255',
@@ -69,6 +70,9 @@ class SettingsController extends Controller
         }
 
         $company = Company::first();
+        if (!Schema::hasColumn('companies', 'appName')) {
+            unset($validated['appName']);
+        }
         if (!$company) {
             $company = Company::create($validated);
         } else {

@@ -6,8 +6,8 @@ use App\Mail\SaleNotificationToSupplier;
 use App\Models\Sale;
 use App\Models\SaleActivity;
 use App\Models\Customer;
+use App\Models\CustomerPayment;
 use App\Models\Product;
-use App\Models\Warehouse;
 use App\Services\AuditService;
 use App\Services\SaleService;
 use Illuminate\Http\Request;
@@ -24,34 +24,45 @@ class SaleController extends Controller
     {
         $customers = Customer::where('isActive', true)->orderBy('name')->get();
         $products = Product::where('isActive', true)->orderBy('name')->get();
-        $warehouses = Warehouse::orderBy('name')->get();
-        return view('sales.create', compact('customers', 'products', 'warehouses'));
+        return view('sales.create', compact('customers', 'products'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'customerId' => 'required|exists:customers,id',
-            'warehouseId' => 'required|exists:warehouses,id',
             'saleDate' => 'required|date',
             'dueDate' => 'nullable|date',
             'kdvIncluded' => 'nullable|boolean',
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',
-            'items.*.productId' => 'required|exists:products,id',
+            'items.*.productId' => 'nullable|string',
+            'items.*.productName' => 'nullable|string|max:255',
             'items.*.unitPrice' => 'required|numeric|min:0',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.kdvRate' => 'nullable|numeric|min:0|max:100',
+            'items.*.lineDiscountPercent' => 'nullable|numeric|min:0|max:100',
+            'items.*.lineDiscountAmount' => 'nullable|numeric|min:0',
         ]);
+        $items = collect($validated['items'])->map(function ($item) {
+            $product = !empty($item['productId']) ? \App\Models\Product::find($item['productId']) : null;
+            if ($product) {
+                return ['productId' => $product->id, 'productName' => null, 'unitPrice' => $item['unitPrice'], 'quantity' => $item['quantity'], 'kdvRate' => $item['kdvRate'] ?? 18, 'lineDiscountPercent' => $item['lineDiscountPercent'] ?? null, 'lineDiscountAmount' => $item['lineDiscountAmount'] ?? null];
+            }
+            $name = trim($item['productName'] ?? '') ?: trim($item['productId'] ?? '');
+            return ['productId' => null, 'productName' => $name, 'unitPrice' => $item['unitPrice'], 'quantity' => $item['quantity'], 'kdvRate' => $item['kdvRate'] ?? 18, 'lineDiscountPercent' => $item['lineDiscountPercent'] ?? null, 'lineDiscountAmount' => $item['lineDiscountAmount'] ?? null];
+        })->filter(fn($i) => !empty($i['productId']) || !empty($i['productName']))->values()->all();
+        if (empty($items)) {
+            return redirect()->back()->withInput()->with('error', 'En az bir geçerli kalem girin (ürün seçin veya manuel ürün adı yazın).');
+        }
         try {
             $sale = $this->saleService->createDirect([
                 'customerId' => $validated['customerId'],
-                'warehouseId' => $validated['warehouseId'],
                 'saleDate' => $validated['saleDate'],
                 'dueDate' => $validated['dueDate'] ?? null,
                 'kdvIncluded' => $request->boolean('kdvIncluded'),
                 'notes' => $validated['notes'] ?? null,
-                'items' => $validated['items'],
+                'items' => $items,
             ]);
             $this->auditService->logCreate('sale', $sale->id, ['saleNumber' => $sale->saleNumber, 'grandTotal' => $sale->grandTotal]);
             return redirect()->route('sales.show', $sale)
@@ -92,7 +103,16 @@ class SaleController extends Controller
         if (!$sale) {
             abort(404);
         }
-        return view('sales.show', compact('sale'));
+        // Aynı müşteriden alınan ancak faturaya bağlı olmayan tahsilatlar (satış tarihinden sonra) — timeline'da gösterilebilir
+        $unlinkedPayments = collect();
+        if ($sale->customerId && $sale->saleDate) {
+            $unlinkedPayments = CustomerPayment::where('customerId', $sale->customerId)
+                ->whereNull('saleId')
+                ->where('paymentDate', '>=', $sale->saleDate)
+                ->orderBy('paymentDate', 'desc')
+                ->get();
+        }
+        return view('sales.show', compact('sale', 'unlinkedPayments'));
     }
 
     public function print(Sale $sale)
@@ -142,11 +162,11 @@ class SaleController extends Controller
         SaleActivity::create([
             'saleId' => $sale->id,
             'type' => SaleActivity::TYPE_SUPPLIER_EMAIL_SENT,
-            'description' => 'Tedarikçiye e-posta gönderildi',
+            'description' => 'Tedarikçiye sipariş maili gönderildi',
             'metadata' => ['suppliers' => $sent],
         ]);
         return redirect()->route('sales.show', $sale)
-            ->with('success', count($sent) . ' tedarikçiye satış bildirimi e-postası gönderildi.');
+            ->with('success', count($sent) . ' tedarikçiye sipariş maili gönderildi.');
     }
 
     public function addActivity(Request $request, Sale $sale)

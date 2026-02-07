@@ -35,9 +35,9 @@
             @forelse($customers as $r)
             <tr class="hover:bg-slate-50">
                 <td class="px-6 py-4 font-medium text-slate-900">{{ $r->customer->name }}</td>
-                <td class="px-6 py-4 text-right text-slate-700">{{ number_format($r->borc, 2) }} ₺</td>
-                <td class="px-6 py-4 text-right text-slate-700">{{ number_format($r->alacak, 2) }} ₺</td>
-                <td class="px-6 py-4 text-right font-medium {{ $r->bakiye > 0 ? 'text-red-600' : ($r->bakiye < 0 ? 'text-green-600' : 'text-slate-600') }}">{{ number_format($r->bakiye, 2) }} ₺</td>
+                <td class="px-6 py-4 text-right text-slate-700">{{ number_format($r->borc, 0, ',', '.') }} ₺</td>
+                <td class="px-6 py-4 text-right text-slate-700">{{ number_format($r->alacak, 0, ',', '.') }} ₺</td>
+                <td class="px-6 py-4 text-right font-medium {{ $r->bakiye > 0 ? 'text-red-600' : ($r->bakiye < 0 ? 'text-green-600' : 'text-slate-600') }}">{{ number_format($r->bakiye, 0, ',', '.') }} ₺</td>
                 <td class="px-6 py-4 flex gap-2">
                     <a href="{{ route('reports.customer-ledger-detail', $r->customer) }}" class="text-primary-600 hover:underline text-sm">Ekstre</a>
                     <a href="{{ route('customers.show', $r->customer) }}" class="text-slate-600 hover:underline text-sm">Detay</a>

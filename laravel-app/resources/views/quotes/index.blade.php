@@ -16,8 +16,7 @@
                 <td>
                     <a href="{{ route('quotes.show', $q) }}" class="btn btn-secondary">Detay</a>
                     @if(!$q->convertedSaleId && $q->status == 'taslak')
-                    <form method="POST" action="{{ route('quotes.convert', $q) }}" style="display:inline;">@csrf
-                        <select name="warehouseId" required style="width:120px;display:inline-block;">@foreach(\App\Models\Warehouse::orderBy('name')->get() as $w)<option value="{{ $w->id }}">{{ $w->name }}</option>@endforeach</select>
+                    <form method="POST" action="{{ route('quotes.convert', $q) }}" style="display:inline;" onsubmit="return confirm('Bu teklifi satışa dönüştürmek istediğinize emin misiniz?');">@csrf
                         <button type="submit" class="btn btn-primary">Satışa Dönüştür</button>
                     </form>
                     @endif

@@ -36,9 +36,9 @@
                     $totalPayments = $supplier->payments->sum('amount');
                     $balance = $totalPurchases - $totalPayments;
                 @endphp
-                <p class="text-sm text-slate-600">Toplam Alış: <span class="font-semibold">{{ number_format($totalPurchases, 2, ',', '.') }} ₺</span></p>
-                <p class="text-sm text-green-600 mt-1">Toplam Ödenen: <span class="font-semibold">{{ number_format($totalPayments, 2, ',', '.') }} ₺</span></p>
-                <p class="text-base font-bold mt-2 {{ $balance > 0 ? 'text-red-600' : ($balance < 0 ? 'text-green-600' : 'text-slate-600') }}">Bakiye: {{ number_format($balance, 2, ',', '.') }} ₺</p>
+                <p class="text-sm text-slate-600">Toplam Alış: <span class="font-semibold">{{ number_format($totalPurchases, 0, ',', '.') }} ₺</span></p>
+                <p class="text-sm text-green-600 mt-1">Toplam Ödenen: <span class="font-semibold">{{ number_format($totalPayments, 0, ',', '.') }} ₺</span></p>
+                <p class="text-base font-bold mt-2 {{ $balance > 0 ? 'text-red-600' : ($balance < 0 ? 'text-green-600' : 'text-slate-600') }}">Bakiye: {{ number_format($balance, 0, ',', '.') }} ₺</p>
             </div>
         </div>
 
@@ -63,13 +63,13 @@
                             <td class="px-4 py-3 text-sm text-slate-600">{{ $p->purchaseDate?->format('d.m.Y') }}</td>
                             <td class="px-4 py-3 font-medium text-slate-900">{{ $i->product?->name ?? '-' }}</td>
                             <td class="px-4 py-3 text-right text-slate-600">{{ $i->quantity }}</td>
-                            <td class="px-4 py-3 text-right text-slate-600">{{ number_format($i->unitPrice ?? 0, 2, ',', '.') }} ₺</td>
-                            <td class="px-4 py-3 text-right font-medium">{{ number_format($i->lineTotal ?? 0, 2, ',', '.') }} ₺</td>
+                            <td class="px-4 py-3 text-right text-slate-600">{{ number_format($i->unitPrice ?? 0, 0, ',', '.') }} ₺</td>
+                            <td class="px-4 py-3 text-right font-medium">{{ number_format($i->lineTotal ?? 0, 0, ',', '.') }} ₺</td>
                         </tr>
                         @endforeach
                         <tr class="bg-slate-50">
                             <td colspan="5" class="px-4 py-2 text-right text-sm font-medium">Alış Toplam:</td>
-                            <td class="px-4 py-2 text-right font-bold">{{ number_format($p->grandTotal, 2, ',', '.') }} ₺</td>
+                            <td class="px-4 py-2 text-right font-bold">{{ number_format($p->grandTotal, 0, ',', '.') }} ₺</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -91,7 +91,7 @@
                     @forelse($supplier->payments->sortByDesc('paymentDate') as $pm)
                     <tr>
                         <td class="px-4 py-3 text-slate-600">{{ $pm->paymentDate?->format('d.m.Y') }}</td>
-                        <td class="px-4 py-3 text-right font-medium text-green-600">{{ number_format($pm->amount ?? 0, 2, ',', '.') }} ₺</td>
+                        <td class="px-4 py-3 text-right font-medium text-green-600">{{ number_format($pm->amount ?? 0, 0, ',', '.') }} ₺</td>
                         <td class="px-4 py-3 text-slate-600">{{ ucfirst($pm->paymentType ?? '-') }}</td>
                         <td class="px-4 py-3 text-slate-600">{{ $pm->reference ?? '-' }}</td>
                     </tr>

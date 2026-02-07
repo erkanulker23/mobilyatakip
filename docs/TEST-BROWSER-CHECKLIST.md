@@ -182,9 +182,15 @@ php artisan tinker --execute="\$e = App\Models\Expense::latest('createdAt')->fir
 
 Hesaplama ve veritabanı kaydı için otomatik testler:
 
+**Yerelde (veya CI’da)** — sunucuda değil. Production/Forge’da `composer install --no-dev` kullanıldığı için PHPUnit yüklü olmaz.
+
 ```bash
-php artisan test tests/Feature/CalculationsAndDbTest.php
+# Geliştirme ortamında (vendor tam yüklü)
+composer install
+./vendor/bin/phpunit tests/Feature/CalculationsAndDbTest.php
 ```
+
+İsterseniz tüm testler: `./vendor/bin/phpunit`
 
 - Teklif: kalem indirimi + genel indirim, toplamlar ve DB
 - Alış: tedarikçi indirimi toplama yansıyor ve DB’de doğru

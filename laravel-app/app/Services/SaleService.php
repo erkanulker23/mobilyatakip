@@ -24,15 +24,14 @@ class SaleService
         return sprintf('SAT-%s-%05d', $year, $next);
     }
 
-    public function createFromQuote(string $quoteId, string $warehouseId): Sale
+    public function createFromQuote(string $quoteId): Sale
     {
         $quote = Quote::with(['customer', 'items.product'])->findOrFail($quoteId);
         foreach ($quote->items as $qi) {
-            $stock = $this->stockService->getStock($qi->productId, $warehouseId);
-            $available = (int) $stock->quantity - (int) ($stock->reservedQuantity ?? 0);
-            if ($available < $qi->quantity) {
+            $warehouseId = $this->stockService->findWarehouseWithStock($qi->productId, (int) $qi->quantity);
+            if (!$warehouseId) {
                 $name = $qi->product?->name ?? $qi->productId;
-                throw new \RuntimeException("Yetersiz stok: {$name} - Depoda {$available} adet, {$qi->quantity} adet satılamaz");
+                throw new \RuntimeException("Yetersiz stok: {$name} - Talep edilen miktar: {$qi->quantity} adet");
             }
         }
 
@@ -62,13 +61,16 @@ class SaleService
                 'kdvRate' => $qi->kdvRate,
                 'lineTotal' => round($lineNet + $lineKdv, 2),
             ]);
-            $this->stockService->movement(
-                $qi->productId,
-                $warehouseId,
-                'cikis',
-                $qi->quantity,
-                ['refType' => 'satis', 'refId' => $sale->id, 'description' => "Satış {$saleNumber}"]
-            );
+            $warehouseId = $this->stockService->findWarehouseWithStock($qi->productId, (int) $qi->quantity);
+            if ($warehouseId) {
+                $this->stockService->movement(
+                    $qi->productId,
+                    $warehouseId,
+                    'cikis',
+                    (int) $qi->quantity,
+                    ['refType' => 'satis', 'refId' => $sale->id, 'description' => "Satış {$saleNumber}"]
+                );
+            }
         }
 
         $quote->update(['convertedSaleId' => $sale->id]);

@@ -24,7 +24,22 @@ class SupplierPaymentController extends Controller
             ->whereRaw('(grandTotal - COALESCE(paidAmount, 0)) > 0')
             ->orderBy('purchaseDate', 'desc')
             ->get();
-        return view('supplier-payments.create', compact('suppliers', 'kasalar', 'openPurchases', 'supplierId'));
+
+        $supplierBalance = null;
+        if ($supplierId) {
+            $supplier = Supplier::with(['purchases', 'payments'])->find($supplierId);
+            if ($supplier) {
+                $borc = (float) $supplier->purchases->where('isCancelled', false)->sum('grandTotal');
+                $alacak = (float) $supplier->payments->sum('amount');
+                $supplierBalance = (object) [
+                    'borc' => $borc,
+                    'alacak' => $alacak,
+                    'bakiye' => $borc - $alacak,
+                ];
+            }
+        }
+
+        return view('supplier-payments.create', compact('suppliers', 'kasalar', 'openPurchases', 'supplierId', 'supplierBalance'));
     }
 
     public function store(Request $request)
@@ -74,7 +89,7 @@ class SupplierPaymentController extends Controller
                     'amount' => -(float) $validated['amount'],
                     'movementDate' => $validated['paymentDate'],
                     'description' => $desc,
-                    'createdBy' => auth()->id(),
+                    'createdBy' => auth()->id() ?: null,
                     'refType' => 'supplier_payment',
                     'refId' => $payment->id,
                 ]);

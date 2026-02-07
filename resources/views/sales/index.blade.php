@@ -62,9 +62,9 @@
                     <td class="table-td"><span class="font-medium text-slate-900">{{ $s->saleNumber }}</span> @if($s->isCancelled ?? false)<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 font-medium">İptal</span>@endif</td>
                     <td class="table-td">{{ $s->customer?->name ?? '-' }}</td>
                     <td class="table-td">{{ $s->saleDate?->format('d.m.Y') ?? '-' }}</td>
-                    <td class="table-td text-right font-medium text-slate-900">{{ number_format($s->grandTotal ?? 0, 2, ',', '.') }} ₺</td>
-                    <td class="table-td text-right text-emerald-600">{{ number_format($s->paidAmount ?? 0, 2, ',', '.') }} ₺</td>
-                    <td class="table-td text-right {{ (($s->grandTotal ?? 0) - ($s->paidAmount ?? 0)) > 0 ? 'text-red-600 font-medium' : 'text-slate-500' }}">{{ number_format(($s->grandTotal ?? 0) - ($s->paidAmount ?? 0), 2, ',', '.') }} ₺</td>
+                    <td class="table-td text-right font-medium text-slate-900">{{ number_format($s->grandTotal ?? 0, 0, ',', '.') }} ₺</td>
+                    <td class="table-td text-right text-emerald-600">{{ number_format($s->paidAmount ?? 0, 0, ',', '.') }} ₺</td>
+                    <td class="table-td text-right {{ (($s->grandTotal ?? 0) - ($s->paidAmount ?? 0)) > 0 ? 'text-red-600 dark:text-red-400 font-medium' : (((($s->grandTotal ?? 0) - ($s->paidAmount ?? 0)) < 0 ? 'amount-negative' : 'text-slate-500 dark:text-slate-400')) }}">{{ number_format(($s->grandTotal ?? 0) - ($s->paidAmount ?? 0), 0, ',', '.') }} ₺</td>
                     <td class="table-td">
                         @include('partials.action-buttons', [
                             'show' => route('sales.show', $s),

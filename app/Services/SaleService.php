@@ -31,17 +31,17 @@ class SaleService
     {
         return DB::transaction(function () use ($data) {
             $customerId = $data['customerId'];
-            $warehouseId = $data['warehouseId'];
             $items = $data['items'];
             $kdvIncluded = $data['kdvIncluded'] ?? true;
 
             foreach ($items as $row) {
-                $stock = $this->stockService->getStock($row['productId'], $warehouseId);
-                $available = (int) $stock->quantity - (int) ($stock->reservedQuantity ?? 0);
-                if ($available < $row['quantity']) {
-                    $product = Product::find($row['productId']);
-                    $name = $product?->name ?? $row['productId'];
-                    throw new \RuntimeException("Yetersiz stok: {$name} - Depoda {$available} adet, {$row['quantity']} adet satılamaz");
+                if (!empty($row['productId'])) {
+                    $warehouseId = $this->stockService->findWarehouseWithStock($row['productId'], (int) $row['quantity']);
+                    if (!$warehouseId) {
+                        $product = Product::find($row['productId']);
+                        $name = $product?->name ?? $row['productId'];
+                        throw new \RuntimeException("Yetersiz stok: {$name} - Talep edilen miktar: {$row['quantity']} adet");
+                    }
                 }
             }
 
@@ -54,7 +54,7 @@ class SaleService
                 'saleNumber' => $saleNumber,
                 'customerId' => $customerId,
                 'saleDate' => $data['saleDate'] ?? now(),
-                'dueDate' => $data['dueDate'] ?? now()->addDays(30),
+                'dueDate' => $data['dueDate'] ?? null,
                 'subtotal' => 0,
                 'kdvTotal' => 0,
                 'grandTotal' => 0,
@@ -67,6 +67,8 @@ class SaleService
                 $unitPrice = (float) $row['unitPrice'];
                 $qty = (int) $row['quantity'];
                 $kdvRate = (float) ($row['kdvRate'] ?? 18);
+                $lineDiscPct = (float) ($row['lineDiscountPercent'] ?? 0);
+                $lineDiscAmt = (float) ($row['lineDiscountAmount'] ?? 0);
 
                 if ($kdvIncluded) {
                     $lineNet = round($unitPrice * $qty / (1 + $kdvRate / 100), 2);
@@ -77,25 +79,41 @@ class SaleService
                     $lineKdv = round($lineNet * ($kdvRate / 100), 2);
                     $lineTotal = round($lineNet + $lineKdv, 2);
                 }
+                if ($lineDiscPct > 0) {
+                    $lineTotal = round($lineTotal * (1 - $lineDiscPct / 100), 2);
+                }
+                if ($lineDiscAmt > 0) {
+                    $lineTotal = round($lineTotal - $lineDiscAmt, 2);
+                }
+                $lineNet = round($lineTotal / (1 + $kdvRate / 100), 2);
+                $lineKdv = round($lineTotal - $lineNet, 2);
                 $subtotal += $lineNet;
                 $kdvTotal += $lineKdv;
 
                 SaleItem::create([
                     'id' => (string) Str::uuid(),
                     'saleId' => $sale->id,
-                    'productId' => $row['productId'],
+                    'productId' => $row['productId'] ?? null,
+                    'productName' => $row['productName'] ?? null,
                     'unitPrice' => $unitPrice,
                     'quantity' => $qty,
                     'kdvRate' => $kdvRate,
+                    'lineDiscountPercent' => $lineDiscPct ?: null,
+                    'lineDiscountAmount' => $lineDiscAmt ?: null,
                     'lineTotal' => $lineTotal,
                 ]);
-                $this->stockService->movement(
-                    $row['productId'],
-                    $warehouseId,
-                    'cikis',
-                    $qty,
-                    ['refType' => 'satis', 'refId' => $sale->id, 'description' => "Satış {$saleNumber}"]
-                );
+                if (!empty($row['productId'])) {
+                    $warehouseId = $this->stockService->findWarehouseWithStock($row['productId'], $qty);
+                    if ($warehouseId) {
+                        $this->stockService->movement(
+                            $row['productId'],
+                            $warehouseId,
+                            'cikis',
+                            $qty,
+                            ['refType' => 'satis', 'refId' => $sale->id, 'description' => "Satış {$saleNumber}"]
+                        );
+                    }
+                }
             }
 
             $sale->update(['subtotal' => $subtotal, 'kdvTotal' => $kdvTotal, 'grandTotal' => round($subtotal + $kdvTotal, 2)]);
@@ -110,16 +128,16 @@ class SaleService
         });
     }
 
-    public function createFromQuote(string $quoteId, string $warehouseId): Sale
+    public function createFromQuote(string $quoteId): Sale
     {
-        return DB::transaction(function () use ($quoteId, $warehouseId) {
+        return DB::transaction(function () use ($quoteId) {
             $quote = Quote::with(['customer', 'items.product'])->findOrFail($quoteId);
             foreach ($quote->items as $qi) {
-                $stock = $this->stockService->getStock($qi->productId, $warehouseId);
-                $available = (int) $stock->quantity - (int) ($stock->reservedQuantity ?? 0);
-                if ($available < $qi->quantity) {
-                    $name = $qi->product?->name ?? $qi->productId;
-                    throw new \RuntimeException("Yetersiz stok: {$name} - Depoda {$available} adet, {$qi->quantity} adet satılamaz");
+                $warehouseId = $this->stockService->findWarehouseWithStock($qi->productId, (int) $qi->quantity);
+                if (!$warehouseId) {
+                    $product = Product::find($qi->productId);
+                    $name = $product?->name ?? $qi->productId;
+                    throw new \RuntimeException("Yetersiz stok: {$name} - Talep edilen miktar: {$qi->quantity} adet");
                 }
             }
 
@@ -130,7 +148,7 @@ class SaleService
                 'customerId' => $quote->customerId,
                 'quoteId' => $quote->id,
                 'saleDate' => now(),
-                'dueDate' => now()->addDays(30),
+                'dueDate' => null,
                 'subtotal' => $quote->subtotal,
                 'kdvTotal' => $quote->kdvTotal,
                 'grandTotal' => $quote->grandTotal,
@@ -143,18 +161,22 @@ class SaleService
                     'id' => (string) Str::uuid(),
                     'saleId' => $sale->id,
                     'productId' => $qi->productId,
+                    'productName' => $qi->product?->name ?? null,
                     'unitPrice' => $qi->unitPrice,
                     'quantity' => $qi->quantity,
                     'kdvRate' => $qi->kdvRate,
                     'lineTotal' => round((float) $qi->lineTotal, 2),
                 ]);
-                $this->stockService->movement(
-                    $qi->productId,
-                    $warehouseId,
-                    'cikis',
-                    $qi->quantity,
-                    ['refType' => 'satis', 'refId' => $sale->id, 'description' => "Satış {$saleNumber}"]
-                );
+                $warehouseId = $this->stockService->findWarehouseWithStock($qi->productId, (int) $qi->quantity);
+                if ($warehouseId) {
+                    $this->stockService->movement(
+                        $qi->productId,
+                        $warehouseId,
+                        'cikis',
+                        (int) $qi->quantity,
+                        ['refType' => 'satis', 'refId' => $sale->id, 'description' => "Satış {$saleNumber}"]
+                    );
+                }
             }
 
             $quote->update(['convertedSaleId' => $sale->id]);
@@ -171,7 +193,7 @@ class SaleService
 
     public function find(int|string $id): ?Sale
     {
-        return Sale::with(['customer', 'quote', 'items.product.supplier', 'activities'])->find($id);
+        return Sale::with(['customer', 'quote', 'items.product.supplier', 'activities', 'payments'])->find($id);
     }
 
     public function paginate(int $perPage = 20)

@@ -3,6 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\PurchaseItem;
+use App\Models\QuoteItem;
+use App\Models\ServicePart;
+use App\Models\Stock;
+use App\Models\StockMovement;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 
@@ -33,13 +38,39 @@ class ProductController extends Controller
         }
         $products = $q->paginate(20)->withQueryString();
         $suppliers = Supplier::orderBy('name')->get();
-        return view('products.index', compact('products', 'suppliers'));
+        $productIds = $products->getCollection()->pluck('id')->values()->all();
+        return view('products.index', compact('products', 'suppliers', 'productIds'));
     }
 
     public function create()
     {
         $suppliers = Supplier::orderBy('name')->get();
         return view('products.create', compact('suppliers'));
+    }
+
+    public function quickStore(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'unitPrice' => 'required|numeric|min:0',
+                'kdvRate' => 'nullable|numeric|min:0|max:100',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => collect($e->errors())->flatten()->first()], 422);
+        }
+        $validated['kdvRate'] = $validated['kdvRate'] ?? 18;
+        $product = Product::create([
+            'name' => $validated['name'],
+            'unitPrice' => (float) $validated['unitPrice'],
+            'kdvRate' => (float) $validated['kdvRate'],
+        ]);
+        return response()->json([
+            'id' => $product->id,
+            'name' => $product->name,
+            'price' => (float) $product->unitPrice,
+            'kdv' => (float) $product->kdvRate,
+        ]);
     }
 
     public function store(Request $request)
@@ -89,7 +120,33 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
-        $product->delete();
+        $this->deleteProductsAndDependents([$product->id]);
         return redirect()->route('products.index')->with('success', 'Ürün silindi.');
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate(['ids' => 'required|array', 'ids.*' => 'required|uuid|exists:products,id']);
+        $ids = $request->ids;
+        $this->deleteProductsAndDependents($ids);
+        return redirect()->route('products.index')->with('success', count($ids) . ' ürün silindi.');
+    }
+
+    /**
+     * Ürünleri ve bu ürünlere bağlı kayıtları (teklif kalemleri, alış kalemleri, stok vb.)
+     * foreign key kısıtları nedeniyle sırayla siler.
+     */
+    private function deleteProductsAndDependents(array $productIds): void
+    {
+        if (empty($productIds)) {
+            return;
+        }
+
+        QuoteItem::whereIn('productId', $productIds)->delete();
+        PurchaseItem::whereIn('productId', $productIds)->delete();
+        ServicePart::whereIn('productId', $productIds)->delete();
+        StockMovement::whereIn('productId', $productIds)->delete();
+        Stock::whereIn('productId', $productIds)->delete();
+        Product::whereIn('id', $productIds)->delete();
     }
 }

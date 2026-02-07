@@ -42,9 +42,9 @@
                     @forelse($salesByRate as $rate => $row)
                     <tr class="hover:bg-slate-50">
                         <td class="px-6 py-4 font-medium">%{{ number_format($rate, 0) }}</td>
-                        <td class="px-6 py-4 text-right">{{ number_format($row['net'], 2, ',', '.') }} ₺</td>
-                        <td class="px-6 py-4 text-right text-green-600 font-medium">{{ number_format($row['kdv'], 2, ',', '.') }} ₺</td>
-                        <td class="px-6 py-4 text-right font-medium">{{ number_format($row['total'], 2, ',', '.') }} ₺</td>
+                        <td class="px-6 py-4 text-right">{{ number_format($row['net'], 0, ',', '.') }} ₺</td>
+                        <td class="px-6 py-4 text-right text-green-600 font-medium">{{ number_format($row['kdv'], 0, ',', '.') }} ₺</td>
+                        <td class="px-6 py-4 text-right font-medium">{{ number_format($row['total'], 0, ',', '.') }} ₺</td>
                     </tr>
                     @empty
                     <tr><td colspan="4" class="px-6 py-8 text-center text-slate-500">Bu dönemde satış yok.</td></tr>
@@ -54,9 +54,9 @@
                 <tfoot class="bg-slate-50 border-t-2 border-slate-200">
                     <tr class="font-semibold">
                         <td class="px-6 py-3">Toplam</td>
-                        <td class="px-6 py-3 text-right">{{ number_format(collect($salesByRate)->sum('net'), 2, ',', '.') }} ₺</td>
-                        <td class="px-6 py-3 text-right text-green-600">{{ number_format(collect($salesByRate)->sum('kdv'), 2, ',', '.') }} ₺</td>
-                        <td class="px-6 py-3 text-right">{{ number_format(collect($salesByRate)->sum('total'), 2, ',', '.') }} ₺</td>
+                        <td class="px-6 py-3 text-right">{{ number_format(collect($salesByRate)->sum('net'), 0, ',', '.') }} ₺</td>
+                        <td class="px-6 py-3 text-right text-green-600">{{ number_format(collect($salesByRate)->sum('kdv'), 0, ',', '.') }} ₺</td>
+                        <td class="px-6 py-3 text-right">{{ number_format(collect($salesByRate)->sum('total'), 0, ',', '.') }} ₺</td>
                     </tr>
                 </tfoot>
                 @endif
@@ -81,9 +81,9 @@
                     @forelse($purchasesByRate as $rate => $row)
                     <tr class="hover:bg-slate-50">
                         <td class="px-6 py-4 font-medium">%{{ number_format($rate, 0) }}</td>
-                        <td class="px-6 py-4 text-right">{{ number_format($row['net'], 2, ',', '.') }} ₺</td>
-                        <td class="px-6 py-4 text-right text-amber-600 font-medium">{{ number_format($row['kdv'], 2, ',', '.') }} ₺</td>
-                        <td class="px-6 py-4 text-right font-medium">{{ number_format($row['total'], 2, ',', '.') }} ₺</td>
+                        <td class="px-6 py-4 text-right">{{ number_format($row['net'], 0, ',', '.') }} ₺</td>
+                        <td class="px-6 py-4 text-right text-amber-600 font-medium">{{ number_format($row['kdv'], 0, ',', '.') }} ₺</td>
+                        <td class="px-6 py-4 text-right font-medium">{{ number_format($row['total'], 0, ',', '.') }} ₺</td>
                     </tr>
                     @empty
                     <tr><td colspan="4" class="px-6 py-8 text-center text-slate-500">Bu dönemde alış yok.</td></tr>
@@ -93,9 +93,9 @@
                 <tfoot class="bg-slate-50 border-t-2 border-slate-200">
                     <tr class="font-semibold">
                         <td class="px-6 py-3">Toplam</td>
-                        <td class="px-6 py-3 text-right">{{ number_format(collect($purchasesByRate)->sum('net'), 2, ',', '.') }} ₺</td>
-                        <td class="px-6 py-3 text-right text-amber-600">{{ number_format(collect($purchasesByRate)->sum('kdv'), 2, ',', '.') }} ₺</td>
-                        <td class="px-6 py-3 text-right">{{ number_format(collect($purchasesByRate)->sum('total'), 2, ',', '.') }} ₺</td>
+                        <td class="px-6 py-3 text-right">{{ number_format(collect($purchasesByRate)->sum('net'), 0, ',', '.') }} ₺</td>
+                        <td class="px-6 py-3 text-right text-amber-600">{{ number_format(collect($purchasesByRate)->sum('kdv'), 0, ',', '.') }} ₺</td>
+                        <td class="px-6 py-3 text-right">{{ number_format(collect($purchasesByRate)->sum('total'), 0, ',', '.') }} ₺</td>
                     </tr>
                 </tfoot>
                 @endif
@@ -120,9 +120,9 @@
                     @forelse($expensesByRate as $rate => $row)
                     <tr class="hover:bg-slate-50">
                         <td class="px-6 py-4 font-medium">%{{ number_format($rate, 0) }}</td>
-                        <td class="px-6 py-4 text-right">{{ number_format($row['net'], 2, ',', '.') }} ₺</td>
-                        <td class="px-6 py-4 text-right text-slate-600 font-medium">{{ number_format($row['kdv'], 2, ',', '.') }} ₺</td>
-                        <td class="px-6 py-4 text-right font-medium">{{ number_format($row['total'], 2, ',', '.') }} ₺</td>
+                        <td class="px-6 py-4 text-right">{{ number_format($row['net'], 0, ',', '.') }} ₺</td>
+                        <td class="px-6 py-4 text-right text-slate-600 font-medium">{{ number_format($row['kdv'], 0, ',', '.') }} ₺</td>
+                        <td class="px-6 py-4 text-right font-medium">{{ number_format($row['total'], 0, ',', '.') }} ₺</td>
                     </tr>
                     @empty
                     <tr><td colspan="4" class="px-6 py-8 text-center text-slate-500">Bu dönemde KDV’li gider yok.</td></tr>
@@ -132,9 +132,9 @@
                 <tfoot class="bg-slate-50 border-t-2 border-slate-200">
                     <tr class="font-semibold">
                         <td class="px-6 py-3">Toplam</td>
-                        <td class="px-6 py-3 text-right">{{ number_format(collect($expensesByRate)->sum('net'), 2, ',', '.') }} ₺</td>
-                        <td class="px-6 py-3 text-right text-slate-600">{{ number_format(collect($expensesByRate)->sum('kdv'), 2, ',', '.') }} ₺</td>
-                        <td class="px-6 py-3 text-right">{{ number_format(collect($expensesByRate)->sum('total'), 2, ',', '.') }} ₺</td>
+                        <td class="px-6 py-3 text-right">{{ number_format(collect($expensesByRate)->sum('net'), 0, ',', '.') }} ₺</td>
+                        <td class="px-6 py-3 text-right text-slate-600">{{ number_format(collect($expensesByRate)->sum('kdv'), 0, ',', '.') }} ₺</td>
+                        <td class="px-6 py-3 text-right">{{ number_format(collect($expensesByRate)->sum('total'), 0, ',', '.') }} ₺</td>
                     </tr>
                 </tfoot>
                 @endif
@@ -150,10 +150,10 @@
         $giderKdv = collect($expensesByRate)->sum('kdv');
     @endphp
     <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div><dt class="text-sm text-slate-500">Satış KDV Toplamı</dt><dd class="font-bold text-green-600">{{ number_format(collect($salesByRate)->sum('kdv'), 2, ',', '.') }} ₺</dd></div>
-        <div><dt class="text-sm text-slate-500">Alış KDV Toplamı (İndirilebilir)</dt><dd class="font-bold text-amber-600">{{ number_format(collect($purchasesByRate)->sum('kdv'), 2, ',', '.') }} ₺</dd></div>
-        <div><dt class="text-sm text-slate-500">Gider KDV Toplamı (İndirilebilir)</dt><dd class="font-bold text-slate-600">{{ number_format($giderKdv, 2, ',', '.') }} ₺</dd></div>
-        <div><dt class="text-sm text-slate-500">Ödenecek KDV</dt><dd class="font-bold text-slate-900">{{ number_format(collect($salesByRate)->sum('kdv') - collect($purchasesByRate)->sum('kdv') - $giderKdv, 2, ',', '.') }} ₺</dd></div>
+        <div><dt class="text-sm text-slate-500">Satış KDV Toplamı</dt><dd class="font-bold text-green-600">{{ number_format(collect($salesByRate)->sum('kdv'), 0, ',', '.') }} ₺</dd></div>
+        <div><dt class="text-sm text-slate-500">Alış KDV Toplamı (İndirilebilir)</dt><dd class="font-bold text-amber-600">{{ number_format(collect($purchasesByRate)->sum('kdv'), 0, ',', '.') }} ₺</dd></div>
+        <div><dt class="text-sm text-slate-500">Gider KDV Toplamı (İndirilebilir)</dt><dd class="font-bold text-slate-600">{{ number_format($giderKdv, 0, ',', '.') }} ₺</dd></div>
+        <div><dt class="text-sm text-slate-500">Ödenecek KDV</dt><dd class="font-bold text-slate-900">{{ number_format(collect($salesByRate)->sum('kdv') - collect($purchasesByRate)->sum('kdv') - $giderKdv, 0, ',', '.') }} ₺</dd></div>
     </dl>
 </div>
 @endif

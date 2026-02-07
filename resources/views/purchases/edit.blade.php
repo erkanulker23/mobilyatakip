@@ -10,7 +10,7 @@
         <span class="text-slate-700">Düzenle</span>
     </div>
     <h1 class="text-2xl font-bold text-slate-900">Alış Düzenle</h1>
-    <p class="text-slate-600 mt-1">{{ $purchase->purchaseNumber }}</p>
+    <p class="text-slate-600 mt-1">{{ $purchase->purchaseNumber }} @if($purchase->warehouse)<span class="text-slate-500">· Depo: {{ $purchase->warehouse->name }}</span>@endif</p>
 </div>
 
 <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 max-w-4xl">
@@ -52,11 +52,11 @@
             </div>
         </div>
 
-        <div class="border-t border-slate-200 pt-5">
-            <h3 class="text-lg font-semibold text-slate-900 mb-4">Alış Kalemleri</h3>
+        <div class="form-items-section-box mt-5">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Alış Kalemleri</h3>
             <div id="items" class="space-y-3">
                 @foreach($purchase->items as $idx => $item)
-                <div class="item-row grid grid-cols-1 md:grid-cols-[1fr_100px_100px_100px_80px_40px] gap-3 items-end">
+                <div class="item-row form-item-row grid grid-cols-1 md:grid-cols-[1fr_100px_100px_100px_80px_40px] gap-3 items-end">
                     <div>
                         <label class="form-label">Ürün *</label>
                         <select name="items[{{ $idx }}][productId]" required class="form-select item-product">

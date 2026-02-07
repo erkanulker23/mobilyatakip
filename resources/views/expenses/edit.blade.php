@@ -4,7 +4,7 @@
 <div class="mb-6 flex items-center justify-between">
     <div>
         <h1 class="text-2xl font-bold text-slate-900">Gider Düzenle</h1>
-        <p class="text-slate-600 mt-1">{{ $expense->expenseDate?->format('d.m.Y') }} - {{ number_format($expense->amount, 2, ',', '.') }} ₺</p>
+        <p class="text-slate-600 mt-1">{{ $expense->expenseDate?->format('d.m.Y') }} - {{ number_format($expense->amount, 0, ',', '.') }} ₺</p>
     </div>
     <a href="{{ route('expenses.show', $expense) }}" class="px-4 py-2 bg-slate-200 text-slate-800 rounded-lg hover:bg-slate-300 font-medium">İptal</a>
 </div>

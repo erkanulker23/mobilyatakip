@@ -123,3 +123,22 @@ Deploy script’teki `php artisan queue:restart` satırının yorumunu kaldırı
 - [ ] Gerekirse Scheduler ve Queue Worker Forge’da tanımlı.
 
 Bu adımlar tamamlandığında proje Laravel Forge üzerinden yayına hazırdır.
+
+---
+
+## 9. Testler (yerelde / CI)
+
+Otomatik testler (PHPUnit) **sunucuda çalıştırılmaz**. Forge deploy script’i `composer install --no-dev` kullandığı için `vendor/bin/phpunit` sunucuda yoktur.
+
+Testleri **sadece yerelde** (veya CI ortamında) çalıştırın:
+
+```bash
+composer install   # dev bağımlılıklar dahil
+./vendor/bin/phpunit tests/Feature/CalculationsAndDbTest.php
+```
+
+---
+
+## 10. Sorun giderme: 404 (toplu silme)
+
+Ürün veya tedarikçi toplu silme "404 Not Found" veriyorsa: route cache’i temizleyin (`php artisan route:clear`). Route’lar `POST /products/actions/bulk-destroy` ve `POST /suppliers/actions/bulk-destroy` olarak tanımlıdır.

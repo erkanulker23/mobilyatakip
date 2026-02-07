@@ -22,7 +22,7 @@ class SaleNotificationToSupplier extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Satış Bildirimi: ' . $this->sale->saleNumber,
+            subject: 'Sipariş: ' . $this->sale->saleNumber,
         );
     }
 

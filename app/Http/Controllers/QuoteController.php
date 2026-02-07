@@ -161,11 +161,10 @@ class QuoteController extends Controller
         return redirect()->route('quotes.show', $quote)->with('success', 'Teklif e-posta ile gönderildi.');
     }
 
-    public function convert(Request $request, Quote $quote)
+    public function convert(Quote $quote)
     {
-        $validated = $request->validate(['warehouseId' => 'required|exists:warehouses,id']);
         try {
-            $sale = $this->saleService->createFromQuote($quote->id, $validated['warehouseId']);
+            $sale = $this->saleService->createFromQuote($quote->id);
             return redirect()->route('sales.show', $sale)->with('success', 'Teklif satışa dönüştürüldü.');
         } catch (\RuntimeException $e) {
             return redirect()->back()->withInput()->with('error', $e->getMessage());

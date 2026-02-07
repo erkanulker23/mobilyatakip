@@ -1,5 +1,8 @@
 @extends('layouts.app')
 @section('title', 'Ödeme Yap (Tedarikçi)')
+@push('head')
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+@endpush
 @section('content')
 <div class="mb-6">
     <div class="flex items-center gap-2 text-slate-500 text-sm mb-1">
@@ -12,15 +15,15 @@
 </div>
 
 @if(session('error'))
-<div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">{{ session('error') }}</div>
+<div class="mb-4 p-4 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300">{{ session('error') }}</div>
 @endif
 
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 max-w-2xl">
+<div class="bg-white dark:bg-slate-800 p-6 max-w-2xl">
     <form method="POST" action="{{ route('supplier-payments.store') }}" class="space-y-5">
         @csrf
         <div>
             <label class="form-label">Tedarikçi *</label>
-            <select name="supplierId" required class="form-select" id="supplierSelect">
+            <select name="supplierId" required class="form-select" id="supplierSelect" placeholder="Tedarikçi ara veya seçin..." data-create-url="{{ route('supplier-payments.create') }}">
                 <option value="">Seçiniz</option>
                 @foreach($suppliers as $s)
                 <option value="{{ $s->id }}" {{ old('supplierId', $supplierId ?? '') == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
@@ -28,6 +31,23 @@
             </select>
             @error('supplierId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
+        @if($supplierBalance !== null)
+        <div class="grid grid-cols-3 gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
+            <div>
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Borç (toplam alış)</p>
+                <p class="text-lg font-semibold text-slate-900 dark:text-white mt-0.5">{{ number_format($supplierBalance->borc, 0, ',', '.') }} ₺</p>
+            </div>
+            <div>
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Alacak (ödenen)</p>
+                <p class="text-lg font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">{{ number_format($supplierBalance->alacak, 0, ',', '.') }} ₺</p>
+            </div>
+            <div>
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Bakiye</p>
+                <p class="text-lg font-semibold mt-0.5 {{ $supplierBalance->bakiye > 0 ? 'text-red-600 dark:text-red-400' : ($supplierBalance->bakiye < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white') }}">{{ number_format($supplierBalance->bakiye, 0, ',', '.') }} ₺</p>
+                @if($supplierBalance->bakiye != 0)<p class="text-xs text-slate-500 dark:text-slate-400">{{ $supplierBalance->bakiye > 0 ? 'Tedarikçiye borç' : 'Tedarikçiden alacak' }}</p>@endif
+            </div>
+        </div>
+        @endif
         <div>
             <label class="form-label">Alış faturası (opsiyonel)</label>
             <select name="purchaseId" class="form-select">
@@ -35,7 +55,7 @@
                 @foreach($openPurchases as $p)
                 @php $kalan = (float)$p->grandTotal - (float)($p->paidAmount ?? 0); @endphp
                 <option value="{{ $p->id }}" {{ old('purchaseId') == $p->id ? 'selected' : '' }}>
-                    {{ $p->purchaseNumber }} — {{ $p->supplier?->name }} (Kalan: {{ number_format($kalan, 2, ',', '.') }} ₺)
+                    {{ $p->purchaseNumber }} — {{ $p->supplier?->name }} (Kalan: {{ number_format($kalan, 0, ',', '.') }} ₺)
                 </option>
                 @endforeach
             </select>
@@ -88,4 +108,32 @@
         </div>
     </form>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof TomSelect === 'undefined') {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js';
+        s.onload = initSupplierSelect;
+        document.head.appendChild(s);
+    } else initSupplierSelect();
+});
+function initSupplierSelect() {
+    const sel = document.getElementById('supplierSelect');
+    if (!sel || typeof TomSelect === 'undefined') return;
+    const createUrl = sel.getAttribute('data-create-url') || (window.location.pathname + '');
+    new TomSelect(sel, {
+        maxOptions: 100,
+        placeholder: 'Tedarikçi ara veya seçin...',
+        searchField: ['text'],
+        onChange: function(value) {
+            if (value) {
+                var url = createUrl + (createUrl.indexOf('?') >= 0 ? '&' : '?') + 'supplierId=' + encodeURIComponent(value);
+                window.location = url;
+            } else {
+                window.location = createUrl;
+            }
+        }
+    });
+}
+</script>
 @endsection

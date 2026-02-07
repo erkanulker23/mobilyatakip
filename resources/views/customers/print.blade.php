@@ -24,9 +24,9 @@
     <div class="mb-6 p-4 bg-slate-50 rounded-lg">
         <h3 class="font-semibold text-slate-900 mb-2">Bakiye Özeti</h3>
         <table class="w-full text-sm">
-            <tr><td class="py-1">Toplam Satış:</td><td class="text-right font-medium">{{ number_format($totalSales ?? 0, 2, ',', '.') }} ₺</td></tr>
-            <tr><td class="py-1">Toplam Ödenen:</td><td class="text-right font-medium text-green-600">{{ number_format($totalPaid ?? 0, 2, ',', '.') }} ₺</td></tr>
-            <tr><td class="py-1 font-bold">Kalan Borç:</td><td class="text-right font-bold text-lg {{ ($totalDebt ?? 0) > 0 ? 'text-red-600' : 'text-slate-600' }}">{{ number_format($totalDebt ?? 0, 2, ',', '.') }} ₺</td></tr>
+            <tr><td class="py-1">Toplam Satış:</td><td class="text-right font-medium">{{ number_format($totalSales ?? 0, 0, ',', '.') }} ₺</td></tr>
+            <tr><td class="py-1">Toplam Ödenen:</td><td class="text-right font-medium text-green-600">{{ number_format($totalPaid ?? 0, 0, ',', '.') }} ₺</td></tr>
+            <tr><td class="py-1 font-bold">Kalan Borç:</td><td class="text-right font-bold text-lg {{ ($totalDebt ?? 0) > 0 ? 'text-red-600' : 'text-slate-600' }}">{{ number_format($totalDebt ?? 0, 0, ',', '.') }} ₺</td></tr>
         </table>
     </div>
     <div class="mb-6">
@@ -38,9 +38,9 @@
                 <tr>
                     <td class="px-4 py-2">{{ $s->saleNumber }}</td>
                     <td class="px-4 py-2">{{ $s->saleDate?->format('d.m.Y') }}</td>
-                    <td class="px-4 py-2 text-right">{{ number_format($s->grandTotal ?? 0, 2, ',', '.') }} ₺</td>
-                    <td class="px-4 py-2 text-right text-green-600">{{ number_format($s->paidAmount ?? 0, 2, ',', '.') }} ₺</td>
-                    <td class="px-4 py-2 text-right">{{ number_format(($s->grandTotal ?? 0) - ($s->paidAmount ?? 0), 2, ',', '.') }} ₺</td>
+                    <td class="px-4 py-2 text-right">{{ number_format($s->grandTotal ?? 0, 0, ',', '.') }} ₺</td>
+                    <td class="px-4 py-2 text-right text-green-600">{{ number_format($s->paidAmount ?? 0, 0, ',', '.') }} ₺</td>
+                    <td class="px-4 py-2 text-right">{{ number_format(($s->grandTotal ?? 0) - ($s->paidAmount ?? 0), 0, ',', '.') }} ₺</td>
                 </tr>
                 @endforeach
                 @if($customer->sales->isEmpty())<tr><td colspan="5" class="px-4 py-6 text-center text-slate-500">Satış yok.</td></tr>@endif
@@ -53,7 +53,7 @@
             <thead class="bg-slate-100"><tr><th class="px-4 py-2 text-left font-semibold">Tarih</th><th class="px-4 py-2 text-left font-semibold">Tip</th><th class="px-4 py-2 text-right font-semibold">Tutar</th></tr></thead>
             <tbody class="divide-y divide-slate-200">
                 @foreach($customer->payments as $p)
-                <tr><td class="px-4 py-2">{{ $p->paymentDate?->format('d.m.Y') }}</td><td class="px-4 py-2">{{ ucfirst($p->paymentType ?? '-') }}</td><td class="px-4 py-2 text-right font-medium">{{ number_format($p->amount ?? 0, 2, ',', '.') }} ₺</td></tr>
+                <tr><td class="px-4 py-2">{{ $p->paymentDate?->format('d.m.Y') }}</td><td class="px-4 py-2">{{ ucfirst($p->paymentType ?? '-') }}</td><td class="px-4 py-2 text-right font-medium">{{ number_format($p->amount ?? 0, 0, ',', '.') }} ₺</td></tr>
                 @endforeach
                 @if($customer->payments->isEmpty())<tr><td colspan="3" class="px-4 py-6 text-center text-slate-500">Ödeme yok.</td></tr>@endif
             </tbody>

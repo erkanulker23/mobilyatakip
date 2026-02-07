@@ -37,7 +37,7 @@
             <h2 class="text-lg font-semibold text-slate-900 mb-4">Ürün Bilgileri</h2>
             <dl class="space-y-3">
                 <div><dt class="text-sm text-slate-500">SKU</dt><dd class="font-medium font-mono">{{ $product->sku ?: '-' }}</dd></div>
-                <div><dt class="text-sm text-slate-500">Birim Fiyat</dt><dd class="font-medium text-green-700">{{ number_format($product->unitPrice, 2, ',', '.') }} ₺</dd></div>
+                <div><dt class="text-sm text-slate-500">Birim Fiyat</dt><dd class="font-medium text-green-700">{{ number_format($product->unitPrice, 0, ',', '.') }} ₺</dd></div>
                 <div><dt class="text-sm text-slate-500">KDV Oranı</dt><dd class="font-medium">%{{ number_format($product->kdvRate ?? 18, 2) }}</dd></div>
                 <div><dt class="text-sm text-slate-500">Tedarikçi</dt><dd class="font-medium">@if($product->supplier)<a href="{{ route('suppliers.show', $product->supplier) }}" class="text-green-600 hover:text-green-700">{{ $product->supplier->name }}</a>@else—@endif</dd></div>
                 <div><dt class="text-sm text-slate-500">Min. Stok</dt><dd class="font-medium">{{ $product->minStockLevel ?? 0 }}</dd></div>

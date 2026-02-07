@@ -33,9 +33,6 @@
             <button type="button" role="tab" @click="activeTab = 'firma'" :aria-selected="activeTab === 'firma'"
                 :class="activeTab === 'firma' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-600'"
                 class="rounded-lg px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-100 dark:focus:ring-offset-slate-800">Firma</button>
-            <button type="button" role="tab" @click="activeTab = 'logo'" :aria-selected="activeTab === 'logo'"
-                :class="activeTab === 'logo' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-600'"
-                class="rounded-lg px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-100 dark:focus:ring-offset-slate-800">Logo</button>
             @if(\Illuminate\Support\Facades\Schema::hasColumn('companies', 'metaTitle'))
             <button type="button" role="tab" @click="activeTab = 'seo'" :aria-selected="activeTab === 'seo'"
                 :class="activeTab === 'seo' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-600'"
@@ -60,6 +57,7 @@
             <div class="card-header">Firma Bilgileri</div>
             <div class="p-5">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label class="form-label">Uygulama Adı</label><input type="text" name="appName" value="{{ old('appName', $company?->appName ?? 'Mobilya Takip') }}" class="form-input" placeholder="Mobilya Takip"><p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Sistemdeki "Mobilya Takip" yazıları bu adla değiştirilir.</p></div>
                     <div><label class="form-label">Firma Adı</label><input type="text" name="name" value="{{ old('name', $company?->name) }}" class="form-input" placeholder="Firma adı"></div>
                     <div><label class="form-label">Vergi No</label><input type="text" name="taxNumber" value="{{ old('taxNumber', $company?->taxNumber) }}" class="form-input"></div>
                     <div><label class="form-label">Vergi Dairesi</label><input type="text" name="taxOffice" value="{{ old('taxOffice', $company?->taxOffice) }}" class="form-input"></div>
@@ -68,23 +66,16 @@
                     <div class="md:col-span-2"><label class="form-label">Adres</label><textarea name="address" rows="2" class="form-input form-textarea">{{ old('address', $company?->address) }}</textarea></div>
                     <div><label class="form-label">Web sitesi</label><input type="text" name="website" value="{{ old('website', $company?->website) }}" class="form-input" placeholder="https://"></div>
                 </div>
-            </div>
-        </div>
-
-        {{-- Tab: Logo --}}
-        <div x-show="activeTab === 'logo'" x-cloak class="space-y-6 mb-6">
-            @if($company?->logoUrl)
-            <div class="card overflow-hidden">
-                <div class="card-header">Mevcut logo</div>
-                <div class="p-5 flex flex-wrap items-center gap-4">
-                    <img src="{{ asset($company->logoUrl) }}" alt="Firma logosu" class="h-24 w-auto object-contain border border-slate-200 dark:border-slate-600 rounded-xl p-2">
-                    <button type="button" @click="deleteOpen = true" class="btn-secondary text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">Logoyu sil</button>
+                @if($company?->logoUrl)
+                <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-600">
+                    <label class="form-label">Firma Logosu</label>
+                    <div class="flex flex-wrap items-center gap-4 mt-2">
+                        <img src="{{ asset($company->logoUrl) }}" alt="Firma logosu" class="h-24 w-auto object-contain border border-slate-200 dark:border-slate-600 rounded-xl p-2">
+                        <button type="button" @click="deleteOpen = true" class="btn-secondary text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">Logoyu sil</button>
+                    </div>
                 </div>
-            </div>
-            @endif
-            <div class="card overflow-hidden">
-                <div class="card-header">Firma Logosu</div>
-                <div class="p-5">
+                @endif
+                <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-600">
                     <label class="form-label">Yeni logo yükle</label>
                     <input type="file" name="logo" accept="image/*" class="form-input py-2">
                     <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">PNG, JPG, max 2MB. Önerilen: 200×80px</p>

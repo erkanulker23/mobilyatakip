@@ -67,6 +67,12 @@ class Sale extends BaseModel
         return $this->hasMany(SaleActivity::class, 'saleId')->orderBy('createdAt', 'desc');
     }
 
+    /** Bu satışa bağlı müşteri tahsilatları */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(CustomerPayment::class, 'saleId')->orderBy('paymentDate', 'desc');
+    }
+
     /** Satış kalemlerindeki ürünlerin tedarikçilerini (e-posta adresi olan) benzersiz döner */
     public function getSuppliersWithEmail(): Collection
     {
