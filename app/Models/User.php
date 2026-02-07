@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Schema;
 
 class User extends Authenticatable
 {
@@ -33,7 +34,11 @@ class User extends Authenticatable
 
     public function setPasswordAttribute($value): void
     {
-        $this->attributes['passwordHash'] = bcrypt($value);
+        $hash = bcrypt($value);
+        $this->attributes['passwordHash'] = $hash;
+        if (Schema::hasColumn($this->getTable(), 'password')) {
+            $this->attributes['password'] = $hash;
+        }
     }
 
     public function isAdmin(): bool
