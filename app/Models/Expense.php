@@ -10,6 +10,9 @@ class Expense extends BaseModel
 
     protected $fillable = [
         'amount',
+        'kdvIncluded',
+        'kdvRate',
+        'kdvAmount',
         'expenseDate',
         'description',
         'category',
@@ -19,6 +22,9 @@ class Expense extends BaseModel
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'kdvIncluded' => 'boolean',
+        'kdvRate' => 'decimal:2',
+        'kdvAmount' => 'decimal:2',
         'expenseDate' => 'date',
     ];
 

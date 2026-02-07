@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exports\CustomersExport;
 use App\Imports\CustomersImport;
 use App\Models\Customer;
+use App\Rules\TurkishTaxId;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -43,13 +44,14 @@ class CustomerController extends Controller
             'email' => 'nullable|email',
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
             'address' => 'nullable|string',
-            'identityNumber' => 'nullable|string|size:11|regex:/^[0-9]+$/',
-            'taxNumber' => 'nullable|string|max:50',
+            'identityNumber' => ['nullable', 'string', 'size:11', 'regex:/^[0-9]+$/', new TurkishTaxId('tckn')],
+            'taxNumber' => ['nullable', 'string', 'size:10', 'regex:/^[0-9]+$/', new TurkishTaxId('vkn')],
             'taxOffice' => 'nullable|string|max:255',
         ], [
             'phone.regex' => 'Geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67)',
             'identityNumber.size' => 'TC kimlik numarası 11 haneli olmalıdır.',
             'identityNumber.regex' => 'TC kimlik numarası sadece rakamlardan oluşmalıdır.',
+            'taxNumber.size' => 'Vergi numarası 10 haneli olmalıdır.',
         ]);
         Customer::create($validated);
         return redirect()->route('customers.index')->with('success', 'Müşteri kaydedildi.');
@@ -74,14 +76,15 @@ class CustomerController extends Controller
             'email' => 'nullable|email',
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
             'address' => 'nullable|string',
-            'identityNumber' => 'nullable|string|size:11|regex:/^[0-9]+$/',
-            'taxNumber' => 'nullable|string|max:50',
+            'identityNumber' => ['nullable', 'string', 'size:11', 'regex:/^[0-9]+$/', new TurkishTaxId('tckn')],
+            'taxNumber' => ['nullable', 'string', 'size:10', 'regex:/^[0-9]+$/', new TurkishTaxId('vkn')],
             'taxOffice' => 'nullable|string|max:255',
             'isActive' => 'boolean',
         ], [
             'phone.regex' => 'Geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67)',
             'identityNumber.size' => 'TC kimlik numarası 11 haneli olmalıdır.',
             'identityNumber.regex' => 'TC kimlik numarası sadece rakamlardan oluşmalıdır.',
+            'taxNumber.size' => 'Vergi numarası 10 haneli olmalıdır.',
         ]);
         $customer->update($validated);
         return redirect()->route('customers.index')->with('success', 'Müşteri güncellendi.');

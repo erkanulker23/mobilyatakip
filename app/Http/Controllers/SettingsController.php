@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Company;
+use App\Rules\TurkishTaxId;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Schema;
@@ -20,7 +21,7 @@ class SettingsController extends Controller
         $validated = $request->validate([
             'name' => 'nullable|string|max:255',
             'address' => 'nullable|string',
-            'taxNumber' => 'nullable|string|max:50',
+            'taxNumber' => ['nullable', 'string', 'max:50', new TurkishTaxId('vkn')],
             'taxOffice' => 'nullable|string|max:255',
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
             'email' => 'nullable|email',

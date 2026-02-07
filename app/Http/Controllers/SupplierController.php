@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exports\SuppliersExport;
 use App\Imports\SuppliersImport;
 use App\Models\Supplier;
+use App\Rules\TurkishTaxId;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -43,7 +44,7 @@ class SupplierController extends Controller
             'email' => 'nullable|email',
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
             'address' => 'nullable|string',
-            'taxNumber' => 'nullable|string|max:50',
+            'taxNumber' => ['nullable', 'string', 'max:50', new TurkishTaxId('vkn')],
             'taxOffice' => 'nullable|string|max:255',
         ], ['phone.regex' => 'Geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67)']);
         Supplier::create($validated);
@@ -74,7 +75,7 @@ class SupplierController extends Controller
             'email' => 'nullable|email',
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
             'address' => 'nullable|string',
-            'taxNumber' => 'nullable|string|max:50',
+            'taxNumber' => ['nullable', 'string', 'max:50', new TurkishTaxId('vkn')],
             'taxOffice' => 'nullable|string|max:255',
             'isActive' => 'nullable|boolean',
         ], ['phone.regex' => 'Geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67)']);

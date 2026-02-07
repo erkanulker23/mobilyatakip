@@ -70,12 +70,10 @@ class EInvoiceService
         $accountCustomer->appendChild($customerParty);
         $root->appendChild($accountCustomer);
 
-        // Kalemler
-        $lineExtensionTotal = '0';
+        // Kalemler (LineExtensionAmount = matrah, satır vergisi eklenir)
         foreach ($sale->items as $index => $item) {
             $line = $this->createInvoiceLine($doc, $index + 1, $item->product?->name ?? 'Ürün', $item->quantity, $item->unitPrice, $item->kdvRate ?? 18, $item->lineTotal, $sale->kdvIncluded ?? true);
             $root->appendChild($line);
-            $lineExtensionTotal = bcadd($lineExtensionTotal, (string) $item->lineTotal, 2);
         }
 
         // KDV toplam
@@ -185,19 +183,36 @@ class EInvoiceService
         return $party;
     }
 
+    /**
+     * UBL-TR: LineExtensionAmount = matrah (KDV hariç). Birim fiyat matrah ile uyumlu (net).
+     * Satır bazında KDV kategorisi (TaxCategory) eklenir.
+     */
     private function createInvoiceLine(DOMDocument $doc, int $id, string $name, int $quantity, $unitPrice, $kdvRate, $lineTotal, bool $kdvIncluded): DOMElement
     {
+        $rate = (float) $kdvRate;
+        $total = (float) $lineTotal;
+        $qty = (int) $quantity;
+        $lineNet = round($total / (1 + $rate / 100), 2);
+        $unitNet = $qty > 0 ? round($lineNet / $qty, 2) : 0;
+
         $line = $doc->createElementNS(self::CAC_NS, 'cac:InvoiceLine');
         $this->append($doc, $line, 'cbc:ID', (string) $id);
-        $this->append($doc, $line, 'cbc:InvoicedQuantity', (string) $quantity, ['unitCode' => 'C62']);
-        $this->append($doc, $line, 'cbc:LineExtensionAmount', $this->amount($lineTotal), ['currencyID' => 'TRY']);
+        $this->append($doc, $line, 'cbc:InvoicedQuantity', (string) $qty, ['unitCode' => 'C62']);
+        $this->append($doc, $line, 'cbc:LineExtensionAmount', $this->amount($lineNet), ['currencyID' => 'TRY']);
 
         $item = $doc->createElementNS(self::CAC_NS, 'cac:Item');
         $this->append($doc, $item, 'cbc:Name', $name);
+        $taxCat = $doc->createElementNS(self::CAC_NS, 'cac:ClassifiedTaxCategory');
+        $this->append($doc, $taxCat, 'cbc:Name', 'KDV');
+        $this->append($doc, $taxCat, 'cbc:Percent', $this->amount($rate));
+        $taxScheme = $doc->createElementNS(self::CAC_NS, 'cac:TaxScheme');
+        $this->append($doc, $taxScheme, 'cbc:Name', 'KDV');
+        $taxCat->appendChild($taxScheme);
+        $item->appendChild($taxCat);
         $line->appendChild($item);
 
         $price = $doc->createElementNS(self::CAC_NS, 'cac:Price');
-        $this->append($doc, $price, 'cbc:PriceAmount', $this->amount($unitPrice), ['currencyID' => 'TRY']);
+        $this->append($doc, $price, 'cbc:PriceAmount', $this->amount($unitNet), ['currencyID' => 'TRY']);
         $this->append($doc, $price, 'cbc:BaseQuantity', '1', ['unitCode' => 'C62']);
         $line->appendChild($price);
 

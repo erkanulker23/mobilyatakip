@@ -18,6 +18,18 @@
             <input type="number" step="0.01" name="amount" required value="{{ old('amount', $expense->amount) }}" class="form-input">
             @error('amount')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
+        <div class="flex items-center gap-4">
+            <label class="inline-flex items-center gap-2">
+                <input type="hidden" name="kdvIncluded" value="0">
+                <input type="checkbox" name="kdvIncluded" value="1" {{ old('kdvIncluded', $expense->kdvIncluded ?? true) ? 'checked' : '' }}>
+                <span class="form-label mb-0">KDV dahil</span>
+            </label>
+            <div class="flex-1 max-w-[120px]">
+                <label class="form-label">KDV oranı %</label>
+                <input type="number" step="0.01" min="0" max="100" name="kdvRate" value="{{ old('kdvRate', $expense->kdvRate ?? 18) }}" class="form-input">
+                @error('kdvRate')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+            </div>
+        </div>
         <div>
             <label class="form-label">Tarih *</label>
             <input type="date" name="expenseDate" required value="{{ old('expenseDate', $expense->expenseDate?->format('Y-m-d')) }}" class="form-input">

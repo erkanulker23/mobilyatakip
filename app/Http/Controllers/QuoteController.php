@@ -65,6 +65,8 @@ class QuoteController extends Controller
             'items.*.unitPrice' => 'required|numeric|min:0',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.kdvRate' => 'nullable|numeric|min:0|max:100',
+            'items.*.lineDiscountPercent' => 'nullable|numeric|min:0|max:100',
+            'items.*.lineDiscountAmount' => 'nullable|numeric|min:0',
         ]);
         $kdvIncluded = $request->boolean('kdvIncluded');
 
@@ -92,31 +94,40 @@ class QuoteController extends Controller
                 'grandTotal' => 0,
             ]);
             $subtotal = 0;
+            $lineKdvSum = 0;
             foreach ($validated['items'] as $row) {
                 $unitPrice = (float) $row['unitPrice'];
                 $qty = (int) $row['quantity'];
                 $kdvRate = (float) ($row['kdvRate'] ?? 18);
+                $lineDiscPct = (float) ($row['lineDiscountPercent'] ?? 0);
+                $lineDiscAmt = (float) ($row['lineDiscountAmount'] ?? 0);
                 if ($kdvIncluded) {
-                    $lineNet = round($unitPrice * $qty / (1 + $kdvRate / 100), 2);
-                    $lineTotal = round($unitPrice * $qty, 2);
+                    $rawLineNet = round($unitPrice * $qty / (1 + $kdvRate / 100), 2);
                 } else {
-                    $lineNet = round($unitPrice * $qty, 2);
-                    $lineTotal = round($lineNet * (1 + $kdvRate / 100), 2);
+                    $rawLineNet = round($unitPrice * $qty, 2);
                 }
+                $lineDisc = round($rawLineNet * ($lineDiscPct / 100) + $lineDiscAmt, 2);
+                $lineNet = max(0, round($rawLineNet - $lineDisc, 2));
+                $lineKdv = round($lineNet * ($kdvRate / 100), 2);
+                $lineTotal = round($lineNet + $lineKdv, 2);
+                $subtotal += $lineNet;
+                $lineKdvSum += $lineKdv;
                 QuoteItem::create([
                     'quoteId' => $quote->id,
                     'productId' => $row['productId'],
                     'unitPrice' => $unitPrice,
                     'quantity' => $qty,
                     'kdvRate' => $kdvRate,
+                    'lineDiscountPercent' => $lineDiscPct ?: null,
+                    'lineDiscountAmount' => $lineDiscAmt ?: null,
                     'lineTotal' => $lineTotal,
                 ]);
-                $subtotal += $lineNet;
             }
-            $generalDisc = $subtotal * (($quote->generalDiscountPercent ?? 0) / 100) + (float) ($quote->generalDiscountAmount ?? 0);
-            $afterDisc = max(0, $subtotal - $generalDisc);
-            $kdvTotal = QuoteItem::where('quoteId', $quote->id)->get()->sum(fn ($i) => (float) $i->lineTotal - (float) $i->lineTotal / (1 + (float) $i->kdvRate / 100));
-            $grandTotal = $afterDisc + $kdvTotal;
+            $generalDisc = round($subtotal * (($quote->generalDiscountPercent ?? 0) / 100) + (float) ($quote->generalDiscountAmount ?? 0), 2);
+            $afterDisc = max(0, round($subtotal - $generalDisc, 2));
+            $ratio = $subtotal > 0 ? $afterDisc / $subtotal : 0;
+            $kdvTotal = round($ratio * $lineKdvSum, 2);
+            $grandTotal = round($afterDisc + $kdvTotal, 2);
             $quote->update(['subtotal' => $subtotal, 'kdvTotal' => $kdvTotal, 'grandTotal' => $grandTotal]);
             return $quote;
         });
@@ -186,6 +197,8 @@ class QuoteController extends Controller
             'items.*.unitPrice' => 'required|numeric|min:0',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.kdvRate' => 'nullable|numeric|min:0|max:100',
+            'items.*.lineDiscountPercent' => 'nullable|numeric|min:0|max:100',
+            'items.*.lineDiscountAmount' => 'nullable|numeric|min:0',
         ]);
         $kdvIncluded = $request->boolean('kdvIncluded');
         $quote->update([
@@ -200,30 +213,42 @@ class QuoteController extends Controller
         ]);
         $quote->items()->delete();
         $subtotal = 0;
+        $lineKdvSum = 0;
         foreach ($validated['items'] as $row) {
             $unitPrice = (float) $row['unitPrice'];
             $qty = (int) $row['quantity'];
             $kdvRate = (float) ($row['kdvRate'] ?? 18);
+            $lineDiscPct = (float) ($row['lineDiscountPercent'] ?? 0);
+            $lineDiscAmt = (float) ($row['lineDiscountAmount'] ?? 0);
             if ($kdvIncluded) {
-                $lineNet = round($unitPrice * $qty / (1 + $kdvRate / 100), 2);
-                $lineTotal = round($unitPrice * $qty, 2);
+                $rawLineNet = round($unitPrice * $qty / (1 + $kdvRate / 100), 2);
+                $rawLineTotal = round($unitPrice * $qty, 2);
             } else {
-                $lineNet = round($unitPrice * $qty, 2);
-                $lineTotal = round($lineNet * (1 + $kdvRate / 100), 2);
+                $rawLineNet = round($unitPrice * $qty, 2);
+                $rawLineTotal = round($rawLineNet * (1 + $kdvRate / 100), 2);
             }
-            \App\Models\QuoteItem::create([
+            $lineDisc = round($rawLineNet * ($lineDiscPct / 100) + $lineDiscAmt, 2);
+            $lineNet = max(0, round($rawLineNet - $lineDisc, 2));
+            $lineKdv = round($lineNet * ($kdvRate / 100), 2);
+            $lineTotal = round($lineNet + $lineKdv, 2);
+            $subtotal += $lineNet;
+            $lineKdvSum += $lineKdv;
+            QuoteItem::create([
                 'quoteId' => $quote->id,
                 'productId' => $row['productId'],
                 'unitPrice' => $unitPrice,
                 'quantity' => $qty,
                 'kdvRate' => $kdvRate,
+                'lineDiscountPercent' => $lineDiscPct ?: null,
+                'lineDiscountAmount' => $lineDiscAmt ?: null,
                 'lineTotal' => $lineTotal,
             ]);
-            $subtotal += $lineNet;
         }
-        $generalDisc = $subtotal * (($quote->generalDiscountPercent ?? 0) / 100) + (float) ($quote->generalDiscountAmount ?? 0);
-        $kdvTotal = \App\Models\QuoteItem::where('quoteId', $quote->id)->get()->sum(fn ($i) => (float) $i->lineTotal - (float) $i->lineTotal / (1 + (float) $i->kdvRate / 100));
-        $grandTotal = max(0, $subtotal - $generalDisc) + $kdvTotal;
+        $generalDisc = round($subtotal * (($quote->generalDiscountPercent ?? 0) / 100) + (float) ($quote->generalDiscountAmount ?? 0), 2);
+        $afterDisc = max(0, round($subtotal - $generalDisc, 2));
+        $ratio = $subtotal > 0 ? $afterDisc / $subtotal : 0;
+        $kdvTotal = round($ratio * $lineKdvSum, 2);
+        $grandTotal = round($afterDisc + $kdvTotal, 2);
         $quote->update(['subtotal' => $subtotal, 'kdvTotal' => $kdvTotal, 'grandTotal' => $grandTotal]);
         return redirect()->route('quotes.show', $quote)->with('success', 'Teklif güncellendi.');
     }

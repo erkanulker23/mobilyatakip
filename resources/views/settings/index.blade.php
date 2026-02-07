@@ -2,8 +2,8 @@
 @section('title', 'Ayarlar')
 @section('content')
 
-<div x-data="{ deleteOpen: false }">
-    <div class="mb-8">
+<div x-data="{ deleteOpen: false, activeTab: 'firma', submitting: false }">
+    <div class="mb-6">
         <h1 class="page-title">Ayarlar</h1>
         <p class="page-desc">Firma bilgileri, logo, SEO, SMS, ödeme ve e-posta ayarları</p>
     </div>
@@ -25,29 +25,38 @@
     </div>
     @endif
 
-    @if($company?->logoUrl)
-    <div class="card overflow-hidden mb-6">
-        <div class="card-header">Mevcut logo</div>
-        <div class="p-5 flex flex-wrap items-center gap-4">
-            <img src="{{ asset($company->logoUrl) }}" alt="Firma logosu" class="h-24 w-auto object-contain border border-slate-200 dark:border-slate-600 rounded-xl p-2">
-            <button type="button" @click="deleteOpen = true" class="btn-secondary text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">Logoyu sil</button>
-        </div>
-    </div>
-    @endif
-
-    <form method="POST" action="{{ route('settings.update') }}" enctype="multipart/form-data" x-data="{ submitting: false }" @submit="submitting = true">
+    <form method="POST" action="{{ route('settings.update') }}" enctype="multipart/form-data" @submit="submitting = true">
         @csrf
 
-        <div class="card overflow-hidden mb-6">
-            <div class="card-header">Firma Logosu</div>
-            <div class="p-5">
-                <label class="form-label">Yeni logo yükle</label>
-                <input type="file" name="logo" accept="image/*" class="form-input py-2">
-                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">PNG, JPG, max 2MB. Önerilen: 200×80px</p>
-            </div>
+        {{-- Tab list --}}
+        <div class="flex flex-wrap gap-1 p-1 mb-6 rounded-xl bg-slate-100 dark:bg-slate-800 max-w-4xl" role="tablist">
+            <button type="button" role="tab" @click="activeTab = 'firma'" :aria-selected="activeTab === 'firma'"
+                :class="activeTab === 'firma' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-600'"
+                class="rounded-lg px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-100 dark:focus:ring-offset-slate-800">Firma</button>
+            <button type="button" role="tab" @click="activeTab = 'logo'" :aria-selected="activeTab === 'logo'"
+                :class="activeTab === 'logo' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-600'"
+                class="rounded-lg px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-100 dark:focus:ring-offset-slate-800">Logo</button>
+            @if(\Illuminate\Support\Facades\Schema::hasColumn('companies', 'metaTitle'))
+            <button type="button" role="tab" @click="activeTab = 'seo'" :aria-selected="activeTab === 'seo'"
+                :class="activeTab === 'seo' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-600'"
+                class="rounded-lg px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-100 dark:focus:ring-offset-slate-800">SEO</button>
+            @endif
+            <button type="button" role="tab" @click="activeTab = 'sms'" :aria-selected="activeTab === 'sms'"
+                :class="activeTab === 'sms' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-600'"
+                class="rounded-lg px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-100 dark:focus:ring-offset-slate-800">SMS</button>
+            <button type="button" role="tab" @click="activeTab = 'paytr'" :aria-selected="activeTab === 'paytr'"
+                :class="activeTab === 'paytr' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-600'"
+                class="rounded-lg px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-100 dark:focus:ring-offset-slate-800">PayTR</button>
+            <button type="button" role="tab" @click="activeTab = 'efatura'" :aria-selected="activeTab === 'efatura'"
+                :class="activeTab === 'efatura' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-600'"
+                class="rounded-lg px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-100 dark:focus:ring-offset-slate-800">E-Fatura</button>
+            <button type="button" role="tab" @click="activeTab = 'mail'" :aria-selected="activeTab === 'mail'"
+                :class="activeTab === 'mail' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-600'"
+                class="rounded-lg px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-100 dark:focus:ring-offset-slate-800">E-posta</button>
         </div>
 
-        <div class="card overflow-hidden mb-6">
+        {{-- Tab: Firma Bilgileri --}}
+        <div x-show="activeTab === 'firma'" x-cloak class="card overflow-hidden mb-6">
             <div class="card-header">Firma Bilgileri</div>
             <div class="p-5">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -62,8 +71,30 @@
             </div>
         </div>
 
+        {{-- Tab: Logo --}}
+        <div x-show="activeTab === 'logo'" x-cloak class="space-y-6 mb-6">
+            @if($company?->logoUrl)
+            <div class="card overflow-hidden">
+                <div class="card-header">Mevcut logo</div>
+                <div class="p-5 flex flex-wrap items-center gap-4">
+                    <img src="{{ asset($company->logoUrl) }}" alt="Firma logosu" class="h-24 w-auto object-contain border border-slate-200 dark:border-slate-600 rounded-xl p-2">
+                    <button type="button" @click="deleteOpen = true" class="btn-secondary text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">Logoyu sil</button>
+                </div>
+            </div>
+            @endif
+            <div class="card overflow-hidden">
+                <div class="card-header">Firma Logosu</div>
+                <div class="p-5">
+                    <label class="form-label">Yeni logo yükle</label>
+                    <input type="file" name="logo" accept="image/*" class="form-input py-2">
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">PNG, JPG, max 2MB. Önerilen: 200×80px</p>
+                </div>
+            </div>
+        </div>
+
         @if(\Illuminate\Support\Facades\Schema::hasColumn('companies', 'metaTitle'))
-        <div class="card overflow-hidden mb-6">
+        {{-- Tab: SEO --}}
+        <div x-show="activeTab === 'seo'" x-cloak class="card overflow-hidden mb-6">
             <div class="card-header">SEO Ayarları</div>
             <div class="p-5">
                 <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Fatura ve PDF çıktıları, arama motoru meta bilgileri.</p>
@@ -75,7 +106,8 @@
         </div>
         @endif
 
-        <div class="card overflow-hidden mb-6">
+        {{-- Tab: SMS --}}
+        <div x-show="activeTab === 'sms'" x-cloak class="card overflow-hidden mb-6">
             <div class="card-header">SMS Entegrasyonu (NTGSM)</div>
             <div class="p-5">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -87,7 +119,8 @@
             </div>
         </div>
 
-        <div class="card overflow-hidden mb-6">
+        {{-- Tab: PayTR --}}
+        <div x-show="activeTab === 'paytr'" x-cloak class="card overflow-hidden mb-6">
             <div class="card-header">Sanal Pos (PayTR)</div>
             <div class="p-5">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -104,7 +137,8 @@
             </div>
         </div>
 
-        <div class="card overflow-hidden mb-6">
+        {{-- Tab: E-Fatura --}}
+        <div x-show="activeTab === 'efatura'" x-cloak class="card overflow-hidden mb-6">
             <div class="card-header">E-Fatura Entegrasyonu (GİB / Entegratör)</div>
             <div class="p-5">
                 <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">E-fatura gönderimi için GİB entegratör veya özel entegratör (örn. Fitbulut, Logo) API bilgilerini girin. UBL-TR 1.2 formatında fatura üretilir ve bu endpoint’e gönderilir.</p>
@@ -123,7 +157,8 @@
             </div>
         </div>
 
-        <div class="card overflow-hidden mb-6">
+        {{-- Tab: E-posta --}}
+        <div x-show="activeTab === 'mail'" x-cloak class="card overflow-hidden mb-6">
             <div class="card-header">E-posta (SMTP)</div>
             <div class="p-5">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

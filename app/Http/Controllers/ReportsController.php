@@ -115,7 +115,7 @@ class ReportsController extends Controller
     public function supplierLedger(Request $request)
     {
         $suppliers = Supplier::with(['purchases', 'payments'])->where('isActive', true)->orderBy('name')->get()->map(function ($s) {
-            $borc = (float) $s->purchases->sum('grandTotal');
+            $borc = (float) $s->purchases->where('isCancelled', false)->sum('grandTotal');
             $alacak = (float) $s->payments->sum('amount');
             $bakiye = $borc - $alacak;
             return (object) [
@@ -198,9 +198,9 @@ class ReportsController extends Controller
         $from = $request->filled('from') ? Carbon::parse($request->from)->startOfDay() : now()->startOfMonth();
         $to = $request->filled('to') ? Carbon::parse($request->to)->endOfDay() : now()->endOfDay();
 
-        $saleItems = SaleItem::whereHas('sale', fn ($q) => $q->whereBetween('saleDate', [$from, $to]))
+        $saleItems = SaleItem::whereHas('sale', fn ($q) => $q->whereBetween('saleDate', [$from, $to])->where('isCancelled', false))
             ->get();
-        $purchaseItems = PurchaseItem::whereHas('purchase', fn ($q) => $q->whereBetween('purchaseDate', [$from, $to]))
+        $purchaseItems = PurchaseItem::whereHas('purchase', fn ($q) => $q->whereBetween('purchaseDate', [$from, $to])->where('isCancelled', false))
             ->get();
 
         $salesByRate = [];
@@ -231,9 +231,28 @@ class ReportsController extends Controller
             $purchasesByRate[$rate]['total'] += $lineTotal;
         }
 
+        $expensesByRate = [];
+        $expenses = Expense::whereBetween('expenseDate', [$from, $to])->whereNotNull('kdvRate')->get();
+        foreach ($expenses as $e) {
+            $rate = (float) ($e->kdvRate ?? 0);
+            if ($rate <= 0) {
+                continue;
+            }
+            $amount = (float) $e->amount;
+            $kdvAmount = (float) ($e->kdvAmount ?? 0);
+            $netAmount = round($amount - $kdvAmount, 2);
+            if (!isset($expensesByRate[$rate])) {
+                $expensesByRate[$rate] = ['net' => 0, 'kdv' => 0, 'total' => 0];
+            }
+            $expensesByRate[$rate]['net'] += $netAmount;
+            $expensesByRate[$rate]['kdv'] += $kdvAmount;
+            $expensesByRate[$rate]['total'] += $amount;
+        }
+        ksort($expensesByRate);
+
         ksort($salesByRate);
         ksort($purchasesByRate);
 
-        return view('reports.kdv', compact('from', 'to', 'salesByRate', 'purchasesByRate'));
+        return view('reports.kdv', compact('from', 'to', 'salesByRate', 'purchasesByRate', 'expensesByRate'));
     }
 }

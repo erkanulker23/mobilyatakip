@@ -51,7 +51,7 @@
         <div class="border-t border-slate-200 pt-5">
             <h3 class="text-lg font-semibold text-slate-900 mb-4">Teklif Kalemleri</h3>
             <div id="items" class="space-y-3">
-                <div class="item-row grid grid-cols-1 md:grid-cols-[1fr_120px_80px_80px_40px] gap-3 items-end">
+                <div class="item-row grid grid-cols-1 md:grid-cols-[1fr_100px_70px_70px_60px_60px_40px] gap-3 items-end">
                     <div>
                         <label class="form-label">Ürün *</label>
                         <select name="items[0][productId]" required class="form-select item-product" data-row="0">
@@ -72,6 +72,14 @@
                     <div>
                         <label class="form-label">KDV %</label>
                         <input type="number" step="0.01" min="0" max="100" name="items[0][kdvRate]" value="18" class="form-input item-kdv" placeholder="18">
+                    </div>
+                    <div>
+                        <label class="form-label text-xs">İnd. %</label>
+                        <input type="number" step="0.01" min="0" max="100" name="items[0][lineDiscountPercent]" value="" class="form-input" placeholder="0">
+                    </div>
+                    <div>
+                        <label class="form-label text-xs">İnd. ₺</label>
+                        <input type="number" step="0.01" min="0" name="items[0][lineDiscountAmount]" value="" class="form-input" placeholder="0">
                     </div>
                     <div><button type="button" onclick="addRow()" class="p-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium">+</button></div>
                 </div>
@@ -94,6 +102,8 @@ function addRow() {
         if (e.classList.contains('item-price')) e.value = '';
         if (e.classList.contains('item-qty')) e.value = '1';
         if (e.classList.contains('item-kdv')) e.value = '18';
+        if (e.name && e.name.includes('lineDiscountPercent')) e.value = '';
+        if (e.name && e.name.includes('lineDiscountAmount')) e.value = '';
     });
     c.querySelector('.item-product')?.addEventListener('change', function() {
         const o = this.selectedOptions[0];

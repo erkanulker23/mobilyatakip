@@ -111,7 +111,13 @@ class PurchaseController extends Controller
                     'lineTotal' => $lineTotal,
                 ]);
             }
-            $purchase->update(['subtotal' => $subtotal, 'kdvTotal' => $kdvTotal, 'grandTotal' => round($subtotal + $kdvTotal, 2)]);
+            $discRate = (float) ($purchase->supplierDiscountRate ?? 0);
+            if ($discRate > 0 && $discRate <= 100) {
+                $subtotal = round($subtotal * (1 - $discRate / 100), 2);
+                $kdvTotal = round($kdvTotal * (1 - $discRate / 100), 2);
+            }
+            $grandTotal = round($subtotal + $kdvTotal, 2);
+            $purchase->update(['subtotal' => $subtotal, 'kdvTotal' => $kdvTotal, 'grandTotal' => $grandTotal]);
             return $purchase;
         });
 
@@ -193,7 +199,13 @@ class PurchaseController extends Controller
                 'lineTotal' => $lineTotal,
             ]);
         }
-        $purchase->update(['subtotal' => $subtotal, 'kdvTotal' => $kdvTotal, 'grandTotal' => round($subtotal + $kdvTotal, 2)]);
+        $discRate = (float) ($purchase->supplierDiscountRate ?? 0);
+        if ($discRate > 0 && $discRate <= 100) {
+            $subtotal = round($subtotal * (1 - $discRate / 100), 2);
+            $kdvTotal = round($kdvTotal * (1 - $discRate / 100), 2);
+        }
+        $grandTotal = round($subtotal + $kdvTotal, 2);
+        $purchase->update(['subtotal' => $subtotal, 'kdvTotal' => $kdvTotal, 'grandTotal' => $grandTotal]);
         $this->auditService->logUpdate('purchase', $purchase->id, [], $purchase->toArray());
         return redirect()->route('purchases.show', $purchase)->with('success', 'Alış güncellendi.');
     }

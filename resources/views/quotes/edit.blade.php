@@ -69,7 +69,7 @@
             <h3 class="text-lg font-semibold text-slate-900 mb-4">Teklif Kalemleri</h3>
             <div id="items" class="space-y-3">
                 @foreach($quote->items as $idx => $item)
-                <div class="item-row grid grid-cols-1 md:grid-cols-[1fr_120px_80px_80px_40px] gap-3 items-end">
+                <div class="item-row grid grid-cols-1 md:grid-cols-[1fr_100px_70px_70px_60px_60px_40px] gap-3 items-end">
                     <div>
                         <label class="form-label">Ürün *</label>
                         <select name="items[{{ $idx }}][productId]" required class="form-select item-product">
@@ -90,11 +90,19 @@
                         <label class="form-label">KDV %</label>
                         <input type="number" step="0.01" min="0" max="100" name="items[{{ $idx }}][kdvRate]" value="{{ old("items.{$idx}.kdvRate", $item->kdvRate ?? 18) }}" class="form-input item-kdv">
                     </div>
+                    <div>
+                        <label class="form-label text-xs">İnd. %</label>
+                        <input type="number" step="0.01" min="0" max="100" name="items[{{ $idx }}][lineDiscountPercent]" value="{{ old("items.{$idx}.lineDiscountPercent", $item->lineDiscountPercent) }}" class="form-input" placeholder="0">
+                    </div>
+                    <div>
+                        <label class="form-label text-xs">İnd. ₺</label>
+                        <input type="number" step="0.01" min="0" name="items[{{ $idx }}][lineDiscountAmount]" value="{{ old("items.{$idx}.lineDiscountAmount", $item->lineDiscountAmount) }}" class="form-input" placeholder="0">
+                    </div>
                     <div><button type="button" onclick="removeRow(this)" class="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 font-medium">−</button></div>
                 </div>
                 @endforeach
                 @if($quote->items->isEmpty())
-                <div class="item-row grid grid-cols-1 md:grid-cols-[1fr_120px_80px_80px_40px] gap-3 items-end">
+                <div class="item-row grid grid-cols-1 md:grid-cols-[1fr_100px_70px_70px_60px_60px_40px] gap-3 items-end">
                     <div>
                         <label class="form-label">Ürün *</label>
                         <select name="items[0][productId]" required class="form-select item-product">
@@ -107,6 +115,8 @@
                     <div><label class="form-label">Fiyat *</label><input type="number" step="0.01" min="0" name="items[0][unitPrice]" required class="form-input item-price"></div>
                     <div><label class="form-label">Adet *</label><input type="number" name="items[0][quantity]" value="1" required min="1" class="form-input item-qty"></div>
                     <div><label class="form-label">KDV %</label><input type="number" step="0.01" min="0" max="100" name="items[0][kdvRate]" value="18" class="form-input item-kdv"></div>
+                    <div><label class="form-label text-xs">İnd. %</label><input type="number" step="0.01" min="0" max="100" name="items[0][lineDiscountPercent]" value="" class="form-input" placeholder="0"></div>
+                    <div><label class="form-label text-xs">İnd. ₺</label><input type="number" step="0.01" min="0" name="items[0][lineDiscountAmount]" value="" class="form-input" placeholder="0"></div>
                     <div><button type="button" onclick="addRow()" class="p-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium">+</button></div>
                 </div>
                 @endif
@@ -131,6 +141,8 @@ function addRow() {
         if (e.classList.contains('item-price')) e.value = '';
         if (e.classList.contains('item-qty')) e.value = '1';
         if (e.classList.contains('item-kdv')) e.value = '18';
+        if (e.name && e.name.includes('lineDiscountPercent')) e.value = '';
+        if (e.name && e.name.includes('lineDiscountAmount')) e.value = '';
         if (e.tagName === 'SELECT') e.selectedIndex = 0;
     });
     const btn = c.querySelector('button');

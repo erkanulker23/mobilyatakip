@@ -23,6 +23,9 @@
     <dl class="space-y-4">
         <div><dt class="text-sm text-slate-500">Tarih</dt><dd class="font-medium">{{ $expense->expenseDate?->format('d.m.Y') }}</dd></div>
         <div><dt class="text-sm text-slate-500">Tutar</dt><dd class="font-bold text-lg text-slate-900">{{ number_format($expense->amount, 2, ',', '.') }} ₺</dd></div>
+        @if($expense->kdvRate !== null && (float)$expense->kdvRate > 0)
+        <div><dt class="text-sm text-slate-500">KDV ({{ number_format($expense->kdvRate, 0) }}%)</dt><dd class="font-medium">{{ number_format($expense->kdvAmount ?? 0, 2, ',', '.') }} ₺ {{ $expense->kdvIncluded ? '(dahil)' : '(hariç)' }}</dd></div>
+        @endif
         <div><dt class="text-sm text-slate-500">Kategori</dt><dd class="font-medium">{{ $expense->category ?: '—' }}</dd></div>
         <div><dt class="text-sm text-slate-500">Açıklama</dt><dd class="text-slate-700 whitespace-pre-wrap">{{ $expense->description }}</dd></div>
         <div><dt class="text-sm text-slate-500">Kasa</dt><dd class="font-medium">{{ $expense->kasa?->name ?? '—' }}</dd></div>

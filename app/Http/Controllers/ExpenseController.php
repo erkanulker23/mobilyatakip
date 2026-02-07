@@ -51,12 +51,22 @@ class ExpenseController extends Controller
     {
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.01',
+            'kdvIncluded' => 'nullable|boolean',
+            'kdvRate' => 'nullable|numeric|min:0|max:100',
             'expenseDate' => 'required|date',
             'description' => 'required|string|max:500',
             'category' => 'nullable|string|max:100',
             'kasaId' => 'nullable|exists:kasa,id',
         ]);
         $validated['createdBy'] = auth()->id();
+        $validated['kdvIncluded'] = $request->boolean('kdvIncluded', true);
+        $validated['kdvRate'] = isset($validated['kdvRate']) ? (float) $validated['kdvRate'] : 18;
+        $amount = (float) $validated['amount'];
+        if ($validated['kdvIncluded']) {
+            $validated['kdvAmount'] = round($amount - $amount / (1 + $validated['kdvRate'] / 100), 2);
+        } else {
+            $validated['kdvAmount'] = round($amount * ($validated['kdvRate'] / 100), 2);
+        }
         $expense = Expense::create($validated);
         if (!empty($validated['kasaId'])) {
             KasaHareket::create([
@@ -95,11 +105,21 @@ class ExpenseController extends Controller
     {
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.01',
+            'kdvIncluded' => 'nullable|boolean',
+            'kdvRate' => 'nullable|numeric|min:0|max:100',
             'expenseDate' => 'required|date',
             'description' => 'required|string|max:500',
             'category' => 'nullable|string|max:100',
             'kasaId' => 'nullable|exists:kasa,id',
         ]);
+        $validated['kdvIncluded'] = $request->boolean('kdvIncluded', true);
+        $validated['kdvRate'] = isset($validated['kdvRate']) ? (float) $validated['kdvRate'] : 18;
+        $amount = (float) $validated['amount'];
+        if ($validated['kdvIncluded']) {
+            $validated['kdvAmount'] = round($amount - $amount / (1 + $validated['kdvRate'] / 100), 2);
+        } else {
+            $validated['kdvAmount'] = round($amount * ($validated['kdvRate'] / 100), 2);
+        }
 
         $expense->update($validated);
 
