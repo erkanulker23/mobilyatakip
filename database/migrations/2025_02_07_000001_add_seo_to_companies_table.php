@@ -8,6 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('companies')) {
+            return;
+        }
         Schema::table('companies', function (Blueprint $table) {
             if (!Schema::hasColumn('companies', 'metaTitle')) {
                 $table->string('metaTitle', 70)->nullable()->after('website');
@@ -20,8 +23,16 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (!Schema::hasTable('companies')) {
+            return;
+        }
         Schema::table('companies', function (Blueprint $table) {
-            $table->dropColumn(['metaTitle', 'metaDescription']);
+            if (Schema::hasColumn('companies', 'metaTitle')) {
+                $table->dropColumn('metaTitle');
+            }
+            if (Schema::hasColumn('companies', 'metaDescription')) {
+                $table->dropColumn('metaDescription');
+            }
         });
     }
 };
