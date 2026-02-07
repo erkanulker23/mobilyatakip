@@ -104,6 +104,7 @@ export function generateSalePdf(
     subtotal?: number;
     kdvTotal?: number;
     grandTotal?: number;
+    paidAmount?: number;
     notes?: string;
     customer?: { name?: string };
     items?: Array<{ product?: { name?: string }; unitPrice?: number; quantity?: number; lineTotal?: number }>;
@@ -151,11 +152,86 @@ export function generateSalePdf(
   doc.setFont('helvetica', 'bold');
   doc.text(`GENEL TOPLAM: ${Number(sale.grandTotal ?? 0).toFixed(2)} TL`, 14, y);
   doc.setFont('helvetica', 'normal');
+  y += 6;
+  doc.text(`Ödenen: ${Number(sale.paidAmount ?? 0).toFixed(2)} TL`, 14, y);
   y += 10;
 
   if (sale.notes) {
     doc.setFontSize(9);
     doc.text('Not: ' + sale.notes, 14, y);
+  }
+
+  return doc;
+}
+
+/** Alış faturası için jspdf ile PDF oluşturur. */
+export function generatePurchasePdf(
+  purchase: {
+    purchaseNumber: string;
+    purchaseDate?: string;
+    dueDate?: string;
+    subtotal?: number;
+    kdvTotal?: number;
+    grandTotal?: number;
+    paidAmount?: number;
+    notes?: string;
+    supplier?: { name?: string };
+    items?: Array<{ product?: { name?: string }; unitPrice?: number; quantity?: number; lineTotal?: number }>;
+  },
+  company: CompanyInfo | null,
+): jsPDF {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  let y = addPdfHeader(doc, company, `ALIŞ FATURASI - ${purchase.purchaseNumber}`);
+
+  doc.setFontSize(10);
+  doc.text(`Tedarikçi: ${purchase.supplier?.name ?? '—'}`, 14, y);
+  y += 6;
+  if (purchase.purchaseDate) {
+    doc.text(`Tarih: ${new Date(purchase.purchaseDate).toLocaleDateString('tr-TR')}`, 14, y);
+    y += 6;
+  }
+  if (purchase.dueDate) {
+    doc.text(`Vade: ${new Date(purchase.dueDate).toLocaleDateString('tr-TR')}`, 14, y);
+    y += 8;
+  } else {
+    y += 4;
+  }
+
+  if (purchase.items?.length) {
+    doc.setFontSize(9);
+    doc.text('Ürün', 14, y);
+    doc.text('Birim Fiyat', 80, y);
+    doc.text('Adet', 120, y);
+    doc.text('Satır Toplam', 150, y);
+    y += 6;
+    doc.line(14, y, 196, y);
+    y += 6;
+    for (const item of purchase.items) {
+      const name = (item.product?.name ?? '—').substring(0, 35);
+      doc.text(name, 14, y);
+      doc.text(Number(item.unitPrice ?? 0).toFixed(2), 80, y);
+      doc.text(String(item.quantity ?? 0), 120, y);
+      doc.text(Number(item.lineTotal ?? 0).toFixed(2), 150, y);
+      y += 6;
+    }
+    y += 4;
+  }
+
+  doc.setFontSize(10);
+  doc.text(`Ara Toplam: ${Number(purchase.subtotal ?? 0).toFixed(2)} TL`, 14, y);
+  y += 6;
+  doc.text(`KDV Toplam: ${Number(purchase.kdvTotal ?? 0).toFixed(2)} TL`, 14, y);
+  y += 6;
+  doc.setFont('helvetica', 'bold');
+  doc.text(`GENEL TOPLAM: ${Number(purchase.grandTotal ?? 0).toFixed(2)} TL`, 14, y);
+  doc.setFont('helvetica', 'normal');
+  y += 6;
+  doc.text(`Ödenen: ${Number(purchase.paidAmount ?? 0).toFixed(2)} TL`, 14, y);
+  y += 10;
+
+  if (purchase.notes) {
+    doc.setFontSize(9);
+    doc.text('Not: ' + purchase.notes, 14, y);
   }
 
   return doc;

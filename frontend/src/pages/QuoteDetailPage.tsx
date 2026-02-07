@@ -21,9 +21,6 @@ import { generateQuotePdf, type CompanyInfo } from '../utils/pdfUtils';
 import { Button } from '../components/ui';
 import toast from 'react-hot-toast';
 
-const COMPANY_NAME = 'Mobilya Takip';
-const COMPANY_SUBTITLE = 'Mobilya Satış ve Takip Hizmetleri';
-
 const STATUS_LABELS: Record<string, string> = {
   taslak: 'Taslak',
   gonderildi: 'Gönderildi',
@@ -85,6 +82,7 @@ export default function QuoteDetailPage() {
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [statusSelect, setStatusSelect] = useState('');
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [company, setCompany] = useState<{ name?: string; address?: string; phone?: string; email?: string } | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -95,6 +93,10 @@ export default function QuoteDetailPage() {
       .catch(() => toast.error('Teklif yüklenemedi'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    companyApi.get().then(({ data }) => setCompany((data as { name?: string; address?: string; phone?: string; email?: string }) ?? null)).catch(() => setCompany(null));
+  }, []);
 
   const openStatusModal = () => {
     if (quote) {
@@ -216,8 +218,8 @@ export default function QuoteDetailPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      {/* Üst bar: Geri + Düzenle, Yazdır, PDF */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      {/* Üst bar: Geri + Düzenle, Yazdır, PDF — yazdırmada gizlenir */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
         <Link
           to={ROUTES.teklifler}
           className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 hover:text-zinc-900"
@@ -240,7 +242,7 @@ export default function QuoteDetailPage() {
         </div>
       </div>
 
-      <div className="mb-6 flex flex-wrap items-center gap-3">
+      <div className="mb-6 flex flex-wrap items-center gap-3 print:hidden">
         {(() => {
           const style = STATUS_STYLES[quote.status] ?? STATUS_STYLES.taslak;
           const Icon = style.icon;
@@ -295,22 +297,28 @@ export default function QuoteDetailPage() {
         </Dialog>
       </Transition>
 
-      {/* Fatura benzeri kart */}
-      <div className="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-8 shadow-sm">
-        <div className="mb-8 flex flex-wrap items-start justify-between gap-6 border-b border-zinc-200 pb-6">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-900">TEKLİF</h1>
-            <p className="mt-1 text-sm text-zinc-600">Teklif No: {quote.quoteNumber} (Rev. v{quote.revision})</p>
-            <p className="text-sm text-zinc-600">Tarih: {formatDate(quote.validUntil)}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-lg font-bold text-zinc-900">{COMPANY_NAME}</p>
-            <p className="text-sm text-zinc-500">{COMPANY_SUBTITLE}</p>
+      {/* Fatura benzeri kart — teklif/fatura düzeni: firma üstte, toplamlar altta */}
+      <div className="invoice-print rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-8 shadow-sm">
+        {/* 1. Üst: Firma bilgileri */}
+        <div className="mb-6 border-b border-zinc-200 dark:border-zinc-600 pb-6">
+          <h2 className="text-xl font-bold text-zinc-900 dark:text-white">
+            {company?.name ?? 'Mobilya Takip'}
+          </h2>
+          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0 text-sm text-zinc-600 dark:text-zinc-400">
+            {company?.address && <span>{company.address}</span>}
+            {company?.phone && <span>Tel: {company.phone}</span>}
+            {company?.email && <span>{company.email}</span>}
           </div>
         </div>
+        {/* 2. Teklif başlık */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">TEKLİF</h1>
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">Teklif No: {quote.quoteNumber} (Rev. v{quote.revision})</p>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">Geçerlilik: {formatDate(quote.validUntil)}</p>
+        </div>
 
-        <div className="mb-8 grid gap-6 sm:grid-cols-2">
-          <div className="rounded-xl border border-zinc-100 bg-zinc-50/50 p-5">
+        <div className="mb-6 grid gap-6 sm:grid-cols-2">
+          <div className="rounded-xl border border-zinc-100 dark:border-zinc-600 bg-zinc-50/50 dark:bg-zinc-800/50 p-5">
             <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">Müşteri Bilgileri</h2>
             <dl className="space-y-2 text-sm">
               <div>
@@ -342,7 +350,7 @@ export default function QuoteDetailPage() {
               )}
             </dl>
           </div>
-          <div className="rounded-xl border border-zinc-100 bg-zinc-50/50 p-5">
+          <div className="rounded-xl border border-zinc-100 dark:border-zinc-600 bg-zinc-50/50 dark:bg-zinc-800/50 p-5">
             <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">Teklif Bilgileri</h2>
             <dl className="space-y-2 text-sm">
               {quote.personnel?.name && (
@@ -361,9 +369,9 @@ export default function QuoteDetailPage() {
           </div>
         </div>
 
-        <div className="mb-8">
+        <div className="mb-6">
           <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">Kalemler ({quote.items?.length ?? 0})</h2>
-          <div className="overflow-x-auto rounded-xl border border-zinc-200">
+          <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-600">
             <table className="min-w-full divide-y divide-zinc-200">
               <thead className="bg-zinc-50 dark:bg-zinc-800">
                 <tr>
@@ -402,34 +410,36 @@ export default function QuoteDetailPage() {
           )}
         </div>
 
-        <div className="rounded-xl border border-zinc-100 bg-zinc-50/50 p-5">
-          <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">Özet</h2>
-          <dl className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <dt className="text-zinc-500">Ara toplam</dt>
-              <dd className="font-medium text-zinc-900">{Number(quote.subtotal).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</dd>
-            </div>
-            {(Number(quote.generalDiscountPercent) > 0 || Number(quote.generalDiscountAmount) > 0) && (
-              <div className="flex justify-between text-zinc-600">
-                <dt>Genel indirim</dt>
-                <dd>%{quote.generalDiscountPercent} / {Number(quote.generalDiscountAmount ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</dd>
+        {/* 5. Altta: Toplamlar — normal fatura mantığı */}
+        <div className="mt-8 flex justify-end">
+          <div className="w-full max-w-xs rounded-xl border border-zinc-200 dark:border-zinc-600 bg-zinc-50/80 dark:bg-zinc-800/80 p-5">
+            <dl className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-zinc-500">Ara toplam</dt>
+                <dd className="font-medium text-zinc-900 dark:text-white">{Number(quote.subtotal).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</dd>
               </div>
-            )}
-            <div className="flex justify-between">
-              <dt className="text-zinc-500">KDV</dt>
-              <dd className="font-medium text-zinc-900">{Number(quote.kdvTotal).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</dd>
-            </div>
-            <div className="flex justify-between border-t border-zinc-200 pt-3">
-              <dt className="font-semibold text-zinc-700">Genel toplam</dt>
-              <dd className="text-lg font-bold text-zinc-900">{Number(quote.grandTotal).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</dd>
-            </div>
-            {quote.notes && (
-              <div className="pt-2 border-t border-zinc-100">
-                <dt className="text-zinc-500">Notlar</dt>
-                <dd className="text-zinc-900 mt-1 whitespace-pre-wrap">{quote.notes}</dd>
+              {(Number(quote.generalDiscountPercent) > 0 || Number(quote.generalDiscountAmount) > 0) && (
+                <div className="flex justify-between text-zinc-600 dark:text-zinc-400">
+                  <dt>Genel indirim</dt>
+                  <dd>%{quote.generalDiscountPercent} / {Number(quote.generalDiscountAmount ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</dd>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <dt className="text-zinc-500">KDV</dt>
+                <dd className="font-medium text-zinc-900 dark:text-white">{Number(quote.kdvTotal).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</dd>
               </div>
-            )}
-          </dl>
+              <div className="flex justify-between border-t border-zinc-200 dark:border-zinc-600 pt-3">
+                <dt className="font-semibold text-zinc-700 dark:text-zinc-300">Genel toplam</dt>
+                <dd className="text-lg font-bold text-zinc-900 dark:text-white">{Number(quote.grandTotal).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</dd>
+              </div>
+              {quote.notes && (
+                <div className="pt-2 border-t border-zinc-100 dark:border-zinc-600">
+                  <dt className="text-zinc-500">Notlar</dt>
+                  <dd className="text-zinc-900 dark:text-zinc-200 mt-1 whitespace-pre-wrap">{quote.notes}</dd>
+                </div>
+              )}
+            </dl>
+          </div>
         </div>
       </div>
     </div>

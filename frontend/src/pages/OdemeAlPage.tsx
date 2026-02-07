@@ -78,7 +78,7 @@ export default function OdemeAlPage() {
         setLoading(false);
         if (done < 4) toast.error('Bazı veriler zaman aşımına uğradı.');
       }
-    }, 15000);
+    }, 8000);
     const checkDone = () => {
       done += 1;
       if (done >= 4) {

@@ -1,120 +1,124 @@
-# Mobilya Takip — Canlıya Taşıma ve Deployment
+# Mobilya Takip — Laravel Forge ile Yayına Alma
 
-Bu doküman, projeyi sunucuya (production) taşırken uygulamanız gereken adımları ve veri tutarlılığı / güvenlik özetini içerir.
-
----
-
-## 1. Veri Tutarlılığı Mührü (Data Integrity)
-
-- **Stok doğruluğu:** Teklif → Satışa dönüşümde `stockService.movement(..., 'cikis')` tetiklenir; `warehouse_stocks` (stok tabloları) anlık güncellenir. Envanter kaçakları önlenir.
-- **Finansal iz:** Nakit tahsilatta seçilen kasa ile `kasa_hareket` tablosuna **giris** kaydı düşer; ileride "Kasa Defteri" raporları bu veriden üretilebilir.
-- **RBAC:** Kasa, Masraf, Muhasebe API’leri `@Roles(ADMIN, MUHASEBE)` ile korunur; sadece Satış rolü 403 alır.
-- **Null-safe UI:** Optional chaining ve boş veri durumları sayfa crash’lerini engeller.
-- **PDF:** Backend PDF hata verirse jspdf fallback ile tarayıcıda PDF üretilir; firma adı/adres `company` API’den alınır.
+Bu doküman, projeyi **Laravel Forge** ile sunucuya deploy etmek ve canlıya almak için gerekli adımları anlatır.
 
 ---
 
-## 2. Environment Check (Canlı Sunucu .env)
+## 1. Forge’da Site ve Sunucu
 
-Canlıda mutlaka aşağıdaki değişkenleri **sunucuya göre** ayarlayın. `.env` dosyası **asla** repoya commit edilmemeli.
+- Forge’da bir **Server** ve ilgili **Site** oluşturun.
+- Site’ı **Git** ile bağlayın (repo URL, branch: örn. `main`).
+- **Web Directory:** `public` (Laravel varsayılanı).
+- **PHP Version:** 8.2 veya üzeri (composer.json ile uyumlu).
+- **Node.js:** Vite build için sunucuda Node (örn. 18+) kurulu olmalı; Forge’da "Node" sekmesinden veya NVM ile ekleyebilirsiniz.
+
+---
+
+## 2. Ortam Dosyası (.env)
+
+Sunucuda Forge, site kökünde `.env` oluşturmanızı ister. Aşağıdaki değişkenleri **canlıya uygun** doldurun:
 
 | Değişken | Açıklama | Canlı örnek |
 |----------|----------|-------------|
-| `NODE_ENV` | Ortam | `production` |
-| `PORT` | Backend dinleyeceği port | `3001` veya reverse proxy’nin yönlendiği port |
-| `DB_HOST` | MySQL sunucu | Canlı DB IP/host |
+| `APP_NAME` | Uygulama adı | `Mobilya Takip` |
+| `APP_ENV` | Ortam | `production` |
+| `APP_KEY` | Şifreleme anahtarı | `php artisan key:generate` ile üretin |
+| `APP_DEBUG` | Hata detayı | `false` |
+| `APP_URL` | Site tam URL | `https://yourdomain.com` |
+| `APP_TIMEZONE` | Saat dilimi | `Europe/Istanbul` |
+| `DB_CONNECTION` | Veritabanı sürücü | `mysql` |
+| `DB_HOST` | MySQL host | Forge DB host (örn. `127.0.0.1`) |
 | `DB_PORT` | MySQL port | `3306` |
-| `DB_USERNAME` | Veritabanı kullanıcı | Canlı DB kullanıcı |
-| `DB_PASSWORD` | Veritabanı şifre | **Güçlü, benzersiz şifre** |
-| `DB_DATABASE` | Veritabanı adı | `mobilyatakip` |
-| `JWT_SECRET` | JWT imza anahtarı | **En az 32 karakter, rastgele** (değiştirilmezse token’lar tahmin edilebilir) |
-| `JWT_EXPIRES_IN` | Token süresi | `7d` veya `1d` |
-| `APP_URL` | Backend tam URL | `https://api.siteniz.com` veya `https://siteniz.com` |
-| `FRONTEND_URL` | Frontend tam URL | `https://app.siteniz.com` (CORS için) |
+| `DB_DATABASE` | Veritabanı adı | Forge’da oluşturduğunuz DB adı |
+| `DB_USERNAME` | DB kullanıcı | Forge DB kullanıcı |
+| `DB_PASSWORD` | DB şifre | Forge DB şifre |
+| `SESSION_DRIVER` | Oturum | `file` (veya `database` / `redis`) |
+| `SESSION_SECURE_COOKIE` | HTTPS cookie | `true` (HTTPS kullanıyorsanız) |
+| `CACHE_STORE` | Cache | `file` (veya `redis`) |
+| `QUEUE_CONNECTION` | Kuyruk | `sync` (veya `redis` / `database`) |
+| `LOG_LEVEL` | Log seviyesi | `error` veya `warning` |
+| `MAIL_*` | E-posta | Canlı SMTP / Mailgun vb. |
 
-**Not:** Proje `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE` kullanıyor; tek satırlık `DATABASE_URL` kullanılmıyor. İsterseniz ileride bir wrapper ile `DATABASE_URL`’den bu değişkenlere parse edebilirsiniz.
-
----
-
-## 3. Build Optimization (Frontend + Backend)
-
-### Backend
-```bash
-npm install --production=false   # devDependencies gerekebilir (build için)
-npm run build
-# Çıktı: dist/ (main.js, app.module.js, vb.)
-```
-
-### Frontend
-```bash
-cd frontend
-npm ci
-npm run build
-# Çıktı: frontend/dist/ (index.html, assets/*.js, *.css)
-```
-
-### Tek komutla hepsi (proje kökünde)
-```bash
-npm run build:all
-```
-Önce frontend build, sonra backend build alır.
-
-**Kontrol:** `frontend/dist/index.html` ve `dist/main.js` dosyalarının oluştuğunu, build log’unda hata olmadığını doğrulayın.
+**Önemli:** `.env` dosyası repoya **hiçbir zaman** commit edilmemeli.
 
 ---
 
-## 4. Database Migration (Canlıda Veri Kaybını Önleme)
+## 3. Deploy Script (Forge’da)
 
-Geliştirmede `synchronize: true` (sadece `NODE_ENV === 'development'`) ile şema otomatik güncellenir. **Canlıda `NODE_ENV=production` olduğu için `synchronize` zaten `false`** (`src/config/database.config.ts`). Canlıda şema değişikliği yapmak için TypeORM migration kullanın.
+Her deploy’da Forge’un çalıştırdığı script’i aşağıdaki gibi ayarlayın.
 
-### İlk kez migration kullanacaksanız
-1. Mevcut şemayı migration’a dönüştürün (boş veritabanında bir kez `synchronize: true` ile şema oluşturup `migration:generate` ile üretmek yerine, entity’lerden ilk migration’ı elle veya CLI ile üretebilirsiniz).
-2. Projede `src/migrations/` klasörü yoksa oluşturun.
-3. Örnek komut (geliştirme ortamında):
-   ```bash
-   npm run migration:generate -- src/migrations/InitialSchema
-   ```
-4. Canlıda sadece migration çalıştırın:
-   ```bash
-   NODE_ENV=production npm run migration:run
-   ```
+**Seçenek A — Repodaki script’i kullan (önerilen):**
 
-### Canlıda kesin kurallar
-- **Asla** canlı veritabanında `synchronize: true` kullanmayın.
-- Şema değişikliği = yeni migration ekleyip `migration:run` ile uygulayın.
-- Migration’dan önce **veritabanı yedeği** alın.
+Forge **Deploy Script** alanına sadece şunu yazın:
+
+```bash
+bash forge-deploy.sh
+```
+
+**Seçenek B — Script’i doğrudan yapıştırma:**
+
+Forge **Deploy Script** alanına `forge-deploy.sh` dosyasının içeriğini kopyalayıp yapıştırabilirsiniz. Bu durumda ilk satırda `set -e` ve `BRANCH` ayarı aynı kalmalı.
+
+Deploy script sırasıyla şunları yapar:
+
+1. `git pull` (Forge’un seçtiği branch)
+2. `composer install --no-dev --optimize-autoloader`
+3. `php artisan migrate --force`
+4. `npm ci` + `npm run build` (Vite asset’leri)
+5. `php artisan config:cache` / `route:cache` / `view:cache`
+6. `php artisan storage:link` (gerekirse)
 
 ---
 
-## 5. Process Management (PM2 ile 7/24)
+## 4. İlk Deploy Öncesi Kontroller
 
-Backend’in sürekli ayakta kalması ve restart sonrası otomatik başlaması için PM2 kullanın.
-
-### PM2 kurulumu
-```bash
-npm install -g pm2
-```
-
-### Proje kökünde ecosystem dosyası
-`ecosystem.config.cjs` (veya `ecosystem.config.js`) kullanın; örnek içerik aşağıda. Çalıştırma:
-```bash
-pm2 start ecosystem.config.cjs
-pm2 save
-pm2 startup   # Sunucu açılışında PM2’yi başlatır (komutta çıkan komutu root ile çalıştırın)
-```
-
-**Kontrol:** `pm2 list` ile process’in “online” olduğunu, `pm2 logs` ile log çıktısını doğrulayın.
+- [ ] Forge’da **MySQL** veritabanı ve kullanıcı oluşturuldu, `.env` içine yazıldı.
+- [ ] `.env` içinde `APP_KEY` var (yoksa sunucuda `php artisan key:generate` çalıştırın).
+- [ ] `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL` canlı adres.
+- [ ] Deploy Script olarak `bash forge-deploy.sh` veya eşdeğeri ayarlandı.
 
 ---
 
-## 6. Canlı Checklist (Kısa Özet)
+## 5. SSL (HTTPS)
 
-- [ ] `.env` canlı değerlerle dolduruldu (`DB_*`, `JWT_SECRET`, `PORT`, `APP_URL`, `FRONTEND_URL`).
-- [ ] `NODE_ENV=production` ayarlandı.
-- [ ] `npm run build:all` hatasız tamamlandı; `dist/` ve `frontend/dist/` oluştu.
-- [ ] Canlı veritabanında `synchronize` kapalı; şema migration ile yönetiliyor.
-- [ ] Backend PM2 (veya benzeri) ile sürekli çalışıyor; restart sonrası otomatik başlıyor.
-- [ ] Reverse proxy (Nginx/Apache) varsa: API için `PORT` (örn. 3001), frontend için `frontend/dist` statik dosya veya ayrı frontend host’u yapılandırıldı.
-- [ ] HTTPS ve güçlü `JWT_SECRET` kullanılıyor.
+Forge üzerinden site için **SSL** aktif edin (Let’s Encrypt önerilir). Sonrasında `.env` içinde:
 
-Bu adımlar tamamlandığında proje canlıya hazır kabul edilir.
+- `APP_URL=https://yourdomain.com`
+- `SESSION_SECURE_COOKIE=true`
+
+---
+
+## 6. Scheduler (Cron)
+
+Laravel’de zamanlanmış görev varsa Forge **Scheduler** kullanın. Forge otomatik şu cron’u ekler:
+
+```bash
+* * * * * cd /home/forge/siteniz && php artisan schedule:run >> /dev/null 2>&1
+```
+
+`routes/console.php` içinde tanımlı `schedule()` komutları bu sayede çalışır.
+
+---
+
+## 7. Queue Worker (İsteğe bağlı)
+
+Eğer `QUEUE_CONNECTION=database` veya `redis` kullanıyorsanız, Forge’da **Daemon** (Queue Worker) tanımlayın:
+
+- **Command:** `php artisan queue:work --sleep=3 --tries=3 --max-time=3600`
+- **Directory:** Site kök dizini
+
+Deploy script’teki `php artisan queue:restart` satırının yorumunu kaldırırsanız, her deploy’da worker temiz şekilde yeniden başlar.
+
+---
+
+## 8. Kısa Canlı Checklist
+
+- [ ] Forge’da site + Git + `public` web directory ayarlı.
+- [ ] `.env` canlı değerlerle dolduruldu; `APP_KEY` var.
+- [ ] `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL` doğru.
+- [ ] Deploy Script: `bash forge-deploy.sh` (veya eşdeğeri).
+- [ ] İlk deploy sonrası `php artisan migrate --force` hatasız bitti.
+- [ ] SSL açıldı; `SESSION_SECURE_COOKIE=true` (HTTPS kullanıyorsanız).
+- [ ] Gerekirse Scheduler ve Queue Worker Forge’da tanımlı.
+
+Bu adımlar tamamlandığında proje Laravel Forge üzerinden yayına hazırdır.

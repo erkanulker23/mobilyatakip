@@ -5,28 +5,37 @@ import { Repository } from 'typeorm';
 import * as nodemailer from 'nodemailer';
 import { MailLog } from '../../entities/mail-log.entity';
 import { MailStatus } from '../../common/enums/mail-status.enum';
+import { CompanyService } from '../company/company.service';
 
 @Injectable()
 export class MailService {
-  private transporter: nodemailer.Transporter | null = null;
-
   constructor(
     private config: ConfigService,
+    private companyService: CompanyService,
     @InjectRepository(MailLog)
     private logRepo: Repository<MailLog>,
-  ) {
-    const host = this.config.get('MAIL_HOST');
-    if (host) {
-      this.transporter = nodemailer.createTransport({
-        host,
-        port: this.config.get('MAIL_PORT') || 587,
-        secure: false,
-        auth: {
-          user: this.config.get('MAIL_USER'),
-          pass: this.config.get('MAIL_PASSWORD'),
-        },
-      });
-    }
+  ) {}
+
+  /** Şirket ayarlarından veya env'den SMTP transporter oluşturur. */
+  private async getTransporter(): Promise<nodemailer.Transporter | null> {
+    const company = await this.companyService.findOne();
+    const host = company?.mailHost || this.config.get('MAIL_HOST');
+    if (!host) return null;
+    const port = company?.mailPort ?? this.config.get('MAIL_PORT') ?? 587;
+    const secure = company?.mailSecure ?? false;
+    const user = company?.mailUser || this.config.get('MAIL_USER');
+    const pass = company?.mailPassword || this.config.get('MAIL_PASSWORD');
+    return nodemailer.createTransport({
+      host,
+      port: Number(port),
+      secure,
+      auth: user && pass ? { user, pass } : undefined,
+    });
+  }
+
+  private async getFromAddress(): Promise<string> {
+    const company = await this.companyService.findOne();
+    return company?.mailFrom || this.config.get('MAIL_FROM') || 'noreply@mobilyatakip.local';
   }
 
   async send(options: {
@@ -51,10 +60,11 @@ export class MailService {
       sentAt: new Date(),
     });
     await this.logRepo.save(log);
-    if (this.transporter) {
+    const transporter = await this.getTransporter();
+    if (transporter) {
       try {
-        await this.transporter.sendMail({
-          from: this.config.get('MAIL_FROM') || 'noreply@mobilyatakip.local',
+        await transporter.sendMail({
+          from: await this.getFromAddress(),
           to: options.to,
           cc: options.cc,
           subject: options.subject,
@@ -68,6 +78,27 @@ export class MailService {
       }
     }
     return log;
+  }
+
+  /** Test e-postası gönderir (Ayarlar sayfasından bağlantı testi). */
+  async sendTest(to: string): Promise<{ ok: boolean; message?: string }> {
+    const transporter = await this.getTransporter();
+    if (!transporter) {
+      return { ok: false, message: 'E-posta ayarları eksik. Ayarlar > E-posta (SMTP) bölümünden SMTP bilgilerini girin.' };
+    }
+    try {
+      const from = await this.getFromAddress();
+      await transporter.sendMail({
+        from,
+        to,
+        subject: 'Mobilya Takip – Test E-postası',
+        text: 'Bu mesaj Mobilya Takip uygulamasından gönderilen bir test e-postasıdır. SMTP ayarlarınız çalışıyor.',
+        html: '<p>Bu mesaj <strong>Mobilya Takip</strong> uygulamasından gönderilen bir test e-postasıdır.</p><p>SMTP ayarlarınız çalışıyor.</p>',
+      });
+      return { ok: true };
+    } catch (err: any) {
+      return { ok: false, message: err?.message || 'E-posta gönderilemedi.' };
+    }
   }
 
   async markRead(logId: string): Promise<MailLog> {

@@ -1,0 +1,136 @@
+@extends('layouts.app')
+@section('title', 'Ayarlar')
+@section('content')
+
+<div x-data="{ deleteOpen: false }">
+    <div class="mb-8">
+        <h1 class="page-title">Ayarlar</h1>
+        <p class="page-desc">Firma bilgileri, logo, SEO, SMS, ödeme ve e-posta ayarları</p>
+    </div>
+
+    @if($company?->logoUrl)
+    <div x-show="deleteOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="delete-logo-title">
+        <div class="fixed inset-0 bg-black/50" @click="deleteOpen = false"></div>
+        <div class="relative card max-w-sm w-full p-6" @keydown.escape.window="deleteOpen = false">
+            <h2 id="delete-logo-title" class="text-base font-semibold text-slate-900 dark:text-slate-100">Logoyu sil</h2>
+            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Mevcut logoyu silmek istediğinize emin misiniz?</p>
+            <div class="mt-6 flex gap-3 justify-end">
+                <button type="button" @click="deleteOpen = false" class="btn-secondary">İptal</button>
+                <form method="POST" action="{{ route('settings.delete-logo') }}" class="inline">
+                    @csrf
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700">Sil</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    @if($company?->logoUrl)
+    <div class="card overflow-hidden mb-6">
+        <div class="card-header">Mevcut logo</div>
+        <div class="p-5 flex flex-wrap items-center gap-4">
+            <img src="{{ asset($company->logoUrl) }}" alt="Firma logosu" class="h-24 w-auto object-contain border border-slate-200 dark:border-slate-600 rounded-xl p-2">
+            <button type="button" @click="deleteOpen = true" class="btn-secondary text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">Logoyu sil</button>
+        </div>
+    </div>
+    @endif
+
+    <form method="POST" action="{{ route('settings.update') }}" enctype="multipart/form-data" x-data="{ submitting: false }" @submit="submitting = true">
+        @csrf
+
+        <div class="card overflow-hidden mb-6">
+            <div class="card-header">Firma Logosu</div>
+            <div class="p-5">
+                <label class="form-label">Yeni logo yükle</label>
+                <input type="file" name="logo" accept="image/*" class="form-input py-2">
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">PNG, JPG, max 2MB. Önerilen: 200×80px</p>
+            </div>
+        </div>
+
+        <div class="card overflow-hidden mb-6">
+            <div class="card-header">Firma Bilgileri</div>
+            <div class="p-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label class="form-label">Firma Adı</label><input type="text" name="name" value="{{ old('name', $company?->name) }}" class="form-input" placeholder="Firma adı"></div>
+                    <div><label class="form-label">Vergi No</label><input type="text" name="taxNumber" value="{{ old('taxNumber', $company?->taxNumber) }}" class="form-input"></div>
+                    <div><label class="form-label">Vergi Dairesi</label><input type="text" name="taxOffice" value="{{ old('taxOffice', $company?->taxOffice) }}" class="form-input"></div>
+                    <div><label class="form-label">Telefon</label><input type="text" name="phone" value="{{ old('phone', $company?->phone) }}" class="form-input"></div>
+                    <div class="md:col-span-2"><label class="form-label">E-posta</label><input type="email" name="email" value="{{ old('email', $company?->email) }}" class="form-input"></div>
+                    <div class="md:col-span-2"><label class="form-label">Adres</label><textarea name="address" rows="2" class="form-input form-textarea">{{ old('address', $company?->address) }}</textarea></div>
+                    <div><label class="form-label">Web sitesi</label><input type="text" name="website" value="{{ old('website', $company?->website) }}" class="form-input" placeholder="https://"></div>
+                </div>
+            </div>
+        </div>
+
+        @if(\Illuminate\Support\Facades\Schema::hasColumn('companies', 'metaTitle'))
+        <div class="card overflow-hidden mb-6">
+            <div class="card-header">SEO Ayarları</div>
+            <div class="p-5">
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Fatura ve PDF çıktıları, arama motoru meta bilgileri.</p>
+                <div class="space-y-4">
+                    <div><label class="form-label">Meta Başlık (max 70)</label><input type="text" name="metaTitle" value="{{ old('metaTitle', $company?->metaTitle ?? $company?->name) }}" class="form-input" maxlength="70"></div>
+                    <div><label class="form-label">Meta Açıklama (max 160)</label><textarea name="metaDescription" rows="2" class="form-input form-textarea" maxlength="160">{{ old('metaDescription', $company?->metaDescription) }}</textarea></div>
+                </div>
+            </div>
+        </div>
+        @endif
+
+        <div class="card overflow-hidden mb-6">
+            <div class="card-header">SMS Entegrasyonu (NTGSM)</div>
+            <div class="p-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label class="form-label">Kullanıcı Adı</label><input type="text" name="ntgsmUsername" value="{{ old('ntgsmUsername', $company?->ntgsmUsername) }}" class="form-input"></div>
+                    <div><label class="form-label">Şifre</label><input type="password" name="ntgsmPassword" value="{{ old('ntgsmPassword', $company?->ntgsmPassword) }}" class="form-input" placeholder="Değiştirmek için doldurun"></div>
+                    <div><label class="form-label">Originator (Başlık)</label><input type="text" name="ntgsmOriginator" value="{{ old('ntgsmOriginator', $company?->ntgsmOriginator) }}" class="form-input"></div>
+                    <div><label class="form-label">API URL</label><input type="text" name="ntgsmApiUrl" value="{{ old('ntgsmApiUrl', $company?->ntgsmApiUrl) }}" class="form-input"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card overflow-hidden mb-6">
+            <div class="card-header">Sanal Pos (PayTR)</div>
+            <div class="p-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label class="form-label">Merchant ID</label><input type="text" name="paytrMerchantId" value="{{ old('paytrMerchantId', $company?->paytrMerchantId) }}" class="form-input"></div>
+                    <div><label class="form-label">Merchant Key</label><input type="text" name="paytrMerchantKey" value="{{ old('paytrMerchantKey', $company?->paytrMerchantKey) }}" class="form-input"></div>
+                    <div><label class="form-label">Merchant Salt</label><input type="text" name="paytrMerchantSalt" value="{{ old('paytrMerchantSalt', $company?->paytrMerchantSalt) }}" class="form-input"></div>
+                    <div class="md:col-span-2 flex items-center pt-2">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="paytrTestMode" value="1" {{ old('paytrTestMode', $company?->paytrTestMode) ? 'checked' : '' }} class="rounded border-slate-300 dark:border-slate-500 text-emerald-600 focus:ring-emerald-500 bg-slate-100 dark:bg-slate-700">
+                            <span class="text-sm text-slate-700 dark:text-slate-300">Test modu</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card overflow-hidden mb-6">
+            <div class="card-header">E-posta (SMTP)</div>
+            <div class="p-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label class="form-label">SMTP Host</label><input type="text" name="mailHost" value="{{ old('mailHost', $company?->mailHost) }}" class="form-input"></div>
+                    <div><label class="form-label">Port</label><input type="number" name="mailPort" value="{{ old('mailPort', $company?->mailPort) }}" class="form-input"></div>
+                    <div><label class="form-label">Kullanıcı</label><input type="text" name="mailUser" value="{{ old('mailUser', $company?->mailUser) }}" class="form-input"></div>
+                    <div><label class="form-label">Şifre</label><input type="password" name="mailPassword" value="{{ old('mailPassword', $company?->mailPassword) }}" class="form-input" placeholder="Değiştirmek için doldurun"></div>
+                    <div><label class="form-label">Gönderen adresi</label><input type="email" name="mailFrom" value="{{ old('mailFrom', $company?->mailFrom) }}" class="form-input"></div>
+                    <div class="md:col-span-2 flex items-center pt-2">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="mailSecure" value="1" {{ old('mailSecure', $company?->mailSecure) ? 'checked' : '' }} class="rounded border-slate-300 dark:border-slate-500 text-emerald-600 focus:ring-emerald-500 bg-slate-100 dark:bg-slate-700">
+                            <span class="text-sm text-slate-700 dark:text-slate-300">SSL/TLS kullan</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+            <button type="submit" :disabled="submitting" class="btn-primary disabled:opacity-70 disabled:cursor-not-allowed">
+                <template x-if="submitting"><svg class="w-5 h-5 animate-spin shrink-0" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></template>
+                <template x-if="!submitting"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></template>
+                <span x-text="submitting ? 'Kaydediliyor...' : 'Ayarları Kaydet'">Ayarları Kaydet</span>
+            </button>
+            <a href="{{ route('dashboard') }}" class="btn-secondary">İptal</a>
+        </div>
+    </form>
+</div>
+@endsection

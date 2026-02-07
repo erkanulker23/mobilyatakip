@@ -98,9 +98,12 @@ async function bootstrap() {
   const apiPathPrefixes = ['/api', '/uploads', '/docs'];
   if (existsSync(frontendDist)) {
     express.use(expressStatic(frontendDist));
-    express.get('*', (req: { path: string }, res: { sendFile: (p: string) => void }, next: () => void) => {
+    express.get('*', (req: { path: string }, res: { sendFile: (p: string) => void; setHeader: (name: string, value: string) => void }, next: () => void) => {
       const isApi = apiPathPrefixes.some((p) => req.path === p || req.path.startsWith(p + '/'));
       if (isApi) return next();
+      // index.html: tarayıcı her seferinde kontrol etsin, eski cache kullanmasın
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
       res.sendFile(join(frontendDist, 'index.html'));
     });
   }

@@ -1,7 +1,9 @@
-import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { MailService } from './mail.service';
 
 @Controller('mail')
+@UseGuards(AuthGuard('jwt'))
 export class MailController {
   constructor(private mail: MailService) {}
 
@@ -30,5 +32,12 @@ export class MailController {
   @Get('logs')
   logs(@Query('entityType') entityType?: string, @Query('entityId') entityId?: string) {
     return this.mail.getLogs({ entityType, entityId });
+  }
+
+  @Post('test')
+  test(@Body() body: { to: string }) {
+    const to = body?.to?.trim();
+    if (!to) return Promise.resolve({ ok: false, message: 'E-posta adresi gerekli.' });
+    return this.mail.sendTest(to);
   }
 }

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Tab } from '@headlessui/react';
-import { BuildingOffice2Icon, ChatBubbleLeftRightIcon, CreditCardIcon } from '@heroicons/react/24/outline';
+import { BuildingOffice2Icon, ChatBubbleLeftRightIcon, CreditCardIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import { companyApi } from '../services/api/companyApi';
 import { smsApi } from '../services/api/smsApi';
+import { mailApi } from '../services/api/mailApi';
 import { uploadApi } from '../services/api/uploadApi';
 import { PageHeader } from '../components/ui';
 import toast from 'react-hot-toast';
@@ -24,10 +25,17 @@ interface CompanyForm {
   paytrMerchantKey: string;
   paytrMerchantSalt: string;
   paytrTestMode: boolean;
+  mailHost: string;
+  mailPort: string;
+  mailUser: string;
+  mailPassword: string;
+  mailFrom: string;
+  mailSecure: boolean;
 }
 
 const tabs = [
   { name: 'Firma Bilgileri', key: 'firma', icon: BuildingOffice2Icon },
+  { name: 'E-posta (SMTP)', key: 'mail', icon: EnvelopeIcon },
   { name: 'SMS Entegrasyonu (NTGSM)', key: 'ntgsm', icon: ChatBubbleLeftRightIcon },
   { name: 'Sanal Pos (PayTR)', key: 'paytr', icon: CreditCardIcon },
 ];
@@ -41,6 +49,8 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState<string | null>(null);
   const [testSmsPhone, setTestSmsPhone] = useState('');
   const [sendingSms, setSendingSms] = useState(false);
+  const [testMailTo, setTestMailTo] = useState('');
+  const [sendingMail, setSendingMail] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [form, setForm] = useState<CompanyForm>({
     name: '',
@@ -59,6 +69,12 @@ export default function SettingsPage() {
     paytrMerchantKey: '',
     paytrMerchantSalt: '',
     paytrTestMode: false,
+    mailHost: '',
+    mailPort: '587',
+    mailUser: '',
+    mailPassword: '',
+    mailFrom: '',
+    mailSecure: false,
   });
 
   useEffect(() => {
@@ -84,6 +100,12 @@ export default function SettingsPage() {
           paytrMerchantKey: String(c?.paytrMerchantKey ?? ''),
           paytrMerchantSalt: String(c?.paytrMerchantSalt ?? ''),
           paytrTestMode: Boolean(c?.paytrTestMode),
+          mailHost: String(c?.mailHost ?? ''),
+          mailPort: c?.mailPort != null ? String(c.mailPort) : '587',
+          mailUser: String(c?.mailUser ?? ''),
+          mailPassword: String(c?.mailPassword ?? ''),
+          mailFrom: String(c?.mailFrom ?? ''),
+          mailSecure: Boolean(c?.mailSecure),
         });
       })
       .catch(() => toast.error('Ayarlar yüklenemedi'))
@@ -124,6 +146,24 @@ export default function SettingsPage() {
       .finally(() => setSaving(null));
   };
 
+  const saveMail = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving('mail');
+    const port = form.mailPort.trim() ? parseInt(form.mailPort, 10) : undefined;
+    companyApi
+      .update({
+        mailHost: form.mailHost.trim() || undefined,
+        mailPort: port,
+        mailUser: form.mailUser.trim() || undefined,
+        mailPassword: form.mailPassword || undefined,
+        mailFrom: form.mailFrom.trim() || undefined,
+        mailSecure: form.mailSecure,
+      })
+      .then(() => toast.success('E-posta (SMTP) ayarları kaydedildi'))
+      .catch(() => toast.error('E-posta ayarları kaydedilemedi'))
+      .finally(() => setSaving(null));
+  };
+
   const savePaytr = (e: React.FormEvent) => {
     e.preventDefault();
     setSaving('paytr');
@@ -149,7 +189,7 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Ayarlar" description="Firma, SMS ve ödeme ayarları" icon={BuildingOffice2Icon} />
+      <PageHeader title="Ayarlar" description="Firma, e-posta (SMTP), SMS ve ödeme ayarları" icon={BuildingOffice2Icon} />
 
       <Tab.Group>
         <Tab.List className="flex gap-1 p-1 mb-6 rounded-xl bg-zinc-100 dark:bg-zinc-800 max-w-2xl">
@@ -283,6 +323,115 @@ export default function SettingsPage() {
                   >
                     {saving === 'firma' ? 'Kaydediliyor...' : 'Firma Bilgilerini Kaydet'}
                   </button>
+                </div>
+              </form>
+            </div>
+          </Tab.Panel>
+
+          {/* E-posta (SMTP) */}
+          <Tab.Panel>
+            <div className="max-w-2xl">
+              <form onSubmit={saveMail} className="bg-white dark:bg-zinc-800 rounded-xl border border-slate-200 dark:border-zinc-700 shadow-sm p-6 space-y-4">
+                <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-4">E-posta (SMTP) Ayarları</h2>
+                <p className="text-sm text-slate-500 dark:text-zinc-400 mb-4">Sistemden gönderilecek tüm e-postalar (fatura, teklif, bildirim vb.) bu SMTP ayarları üzerinden gider. Bilgileri girdikten sonra &quot;Test E-postası Gönder&quot; ile bağlantıyı deneyebilirsiniz.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelClass}>SMTP Sunucu (Host)</label>
+                    <input
+                      type="text"
+                      value={form.mailHost}
+                      onChange={(e) => setForm((f) => ({ ...f, mailHost: e.target.value }))}
+                      className={inputClass}
+                      placeholder="smtp.gmail.com"
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Port</label>
+                    <input
+                      type="number"
+                      value={form.mailPort}
+                      onChange={(e) => setForm((f) => ({ ...f, mailPort: e.target.value }))}
+                      className={inputClass}
+                      placeholder="587"
+                    />
+                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Genelde 587 (TLS) veya 465 (SSL)</p>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Kullanıcı adı</label>
+                    <input
+                      type="text"
+                      value={form.mailUser}
+                      onChange={(e) => setForm((f) => ({ ...f, mailUser: e.target.value }))}
+                      className={inputClass}
+                      placeholder="noreply@firma.com"
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Şifre</label>
+                    <input
+                      type="password"
+                      value={form.mailPassword}
+                      onChange={(e) => setForm((f) => ({ ...f, mailPassword: e.target.value }))}
+                      className={inputClass}
+                      placeholder="Uygulama şifresi"
+                    />
+                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Gmail için &quot;Uygulama şifresi&quot; kullanın</p>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className={labelClass}>Gönderen adresi (From)</label>
+                    <input
+                      type="text"
+                      value={form.mailFrom}
+                      onChange={(e) => setForm((f) => ({ ...f, mailFrom: e.target.value }))}
+                      className={inputClass}
+                      placeholder="Mobilya Takip &lt;noreply@firma.com&gt;"
+                    />
+                  </div>
+                  <div className="sm:col-span-2 flex items-center gap-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="mailSecure"
+                      checked={form.mailSecure}
+                      onChange={(e) => setForm((f) => ({ ...f, mailSecure: e.target.checked }))}
+                      className="rounded border-slate-300 dark:border-zinc-600 text-indigo-600 focus:ring-indigo-500 dark:bg-zinc-700"
+                    />
+                    <label htmlFor="mailSecure" className={`${labelClass} mb-0`}>SSL/TLS (port 465 için işaretleyin)</label>
+                  </div>
+                </div>
+                <div className="pt-2 flex flex-wrap gap-3 items-end">
+                  <button
+                    type="submit"
+                    disabled={saving !== null}
+                    className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                  >
+                    {saving === 'mail' ? 'Kaydediliyor...' : 'E-posta Ayarlarını Kaydet'}
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="email"
+                      value={testMailTo}
+                      onChange={(e) => setTestMailTo(e.target.value)}
+                      placeholder="Test için e-posta adresi"
+                      className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-2 text-sm w-56 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100"
+                    />
+                    <button
+                      type="button"
+                      disabled={sendingMail || !testMailTo.trim()}
+                      onClick={() => {
+                        setSendingMail(true);
+                        mailApi.test({ to: testMailTo.trim() })
+                          .then(({ data }) => {
+                            if (data?.ok) toast.success('Test e-postası gönderildi. Gelen kutusunu kontrol edin.');
+                            else toast.error(data?.message || 'E-posta gönderilemedi.');
+                          })
+                          .catch(() => toast.error('E-posta gönderilemedi.'))
+                          .finally(() => setSendingMail(false));
+                      }}
+                      className="rounded-lg px-4 py-2 text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                      {sendingMail ? 'Gönderiliyor...' : 'Test E-postası Gönder'}
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>

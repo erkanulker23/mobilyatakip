@@ -90,23 +90,34 @@ body {
   background-color: rgb(82 82 91);
 }
 
-/* Yazdırma: tabloların kaymaması, sidebar ve modal gizleme */
+/* Yazdırma: fatura tek sayfaya sığar, sidebar ve modal gizlenir */
 @media print {
   aside,
   [role="dialog"],
   .fixed.inset-0,
   [class*="backdrop"],
   header.sticky,
+  .print\:hidden,
   button[type="button"]:not(.print\:block) {
     display: none !important;
   }
   main {
     padding-left: 0 !important;
   }
+  body {
+    background: #fff;
+  }
+  /* Fatura tek sayfa */
+  .invoice-print {
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+  }
   table {
     width: 100% !important;
     table-layout: fixed;
     break-inside: auto;
+    font-size: 11px;
   }
   tr {
     break-inside: avoid;
@@ -115,7 +126,8 @@ body {
   thead {
     display: table-header-group;
   }
-  body {
-    background: #fff;
+  .invoice-print th,
+  .invoice-print td {
+    padding: 6px 8px !important;
   }
 }

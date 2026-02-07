@@ -22,8 +22,12 @@ import toast from 'react-hot-toast';
 
 type PaymentMethod = 'nakit' | 'kredi_karti' | 'havale';
 
-const COMPANY_NAME = 'Mobilya Takip';
-const COMPANY_SUBTITLE = 'Mobilya Satış ve Takip Hizmetleri';
+interface CompanyInfoState {
+  name?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+}
 
 interface SaleDetail {
   id: string;
@@ -101,6 +105,7 @@ export default function SaleDetailPage() {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentSubmitting, setPaymentSubmitting] = useState(false);
   const [banks, setBanks] = useState<{ id: string; name: string; type: string; bankName?: string }[]>([]);
+  const [company, setCompany] = useState<CompanyInfoState | null>(null);
   const [paymentForm, setPaymentForm] = useState({
     amount: '',
     paymentMethod: 'nakit' as PaymentMethod,
@@ -129,6 +134,10 @@ export default function SaleDetailPage() {
   useEffect(() => {
     load();
   }, [id]);
+
+  useEffect(() => {
+    companyApi.get().then(({ data }) => setCompany((data as CompanyInfoState) ?? null)).catch(() => setCompany(null));
+  }, []);
 
   useEffect(() => {
     if (paymentModalOpen) {
@@ -276,8 +285,8 @@ export default function SaleDetailPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      {/* Üst bar: Geri Dön + Düzenle, Kaydet, Sil, Yazdır */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      {/* Üst bar: Geri Dön + Düzenle, Kaydet, Sil, Yazdır — yazdırmada gizlenir */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
         <Link
           to={ROUTES.satislar}
           className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 hover:text-zinc-900"
@@ -314,31 +323,39 @@ export default function SaleDetailPage() {
         </div>
       </div>
 
-      {/* Fatura görünümü kartı */}
-      <div className="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-8 shadow-sm">
-        {/* FATURA başlık satırı */}
-        <div className="mb-8 flex flex-wrap items-start justify-between gap-6 border-b border-zinc-200 pb-6">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-900">FATURA</h1>
-            <p className="mt-1 text-sm text-zinc-600">Fiş No: {sale.saleNumber}</p>
-            <p className="text-sm text-zinc-600">Tarih: {formatDate(sale.saleDate)}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-lg font-bold text-zinc-900">{COMPANY_NAME}</p>
-            <p className="text-sm text-zinc-500">{COMPANY_SUBTITLE}</p>
+      {/* Fatura görünümü kartı — normal fatura düzeni: firma üstte, toplamlar altta */}
+      <div className="invoice-print rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-8 shadow-sm">
+        {/* 1. Üst: Firma bilgileri */}
+        <div className="mb-6 border-b border-zinc-200 dark:border-zinc-600 pb-6">
+          <h2 className="text-xl font-bold text-zinc-900 dark:text-white">
+            {company?.name ?? 'Mobilya Takip'}
+          </h2>
+          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0 text-sm text-zinc-600 dark:text-zinc-400">
+            {company?.address && <span>{company.address}</span>}
+            {company?.phone && <span>Tel: {company.phone}</span>}
+            {company?.email && <span>{company.email}</span>}
           </div>
         </div>
 
-        {/* İki sütun: Müşteri + Satış bilgileri */}
-        <div className="mb-8 grid gap-6 sm:grid-cols-2">
-          <div className="rounded-xl border border-zinc-100 bg-zinc-50/50 p-5">
+        {/* 2. Fatura başlık + fiş no + tarih */}
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">FATURA</h1>
+            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">Fiş No: {sale.saleNumber}</p>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">Tarih: {formatDate(sale.saleDate)}</p>
+          </div>
+        </div>
+
+        {/* 3. İki sütun: Müşteri + Tarih/Vade/Notlar (toplamlar yok) */}
+        <div className="mb-6 grid gap-6 sm:grid-cols-2">
+          <div className="rounded-xl border border-zinc-100 dark:border-zinc-600 bg-zinc-50/50 dark:bg-zinc-800/50 p-5">
             <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">
               Müşteri Bilgileri
             </h2>
             <dl className="space-y-2 text-sm">
               <div>
                 <dt className="text-zinc-500">Ad Soyad</dt>
-                <dd className="font-medium text-zinc-900">
+                <dd className="font-medium text-zinc-900 dark:text-white">
                   {sale.customer?.id ? (
                     <Link to={ROUTES.musteri(sale.customer.id)} className="text-emerald-600 hover:text-emerald-700 hover:underline">
                       {sale.customer.name ?? '—'}
@@ -350,18 +367,18 @@ export default function SaleDetailPage() {
               </div>
               <div>
                 <dt className="text-zinc-500">E-posta</dt>
-                <dd className="text-zinc-900">{sale.customer?.email ?? '—'}</dd>
+                <dd className="text-zinc-900 dark:text-zinc-200">{sale.customer?.email ?? '—'}</dd>
               </div>
               <div>
                 <dt className="text-zinc-500">Telefon</dt>
-                <dd className="text-zinc-900">{sale.customer?.phone ?? '—'}</dd>
+                <dd className="text-zinc-900 dark:text-zinc-200">{sale.customer?.phone ?? '—'}</dd>
               </div>
               <div>
                 <dt className="text-zinc-500">Adres</dt>
-                <dd className="text-zinc-900">{sale.customer?.address ?? '—'}</dd>
+                <dd className="text-zinc-900 dark:text-zinc-200">{sale.customer?.address ?? '—'}</dd>
               </div>
               {sale.quoteId && (
-                <div className="pt-2 border-t border-zinc-200">
+                <div className="pt-2 border-t border-zinc-200 dark:border-zinc-600">
                   <dt className="text-zinc-500">Teklif</dt>
                   <dd>
                     <Link to={ROUTES.teklif(sale.quoteId)} className="text-emerald-600 hover:text-emerald-700 hover:underline">
@@ -373,7 +390,7 @@ export default function SaleDetailPage() {
             </dl>
           </div>
 
-          <div className="rounded-xl border border-zinc-100 bg-zinc-50/50 p-5">
+          <div className="rounded-xl border border-zinc-100 dark:border-zinc-600 bg-zinc-50/50 dark:bg-zinc-800/50 p-5">
             <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">
               Satış Bilgileri
             </h2>
@@ -404,44 +421,20 @@ export default function SaleDetailPage() {
               <dl className="space-y-2 text-sm">
                 <div>
                   <dt className="text-zinc-500">Tarih</dt>
-                  <dd className="font-medium text-zinc-900">{formatDate(sale.saleDate)}</dd>
+                  <dd className="font-medium text-zinc-900 dark:text-white">{formatDate(sale.saleDate)}</dd>
                 </div>
                 <div>
                   <dt className="text-zinc-500">Vade</dt>
-                  <dd className="text-zinc-900">{formatDate(sale.dueDate)}</dd>
-                </div>
-                <div className="flex justify-between items-baseline">
-                  <dt className="text-zinc-500">Ara toplam</dt>
-                  <dd className="font-medium text-zinc-900 text-right">
-                    {Number(sale.subtotal).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                  </dd>
-                </div>
-                <div className="flex justify-between items-baseline">
-                  <dt className="text-zinc-500">KDV</dt>
-                  <dd className="font-medium text-zinc-900 text-right">
-                    {Number(sale.kdvTotal).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                  </dd>
-                </div>
-                <div className="flex justify-between items-baseline border-t border-zinc-200 pt-2">
-                  <dt className="text-zinc-500 font-medium">Genel Toplam</dt>
-                  <dd className="font-semibold text-zinc-900 text-right">
-                    {Number(sale.grandTotal).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                  </dd>
-                </div>
-                <div className="flex justify-between items-baseline">
-                  <dt className="text-zinc-500">Ödenen</dt>
-                  <dd className="font-medium text-zinc-900 text-right">
-                    {Number(sale.paidAmount).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                  </dd>
+                  <dd className="text-zinc-900 dark:text-zinc-200">{formatDate(sale.dueDate)}</dd>
                 </div>
                 {sale.notes && (
                   <div>
                     <dt className="text-zinc-500">Notlar</dt>
-                    <dd className="text-zinc-900">{sale.notes}</dd>
+                    <dd className="text-zinc-900 dark:text-zinc-200">{sale.notes}</dd>
                   </div>
                 )}
                 {(sale.createdAt || sale.updatedAt) && (
-                  <div className="pt-2 border-t border-zinc-100 space-y-1 text-xs text-zinc-400">
+                  <div className="pt-2 border-t border-zinc-100 dark:border-zinc-600 space-y-1 text-xs text-zinc-400">
                     {sale.createdAt && <div>Oluşturulma: {formatDate(sale.createdAt)}</div>}
                     {sale.updatedAt && <div>Son güncelleme: {formatDate(sale.updatedAt)}</div>}
                   </div>
@@ -451,14 +444,14 @@ export default function SaleDetailPage() {
           </div>
         </div>
 
-        {/* Kalemler / Aylık fiyatlandırma tarzı tablo */}
+        {/* 4. Kalemler tablosu */}
         <div>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
               Satış Kalemleri
             </h2>
             {Number(sale.grandTotal) - Number(sale.paidAmount) > 0 && (
-              <Button variant="primary" icon={BanknotesIcon} onClick={openPaymentModal}>
+              <Button variant="primary" icon={BanknotesIcon} onClick={openPaymentModal} className="print:hidden">
                 + Ödeme Al
               </Button>
             )}
@@ -482,7 +475,7 @@ export default function SaleDetailPage() {
                   <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-500">
                     Satır Toplam
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-zinc-500 print:hidden">
                     Ödeme Durumu
                   </th>
                 </tr>
@@ -510,7 +503,7 @@ export default function SaleDetailPage() {
                     <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-zinc-900">
                       {Number(item.lineTotal).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-center">
+                    <td className="whitespace-nowrap px-4 py-3 text-center print:hidden">
                       <PaymentStatusBadge status={paymentStatus} isPending={isPending} />
                     </td>
                   </tr>
@@ -519,10 +512,42 @@ export default function SaleDetailPage() {
             </table>
           </div>
           {(!sale.items || sale.items.length === 0) && (
-            <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 px-4 py-8 text-center text-sm text-zinc-500">
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-600 bg-zinc-50/50 dark:bg-zinc-800/50 px-4 py-8 text-center text-sm text-zinc-500">
               Kalem bulunmuyor.
             </div>
           )}
+        </div>
+
+        {/* 5. Altta: Toplamlar — normal fatura mantığı */}
+        <div className="mt-8 flex justify-end">
+          <div className="w-full max-w-xs rounded-xl border border-zinc-200 dark:border-zinc-600 bg-zinc-50/80 dark:bg-zinc-800/80 p-5">
+            <dl className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-zinc-500">Ara toplam</dt>
+                <dd className="font-medium text-zinc-900 dark:text-white">
+                  {Number(sale.subtotal).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                </dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-zinc-500">KDV</dt>
+                <dd className="font-medium text-zinc-900 dark:text-white">
+                  {Number(sale.kdvTotal).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                </dd>
+              </div>
+              <div className="flex justify-between border-t border-zinc-200 dark:border-zinc-600 pt-3">
+                <dt className="font-semibold text-zinc-700 dark:text-zinc-300">Genel toplam</dt>
+                <dd className="font-bold text-zinc-900 dark:text-white">
+                  {Number(sale.grandTotal).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                </dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-zinc-500">Ödenen</dt>
+                <dd className="font-medium text-zinc-900 dark:text-white">
+                  {Number(sale.paidAmount).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                </dd>
+              </div>
+            </dl>
+          </div>
         </div>
       </div>
 
