@@ -76,6 +76,7 @@ Deploy script sırasıyla şunları yapar:
 - [ ] `.env` içinde `APP_KEY` var (yoksa sunucuda `php artisan key:generate` çalıştırın).
 - [ ] `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL` canlı adres.
 - [ ] Deploy Script olarak `bash forge-deploy.sh` veya eşdeğeri ayarlandı.
+- [ ] **İlk giriş:** Deploy sonrası süper admin için sunucuda bir kez `php artisan db:seed --force` çalıştırın (e-posta: erkanulker0@gmail.com, şifre: password). İsterseniz Deploy Script’e ekleyebilirsiniz: `php artisan db:seed --force`.
 
 ---
 

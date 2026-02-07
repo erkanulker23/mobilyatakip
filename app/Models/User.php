@@ -10,22 +10,17 @@ class User extends Authenticatable
 {
     use Notifiable;
 
-    public $incrementing = false;
-    protected $keyType = 'string';
-
-    const CREATED_AT = 'createdAt';
-    const UPDATED_AT = 'updatedAt';
-
     protected $table = 'users';
 
     protected $fillable = [
         'email',
         'name',
+        'password',
         'role',
         'isActive',
     ];
 
-    protected $hidden = ['passwordHash'];
+    protected $hidden = ['password', 'passwordHash', 'remember_token'];
 
     protected $casts = [
         'isActive' => 'boolean',
@@ -33,7 +28,7 @@ class User extends Authenticatable
 
     public function getAuthPassword(): string
     {
-        return $this->passwordHash;
+        return $this->passwordHash ?? $this->getAttributeFromArray('password') ?? '';
     }
 
     public function setPasswordAttribute($value): void

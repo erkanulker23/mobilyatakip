@@ -19,6 +19,9 @@ composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
 # 3. Veritabanı migration (ilk deploy veya şema güncellemeleri)
 php artisan migrate --force
 
+# 3b. Süper admin kullanıcı (yoksa oluşturur; her deploy'da güvenle çalıştırılabilir)
+php artisan db:seed --force
+
 # 4. Frontend (Vite) build — CSS/JS asset'leri
 npm ci --no-audit --prefer-offline --no-progress
 npm run build
