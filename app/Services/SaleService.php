@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\SaleActivity;
 use App\Models\Quote;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
@@ -98,7 +99,14 @@ class SaleService
             }
 
             $sale->update(['subtotal' => $subtotal, 'kdvTotal' => $kdvTotal, 'grandTotal' => round($subtotal + $kdvTotal, 2)]);
-            return Sale::with(['customer', 'items.product'])->find($sale->id);
+
+            SaleActivity::create([
+                'saleId' => $sale->id,
+                'type' => SaleActivity::TYPE_CREATED,
+                'description' => 'Satış oluşturuldu',
+            ]);
+
+            return Sale::with(['customer', 'items.product.supplier'])->find($sale->id);
         });
     }
 
@@ -150,13 +158,20 @@ class SaleService
             }
 
             $quote->update(['convertedSaleId' => $sale->id]);
-            return Sale::with(['customer', 'items.product'])->find($sale->id);
+
+            SaleActivity::create([
+                'saleId' => $sale->id,
+                'type' => SaleActivity::TYPE_CREATED,
+                'description' => 'Satış oluşturuldu (tekliften)',
+            ]);
+
+            return Sale::with(['customer', 'items.product.supplier'])->find($sale->id);
         });
     }
 
     public function find(int|string $id): ?Sale
     {
-        return Sale::with(['customer', 'quote', 'items.product'])->find($id);
+        return Sale::with(['customer', 'quote', 'items.product.supplier', 'activities'])->find($id);
     }
 
     public function paginate(int $perPage = 20)

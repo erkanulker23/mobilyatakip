@@ -13,6 +13,7 @@ class Purchase extends BaseModel
         'purchaseNumber',
         'supplierId',
         'kdvIncluded',
+        'supplierDiscountRate',
         'purchaseDate',
         'dueDate',
         'subtotal',
@@ -22,10 +23,17 @@ class Purchase extends BaseModel
         'isReturn',
         'notes',
         'isCancelled',
+        'efaturaUuid',
+        'efaturaStatus',
+        'efaturaSentAt',
+        'efaturaEnvelopeId',
+        'efaturaResponse',
     ];
 
     protected $casts = [
+        'efaturaSentAt' => 'datetime',
         'kdvIncluded' => 'boolean',
+        'supplierDiscountRate' => 'decimal:2',
         'purchaseDate' => 'date',
         'dueDate' => 'date',
         'subtotal' => 'decimal:2',

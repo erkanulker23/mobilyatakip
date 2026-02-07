@@ -20,6 +20,22 @@
                 <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 font-medium">İptal Et</button>
             </form>
             @endif
+            @if(!($purchase->isCancelled ?? false))
+            <a href="{{ route('purchases.efatura.xml', $purchase) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">E-Fatura XML İndir</a>
+            <form method="POST" action="{{ route('purchases.efatura.send', $purchase) }}" class="inline" onsubmit="return confirm('Bu faturayı e-fatura olarak göndermek istediğinize emin misiniz?');">
+                @csrf
+                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">E-Fatura Gönder</button>
+            </form>
+            @endif
+            @if($purchase->efaturaStatus ?? null)
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                @if($purchase->efaturaStatus === 'accepted' || $purchase->efaturaStatus === 'sent') bg-emerald-100 text-emerald-800
+                @elseif($purchase->efaturaStatus === 'rejected') bg-red-100 text-red-800
+                @else bg-slate-100 text-slate-700 @endif">
+                E-Fatura: {{ $purchase->efaturaStatus === 'sent' ? 'Gönderildi' : ($purchase->efaturaStatus === 'accepted' ? 'Kabul' : ($purchase->efaturaStatus === 'rejected' ? 'Red' : $purchase->efaturaStatus)) }}
+                @if($purchase->efaturaSentAt) ({{ $purchase->efaturaSentAt->format('d.m.Y H:i') }})@endif
+            </span>
+            @endif
             @include('partials.action-buttons', [
                 'edit' => route('purchases.edit', $purchase),
                 'print' => route('purchases.print', $purchase),
@@ -38,8 +54,9 @@
     'partyPhone' => $purchase->supplier?->phone,
     'partyEmail' => $purchase->supplier?->email,
     'partyTax' => ($purchase->supplier?->taxNumber ? $purchase->supplier->taxNumber . ($purchase->supplier->taxOffice ? ' / ' . $purchase->supplier->taxOffice : '') : null),
-    'extraInfo' => '<p class="text-sm text-slate-600">Vade: ' . ($purchase->dueDate?->format('d.m.Y') ?? '-') . '</p>',
-    'items' => $purchase->items->map(fn($i) => ['name' => $i->product?->name, 'unitPrice' => $i->unitPrice, 'quantity' => $i->quantity, 'kdvRate' => $i->kdvRate ?? 18, 'lineTotal' => $i->lineTotal])->toArray(),
+    'extraInfo' => '<p class="text-sm text-slate-600">Vade: ' . ($purchase->dueDate?->format('d.m.Y') ?? '-') . '</p>' . (isset($purchase->supplierDiscountRate) && $purchase->supplierDiscountRate != null && $purchase->supplierDiscountRate > 0 ? '<p class="text-sm text-slate-600 mt-1">Tedarikçi iskonto: %' . number_format($purchase->supplierDiscountRate, 1, ',', '.') . '</p>' : ''),
+    'items' => $purchase->items->map(fn($i) => ['name' => $i->product?->name, 'unitPrice' => $i->unitPrice, 'listPrice' => $i->listPrice, 'quantity' => $i->quantity, 'kdvRate' => $i->kdvRate ?? 18, 'lineTotal' => $i->lineTotal])->toArray(),
+    'showListPrice' => $purchase->items->contains(fn($i) => $i->listPrice !== null),
     'showKdv' => true,
     'subtotal' => $purchase->subtotal,
     'kdvTotal' => $purchase->kdvTotal,

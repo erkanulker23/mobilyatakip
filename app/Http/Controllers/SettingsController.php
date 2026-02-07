@@ -22,7 +22,7 @@ class SettingsController extends Controller
             'address' => 'nullable|string',
             'taxNumber' => 'nullable|string|max:50',
             'taxOffice' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:50',
+            'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
             'email' => 'nullable|email',
             'website' => 'nullable|string|max:255',
             'metaTitle' => 'nullable|string|max:70',
@@ -41,17 +41,31 @@ class SettingsController extends Controller
             'mailPassword' => 'nullable|string|max:255',
             'mailFrom' => 'nullable|email',
             'mailSecure' => 'nullable|boolean',
+            'efaturaProvider' => 'nullable|string|max:50',
+            'efaturaEndpoint' => 'nullable|string|max:500',
+            'efaturaUsername' => 'nullable|string|max:255',
+            'efaturaPassword' => 'nullable|string|max:255',
+            'efaturaTestMode' => 'nullable|boolean',
+        ], [
+            'phone.regex' => 'Geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67)',
         ]);
 
         $validated['paytrTestMode'] = $request->boolean('paytrTestMode');
         $validated['mailSecure'] = $request->boolean('mailSecure');
+        $validated['efaturaTestMode'] = $request->boolean('efaturaTestMode');
 
         if (empty($request->ntgsmPassword)) unset($validated['ntgsmPassword']);
+        if (empty($request->efaturaPassword)) unset($validated['efaturaPassword']);
         if (empty($request->mailPassword)) unset($validated['mailPassword']);
 
         // metaTitle/metaDescription kolonları yoksa çıkar (eski DB uyumluluğu)
         if (!Schema::hasColumn('companies', 'metaTitle')) unset($validated['metaTitle']);
         if (!Schema::hasColumn('companies', 'metaDescription')) unset($validated['metaDescription']);
+        if (!Schema::hasColumn('companies', 'efaturaProvider')) {
+            foreach (['efaturaProvider', 'efaturaEndpoint', 'efaturaUsername', 'efaturaPassword', 'efaturaTestMode'] as $k) {
+                unset($validated[$k]);
+            }
+        }
 
         $company = Company::first();
         if (!$company) {

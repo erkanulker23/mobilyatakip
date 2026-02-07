@@ -45,6 +45,7 @@ class XmlFeedService
                     $existing->update([
                         'unitPrice' => $row['unitPrice'] ?? $existing->unitPrice,
                         'kdvRate' => $row['kdvRate'] ?? $existing->kdvRate,
+                        'supplierId' => $feed->supplierId,
                     ]);
                 } else {
                     Product::create([

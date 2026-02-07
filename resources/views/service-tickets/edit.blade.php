@@ -76,7 +76,7 @@
         </div>
         <div>
             <label class="form-label">Sürücü Telefonu</label>
-            <input type="text" name="assignedDriverPhone" value="{{ old('assignedDriverPhone', $serviceTicket->assignedDriverPhone) }}" class="form-input">
+            <input type="tel" name="assignedDriverPhone" value="{{ old('assignedDriverPhone', $serviceTicket->assignedDriverPhone) }}" class="form-input" placeholder="0555 123 45 67" inputmode="tel" autocomplete="tel" pattern="[0-9+][0-9\s\-()]{9,19}" title="Örn: 0555 123 45 67">
         </div>
         <div>
             <label class="form-label">Notlar</label>

@@ -117,9 +117,11 @@ class ServiceTicketController extends Controller
             'assignedUserId' => 'nullable|exists:users,id',
             'assignedVehiclePlate' => 'nullable|string|max:20',
             'assignedDriverName' => 'nullable|string|max:100',
-            'assignedDriverPhone' => 'nullable|string|max:20',
+            'assignedDriverPhone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
             'notes' => 'nullable|string',
             'serviceChargeAmount' => 'nullable|numeric|min:0',
+        ], [
+            'assignedDriverPhone.regex' => 'Geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67)',
         ]);
         $validated['underWarranty'] = $request->boolean('underWarranty');
         $serviceTicket->update($validated);

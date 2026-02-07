@@ -37,10 +37,10 @@ class PersonnelController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'nullable|email',
-            'phone' => 'nullable|string|max:50',
+            'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
             'category' => 'nullable|string|max:100',
             'title' => 'nullable|string|max:255',
-        ]);
+        ], ['phone.regex' => 'Geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67)']);
         Personnel::create($validated);
         return redirect()->route('personnel.index')->with('success', 'Personel kaydedildi.');
     }
@@ -61,11 +61,11 @@ class PersonnelController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'nullable|email',
-            'phone' => 'nullable|string|max:50',
+            'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
             'category' => 'nullable|string|max:100',
             'title' => 'nullable|string|max:255',
             'isActive' => 'nullable|boolean',
-        ]);
+        ], ['phone.regex' => 'Geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67)']);
         $validated['isActive'] = $request->boolean('isActive');
         $personnel->update($validated);
         return redirect()->route('personnel.index')->with('success', 'Personel güncellendi.');

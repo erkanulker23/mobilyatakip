@@ -31,11 +31,17 @@ class Company extends BaseModel
         'mailPassword',
         'mailFrom',
         'mailSecure',
+        'efaturaProvider',
+        'efaturaEndpoint',
+        'efaturaUsername',
+        'efaturaPassword',
+        'efaturaTestMode',
     ];
 
     protected $casts = [
         'paytrTestMode' => 'boolean',
         'mailSecure' => 'boolean',
         'mailPort' => 'integer',
+        'efaturaTestMode' => 'boolean',
     ];
 }

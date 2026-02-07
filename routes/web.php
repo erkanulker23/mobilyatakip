@@ -22,8 +22,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/customers/{customer}/print', [CustomerController::class, 'print'])->name('customers.print');
+    Route::get('/customers/excel/export', [CustomerController::class, 'exportExcel'])->name('customers.excel.export');
+    Route::post('/customers/excel/import', [CustomerController::class, 'importExcel'])->name('customers.excel.import');
     Route::resource('customers', CustomerController::class);
     Route::get('/suppliers/{supplier}/print', [SupplierController::class, 'print'])->name('suppliers.print');
+    Route::get('/suppliers/excel/export', [SupplierController::class, 'exportExcel'])->name('suppliers.excel.export');
+    Route::post('/suppliers/excel/import', [SupplierController::class, 'importExcel'])->name('suppliers.excel.import');
     Route::resource('suppliers', SupplierController::class);
     Route::resource('products', ProductController::class);
     Route::resource('warehouses', \App\Http\Controllers\WarehouseController::class);
@@ -44,9 +48,15 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('sales', SaleController::class);
     Route::get('/sales/{sale}/print', [SaleController::class, 'print'])->name('sales.print');
     Route::post('/sales/{sale}/cancel', [SaleController::class, 'cancel'])->name('sales.cancel');
+    Route::post('/sales/{sale}/send-supplier-email', [SaleController::class, 'sendSupplierEmail'])->name('sales.send-supplier-email');
+    Route::post('/sales/{sale}/activity', [SaleController::class, 'addActivity'])->name('sales.activity');
+    Route::post('/sales/{sale}/efatura/send', [\App\Http\Controllers\EInvoiceController::class, 'sendSale'])->name('sales.efatura.send');
+    Route::get('/sales/{sale}/efatura/xml', [\App\Http\Controllers\EInvoiceController::class, 'downloadSaleXml'])->name('sales.efatura.xml');
     Route::resource('purchases', PurchaseController::class);
     Route::get('/purchases/{purchase}/print', [PurchaseController::class, 'print'])->name('purchases.print');
     Route::post('/purchases/{purchase}/cancel', [PurchaseController::class, 'cancel'])->name('purchases.cancel');
+    Route::post('/purchases/{purchase}/efatura/send', [\App\Http\Controllers\EInvoiceController::class, 'sendPurchase'])->name('purchases.efatura.send');
+    Route::get('/purchases/{purchase}/efatura/xml', [\App\Http\Controllers\EInvoiceController::class, 'downloadPurchaseXml'])->name('purchases.efatura.xml');
     Route::resource('service-tickets', ServiceTicketController::class)->parameters(['service-tickets' => 'serviceTicket']);
     Route::get('/service-tickets/{serviceTicket}/print', [ServiceTicketController::class, 'print'])->name('service-tickets.print');
 
@@ -73,6 +83,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/xml-feeds', [\App\Http\Controllers\XmlFeedController::class, 'index'])->name('xml-feeds.index');
     Route::get('/xml-feeds/create', [\App\Http\Controllers\XmlFeedController::class, 'create'])->name('xml-feeds.create');
     Route::post('/xml-feeds', [\App\Http\Controllers\XmlFeedController::class, 'store'])->name('xml-feeds.store');
+    Route::get('/xml-feeds/{xmlFeed}/sync-supplier', [\App\Http\Controllers\XmlFeedController::class, 'syncSupplierForm'])->name('xml-feeds.sync-supplier');
     Route::post('/xml-feeds/{xmlFeed}/sync', [\App\Http\Controllers\XmlFeedController::class, 'sync'])->name('xml-feeds.sync');
     Route::delete('/xml-feeds/{xmlFeed}', [\App\Http\Controllers\XmlFeedController::class, 'destroy'])->name('xml-feeds.destroy');
 });

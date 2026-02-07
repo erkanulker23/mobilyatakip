@@ -43,7 +43,12 @@
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">#</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Ürün / Açıklama</th>
+                        @if(isset($showListPrice) && $showListPrice)
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Liste fiyatı</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">İskontolu fiyat</th>
+                        @else
                         <th class="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Birim Fiyat</th>
+                        @endif
                         <th class="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase">Adet</th>
                         @if(isset($showKdv) && $showKdv)
                         <th class="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">KDV %</th>
@@ -56,7 +61,12 @@
                     <tr class="hover:bg-slate-50">
                         <td class="px-4 py-3 text-sm text-slate-600">{{ $i + 1 }}</td>
                         <td class="px-4 py-3 font-medium text-slate-900">{{ $item['name'] ?? '-' }}</td>
+                        @if(isset($showListPrice) && $showListPrice)
+                        <td class="px-4 py-3 text-right text-slate-600">{{ isset($item['listPrice']) && $item['listPrice'] !== null ? number_format($item['listPrice'], 2, ',', '.') . ' ₺' : '—' }}</td>
                         <td class="px-4 py-3 text-right text-slate-600">{{ number_format($item['unitPrice'] ?? 0, 2, ',', '.') }} ₺</td>
+                        @else
+                        <td class="px-4 py-3 text-right text-slate-600">{{ number_format($item['unitPrice'] ?? 0, 2, ',', '.') }} ₺</td>
+                        @endif
                         <td class="px-4 py-3 text-center text-slate-600">{{ $item['quantity'] ?? 0 }}</td>
                         @if(isset($showKdv) && $showKdv)
                         <td class="px-4 py-3 text-right text-slate-600">%{{ number_format($item['kdvRate'] ?? 0, 0) }}</td>

@@ -30,12 +30,12 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
                 <label class="form-label">E-posta</label>
-                <input type="email" name="email" value="{{ old('email', $customer->email) }}" class="form-input">
+                <input type="email" name="email" value="{{ old('email', $customer->email) }}" class="form-input" placeholder="ornek@email.com" inputmode="email" autocomplete="email">
                 @error('email')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
             <div>
                 <label class="form-label">Telefon</label>
-                <input type="text" name="phone" value="{{ old('phone', $customer->phone) }}" class="form-input">
+                <input type="tel" name="phone" value="{{ old('phone', $customer->phone) }}" class="form-input" placeholder="0555 123 45 67" inputmode="tel" autocomplete="tel" pattern="[0-9+][0-9\s\-()]{9,19}" title="Örn: 0555 123 45 67 veya +90 555 123 45 67">
                 @error('phone')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
         </div>
@@ -47,7 +47,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
                 <label class="form-label">TC Kimlik No</label>
-                <input type="text" name="identityNumber" value="{{ old('identityNumber', $customer->identityNumber) }}" class="form-input" maxlength="11" pattern="[0-9]*">
+                <input type="text" name="identityNumber" value="{{ old('identityNumber', $customer->identityNumber) }}" class="form-input" placeholder="11 haneli TC kimlik no" inputmode="numeric" maxlength="11" pattern="[0-9]{0,11}" title="Sadece 11 rakam giriniz">
                 @error('identityNumber')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
             <div>

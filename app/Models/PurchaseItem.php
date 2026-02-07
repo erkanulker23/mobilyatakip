@@ -12,6 +12,7 @@ class PurchaseItem extends BaseModel
         'purchaseId',
         'productId',
         'unitPrice',
+        'listPrice',
         'quantity',
         'kdvRate',
         'lineTotal',
@@ -19,6 +20,7 @@ class PurchaseItem extends BaseModel
 
     protected $casts = [
         'unitPrice' => 'decimal:2',
+        'listPrice' => 'decimal:2',
         'lineTotal' => 'decimal:2',
         'kdvRate' => 'decimal:2',
         'quantity' => 'integer',

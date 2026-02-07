@@ -32,6 +32,11 @@
             </select>
             @error('supplierId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
+        <div>
+            <label class="form-label">Tedarikçi iskonto oranı %</label>
+            <input type="number" step="0.01" min="0" max="100" name="supplierDiscountRate" value="{{ old('supplierDiscountRate') }}" class="form-input w-32" placeholder="0">
+            <p class="mt-1 text-xs text-slate-500">Bu alış için geçerli tedarikçi iskonto oranı (opsiyonel)</p>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
                 <label class="form-label">Alış Tarihi *</label>
@@ -48,7 +53,7 @@
         <div class="border-t border-slate-200 pt-5">
             <h3 class="text-lg font-semibold text-slate-900 mb-4">Alış Kalemleri</h3>
             <div id="items" class="space-y-3">
-                <div class="item-row grid grid-cols-1 md:grid-cols-[1fr_120px_100px_80px_40px] gap-3 items-end">
+                <div class="item-row grid grid-cols-1 md:grid-cols-[1fr_100px_100px_100px_80px_40px] gap-3 items-end">
                     <div>
                         <label class="form-label">Ürün *</label>
                         <select name="items[0][productId]" required class="form-select item-product" data-row="0">
@@ -59,7 +64,11 @@
                         </select>
                     </div>
                     <div>
-                        <label class="form-label">Birim Fiyat *</label>
+                        <label class="form-label">Liste fiyatı</label>
+                        <input type="number" step="0.01" min="0" name="items[0][listPrice]" class="form-input item-listprice" placeholder="—">
+                    </div>
+                    <div>
+                        <label class="form-label">İskontolu fiyat *</label>
                         <input type="number" step="0.01" min="0" name="items[0][unitPrice]" required class="form-input item-price" placeholder="0">
                     </div>
                     <div>
@@ -88,6 +97,7 @@ function addRow() {
     const c = t.cloneNode(true);
     c.querySelectorAll('select, input').forEach(e => {
         if (e.name) e.name = e.name.replace(/\[\d+\]/, '[' + idx + ']');
+        if (e.classList.contains('item-listprice')) e.value = '';
         if (e.classList.contains('item-price')) e.value = '';
         if (e.classList.contains('item-qty')) e.value = '1';
         if (e.classList.contains('item-kdv')) e.value = '18';
@@ -96,7 +106,10 @@ function addRow() {
         const o = this.selectedOptions[0];
         if (o) {
             const row = this.closest('.item-row');
-            if (o.dataset.price) row.querySelector('.item-price').value = o.dataset.price;
+            if (o.dataset.price) {
+                row.querySelector('.item-listprice').value = o.dataset.price;
+                row.querySelector('.item-price').value = o.dataset.price;
+            }
             if (o.dataset.kdv) row.querySelector('.item-kdv').value = o.dataset.kdv;
         }
     });
@@ -108,7 +121,10 @@ document.querySelectorAll('.item-product').forEach(s => {
         const o = this.selectedOptions[0];
         if (o) {
             const row = this.closest('.item-row');
-            if (o.dataset.price) row.querySelector('.item-price').value = o.dataset.price;
+            if (o.dataset.price) {
+                row.querySelector('.item-listprice').value = o.dataset.price;
+                row.querySelector('.item-price').value = o.dataset.price;
+            }
             if (o.dataset.kdv) row.querySelector('.item-kdv').value = o.dataset.kdv;
         }
     });

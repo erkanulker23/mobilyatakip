@@ -54,8 +54,8 @@
                     <div><label class="form-label">Firma Adı</label><input type="text" name="name" value="{{ old('name', $company?->name) }}" class="form-input" placeholder="Firma adı"></div>
                     <div><label class="form-label">Vergi No</label><input type="text" name="taxNumber" value="{{ old('taxNumber', $company?->taxNumber) }}" class="form-input"></div>
                     <div><label class="form-label">Vergi Dairesi</label><input type="text" name="taxOffice" value="{{ old('taxOffice', $company?->taxOffice) }}" class="form-input"></div>
-                    <div><label class="form-label">Telefon</label><input type="text" name="phone" value="{{ old('phone', $company?->phone) }}" class="form-input"></div>
-                    <div class="md:col-span-2"><label class="form-label">E-posta</label><input type="email" name="email" value="{{ old('email', $company?->email) }}" class="form-input"></div>
+                    <div><label class="form-label">Telefon</label><input type="tel" name="phone" value="{{ old('phone', $company?->phone) }}" class="form-input" placeholder="0555 123 45 67" inputmode="tel" autocomplete="tel" pattern="[0-9+][0-9\s\-()]{9,19}" title="Örn: 0555 123 45 67"></div>
+                    <div class="md:col-span-2"><label class="form-label">E-posta</label><input type="email" name="email" value="{{ old('email', $company?->email) }}" class="form-input" placeholder="ornek@email.com" inputmode="email" autocomplete="email"></div>
                     <div class="md:col-span-2"><label class="form-label">Adres</label><textarea name="address" rows="2" class="form-input form-textarea">{{ old('address', $company?->address) }}</textarea></div>
                     <div><label class="form-label">Web sitesi</label><input type="text" name="website" value="{{ old('website', $company?->website) }}" class="form-input" placeholder="https://"></div>
                 </div>
@@ -105,6 +105,25 @@
         </div>
 
         <div class="card overflow-hidden mb-6">
+            <div class="card-header">E-Fatura Entegrasyonu (GİB / Entegratör)</div>
+            <div class="p-5">
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">E-fatura gönderimi için GİB entegratör veya özel entegratör (örn. Fitbulut, Logo) API bilgilerini girin. UBL-TR 1.2 formatında fatura üretilir ve bu endpoint’e gönderilir.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label class="form-label">Sağlayıcı (opsiyonel)</label><input type="text" name="efaturaProvider" value="{{ old('efaturaProvider', $company?->efaturaProvider) }}" class="form-input" placeholder="gib, fitbulut, logo, vb."></div>
+                    <div><label class="form-label">API Endpoint URL</label><input type="url" name="efaturaEndpoint" value="{{ old('efaturaEndpoint', $company?->efaturaEndpoint) }}" class="form-input" placeholder="https://..."></div>
+                    <div><label class="form-label">Kullanıcı Adı</label><input type="text" name="efaturaUsername" value="{{ old('efaturaUsername', $company?->efaturaUsername) }}" class="form-input"></div>
+                    <div><label class="form-label">Şifre</label><input type="password" name="efaturaPassword" value="{{ old('efaturaPassword', $company?->efaturaPassword) }}" class="form-input" placeholder="Değiştirmek için doldurun"></div>
+                    <div class="md:col-span-2 flex items-center pt-2">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="efaturaTestMode" value="1" {{ old('efaturaTestMode', $company?->efaturaTestMode ?? true) ? 'checked' : '' }} class="rounded border-slate-300 dark:border-slate-500 text-emerald-600 focus:ring-emerald-500 bg-slate-100 dark:bg-slate-700">
+                            <span class="text-sm text-slate-700 dark:text-slate-300">Test modu</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card overflow-hidden mb-6">
             <div class="card-header">E-posta (SMTP)</div>
             <div class="p-5">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -112,7 +131,7 @@
                     <div><label class="form-label">Port</label><input type="number" name="mailPort" value="{{ old('mailPort', $company?->mailPort) }}" class="form-input"></div>
                     <div><label class="form-label">Kullanıcı</label><input type="text" name="mailUser" value="{{ old('mailUser', $company?->mailUser) }}" class="form-input"></div>
                     <div><label class="form-label">Şifre</label><input type="password" name="mailPassword" value="{{ old('mailPassword', $company?->mailPassword) }}" class="form-input" placeholder="Değiştirmek için doldurun"></div>
-                    <div><label class="form-label">Gönderen adresi</label><input type="email" name="mailFrom" value="{{ old('mailFrom', $company?->mailFrom) }}" class="form-input"></div>
+                    <div><label class="form-label">Gönderen adresi</label><input type="email" name="mailFrom" value="{{ old('mailFrom', $company?->mailFrom) }}" class="form-input" placeholder="ornek@email.com" inputmode="email" autocomplete="email"></div>
                     <div class="md:col-span-2 flex items-center pt-2">
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" name="mailSecure" value="1" {{ old('mailSecure', $company?->mailSecure) ? 'checked' : '' }} class="rounded border-slate-300 dark:border-slate-500 text-emerald-600 focus:ring-emerald-500 bg-slate-100 dark:bg-slate-700">

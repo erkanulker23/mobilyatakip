@@ -27,12 +27,18 @@
                     <td class="px-6 py-4 text-sm text-slate-600 max-w-xs truncate" title="{{ $feed->url }}">{{ $feed->url }}</td>
                     <td class="px-6 py-4 text-sm text-slate-600">{{ $feed->supplier?->name ?? '-' }}</td>
                     <td class="px-6 py-4 flex gap-2">
+                        @if($feed->supplierId)
                         <form method="POST" action="{{ route('xml-feeds.sync', $feed) }}" class="inline">
                             @csrf
                             <button type="submit" class="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200">
                                 Ürün Çek
                             </button>
                         </form>
+                        @else
+                        <a href="{{ route('xml-feeds.sync-supplier', $feed) }}" class="inline-flex items-center px-3 py-1.5 bg-amber-100 text-amber-800 rounded-lg text-sm font-medium hover:bg-amber-200">
+                            Ürün Çek (tedarikçi seçin)
+                        </a>
+                        @endif
                         <form method="POST" action="{{ route('xml-feeds.destroy', $feed) }}" class="inline" onsubmit="return confirm('Silinecek. Ürünleri de silmek ister misiniz?')">
                             @csrf
                             @method('DELETE')

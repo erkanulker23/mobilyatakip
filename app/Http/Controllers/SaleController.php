@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\SaleNotificationToSupplier;
 use App\Models\Sale;
+use App\Models\SaleActivity;
 use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Warehouse;
 use App\Services\AuditService;
 use App\Services\SaleService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class SaleController extends Controller
 {
@@ -51,7 +54,9 @@ class SaleController extends Controller
                 'items' => $validated['items'],
             ]);
             $this->auditService->logCreate('sale', $sale->id, ['saleNumber' => $sale->saleNumber, 'grandTotal' => $sale->grandTotal]);
-            return redirect()->route('sales.show', $sale)->with('success', 'Satış oluşturuldu.');
+            return redirect()->route('sales.show', $sale)
+                ->with('success', 'Satış oluşturuldu.')
+                ->with('show_supplier_email_prompt', true);
         } catch (\RuntimeException $e) {
             return redirect()->back()->withInput()->with('error', $e->getMessage());
         }
@@ -84,14 +89,18 @@ class SaleController extends Controller
     public function show(Sale $sale)
     {
         $sale = $this->saleService->find($sale->id);
-        if (!$sale) abort(404);
+        if (!$sale) {
+            abort(404);
+        }
         return view('sales.show', compact('sale'));
     }
 
     public function print(Sale $sale)
     {
         $sale = $this->saleService->find($sale->id);
-        if (!$sale) abort(404);
+        if (!$sale) {
+            abort(404);
+        }
         return view('sales.print', compact('sale'));
     }
 
@@ -107,5 +116,60 @@ class SaleController extends Controller
         $this->auditService->logCancel('sale', $sale->id);
         $sale->update(['isCancelled' => true]);
         return redirect()->route('sales.show', $sale)->with('success', 'Satış iptal edildi.');
+    }
+
+    public function sendSupplierEmail(Sale $sale)
+    {
+        $sale = $this->saleService->find($sale->id);
+        if (!$sale) {
+            abort(404);
+        }
+        $suppliers = $sale->getSuppliersWithEmail();
+        if ($suppliers->isEmpty()) {
+            return redirect()->route('sales.show', $sale)
+                ->with('error', 'Bu satışta e-posta adresi tanımlı tedarikçi bulunamadı.');
+        }
+        $sent = [];
+        foreach ($suppliers as $supplier) {
+            try {
+                Mail::to($supplier->email)->send(new SaleNotificationToSupplier($sale, $supplier));
+                $sent[] = ['id' => $supplier->id, 'name' => $supplier->name, 'email' => $supplier->email];
+            } catch (\Throwable $e) {
+                return redirect()->route('sales.show', $sale)
+                    ->with('error', 'E-posta gönderilirken hata: ' . $e->getMessage());
+            }
+        }
+        SaleActivity::create([
+            'saleId' => $sale->id,
+            'type' => SaleActivity::TYPE_SUPPLIER_EMAIL_SENT,
+            'description' => 'Tedarikçiye e-posta gönderildi',
+            'metadata' => ['suppliers' => $sent],
+        ]);
+        return redirect()->route('sales.show', $sale)
+            ->with('success', count($sent) . ' tedarikçiye satış bildirimi e-postası gönderildi.');
+    }
+
+    public function addActivity(Request $request, Sale $sale)
+    {
+        $validated = $request->validate([
+            'type' => 'required|in:' . SaleActivity::TYPE_SUPPLIER_EMAIL_READ . ',' . SaleActivity::TYPE_SUPPLIER_EMAIL_REPLIED,
+            'supplierId' => 'nullable|exists:suppliers,id',
+        ]);
+        $sale = $this->saleService->find($sale->id);
+        if (!$sale) {
+            abort(404);
+        }
+        $descriptions = [
+            SaleActivity::TYPE_SUPPLIER_EMAIL_READ => 'Tedarikçi e-postayı okudu',
+            SaleActivity::TYPE_SUPPLIER_EMAIL_REPLIED => 'Tedarikçi e-postayı cevapladı',
+        ];
+        SaleActivity::create([
+            'saleId' => $sale->id,
+            'type' => $validated['type'],
+            'description' => $descriptions[$validated['type']],
+            'metadata' => $validated['supplierId'] ? ['supplierId' => $validated['supplierId']] : null,
+        ]);
+        return redirect()->route('sales.show', $sale)
+            ->with('success', 'Zaman çizelgesi güncellendi.');
     }
 }

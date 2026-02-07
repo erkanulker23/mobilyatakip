@@ -30,13 +30,30 @@
         </div>
         <div>
             <label class="form-label">Kategori</label>
-            <select name="category" class="form-select">
-                <option value="">Seçiniz</option>
+            <input type="hidden" name="category" id="categoryInput" value="{{ old('category', $expense->category) }}">
+            <div class="flex flex-wrap gap-2 mt-2" id="categoryList">
                 @foreach($categories as $c)
-                <option value="{{ $c }}" {{ old('category', $expense->category) == $c ? 'selected' : '' }}>{{ $c }}</option>
+                <button type="button"
+                    class="category-btn px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all duration-200 {{ old('category', $expense->category) == $c ? 'border-primary-600 bg-primary-50 text-primary-700 ring-2 ring-primary-200' : 'border-slate-200 bg-white text-slate-700 hover:border-primary-400 hover:bg-primary-50/50' }}"
+                    data-category="{{ $c }}">
+                    {{ $c }}
+                </button>
                 @endforeach
-            </select>
+            </div>
         </div>
+        <script>
+            document.querySelectorAll('.category-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.category-btn').forEach(function(b) {
+                        b.classList.remove('border-primary-600', 'bg-primary-50', 'text-primary-700', 'ring-2', 'ring-primary-200');
+                        b.classList.add('border-slate-200', 'bg-white', 'text-slate-700');
+                    });
+                    this.classList.remove('border-slate-200', 'bg-white', 'text-slate-700');
+                    this.classList.add('border-primary-600', 'bg-primary-50', 'text-primary-700', 'ring-2', 'ring-primary-200');
+                    document.getElementById('categoryInput').value = this.dataset.category;
+                });
+            });
+        </script>
         <div>
             <label class="form-label">Kasa</label>
             <select name="kasaId" class="form-select">

@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\CustomersExport;
+use App\Imports\CustomersImport;
 use App\Models\Customer;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class CustomerController extends Controller
 {
@@ -37,11 +41,15 @@ class CustomerController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'nullable|email',
-            'phone' => 'nullable|string|max:50',
+            'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
             'address' => 'nullable|string',
             'identityNumber' => 'nullable|string|size:11|regex:/^[0-9]+$/',
             'taxNumber' => 'nullable|string|max:50',
             'taxOffice' => 'nullable|string|max:255',
+        ], [
+            'phone.regex' => 'Geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67)',
+            'identityNumber.size' => 'TC kimlik numarası 11 haneli olmalıdır.',
+            'identityNumber.regex' => 'TC kimlik numarası sadece rakamlardan oluşmalıdır.',
         ]);
         Customer::create($validated);
         return redirect()->route('customers.index')->with('success', 'Müşteri kaydedildi.');
@@ -64,12 +72,16 @@ class CustomerController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'nullable|email',
-            'phone' => 'nullable|string|max:50',
+            'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
             'address' => 'nullable|string',
             'identityNumber' => 'nullable|string|size:11|regex:/^[0-9]+$/',
             'taxNumber' => 'nullable|string|max:50',
             'taxOffice' => 'nullable|string|max:255',
             'isActive' => 'boolean',
+        ], [
+            'phone.regex' => 'Geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67)',
+            'identityNumber.size' => 'TC kimlik numarası 11 haneli olmalıdır.',
+            'identityNumber.regex' => 'TC kimlik numarası sadece rakamlardan oluşmalıdır.',
         ]);
         $customer->update($validated);
         return redirect()->route('customers.index')->with('success', 'Müşteri güncellendi.');
@@ -88,5 +100,22 @@ class CustomerController extends Controller
     {
         $customer->delete();
         return redirect()->route('customers.index')->with('success', 'Müşteri silindi.');
+    }
+
+    public function exportExcel(): BinaryFileResponse
+    {
+        return Excel::download(new CustomersExport, 'musteriler-' . date('Y-m-d') . '.xlsx');
+    }
+
+    public function importExcel(Request $request)
+    {
+        $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:10240']);
+        try {
+            Excel::import(new CustomersImport, $request->file('file'));
+            return redirect()->route('customers.index')->with('success', 'Excel dosyası başarıyla içe aktarıldı.');
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            $msg = collect($e->failures())->map(fn ($f) => 'Satır ' . $f->row() . ': ' . implode(', ', $f->errors()))->implode('; ');
+            return redirect()->route('customers.index')->with('error', 'İçe aktarma hatası: ' . $msg);
+        }
     }
 }

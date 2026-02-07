@@ -12,6 +12,7 @@
     @if($company?->metaDescription)<meta name="description" content="{{ $company->metaDescription }}">@endif
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3/dist/cdn.min.js"></script>
+    <script defer src="{{ asset('js/form-inputs.js') }}"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -91,7 +92,7 @@
                 <div class="relative" x-data="{ open: false }" @click.outside="open = false">
                     <button type="button" @click="open = !open" class="flex items-center justify-center w-11 h-11 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors touch-manipulation" aria-label="Bildirimler" :aria-expanded="open">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                        @if(session('success') || session('error'))
+                        @if(session('success') || session('error') || session('info'))
                         <span class="absolute top-2 right-2 flex h-2.5 w-2.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 dark:bg-emerald-600"></span></span>
                         @endif
                     </button>
@@ -112,7 +113,13 @@
                                 <p class="text-sm text-red-800 dark:text-red-200">{{ session('error') }}</p>
                             </div>
                             @endif
-                            @if(!session('success') && !session('error'))
+                            @if(session('info'))
+                            <div class="px-4 py-3 flex items-start gap-3 border-b border-slate-100 dark:border-slate-700 bg-blue-50 dark:bg-blue-900/20">
+                                <span class="shrink-0 w-8 h-8 rounded-full bg-blue-500 dark:bg-blue-600 flex items-center justify-center text-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></span>
+                                <p class="text-sm text-blue-800 dark:text-blue-200">{{ session('info') }}</p>
+                            </div>
+                            @endif
+                            @if(!session('success') && !session('error') && !session('info'))
                             <div class="px-4 py-8 text-center text-slate-500 dark:text-slate-400 text-sm">Yeni bildirim yok</div>
                             @endif
                         </div>
@@ -186,6 +193,12 @@
                 @if(session('error'))
                     <div class="no-print fixed top-16 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm z-[100] py-3 px-4 rounded-xl bg-red-500 dark:bg-red-600 text-white text-sm font-medium shadow-lg flex items-center justify-between gap-3 border border-red-600/20" role="alert" aria-live="polite" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 6000)" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
                         <span>{{ session('error') }}</span>
+                        <button type="button" @click="show = false" class="shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white/20 touch-manipulation" aria-label="Kapat">&times;</button>
+                    </div>
+                @endif
+                @if(session('info'))
+                    <div class="no-print fixed top-16 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm z-[100] py-3 px-4 rounded-xl bg-blue-500 dark:bg-blue-600 text-white text-sm font-medium shadow-lg flex items-center justify-between gap-3 border border-blue-600/20" role="alert" aria-live="polite" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+                        <span>{{ session('info') }}</span>
                         <button type="button" @click="show = false" class="shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white/20 touch-manipulation" aria-label="Kapat">&times;</button>
                     </div>
                 @endif

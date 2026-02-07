@@ -33,6 +33,10 @@
                 </select>
             </div>
             <div>
+                <label class="form-label">Tedarikçi iskonto oranı %</label>
+                <input type="number" step="0.01" min="0" max="100" name="supplierDiscountRate" value="{{ old('supplierDiscountRate', $purchase->supplierDiscountRate) }}" class="form-input w-32" placeholder="0">
+            </div>
+            <div>
                 <label class="form-label">Alış Tarihi *</label>
                 <input type="date" name="purchaseDate" required value="{{ old('purchaseDate', $purchase->purchaseDate?->format('Y-m-d')) }}" class="form-input">
             </div>
@@ -52,7 +56,7 @@
             <h3 class="text-lg font-semibold text-slate-900 mb-4">Alış Kalemleri</h3>
             <div id="items" class="space-y-3">
                 @foreach($purchase->items as $idx => $item)
-                <div class="item-row grid grid-cols-1 md:grid-cols-[1fr_120px_80px_80px_40px] gap-3 items-end">
+                <div class="item-row grid grid-cols-1 md:grid-cols-[1fr_100px_100px_100px_80px_40px] gap-3 items-end">
                     <div>
                         <label class="form-label">Ürün *</label>
                         <select name="items[{{ $idx }}][productId]" required class="form-select item-product">
@@ -61,7 +65,8 @@
                             @endforeach
                         </select>
                     </div>
-                    <div><label class="form-label">Fiyat *</label><input type="number" step="0.01" min="0" name="items[{{ $idx }}][unitPrice]" required value="{{ old("items.{$idx}.unitPrice", $item->unitPrice) }}" class="form-input item-price"></div>
+                    <div><label class="form-label">Liste fiyatı</label><input type="number" step="0.01" min="0" name="items[{{ $idx }}][listPrice]" value="{{ old("items.{$idx}.listPrice", $item->listPrice) }}" class="form-input item-listprice" placeholder="—"></div>
+                    <div><label class="form-label">İskontolu fiyat *</label><input type="number" step="0.01" min="0" name="items[{{ $idx }}][unitPrice]" required value="{{ old("items.{$idx}.unitPrice", $item->unitPrice) }}" class="form-input item-price"></div>
                     <div><label class="form-label">Adet *</label><input type="number" name="items[{{ $idx }}][quantity]" value="{{ old("items.{$idx}.quantity", $item->quantity) }}" required min="1" class="form-input item-qty"></div>
                     <div><label class="form-label">KDV %</label><input type="number" step="0.01" min="0" max="100" name="items[{{ $idx }}][kdvRate]" value="{{ old("items.{$idx}.kdvRate", $item->kdvRate ?? 18) }}" class="form-input item-kdv"></div>
                     <div><button type="button" onclick="removeRow(this)" class="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">−</button></div>
@@ -84,6 +89,7 @@ function addRow() {
     const c = t.cloneNode(true);
     c.querySelectorAll('select, input').forEach(e => {
         if (e.name) e.name = e.name.replace(/\[\d+\]/, '[' + idx + ']');
+        if (e.classList.contains('item-listprice')) e.value = '';
         if (e.classList.contains('item-price')) e.value = '';
         if (e.classList.contains('item-qty')) e.value = '1';
         if (e.classList.contains('item-kdv')) e.value = '18';
@@ -98,9 +104,13 @@ function removeRow(btn) {
 }
 document.querySelectorAll('.item-product').forEach(s => {
     s.addEventListener('change', function() {
+        const row = this.closest('.item-row');
         const o = this.selectedOptions[0];
-        if (o && o.dataset.price) this.closest('.item-row').querySelector('.item-price').value = o.dataset.price;
-        if (o && o.dataset.kdv) this.closest('.item-row').querySelector('.item-kdv').value = o.dataset.kdv;
+        if (o && o.dataset.price) {
+            if (row.querySelector('.item-listprice')) row.querySelector('.item-listprice').value = o.dataset.price;
+            if (row.querySelector('.item-price')) row.querySelector('.item-price').value = o.dataset.price;
+        }
+        if (o && o.dataset.kdv && row.querySelector('.item-kdv')) row.querySelector('.item-kdv').value = o.dataset.kdv;
     });
 });
 </script>

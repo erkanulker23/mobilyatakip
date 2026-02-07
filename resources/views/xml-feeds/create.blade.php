@@ -27,13 +27,27 @@
                 @error('url')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Tedarikçi (opsiyonel)</label>
-                <select name="supplierId" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-green-500 focus:ring-green-500">
-                    <option value="">-- Tedarikçi seçin --</option>
-                    @foreach($suppliers as $s)
-                    <option value="{{ $s->id }}" {{ old('supplierId') == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
-                    @endforeach
-                </select>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Tedarikçi</label>
+                <p class="text-xs text-slate-500 mb-2">Mevcut tedarikçi seçin veya yeni tedarikçi oluşturun. Ürünler bu tedarikçiye bağlanır.</p>
+                <div class="space-y-3">
+                    <label class="flex items-center gap-2">
+                        <input type="radio" name="supplier_mode" value="existing" {{ old('supplier_mode', 'existing') === 'existing' ? 'checked' : '' }} class="rounded border-slate-300 text-green-600 focus:ring-green-500">
+                        <span class="text-sm">Mevcut tedarikçi</span>
+                    </label>
+                    <select name="supplierId" id="supplierId" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-green-500 focus:ring-green-500 ml-6">
+                        <option value="">-- Tedarikçi seçin --</option>
+                        @foreach($suppliers as $s)
+                        <option value="{{ $s->id }}" {{ old('supplierId') == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
+                        @endforeach
+                    </select>
+                    <label class="flex items-center gap-2">
+                        <input type="radio" name="supplier_mode" value="new" {{ old('supplier_mode') === 'new' ? 'checked' : '' }} class="rounded border-slate-300 text-green-600 focus:ring-green-500">
+                        <span class="text-sm">Yeni tedarikçi oluştur</span>
+                    </label>
+                    <input type="text" name="newSupplierName" id="newSupplierName" value="{{ old('newSupplierName') }}" placeholder="Yeni tedarikçi adı"
+                        class="w-full rounded-lg border-slate-300 shadow-sm focus:border-green-500 focus:ring-green-500 ml-6">
+                    @error('newSupplierName')<p class="ml-6 mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
             </div>
         </div>
         <div class="mt-6 flex gap-3">

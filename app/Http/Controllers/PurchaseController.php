@@ -51,9 +51,11 @@ class PurchaseController extends Controller
             'purchaseDate' => 'required|date',
             'dueDate' => 'nullable|date',
             'kdvIncluded' => 'nullable|boolean',
+            'supplierDiscountRate' => 'nullable|numeric|min:0|max:100',
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',
             'items.*.productId' => 'required|exists:products,id',
+            'items.*.listPrice' => 'nullable|numeric|min:0',
             'items.*.unitPrice' => 'required|numeric|min:0',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.kdvRate' => 'nullable|numeric|min:0|max:100',
@@ -74,6 +76,7 @@ class PurchaseController extends Controller
                 'purchaseDate' => $validated['purchaseDate'],
                 'dueDate' => $validated['dueDate'] ?? null,
                 'kdvIncluded' => $kdvIncluded,
+                'supplierDiscountRate' => isset($validated['supplierDiscountRate']) ? (float) $validated['supplierDiscountRate'] : null,
                 'subtotal' => 0,
                 'kdvTotal' => 0,
                 'grandTotal' => 0,
@@ -84,6 +87,7 @@ class PurchaseController extends Controller
             $kdvTotal = 0;
             foreach ($validated['items'] as $row) {
                 $unitPrice = (float) $row['unitPrice'];
+                $listPrice = isset($row['listPrice']) && $row['listPrice'] !== '' ? (float) $row['listPrice'] : null;
                 $qty = (int) $row['quantity'];
                 $kdvRate = (float) ($row['kdvRate'] ?? 18);
                 if ($kdvIncluded) {
@@ -101,6 +105,7 @@ class PurchaseController extends Controller
                     'purchaseId' => $purchase->id,
                     'productId' => $row['productId'],
                     'unitPrice' => $unitPrice,
+                    'listPrice' => $listPrice,
                     'quantity' => $qty,
                     'kdvRate' => $kdvRate,
                     'lineTotal' => $lineTotal,
@@ -141,9 +146,11 @@ class PurchaseController extends Controller
             'purchaseDate' => 'required|date',
             'dueDate' => 'nullable|date',
             'kdvIncluded' => 'nullable|boolean',
+            'supplierDiscountRate' => 'nullable|numeric|min:0|max:100',
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',
             'items.*.productId' => 'required|exists:products,id',
+            'items.*.listPrice' => 'nullable|numeric|min:0',
             'items.*.unitPrice' => 'required|numeric|min:0',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.kdvRate' => 'nullable|numeric|min:0|max:100',
@@ -154,6 +161,7 @@ class PurchaseController extends Controller
             'purchaseDate' => $validated['purchaseDate'],
             'dueDate' => $validated['dueDate'] ?? null,
             'kdvIncluded' => $kdvIncluded,
+            'supplierDiscountRate' => array_key_exists('supplierDiscountRate', $validated) && $validated['supplierDiscountRate'] !== '' ? (float) $validated['supplierDiscountRate'] : null,
             'notes' => $validated['notes'] ?? null,
         ]);
         $purchase->items()->delete();
@@ -161,6 +169,7 @@ class PurchaseController extends Controller
         $kdvTotal = 0;
         foreach ($validated['items'] as $row) {
             $unitPrice = (float) $row['unitPrice'];
+            $listPrice = isset($row['listPrice']) && $row['listPrice'] !== '' ? (float) $row['listPrice'] : null;
             $qty = (int) $row['quantity'];
             $kdvRate = (float) ($row['kdvRate'] ?? 18);
             if ($kdvIncluded) {
@@ -178,6 +187,7 @@ class PurchaseController extends Controller
                 'purchaseId' => $purchase->id,
                 'productId' => $row['productId'],
                 'unitPrice' => $unitPrice,
+                'listPrice' => $listPrice,
                 'quantity' => $qty,
                 'kdvRate' => $kdvRate,
                 'lineTotal' => $lineTotal,

@@ -6,10 +6,24 @@
         <h1 class="page-title">Müşteriler</h1>
         <p class="page-desc">Müşteri listesi ve cari yönetimi</p>
     </div>
-    <a href="{{ route('customers.create') }}" class="btn-primary">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
-        Yeni Müşteri
-    </a>
+    <div class="flex flex-wrap items-center gap-2">
+        <a href="{{ route('customers.excel.export') }}" class="btn-secondary">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            Excel İndir
+        </a>
+        <form action="{{ route('customers.excel.import') }}" method="POST" enctype="multipart/form-data" class="inline-flex items-center gap-2">
+            @csrf
+            <label class="btn-secondary cursor-pointer mb-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 16m4-4v12"></path></svg>
+                Excel Yükle
+                <input type="file" name="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="this.form.submit()">
+            </label>
+        </form>
+        <a href="{{ route('customers.create') }}" class="btn-primary">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+            Yeni Müşteri
+        </a>
+    </div>
 </div>
 
 <div class="card p-5 mb-6">
