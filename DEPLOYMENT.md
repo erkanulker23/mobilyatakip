@@ -137,9 +137,36 @@ kullanın (`sync` değil). Veritabanı kuyruğu için `jobs` tablosu migration�
 
 ---
 
-## 8. Kısa Canlı Checklist
+## 8. Resimler (ürün fotoğrafları) sunucuda görünmüyorsa
+
+Ürün resimleri `storage/app/public/products/` altında tutulur ve tarayıcıda `/storage/products/...` ile istenir. Bunun çalışması için **storage link** gerekir:
+
+1. **Link oluştur:** Sunucuda (SSH veya Forge "Run Command") çalıştırın:
+   ```bash
+   cd /home/forge/mobilya.awapanel.com   # veya sitenizin yolu
+   php artisan storage:link
+   ```
+   Bu komut `public/storage` → `storage/app/public` sembolik linkini oluşturur.
+
+2. **Kontrol:** `public/storage` gerçekten bir link mi?
+   ```bash
+   ls -la public/storage
+   ```
+   `public/storage -> ../storage/app/public` benzeri görünmeli. Eğer `public/storage` normal klasörse, silin ve tekrar `php artisan storage:link` çalıştırın.
+
+3. **İzinler:** Web sunucusu (www-data/forge) `storage/app/public` ve altındaki dosyaları okuyabilmeli:
+   ```bash
+   chmod -R 755 storage/app/public
+   ```
+
+4. **Veriyi sunucuya taşıdıysanız:** Ürünler veritabanıyla birlikte başka sunucudan kopyalandıysa, resim dosyaları da `storage/app/public/products/` içinde sunucuda olmalı. Sadece veritabanını kopyaladıysanız resim dosyaları sunucuda yoktur; XML feed ile tekrar ürün çekerek veya dosyaları elle kopyalayarak eklemeniz gerekir.
+
+---
+
+## 9. Kısa Canlı Checklist
 
 - [ ] Forge’da site + Git + `public` web directory ayarlı.
+- [ ] `php artisan storage:link` çalıştırıldı (resimler için).
 - [ ] `.env` canlı değerlerle dolduruldu; `APP_KEY` var.
 - [ ] `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL` doğru.
 - [ ] Deploy Script: `bash forge-deploy.sh` (veya eşdeğeri).
@@ -151,7 +178,7 @@ Bu adımlar tamamlandığında proje Laravel Forge üzerinden yayına hazırdır
 
 ---
 
-## 9. Testler (yerelde / CI)
+## 10. Testler (yerelde / CI)
 
 Otomatik testler (PHPUnit) **sunucuda çalıştırılmaz**. Forge deploy script’i `composer install --no-dev` kullandığı için `vendor/bin/phpunit` sunucuda yoktur.
 
@@ -164,6 +191,6 @@ composer install   # dev bağımlılıklar dahil
 
 ---
 
-## 10. Sorun giderme: 404 (toplu silme)
+## 11. Sorun giderme: 404 (toplu silme)
 
 Ürün veya tedarikçi toplu silme "404 Not Found" veriyorsa: route cache’i temizleyin (`php artisan route:clear`). Route’lar `POST /products/actions/bulk-destroy` ve `POST /suppliers/actions/bulk-destroy` olarak tanımlıdır.

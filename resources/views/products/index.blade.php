@@ -79,12 +79,9 @@
             <table class="min-w-full divide-y divide-slate-200">
             <thead class="bg-slate-50">
                 <tr>
-                    <th class="px-4 py-3 text-left">
-                        <label class="inline-flex items-center gap-2 cursor-pointer select-none">
-                            <input type="checkbox" class="rounded border-slate-300 text-green-600 focus:ring-green-500"
-                                   @change="toggleAll($event.target.checked)" :checked="selected.length === items.length && items.length > 0">
-                            <span class="text-xs font-medium text-slate-600">Tümünü seç (bu sayfa)</span>
-                        </label>
+                    <th class="py-3 text-center w-px whitespace-nowrap" style="width: 2.25rem; min-width: 2.25rem;" title="Tümünü seç (bu sayfa)">
+                        <input type="checkbox" class="rounded border-slate-300 text-green-600 focus:ring-green-500 w-4 h-4 cursor-pointer"
+                               @change="toggleAll($event.target.checked)" :checked="selected.length === items.length && items.length > 0">
                     </th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Ürün</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">SKU</th>
@@ -96,8 +93,8 @@
             <tbody class="divide-y divide-slate-200">
                 @forelse($products as $p)
                 <tr class="hover:bg-slate-50 transition-colors" data-product-id="{{ $p->id }}">
-                    <td class="px-4 py-4">
-                        <input type="checkbox" name="ids[]" value="{{ $p->id }}" class="product-row-check rounded border-slate-300 text-green-600 focus:ring-green-500"
+                    <td class="py-4 text-center w-px whitespace-nowrap" style="width: 2.25rem; min-width: 2.25rem;">
+                        <input type="checkbox" name="ids[]" value="{{ $p->id }}" class="product-row-check rounded border-slate-300 text-green-600 focus:ring-green-500 w-4 h-4 cursor-pointer"
                                @change="toggleRow('{{ $p->id }}', $event.target.checked)">
                     </td>
                     <td class="px-6 py-4">

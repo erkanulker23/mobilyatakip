@@ -79,8 +79,9 @@ class SettingsController extends Controller
             $company->update($validated);
         }
 
-        // Logo yükleme
+        // Logo yükleme (sadece resim, max 2MB — güvenlik)
         if ($request->hasFile('logo')) {
+            $request->validate(['logo' => 'image|mimes:jpeg,jpg,png,gif,webp|max:2048']);
             if ($company->logoUrl) {
                 Storage::disk('public')->delete(str_replace('/storage/', '', parse_url($company->logoUrl, PHP_URL_PATH)));
             }

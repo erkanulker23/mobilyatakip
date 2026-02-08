@@ -29,10 +29,10 @@ class XmlFeedController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'url' => 'required|url|max:2048',
+            'url' => ['required', 'url', 'max:2048', 'regex:#^https?://#i'],
             'supplierId' => 'nullable|exists:suppliers,id',
             'create_suppliers' => 'nullable|boolean',
-        ]);
+        ], ['url.regex' => 'URL yalnızca http veya https ile başlayabilir.']);
 
         $supplierId = $request->filled('supplierId') ? $request->input('supplierId') : null;
         $createSuppliers = $request->boolean('create_suppliers');
@@ -84,7 +84,8 @@ class XmlFeedController extends Controller
             }
             return redirect()->route('xml-feeds.index')->with('success', $msg);
         } catch (\Throwable $e) {
-            return redirect()->route('xml-feeds.index')->with('error', 'Hata: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('XML feed sync hatası', ['feed' => $xmlFeed->id, 'exception' => $e->getMessage()]);
+            return redirect()->route('xml-feeds.index')->with('error', 'Ürün çekilirken bir hata oluştu. Lütfen URL ve bağlantıyı kontrol edip tekrar deneyin.');
         }
     }
 

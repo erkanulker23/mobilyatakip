@@ -15,7 +15,12 @@ class XmlFeedService
     {
         set_time_limit(600);
 
-        $response = Http::timeout(60)->get($feed->url);
+        $url = $feed->url;
+        if (!preg_match('#^https?://#i', $url ?? '')) {
+            throw new \InvalidArgumentException('XML feed URL yalnızca http veya https ile başlayabilir.');
+        }
+
+        $response = Http::timeout(60)->get($url);
         if (!$response->successful()) {
             throw new \RuntimeException(sprintf('XML feed indirilemedi: HTTP %d — URL: %s', $response->status(), $feed->url));
         }

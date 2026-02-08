@@ -235,8 +235,9 @@ class SaleController extends Controller
                 Mail::to($supplier->email)->send(new SaleNotificationToSupplier($sale, $supplier));
                 $sent[] = ['id' => $supplier->id, 'name' => $supplier->name, 'email' => $supplier->email];
             } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Tedarikçi e-posta gönderim hatası', ['sale' => $sale->id, 'exception' => $e->getMessage()]);
                 return redirect()->route('sales.show', $sale)
-                    ->with('error', 'E-posta gönderilirken hata: ' . $e->getMessage());
+                    ->with('error', 'E-posta gönderilirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.');
             }
         }
         SaleActivity::create([

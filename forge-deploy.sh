@@ -31,8 +31,12 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# 6. Storage link (yoksa oluşturur, varsa atlar)
-php artisan storage:link --quiet || true
+# 6. Storage link — ürün resimleri /storage/... ile sunulur (public/storage -> storage/app/public)
+if [ ! -L public/storage ]; then
+  php artisan storage:link
+else
+  echo "Storage link zaten mevcut."
+fi
 
 # 7. Queue worker'ı yeniden başlat (Forge Processes'te queue:work tanımlı olmalı)
 php artisan queue:restart

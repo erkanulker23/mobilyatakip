@@ -86,6 +86,7 @@ class ServiceTicketController extends Controller
 
         $images = [];
         if ($request->hasFile('images')) {
+            $request->validate(['images.*' => 'image|mimes:jpeg,jpg,png,gif,webp|max:5120']);
             foreach ($request->file('images') as $file) {
                 $path = $file->store('service-tickets', 'public');
                 $images[] = '/storage/' . $path;
