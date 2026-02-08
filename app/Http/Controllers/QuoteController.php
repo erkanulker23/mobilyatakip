@@ -118,8 +118,8 @@ class QuoteController extends Controller
                     'unitPrice' => $unitPrice,
                     'quantity' => $qty,
                     'kdvRate' => $kdvRate,
-                    'lineDiscountPercent' => $lineDiscPct ?: null,
-                    'lineDiscountAmount' => $lineDiscAmt ?: null,
+                    'lineDiscountPercent' => $lineDiscPct,
+                    'lineDiscountAmount' => $lineDiscAmt,
                     'lineTotal' => $lineTotal,
                 ]);
             }
@@ -238,8 +238,8 @@ class QuoteController extends Controller
                 'unitPrice' => $unitPrice,
                 'quantity' => $qty,
                 'kdvRate' => $kdvRate,
-                'lineDiscountPercent' => $lineDiscPct ?: null,
-                'lineDiscountAmount' => $lineDiscAmt ?: null,
+                'lineDiscountPercent' => $lineDiscPct,
+                'lineDiscountAmount' => $lineDiscAmt,
                 'lineTotal' => $lineTotal,
             ]);
         }

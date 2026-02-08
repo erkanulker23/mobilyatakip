@@ -52,6 +52,33 @@
             </div>
         </div>
 
+        <div class="pt-4 border-t border-slate-200 dark:border-slate-600">
+            <h3 class="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-3">Nakliye bilgileri</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="lg:col-span-2">
+                    <label class="form-label">Nakliye firması</label>
+                    <select name="shippingCompanyId" class="form-select">
+                        <option value="">Seçiniz</option>
+                        @foreach($shippingCompanies ?? [] as $sc)
+                        <option value="{{ $sc->id }}" {{ old('shippingCompanyId', $purchase->shippingCompanyId) == $sc->id ? 'selected' : '' }}>{{ $sc->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Araç plakası</label>
+                    <input type="text" name="vehiclePlate" value="{{ old('vehiclePlate', $purchase->vehiclePlate) }}" class="form-input" placeholder="34 ABC 123">
+                </div>
+                <div>
+                    <label class="form-label">Şoför adı</label>
+                    <input type="text" name="driverName" value="{{ old('driverName', $purchase->driverName) }}" class="form-input" placeholder="Ahmet Yılmaz">
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="form-label">Şoför telefonu</label>
+                    <input type="tel" name="driverPhone" value="{{ old('driverPhone', $purchase->driverPhone) }}" class="form-input" placeholder="0555 123 45 67">
+                </div>
+            </div>
+        </div>
+
         <div class="form-items-section-box mt-5">
             <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Alış Kalemleri</h3>
             <div id="items" class="space-y-3">

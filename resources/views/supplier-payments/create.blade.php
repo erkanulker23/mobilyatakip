@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Ödeme Yap (Tedarikçi)')
+@section('title', 'Tedarikçi Ödeme Yap')
 @push('head')
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
 @endpush
@@ -8,9 +8,9 @@
     <div class="flex items-center gap-2 text-slate-500 text-sm mb-1">
         <a href="{{ route('suppliers.index') }}" class="hover:text-slate-700">Tedarikçiler</a>
         <span>/</span>
-        <span class="text-slate-700">Ödeme Yap</span>
+        <span class="text-slate-700">Tedarikçi Ödeme Yap</span>
     </div>
-    <h1 class="text-2xl font-bold text-slate-900">Ödeme Yap (Tedarikçi)</h1>
+    <h1 class="text-2xl font-bold text-slate-900">Tedarikçi Ödeme Yap</h1>
     <p class="text-slate-600 mt-1">Tedarikçiye ödeme kaydı oluşturun</p>
 </div>
 

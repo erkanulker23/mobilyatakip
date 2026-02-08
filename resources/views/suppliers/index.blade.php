@@ -72,9 +72,6 @@
                     <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Ad</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">E-posta</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Telefon</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Vergi No</th>
-                    <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Borç (alış)</th>
-                    <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Alacak (ödeme)</th>
                     <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Bakiye</th>
                     <th class="px-6 py-3 text-center text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase w-40">İşlem</th>
                 </tr>
@@ -92,27 +89,24 @@
                     </td>
                     <td class="px-6 py-4 text-slate-600 dark:text-slate-400">{{ $s->email ?? '-' }}</td>
                     <td class="px-6 py-4 text-slate-600 dark:text-slate-400">{{ $s->phone ?? '-' }}</td>
-                    <td class="px-6 py-4 text-slate-600 dark:text-slate-400 font-mono text-sm">{{ $s->taxNumber ?? '-' }}</td>
                     @php
                         $borc = $borcBySupplier[$s->id] ?? 0;
                         $alacak = $alacakBySupplier[$s->id] ?? 0;
                         $bakiye = $borc - $alacak;
                     @endphp
-                    <td class="px-6 py-4 text-right text-slate-700 dark:text-slate-300">{{ number_format($borc, 0, ',', '.') }} ₺</td>
-                    <td class="px-6 py-4 text-right text-slate-700 dark:text-slate-300">{{ number_format($alacak, 0, ',', '.') }} ₺</td>
                     <td class="px-6 py-4 text-right font-medium {{ $bakiye > 0 ? 'text-red-600 dark:text-red-400' : ($bakiye < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400') }}">{{ number_format($bakiye, 0, ',', '.') }} ₺</td>
                     <td class="px-6 py-4">
                         <div class="flex items-center justify-end gap-1">
-                            <a href="{{ route('suppliers.show', $s) }}" aria-label="Detay" title="Detay" class="p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                            <a href="{{ route('suppliers.show', $s) }}" aria-label="Görüntüle" title="Görüntüle" class="action-btn-view p-2 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                             </a>
-                            <a href="{{ route('suppliers.edit', $s) }}" aria-label="Düzenle" title="Düzenle" class="p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-sky-600 dark:hover:text-sky-400 transition-colors">
+                            <a href="{{ route('suppliers.edit', $s) }}" aria-label="Düzenle" title="Düzenle" class="action-btn-edit p-2 rounded-xl hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-colors">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             </a>
-                            <a href="{{ route('suppliers.print', $s) }}" target="_blank" rel="noopener" aria-label="Yazdır" title="Yazdır" class="p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
+                            <a href="{{ route('suppliers.print', $s) }}" target="_blank" rel="noopener" aria-label="Yazdır" title="Yazdır" class="action-btn-print p-2 rounded-xl hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                             </a>
-                            <button type="button" @click="deleteOpen = true" aria-label="Sil" title="Sil" class="p-2 rounded-xl text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors">
+                            <button type="button" @click="deleteOpen = true" aria-label="Sil" title="Sil" class="action-btn-delete p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                             </button>
                             {{-- Tekil silme: tedarikçiye ait ürünler silinsin mi? --}}
@@ -142,7 +136,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="9" class="px-6 py-12 text-center text-slate-500 dark:text-slate-400">Kayıt bulunamadı.</td></tr>
+                <tr><td colspan="6" class="px-6 py-12 text-center text-slate-500 dark:text-slate-400">Kayıt bulunamadı.</td></tr>
                 @endforelse
             </tbody>
         </table>

@@ -61,7 +61,7 @@ class ServiceTicketController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $rules = [
             'saleId' => 'nullable|exists:sales,id',
             'customerId' => 'required|exists:customers,id',
             'issueType' => 'required|string|max:255',
@@ -70,6 +70,14 @@ class ServiceTicketController extends Controller
             'assignedUserId' => 'nullable|exists:users,id',
             'images' => 'nullable|array',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+        ];
+        if (!$request->boolean('underWarranty')) {
+            $rules['serviceChargeAmount'] = 'required|numeric|min:0';
+        } else {
+            $rules['serviceChargeAmount'] = 'nullable|numeric|min:0';
+        }
+        $validated = $request->validate($rules, [
+            'serviceChargeAmount.required' => 'Garanti kapsamında değilse servis ücreti girilmelidir.',
         ]);
         if (!empty($validated['saleId'])) {
             Sale::findOrFail($validated['saleId']);
@@ -95,6 +103,7 @@ class ServiceTicketController extends Controller
             'assignedUserId' => $validated['assignedUserId'] ?? null,
             'openedAt' => now(),
             'images' => $images,
+            'serviceChargeAmount' => $request->boolean('underWarranty') ? null : ($validated['serviceChargeAmount'] ?? 0),
         ]);
         return redirect()->route('service-tickets.index')->with('success', 'Servis kaydı oluşturuldu.');
     }

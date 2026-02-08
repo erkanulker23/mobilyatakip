@@ -8,15 +8,19 @@ use App\Models\SaleActivity;
 use App\Models\Customer;
 use App\Models\CustomerPayment;
 use App\Models\Product;
+use App\Models\StockMovement;
 use App\Services\AuditService;
 use App\Services\SaleService;
+use App\Services\StockService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
 class SaleController extends Controller
 {
     public function __construct(
         private SaleService $saleService,
+        private StockService $stockService,
         private AuditService $auditService
     ) {}
 
@@ -126,16 +130,52 @@ class SaleController extends Controller
 
     public function destroy(Sale $sale)
     {
-        $this->auditService->logDelete('sale', $sale->id, ['saleNumber' => $sale->saleNumber, 'grandTotal' => (float) $sale->grandTotal]);
-        $sale->delete();
+        $saleNumber = $sale->saleNumber;
+        $grandTotal = (float) $sale->grandTotal;
+        $saleId = $sale->id;
+        DB::transaction(function () use ($sale, $saleId, $saleNumber, $grandTotal) {
+            CustomerPayment::where('saleId', $saleId)->update(['saleId' => null]);
+            $this->reverseSaleStock($saleId, $saleNumber, 'satis_silme');
+            $sale->items()->delete();
+            $sale->delete();
+            $this->auditService->logDelete('sale', $saleId, ['saleNumber' => $saleNumber, 'grandTotal' => $grandTotal]);
+        });
         return redirect()->route('sales.index')->with('success', 'Satış silindi.');
     }
 
     public function cancel(Sale $sale)
     {
+        if ($sale->isCancelled) {
+            return redirect()->route('sales.show', $sale)->with('error', 'Bu satış zaten iptal edilmiş.');
+        }
+        DB::transaction(function () use ($sale) {
+            $this->reverseSaleStock($sale->id, $sale->saleNumber, 'satis_iptal');
+            $sale->update(['isCancelled' => true]);
+        });
         $this->auditService->logCancel('sale', $sale->id);
-        $sale->update(['isCancelled' => true]);
         return redirect()->route('sales.show', $sale)->with('success', 'Satış iptal edildi.');
+    }
+
+    /** Satış iptal/silme: Bu satıştan yapılan stok çıkışlarını depoya iade eder. */
+    private function reverseSaleStock(string $saleId, string $saleNumber, string $refType): void
+    {
+        $movements = StockMovement::where('refType', 'satis')->where('refId', $saleId)->get();
+        foreach ($movements as $m) {
+            $qty = (int) abs($m->quantity);
+            if ($qty > 0 && $m->productId && $m->warehouseId) {
+                $this->stockService->movement(
+                    $m->productId,
+                    $m->warehouseId,
+                    'giris',
+                    $qty,
+                    [
+                        'refType' => $refType,
+                        'refId' => $saleId,
+                        'description' => "Stok iade - {$refType}: {$saleNumber}",
+                    ]
+                );
+            }
+        }
     }
 
     public function sendSupplierEmail(Sale $sale)

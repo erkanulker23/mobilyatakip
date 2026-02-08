@@ -3,21 +3,26 @@
 @push('head')
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
 <style>
-.form-create-section { padding: 1.5rem 0; border-bottom: 1px solid #e2e8f0; }
+.form-create-section { padding: 1rem 0; border-bottom: 1px solid #e2e8f0; }
 .form-create-section:last-of-type { border-bottom: 0; }
 .dark .form-create-section { border-color: #334155; }
-.form-create-section-title { font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1.25rem; }
+.form-create-section-title { font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.75rem; }
 .dark .form-create-section-title { color: #94a3b8; }
-.sale-item-card { background: #fff; border-radius: 0.75rem; padding: 1.25rem; border: 1px solid #e2e8f0; margin-bottom: 1rem; }
+.items-scroll-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+.sale-item-card { background: #fff; border-radius: 0.5rem; padding: 0.75rem 1rem; border: 1px solid #e2e8f0; margin-bottom: 0.75rem; min-width: 0; }
+@media (max-width: 1199px) { .sale-item-card { min-width: 520px; } }
 .dark .sale-item-card { background: #334155; border-color: #475569; }
-.sale-item-card .form-label { margin-bottom: 0.5rem; white-space: nowrap; }
-.sale-item-card .form-input { min-width: 0; }
-.sale-totals-box { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border-radius: 1rem; padding: 1.25rem; border: 1px solid #a7f3d0; }
+.sale-item-card .form-label { margin-bottom: 0.25rem; white-space: nowrap; font-size: 0.75rem; }
+.sale-item-card .form-input, .sale-item-card .form-select { min-width: 0; padding: 0.5rem 0.625rem; min-height: 38px !important; }
+.sale-totals-box { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border-radius: 0.75rem; padding: 0.75rem 1rem; border: 1px solid #a7f3d0; }
 .dark .sale-totals-box { background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(5,150,105,0.2) 100%); border-color: #047857; }
 .form-actions-sticky { padding: 1rem 0; margin: 0 -1.5rem -1.5rem; padding-left: 1.5rem; padding-right: 1.5rem; background: #fff; border-top: 1px solid #f1f5f9; }
 .dark .form-actions-sticky { background: #1e293b; border-color: #334155; }
 @media (min-width: 768px) { .form-actions-sticky { margin: 0; padding: 0; border: 0; background: transparent; } }
 @media (max-width: 767px) { .form-actions-sticky { margin-left: -1rem; margin-right: -1rem; padding-left: 1rem; padding-right: 1rem; margin-bottom: -1rem; padding-bottom: 1rem; padding-bottom: max(1rem, env(safe-area-inset-bottom)); } }
+.ts-wrapper .ts-control .item { display: flex; align-items: center; gap: 0.5rem; }
+.ts-wrapper .ts-control .item img { flex-shrink: 0; }
+.ts-dropdown.dropup { bottom: 100%; top: auto !important; margin-top: 0; margin-bottom: 4px; }
 </style>
 @endpush
 @section('content')
@@ -42,8 +47,8 @@
             {{-- Genel bilgiler --}}
             <div class="form-create-section px-4 sm:px-6 lg:px-8 pt-6">
                 <h2 class="form-create-section-title">Genel bilgiler</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="sm:col-span-2 lg:col-span-1">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2">
                         <label class="form-label">Müşteri <span class="text-red-500">*</span></label>
                         <div class="flex gap-2">
                             <select name="customerId" required class="form-select min-h-[44px] md:min-h-[42px]" id="customerSelect" placeholder="Müşteri ara veya seçin...">
@@ -57,14 +62,15 @@
                             </button>
                         </div>
                         @error('customerId')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
-                    </div>
-                    <div>
-                        <label class="form-label">KDV</label>
-                        <select name="kdvIncluded" class="form-select min-h-[44px] md:min-h-[42px]">
-                            <option value="1" {{ old('kdvIncluded', '1') == '1' ? 'selected' : '' }}>KDV Dahil</option>
-                            <option value="0" {{ old('kdvIncluded') === '0' ? 'selected' : '' }}>KDV Hariç</option>
-                        </select>
-                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Birim fiyat KDV dahil mi?</p>
+                        <div id="customerInfoBox" class="mt-5 pt-4 border-t border-slate-100 dark:border-slate-700/60 hidden">
+                            <p id="customerName" class="text-base font-semibold text-slate-800 dark:text-slate-100 mb-3">—</p>
+                            <div class="space-y-2.5 text-sm">
+                                <div id="customerPhoneRow" class="flex gap-2"><span class="text-slate-400 dark:text-slate-500 w-20 shrink-0">Telefon</span><span id="customerPhone" class="text-slate-700 dark:text-slate-200">—</span></div>
+                                <div id="customerEmailRow" class="flex gap-2"><span class="text-slate-400 dark:text-slate-500 w-20 shrink-0">E-posta</span><span id="customerEmail" class="text-slate-700 dark:text-slate-200">—</span></div>
+                                <div id="customerAddressRow" class="flex gap-2"><span class="text-slate-400 dark:text-slate-500 w-20 shrink-0">Adres</span><span id="customerAddress" class="text-slate-700 dark:text-slate-200">—</span></div>
+                                <div id="customerTaxRow" class="flex gap-2"><span class="text-slate-400 dark:text-slate-500 w-20 shrink-0">Vergi</span><span id="customerTax" class="text-slate-700 dark:text-slate-200">—</span></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -84,33 +90,33 @@
             {{-- Kalemler --}}
             <div class="form-create-section px-4 sm:px-6 lg:px-8 pb-6">
                 <div class="form-items-section-box">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                         <h2 class="form-create-section-title mb-0">Satış kalemleri</h2>
                         <p class="text-xs text-slate-500 dark:text-slate-400 sm:max-w-sm">Ürün veya hizmet seçin veya yazarak ekleyin.</p>
                     </div>
                     <template id="item-template">
                     <div class="item-row sale-item-card" data-row-idx="__IDX__">
-                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 lg:items-end">
-                            <div class="lg:col-span-4 flex gap-2">
-                                <div class="flex-1 min-w-0">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2 lg:gap-2 xl:gap-3 lg:items-end">
+                            <div class="sm:col-span-2 lg:col-span-3 flex gap-1.5">
+                                <div class="flex-1 min-w-0 item-product-wrap">
                                     <label class="form-label">Ürün / Hizmet <span class="text-red-500">*</span></label>
-                                    <select class="form-select item-product min-h-[44px] md:min-h-[42px]" data-placeholder="Ara veya yaz (örn. montaj)...">
+                                    <select class="form-select item-product" data-placeholder="Ara veya yaz (örn. montaj)...">
                                         <option value="">— Manuel gir —</option>
                                         @foreach($products as $p)
-                                        <option value="{{ $p->id }}" data-price="{{ $p->unitPrice }}" data-kdv="{{ $p->kdvRate ?? 18 }}">{{ $p->name }} ({{ number_format($p->unitPrice, 0, ',', '.') }} ₺)</option>
+                                        @php $img = is_array($p->images ?? null) ? ($p->images[0] ?? null) : ($p->images ?? null); @endphp
+                                        <option value="{{ $p->id }}" data-price="{{ $p->unitPrice }}" data-kdv="{{ $p->kdvRate ?? 18 }}" data-image="{{ $img ? (Str::startsWith($img, 'http') ? $img : url($img)) : '' }}">{{ $p->name }} ({{ number_format($p->unitPrice, 0, ',', '.') }} ₺)</option>
                                         @endforeach
                                     </select>
                                     <input type="hidden" class="item-product-id" name="items[__IDX__][productId]" value="">
                                     <input type="hidden" class="item-product-name" name="items[__IDX__][productName]" value="">
                                 </div>
-                                <button type="button" onclick="window.openQuickAddProduct && window.openQuickAddProduct(this)" class="shrink-0 self-end flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 text-sm font-medium touch-manipulation min-h-[44px] md:min-h-[42px]" title="Ürün/hizmet hızlı ekle">
-                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                                    <span class="hidden sm:inline">Hızlı ekle</span>
+                                <button type="button" onclick="window.openQuickAddProduct && window.openQuickAddProduct(this)" class="shrink-0 self-end flex items-center justify-center w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 touch-manipulation" title="Ürün/hizmet hızlı ekle" aria-label="Hızlı ekle">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                                 </button>
                             </div>
                             <div class="lg:col-span-2">
                                 <label class="form-label">Fiyat <span class="text-red-500">*</span></label>
-                                <input type="number" step="0.01" min="0" name="items[__IDX__][unitPrice]" required class="form-input item-price min-h-[44px] md:min-h-[42px]" placeholder="0">
+                                <input type="text" inputmode="decimal" name="items[__IDX__][unitPrice]" required class="form-input item-price min-h-[44px] md:min-h-[42px]" placeholder="0" data-raw="" title="Örn: 20.000">
                             </div>
                             <div class="lg:col-span-1">
                                 <label class="form-label">Adet <span class="text-red-500">*</span></label>
@@ -120,7 +126,7 @@
                                 <label class="form-label">İsk. %</label>
                                 <input type="number" step="0.01" min="0" max="100" name="items[__IDX__][lineDiscountPercent]" value="" class="form-input item-disc-pct min-h-[44px] md:min-h-[42px]" placeholder="0" title="İskonto yüzdesi (opsiyonel)">
                             </div>
-                            <div class="lg:col-span-2 border-l border-slate-200 dark:border-slate-600 pl-4">
+                            <div class="lg:col-span-2 border-l border-slate-200 dark:border-slate-600 pl-2 lg:pl-3">
                                 <label class="form-label">İsk. ₺</label>
                                 <input type="number" step="0.01" min="0" name="items[__IDX__][lineDiscountAmount]" value="" class="form-input item-disc-amt min-h-[44px] md:min-h-[42px]" placeholder="0" title="İskonto tutarı ₺ (opsiyonel)">
                             </div>
@@ -128,18 +134,28 @@
                                 <label class="form-label">KDV %</label>
                                 <input type="number" step="0.01" min="0" max="100" name="items[__IDX__][kdvRate]" value="18" class="form-input item-kdv min-h-[44px] md:min-h-[42px]" placeholder="18">
                             </div>
-                            <div class="lg:col-span-1 flex items-end">
-                                <button type="button" onclick="addRow()" class="w-11 h-11 md:w-12 md:h-12 flex items-center justify-center rounded-xl bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500 font-medium touch-manipulation text-lg" aria-label="Satır ekle">+</button>
+                            <div class="sm:col-span-2 lg:col-span-2 flex items-end gap-1.5">
+                                <button type="button" onclick="removeSaleRow(this)" class="btn-remove-row w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/60 text-sm touch-manipulation" aria-label="Satır sil" title="Kalem sil">−</button>
+                                <button type="button" onclick="addRow()" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500 text-sm touch-manipulation" aria-label="Satır ekle" title="Kalem ekle">+</button>
                             </div>
                         </div>
                     </div>
                     </template>
-                    <div id="items" class="space-y-3"></div>
-                    <div class="mt-6 flex flex-col lg:flex-row lg:items-start gap-4">
-                        <div class="flex-1 min-w-0"></div>
+                    <div id="items" class="space-y-3 items-scroll-wrapper"></div>
+                    <div class="mt-6 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+                        <div class="max-w-xs">
+                            <label class="form-label">KDV</label>
+                            <select name="kdvIncluded" class="form-select min-h-[44px] md:min-h-[42px]">
+                                <option value="1" {{ old('kdvIncluded', '1') == '1' ? 'selected' : '' }}>KDV Dahil</option>
+                                <option value="0" {{ old('kdvIncluded') === '0' ? 'selected' : '' }}>KDV Hariç</option>
+                            </select>
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Birim fiyat KDV dahil mi?</p>
+                        </div>
                         <div id="saleTotals" class="sale-totals-box w-full lg:w-64 shrink-0">
                             <div class="space-y-1.5 text-sm">
-                                <div class="flex justify-between"><span class="text-slate-600 dark:text-slate-300">Ara Toplam</span> <span id="subtotalDisplay" class="font-medium text-slate-900 dark:text-white">0 ₺</span></div>
+                                <div class="flex justify-between"><span class="text-slate-600 dark:text-slate-300">Ara Toplam</span> <span id="subtotalBeforeDiscDisplay" class="font-medium text-slate-900 dark:text-white">0 ₺</span></div>
+                                <div id="saleDiscountPctRow" class="flex justify-between hidden"><span class="text-slate-600 dark:text-slate-300">İsk. % Toplam</span> <span id="saleDiscountPctDisplay" class="font-medium text-amber-600 dark:text-amber-400">0 ₺</span></div>
+                                <div id="saleDiscountAmtRow" class="flex justify-between hidden"><span class="text-slate-600 dark:text-slate-300">İsk. ₺ Toplam</span> <span id="saleDiscountAmtDisplay" class="font-medium text-amber-600 dark:text-amber-400">0 ₺</span></div>
                                 <div class="flex justify-between"><span class="text-slate-600 dark:text-slate-300">KDV Toplam</span> <span id="kdvDisplay" class="font-medium text-slate-900 dark:text-white">0 ₺</span></div>
                                 <div class="flex justify-between pt-2 border-t border-emerald-200 dark:border-emerald-800"><span class="font-medium text-slate-800 dark:text-slate-200">Genel Toplam</span> <span id="grandTotalDisplay" class="font-semibold text-emerald-700 dark:text-emerald-300 text-lg">0 ₺</span></div>
                             </div>
@@ -231,8 +247,15 @@
 </div>
 <script>
 @php
-    $customersJson = $customers->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->values();
-    $productsJson = $products->map(fn($p) => ['id' => $p->id, 'name' => $p->name . ' (' . number_format($p->unitPrice, 0, ',', '.') . ' ₺)', 'price' => (float)$p->unitPrice, 'kdv' => (float)($p->kdvRate ?? 18)])->values();
+    $customersJson = $customers->map(fn($c) => [
+        'id' => $c->id, 'name' => $c->name,
+        'phone' => $c->phone ?? '', 'email' => $c->email ?? '', 'address' => $c->address ?? '',
+        'taxNumber' => $c->taxNumber ?? '', 'taxOffice' => $c->taxOffice ?? '', 'identityNumber' => $c->identityNumber ?? ''
+    ])->values();
+    $productsJson = $products->map(function($p) {
+        $img = is_array($p->images ?? null) ? ($p->images[0] ?? null) : ($p->images ?? null);
+        return ['id' => $p->id, 'name' => $p->name . ' (' . number_format($p->unitPrice, 0, ',', '.') . ' ₺)', 'price' => (float)$p->unitPrice, 'kdv' => (float)($p->kdvRate ?? 18), 'image' => $img ? (Str::startsWith($img, 'http') ? $img : url($img)) : null];
+    })->values();
 @endphp
 const customers = @json($customersJson);
 const productsData = @json($productsJson);
@@ -268,13 +291,14 @@ function salesCreateForm() {
                 const data = await res.json();
                 if (res.ok) {
                     const text = data.name + ' (' + fmt(data.price) + ' ₺)';
-                    productsData.push({ id: String(data.id), name: text, price: data.price, kdv: data.kdv });
+                    productsData.push({ id: String(data.id), name: text, price: data.price, kdv: data.kdv, image: data.image || null });
                     const tmplSelect = document.getElementById('item-template')?.content?.querySelector('.item-product');
                     if (tmplSelect) {
                         const opt = document.createElement('option');
                         opt.value = data.id;
                         opt.setAttribute('data-price', data.price);
                         opt.setAttribute('data-kdv', data.kdv);
+                        if (data.image) opt.setAttribute('data-image', data.image);
                         opt.textContent = text;
                         tmplSelect.appendChild(opt);
                     }
@@ -312,7 +336,7 @@ function salesCreateForm() {
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    customers.push({ id: data.id, name: data.name });
+                    customers.push({ id: data.id, name: data.name, phone: data.phone || '', email: data.email || '', address: data.address || '', taxNumber: data.taxNumber || '', taxOffice: data.taxOffice || '', identityNumber: '' });
                     if (window.customerTomSelect) {
                         window.customerTomSelect.addOption({ value: data.id, text: data.name });
                         window.customerTomSelect.setValue(data.id);
@@ -331,6 +355,34 @@ function salesCreateForm() {
     };
 }
 let idx = 0;
+function removeSaleRow(btn) {
+    const container = document.getElementById('items');
+    const rows = container.querySelectorAll('.item-row');
+    if (rows.length <= 1) return;
+    const row = btn.closest('.item-row');
+    if (!row) return;
+    const ts = row.querySelector('.item-product')?.tomselect;
+    if (ts) ts.destroy();
+    row.remove();
+    reindexSaleRows();
+    updateSaleTotals();
+}
+function reindexSaleRows() {
+    const container = document.getElementById('items');
+    container.querySelectorAll('.item-row').forEach((row, i) => {
+        row.setAttribute('data-row-idx', String(i));
+        row.querySelectorAll('[name]').forEach(el => {
+            if (el.name) el.name = el.name.replace(/items\[\d+\]/, 'items[' + i + ']');
+        });
+        const removeBtn = row.querySelector('.btn-remove-row');
+        if (removeBtn) removeBtn.style.visibility = container.querySelectorAll('.item-row').length <= 1 ? 'hidden' : '';
+    });
+    if (window.salesProductSelects) {
+        const arr = [];
+        container.querySelectorAll('.item-product').forEach((sel, i) => { arr[i] = sel.tomselect; });
+        window.salesProductSelects = arr;
+    }
+}
 function addRow() {
     const tmpl = document.getElementById('item-template');
     if (!tmpl) return;
@@ -350,6 +402,7 @@ function addRow() {
     const sel = rowEl.querySelector('.item-product');
     initProductSelect(sel, idx);
     idx++;
+    reindexSaleRows();
 }
 window.openQuickAddProduct = function(btn) {
     const row = btn && btn.closest ? btn.closest('.item-row') : null;
@@ -367,12 +420,35 @@ function initProductSelect(sel, rowIdx) {
         maxOptions: 100,
         placeholder: 'Ara veya yaz (örn. montaj hizmeti)...',
         searchField: ['text'],
-        render: { option_create: (data, escape) => '<div class="create">+ "' + escape(data.input) + '" olarak ekle</div>' },
+        dropdownParent: 'body',
+        onDropdownOpen: function() {
+            const rect = this.control.getBoundingClientRect();
+            const viewportH = window.innerHeight || document.documentElement.clientHeight;
+            if (rect.bottom > viewportH - 220) { this.dropdown.classList.add('dropup'); }
+        },
+        onDropdownClose: function() { this.dropdown.classList.remove('dropup'); },
+        render: {
+            option_create: (data, escape) => '<div class="create">+ "' + escape(data.input) + '" olarak ekle</div>',
+            item: function(data, escape) {
+                const p = productsData.find(x => String(x.id) === String(data.value));
+                const img = p?.image;
+                const imgHtml = img ? '<img src="' + escape(img) + '" alt="" class="w-8 h-8 object-cover rounded shrink-0 mr-2" onerror="this.style.display=\'none\'">' : '';
+                return '<div class="flex items-center gap-2 min-w-0"><span class="shrink-0">' + imgHtml + '</span><span class="truncate">' + escape(data.text) + '</span></div>';
+            },
+            option: function(data, escape) {
+                const p = productsData.find(x => String(x.id) === String(data.value));
+                const img = p?.image;
+                const imgHtml = img ? '<img src="' + escape(img) + '" alt="" class="w-8 h-8 object-cover rounded shrink-0 mr-2" onerror="this.style.display=\'none\'">' : '';
+                return '<div class="flex items-center gap-2">' + imgHtml + '<span>' + escape(data.text) + '</span></div>';
+            }
+        },
         onItemAdd: function(value) {
             const row = sel.closest('.item-row');
             const opt = Array.from(sel.options).find(o => o.value === value);
             if (opt && opt.dataset.price) {
-                row.querySelector('.item-price').value = opt.dataset.price;
+                const priceNum = parseFloat(opt.dataset.price) || 0;
+                row.querySelector('.item-price').value = fmt(priceNum);
+                row.querySelector('.item-price').setAttribute('data-raw', String(priceNum));
                 row.querySelector('.item-kdv').value = opt.dataset.kdv || 18;
             }
             const product = productsData.find(p => p.id === value);
@@ -402,36 +478,77 @@ function initProductSelect(sel, rowIdx) {
     window.salesProductSelects[rowIdx] = ts;
 }
 function fmt(n) { return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n || 0); }
+function parseTrNum(s) {
+    if (s == null || s === '') return NaN;
+    const t = String(s).replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
+    return parseFloat(t) || NaN;
+}
+function formatPriceInput(inp) {
+    if (!inp || inp.classList && !inp.classList.contains('item-price')) return;
+    const v = parseTrNum(inp.value);
+    if (!isNaN(v) && v >= 0) { inp.value = fmt(v); inp.setAttribute('data-raw', String(v)); }
+}
 function updateSaleTotals() {
-    const subtotalEl = document.getElementById('subtotalDisplay');
+    const subtotalEl = document.getElementById('subtotalBeforeDiscDisplay');
     if (!subtotalEl) return;
     const kdvIncl = document.querySelector('select[name="kdvIncluded"]')?.value === '1';
-    let subtotal = 0, kdvTotal = 0;
+    let subtotalBeforeDisc = 0, totalDiscountPct = 0, totalDiscountAmt = 0, subtotal = 0, kdvTotal = 0;
     document.querySelectorAll('.item-row').forEach(row => {
-        const price = parseFloat(row.querySelector('.item-price')?.value || 0);
+        const priceEl = row.querySelector('.item-price');
+        const price = parseTrNum(priceEl?.value ?? priceEl?.getAttribute('data-raw') ?? 0);
         const qty = parseInt(row.querySelector('.item-qty')?.value || 1, 10);
         const kdv = parseFloat(row.querySelector('.item-kdv')?.value || 18, 10);
         const discPct = parseFloat(row.querySelector('.item-disc-pct')?.value || 0, 10);
         const discAmt = parseFloat(row.querySelector('.item-disc-amt')?.value || 0, 10);
         if (price <= 0 || qty <= 0) return;
-        let lineTotal;
+        let lineBeforeDisc;
         if (kdvIncl) {
-            lineTotal = price * qty / (1 + kdv / 100);
+            lineBeforeDisc = price * qty / (1 + kdv / 100);
         } else {
-            lineTotal = price * qty;
+            lineBeforeDisc = price * qty;
         }
-        lineTotal = lineTotal * (1 - discPct / 100) - discAmt;
+        const lineDiscPct = lineBeforeDisc * (discPct / 100);
+        const lineDiscAmt = discAmt;
+        const lineDisc = lineDiscPct + lineDiscAmt;
+        let lineTotal = lineBeforeDisc - lineDisc;
         lineTotal = Math.max(0, lineTotal);
         const lineKdv = lineTotal * (kdv / 100);
+        subtotalBeforeDisc += lineBeforeDisc;
+        totalDiscountPct += lineDiscPct;
+        totalDiscountAmt += lineDiscAmt;
         subtotal += lineTotal;
         kdvTotal += lineKdv;
     });
-    document.getElementById('subtotalDisplay').textContent = fmt(subtotal) + ' ₺';
+    document.getElementById('subtotalBeforeDiscDisplay').textContent = fmt(subtotalBeforeDisc) + ' ₺';
+    const discPctRow = document.getElementById('saleDiscountPctRow');
+    const discPctDisp = document.getElementById('saleDiscountPctDisplay');
+    const discAmtRow = document.getElementById('saleDiscountAmtRow');
+    const discAmtDisp = document.getElementById('saleDiscountAmtDisplay');
+    if (discPctRow && discPctDisp) {
+        discPctRow.classList.toggle('hidden', totalDiscountPct <= 0);
+        discPctDisp.textContent = '-' + fmt(totalDiscountPct) + ' ₺';
+    }
+    if (discAmtRow && discAmtDisp) {
+        discAmtRow.classList.toggle('hidden', totalDiscountAmt <= 0);
+        discAmtDisp.textContent = '-' + fmt(totalDiscountAmt) + ' ₺';
+    }
     document.getElementById('kdvDisplay').textContent = fmt(kdvTotal) + ' ₺';
     document.getElementById('grandTotalDisplay').textContent = fmt(subtotal + kdvTotal) + ' ₺';
 }
-document.getElementById('saleForm')?.addEventListener('input', updateSaleTotals);
-document.getElementById('saleForm')?.addEventListener('change', updateSaleTotals);
+document.getElementById('saleForm')?.addEventListener('input', function(e) {
+    if (e.target.classList.contains('item-price')) formatPriceInput(e.target);
+    updateSaleTotals();
+});
+document.getElementById('saleForm')?.addEventListener('change', function(e) {
+    if (e.target.classList.contains('item-price')) formatPriceInput(e.target);
+    updateSaleTotals();
+});
+document.getElementById('saleForm')?.addEventListener('submit', function() {
+    document.querySelectorAll('.item-price').forEach(function(inp) {
+        const v = parseTrNum(inp.value);
+        inp.value = isNaN(v) || v < 0 ? '' : String(v);
+    });
+});
 document.addEventListener('DOMContentLoaded', function() {
     if (typeof TomSelect === 'undefined') {
         const s = document.createElement('script');
@@ -440,14 +557,48 @@ document.addEventListener('DOMContentLoaded', function() {
         document.head.appendChild(s);
     } else { initSalesForm(); }
 });
+function updateCustomerInfo(customerId) {
+    const box = document.getElementById('customerInfoBox');
+    const phoneEl = document.getElementById('customerPhone');
+    const emailEl = document.getElementById('customerEmail');
+    const addressEl = document.getElementById('customerAddress');
+    const taxEl = document.getElementById('customerTax');
+    if (!box) return;
+    if (!customerId) {
+        box.classList.add('hidden');
+        return;
+    }
+    const c = customers.find(x => String(x.id) === String(customerId));
+    if (!c) {
+        box.classList.add('hidden');
+        return;
+    }
+    box.classList.remove('hidden');
+    document.getElementById('customerName').textContent = c.name || '—';
+    const setRow = (id, val) => {
+        const row = document.getElementById(id + 'Row');
+        const el = document.getElementById(id);
+        if (!row || !el) return;
+        const v = val || '—';
+        el.textContent = v;
+        row.classList.toggle('hidden', v === '—');
+    };
+    setRow('customerPhone', c.phone);
+    setRow('customerEmail', c.email);
+    setRow('customerAddress', c.address);
+    const taxParts = [c.identityNumber, c.taxNumber, c.taxOffice].filter(Boolean);
+    setRow('customerTax', taxParts.length ? taxParts.join(' · ') : null);
+}
 function initSalesForm() {
     const customerSel = document.getElementById('customerSelect');
     if (customerSel) {
         window.customerTomSelect = new TomSelect(customerSel, {
             maxOptions: 100,
             placeholder: 'Müşteri ara veya seçin...',
-            searchField: ['text']
+            searchField: ['text'],
+            onChange: function(v) { updateCustomerInfo(v); }
         });
+        setTimeout(function() { updateCustomerInfo(window.customerTomSelect?.getValue()); }, 0);
     }
     addRow();
     updateSaleTotals();

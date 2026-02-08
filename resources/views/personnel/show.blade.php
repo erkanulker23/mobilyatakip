@@ -12,7 +12,7 @@
             <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">{{ $personnel->name }}</h1>
             <p class="text-slate-600 dark:text-slate-400 mt-1">{{ $personnel->title ?? 'Personel detayları' }}</p>
         </div>
-        <a href="{{ route('personnel.edit', $personnel) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Düzenle</a>
+        <a href="{{ route('personnel.edit', $personnel) }}" class="btn-edit">Düzenle</a>
     </div>
 </div>
 

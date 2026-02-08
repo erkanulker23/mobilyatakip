@@ -14,7 +14,10 @@
         </div>
         <div class="flex flex-wrap items-center gap-3">
             @if(!($purchase->isCancelled ?? false))
-            <a href="{{ route('supplier-payments.create', ['supplierId' => $purchase->supplierId]) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Ödeme Yap</a>
+            <a href="{{ route('supplier-payments.create', ['supplierId' => $purchase->supplierId]) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Tedarikçi Ödeme Yap</a>
+            @if($purchase->shippingCompanyId)
+            <a href="{{ route('shipping-company-payments.create', ['shippingCompanyId' => $purchase->shippingCompanyId]) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 font-medium">Nakliye Ödemesi Yap</a>
+            @endif
             <form method="POST" action="{{ route('purchases.cancel', $purchase) }}" class="inline" onsubmit="return confirm('Bu alışı iptal etmek istediğinize emin misiniz?');">
                 @csrf
                 <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 font-medium">İptal Et</button>
@@ -44,6 +47,17 @@
     </div>
 </div>
 
+@php
+    $nakliyeInfo = null;
+    if ($purchase->shippingCompany || $purchase->vehiclePlate || $purchase->driverName || $purchase->driverPhone) {
+        $parts = [];
+        if ($purchase->shippingCompany) $parts[] = $purchase->shippingCompany->name;
+        if ($purchase->vehiclePlate) $parts[] = 'Plaka: ' . $purchase->vehiclePlate;
+        if ($purchase->driverName) $parts[] = 'Şoför: ' . $purchase->driverName . ($purchase->driverPhone ? ' (' . $purchase->driverPhone . ')' : '');
+        elseif ($purchase->driverPhone) $parts[] = 'Tel: ' . $purchase->driverPhone;
+        $nakliyeInfo = implode(' · ', $parts);
+    }
+@endphp
 @include('partials.invoice-document', [
     'documentTitle' => 'ALIŞ FİŞİ',
     'documentNumber' => $purchase->purchaseNumber,
@@ -54,7 +68,7 @@
     'partyPhone' => $purchase->supplier?->phone,
     'partyEmail' => $purchase->supplier?->email,
     'partyTax' => ($purchase->supplier?->taxNumber ? $purchase->supplier->taxNumber . ($purchase->supplier->taxOffice ? ' / ' . $purchase->supplier->taxOffice : '') : null),
-    'extraInfo' => '<p class="text-sm text-slate-600">Vade: ' . ($purchase->dueDate?->format('d.m.Y') ?? '-') . '</p>' . (isset($purchase->supplierDiscountRate) && $purchase->supplierDiscountRate != null && $purchase->supplierDiscountRate > 0 ? '<p class="text-sm text-slate-600 mt-1">Tedarikçi iskonto: %' . number_format($purchase->supplierDiscountRate, 1, ',', '.') . '</p>' : ''),
+    'extraInfo' => '<p class="text-sm text-slate-600">Vade: ' . ($purchase->dueDate?->format('d.m.Y') ?? '-') . '</p>' . (isset($purchase->supplierDiscountRate) && $purchase->supplierDiscountRate != null && $purchase->supplierDiscountRate > 0 ? '<p class="text-sm text-slate-600 mt-1">Tedarikçi iskonto: %' . number_format($purchase->supplierDiscountRate, 1, ',', '.') . '</p>' : '') . ($nakliyeInfo ? '<p class="text-sm text-slate-600 mt-1"><strong>Nakliye:</strong> ' . e($nakliyeInfo) . '</p>' : ''),
     'items' => $purchase->items->map(fn($i) => ['name' => $i->product?->name, 'unitPrice' => $i->unitPrice, 'listPrice' => $i->listPrice, 'quantity' => $i->quantity, 'kdvRate' => $i->kdvRate ?? 18, 'lineTotal' => $i->lineTotal])->toArray(),
     'showListPrice' => $purchase->items->contains(fn($i) => $i->listPrice !== null),
     'showKdv' => true,

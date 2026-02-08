@@ -15,6 +15,7 @@ class Product extends BaseModel
         'externalId',
         'externalSource',
         'unitPrice',
+        'netPurchasePrice',
         'kdvIncluded',
         'kdvRate',
         'images',
@@ -26,6 +27,7 @@ class Product extends BaseModel
 
     protected $casts = [
         'unitPrice' => 'decimal:2',
+        'netPurchasePrice' => 'decimal:2',
         'kdvRate' => 'decimal:2',
         'kdvIncluded' => 'boolean',
         'isActive' => 'boolean',

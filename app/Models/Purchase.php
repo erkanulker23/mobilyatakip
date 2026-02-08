@@ -13,6 +13,10 @@ class Purchase extends BaseModel
         'purchaseNumber',
         'supplierId',
         'warehouseId',
+        'shippingCompanyId',
+        'vehiclePlate',
+        'driverName',
+        'driverPhone',
         'kdvIncluded',
         'supplierDiscountRate',
         'purchaseDate',
@@ -53,6 +57,11 @@ class Purchase extends BaseModel
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Warehouse::class, 'warehouseId');
+    }
+
+    public function shippingCompany(): BelongsTo
+    {
+        return $this->belongsTo(ShippingCompany::class, 'shippingCompanyId');
     }
 
     public function items(): HasMany

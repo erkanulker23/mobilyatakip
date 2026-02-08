@@ -32,6 +32,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/suppliers/excel/import', [SupplierController::class, 'importExcel'])->name('suppliers.excel.import');
     Route::post('/suppliers/actions/bulk-destroy', [SupplierController::class, 'bulkDestroy'])->name('suppliers.bulk-destroy');
     Route::resource('suppliers', SupplierController::class);
+    Route::resource('shipping-companies', \App\Http\Controllers\ShippingCompanyController::class)->parameters(['shipping-companies' => 'shippingCompany']);
     Route::post('/products/actions/bulk-destroy', [ProductController::class, 'bulkDestroy'])->name('products.bulk-destroy');
     Route::resource('products', ProductController::class);
     Route::resource('warehouses', \App\Http\Controllers\WarehouseController::class);
@@ -72,6 +73,16 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/customer-payments/{customerPayment}/print', [\App\Http\Controllers\CustomerPaymentController::class, 'print'])->name('customer-payments.print');
     Route::get('/odeme-yap', [\App\Http\Controllers\SupplierPaymentController::class, 'create'])->name('supplier-payments.create');
     Route::post('/odeme-yap', [\App\Http\Controllers\SupplierPaymentController::class, 'store'])->name('supplier-payments.store');
+    Route::get('/supplier-payments/{supplierPayment}', [\App\Http\Controllers\SupplierPaymentController::class, 'show'])->name('supplier-payments.show');
+    Route::get('/supplier-payments/{supplierPayment}/edit', [\App\Http\Controllers\SupplierPaymentController::class, 'edit'])->name('supplier-payments.edit');
+    Route::put('/supplier-payments/{supplierPayment}', [\App\Http\Controllers\SupplierPaymentController::class, 'update'])->name('supplier-payments.update');
+    Route::delete('/supplier-payments/{supplierPayment}', [\App\Http\Controllers\SupplierPaymentController::class, 'destroy'])->name('supplier-payments.destroy');
+    Route::get('/nakliye-odeme', [\App\Http\Controllers\ShippingCompanyPaymentController::class, 'create'])->name('shipping-company-payments.create');
+    Route::post('/nakliye-odeme', [\App\Http\Controllers\ShippingCompanyPaymentController::class, 'store'])->name('shipping-company-payments.store');
+    Route::get('/shipping-company-payments/{shippingCompanyPayment}', [\App\Http\Controllers\ShippingCompanyPaymentController::class, 'show'])->name('shipping-company-payments.show');
+    Route::get('/shipping-company-payments/{shippingCompanyPayment}/edit', [\App\Http\Controllers\ShippingCompanyPaymentController::class, 'edit'])->name('shipping-company-payments.edit');
+    Route::put('/shipping-company-payments/{shippingCompanyPayment}', [\App\Http\Controllers\ShippingCompanyPaymentController::class, 'update'])->name('shipping-company-payments.update');
+    Route::delete('/shipping-company-payments/{shippingCompanyPayment}', [\App\Http\Controllers\ShippingCompanyPaymentController::class, 'destroy'])->name('shipping-company-payments.destroy');
 
     Route::resource('expenses', \App\Http\Controllers\ExpenseController::class);
     Route::get('/raporlar', [\App\Http\Controllers\ReportsController::class, 'index'])->name('reports.index');

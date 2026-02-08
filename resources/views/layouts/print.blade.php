@@ -16,7 +16,7 @@
 </head>
 <body class="bg-white text-slate-900 p-6 md:p-8">
     <div class="no-print mb-4 flex gap-2 print:hidden">
-        <button onclick="window.print()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Yazdır</button>
+        <button onclick="window.print()" class="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 font-medium">Yazdır</button>
         <button onclick="window.close()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium">Kapat</button>
     </div>
     @yield('content')

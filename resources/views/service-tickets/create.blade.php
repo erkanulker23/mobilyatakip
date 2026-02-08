@@ -71,8 +71,14 @@
                 </select>
             </div>
             <div class="flex items-center gap-2">
-                <input type="checkbox" name="underWarranty" value="1" {{ old('underWarranty') ? 'checked' : '' }} class="rounded border-slate-300 dark:border-slate-500 text-green-600 focus:ring-green-500">
-                <label class="form-label mb-0">Garanti kapsamında</label>
+                <input type="checkbox" name="underWarranty" value="1" id="underWarranty" {{ old('underWarranty') ? 'checked' : '' }} class="rounded border-slate-300 dark:border-slate-500 text-green-600 focus:ring-green-500">
+                <label class="form-label mb-0" for="underWarranty">Garanti kapsamında</label>
+            </div>
+            <div id="serviceChargeWrapper" class="{{ old('underWarranty') ? 'hidden' : '' }}">
+                <label class="form-label">Servis Ücreti (₺) *</label>
+                <input type="number" step="0.01" min="0" name="serviceChargeAmount" id="serviceChargeAmount" value="{{ old('serviceChargeAmount') }}" class="form-input" placeholder="0.00">
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Garanti kapsamında değilse servis ücreti girilmelidir.</p>
+                @error('serviceChargeAmount')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
         </div>
         <div class="flex gap-3 pt-2">
@@ -115,6 +121,17 @@ function updateCustomerInfo(select) {
 document.addEventListener('DOMContentLoaded', function() {
     const customerSelect = document.getElementById('customerSelect');
     if (customerSelect?.value) updateCustomerInfo(customerSelect);
+
+    const underWarranty = document.getElementById('underWarranty');
+    const serviceChargeWrapper = document.getElementById('serviceChargeWrapper');
+    const serviceChargeAmount = document.getElementById('serviceChargeAmount');
+    function toggleServiceCharge() {
+        const checked = underWarranty?.checked;
+        if (serviceChargeWrapper) serviceChargeWrapper.classList.toggle('hidden', !!checked);
+        if (serviceChargeAmount) serviceChargeAmount.required = !checked;
+    }
+    underWarranty?.addEventListener('change', toggleServiceCharge);
+    toggleServiceCharge();
 });
 </script>
 @endsection

@@ -24,8 +24,8 @@
             <h2 class="text-lg font-semibold text-slate-900 mb-4">Hesap Bilgileri</h2>
             <dl class="space-y-3">
                 <div><dt class="text-sm text-slate-500">Tip</dt><dd><span class="inline-flex px-2 py-1 text-xs font-medium rounded-full {{ $kasa->type === 'banka' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800' }}">{{ $kasa->type === 'banka' ? 'Banka' : 'Kasa' }}</span></dd></div>
-                <div><dt class="text-sm text-slate-500">Açılış Bakiyesi</dt><dd class="font-bold text-lg {{ ($kasa->openingBalance ?? 0) >= 0 ? 'text-green-600' : 'text-red-600' }}">{{ number_format((float)($kasa->openingBalance ?? 0), 2, ',', '.') }} ₺</dd></div>
-                <div><dt class="text-sm text-slate-500">Güncel Bakiye</dt><dd class="font-bold text-xl {{ ($guncelBakiye ?? 0) >= 0 ? 'text-green-600' : 'text-red-600' }}">{{ number_format($guncelBakiye ?? 0, 2, ',', '.') }} ₺</dd></div>
+                <div><dt class="text-sm text-slate-500">Açılış Bakiyesi</dt><dd class="font-bold text-lg {{ ($kasa->openingBalance ?? 0) >= 0 ? 'text-green-600' : 'text-red-600' }}">{{ number_format((float)($kasa->openingBalance ?? 0), 0, ',', '.') }} ₺</dd></div>
+                <div><dt class="text-sm text-slate-500">Güncel Bakiye</dt><dd class="font-bold text-xl {{ ($guncelBakiye ?? 0) >= 0 ? 'text-green-600' : 'text-red-600' }}">{{ number_format($guncelBakiye ?? 0, 0, ',', '.') }} ₺</dd></div>
                 @if($kasa->bankName)
                 <div><dt class="text-sm text-slate-500">Banka</dt><dd class="font-medium">{{ $kasa->bankName }}</dd></div>
                 @endif
@@ -91,16 +91,20 @@
                             $cariName = null;
                             $cariUrl = null;
                             $paymentTypeLabel = null;
-                            if ($h->refType === 'customer_payment' && isset($customerPayments[$h->refId])) {
-                                $cp = $customerPayments[$h->refId];
+                            $paymentTypeValue = null;
+                            $refId = $h->refId !== null && $h->refId !== '' ? (is_numeric($h->refId) ? (int) $h->refId : $h->refId) : null;
+                            if ($h->refType === 'customer_payment' && $refId !== null && isset($customerPayments[$refId])) {
+                                $cp = $customerPayments[$refId];
                                 $cariName = $cp->customer?->name ?? 'Müşteri';
                                 $cariUrl = $cp->customer ? route('customers.show', $cp->customer) : null;
-                                $paymentTypeLabel = $paymentTypes[$cp->paymentType ?? ''] ?? $cp->paymentType ?? '-';
-                            } elseif ($h->refType === 'supplier_payment' && isset($supplierPayments[$h->refId])) {
-                                $sp = $supplierPayments[$h->refId];
+                                $paymentTypeValue = $cp->paymentType ?? null;
+                                $paymentTypeLabel = $paymentTypes[$paymentTypeValue ?? ''] ?? $paymentTypeValue ?? '—';
+                            } elseif ($h->refType === 'supplier_payment' && $refId !== null && isset($supplierPayments[$refId])) {
+                                $sp = $supplierPayments[$refId];
                                 $cariName = $sp->supplier?->name ?? 'Tedarikçi';
                                 $cariUrl = $sp->supplier ? route('suppliers.show', $sp->supplier) : null;
-                                $paymentTypeLabel = $paymentTypes[$sp->paymentType ?? ''] ?? $sp->paymentType ?? '-';
+                                $paymentTypeValue = $sp->paymentType ?? null;
+                                $paymentTypeLabel = $paymentTypes[$paymentTypeValue ?? ''] ?? $paymentTypeValue ?? '—';
                             }
                         @endphp
                         <tr class="hover:bg-slate-50">
@@ -115,10 +119,24 @@
                                 <span class="text-slate-400">—</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 text-slate-600">{{ $paymentTypeLabel ?? '—' }}</td>
+                            <td class="px-6 py-4">
+                                @if($paymentTypeLabel && $paymentTypeLabel !== '—')
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium
+                                    @if($paymentTypeValue === 'nakit') bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300
+                                    @elseif($paymentTypeValue === 'havale') bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300
+                                    @elseif($paymentTypeValue === 'kredi_karti') bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300
+                                    @elseif($paymentTypeValue === 'cek') bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300
+                                    @elseif($paymentTypeValue === 'senet') bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300
+                                    @else bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300
+                                    @endif
+                                ">{{ $paymentTypeLabel }}</span>
+                                @else
+                                <span class="text-slate-400">—</span>
+                                @endif
+                            </td>
                             <td class="px-6 py-4 text-slate-600">{{ $h->description ?? '-' }}</td>
                             @php $tutar = (float)($h->amount ?? 0); @endphp
-                            <td class="px-6 py-4 text-right font-medium {{ $tutar >= 0 ? 'text-green-600' : 'text-red-600' }}">{{ number_format($tutar, 2, ',', '.') }} ₺</td>
+                            <td class="px-6 py-4 text-right font-medium {{ $tutar >= 0 ? 'text-green-600' : 'text-red-600' }}">{{ number_format($tutar, 0, ',', '.') }} ₺</td>
                         </tr>
                         @empty
                         <tr><td colspan="6" class="px-6 py-8 text-center text-slate-500">Henüz hareket yok.</td></tr>

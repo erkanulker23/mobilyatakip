@@ -20,8 +20,8 @@
         <p class="page-desc">{{ $serviceTicket->issueType ?? 'Servis kaydı' }}</p>
     </div>
     <div class="flex flex-wrap items-center gap-2">
-        <a href="{{ route('service-tickets.edit', $serviceTicket) }}" class="btn-primary">Düzenle</a>
-        <a href="{{ route('service-tickets.print', $serviceTicket) }}" target="_blank" rel="noopener" class="btn-secondary">Yazdır</a>
+        <a href="{{ route('service-tickets.edit', $serviceTicket) }}" class="btn-edit">Düzenle</a>
+        <a href="{{ route('service-tickets.print', $serviceTicket) }}" target="_blank" rel="noopener" class="btn-print">Yazdır</a>
         @if($serviceTicket->saleId && $serviceTicket->sale)
         <a href="{{ route('sales.show', $serviceTicket->sale) }}" class="btn-secondary">Satış Detayı</a>
         @endif

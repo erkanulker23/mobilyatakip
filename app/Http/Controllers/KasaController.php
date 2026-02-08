@@ -79,8 +79,8 @@ class KasaController extends Controller
 
         $hareketler = $q->paginate(20)->withQueryString();
 
-        $customerPaymentIds = $hareketler->where('refType', 'customer_payment')->pluck('refId')->unique()->filter()->values()->all();
-        $supplierPaymentIds = $hareketler->where('refType', 'supplier_payment')->pluck('refId')->unique()->filter()->values()->all();
+        $customerPaymentIds = $hareketler->where('refType', 'customer_payment')->pluck('refId')->unique()->filter()->map(fn ($id) => is_numeric($id) ? (int) $id : $id)->values()->all();
+        $supplierPaymentIds = $hareketler->where('refType', 'supplier_payment')->pluck('refId')->unique()->filter()->map(fn ($id) => is_numeric($id) ? (int) $id : $id)->values()->all();
         $customerPayments = CustomerPayment::with('customer')->whereIn('id', $customerPaymentIds)->get()->keyBy('id');
         $supplierPayments = SupplierPayment::with('supplier')->whereIn('id', $supplierPaymentIds)->get()->keyBy('id');
 

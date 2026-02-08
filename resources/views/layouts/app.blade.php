@@ -50,6 +50,14 @@
         .btn-primary:hover { background: #059669; }
         .btn-secondary { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: #f1f5f9; color: #475569; font-weight: 500; font-size: 0.9375rem; border-radius: 0.75rem; transition: background .15s; }
         .btn-secondary:hover { background: #e2e8f0; }
+        .btn-view { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: #10b981; color: #fff; font-weight: 500; font-size: 0.9375rem; border-radius: 0.75rem; transition: background .15s; }
+        .btn-view:hover { background: #059669; }
+        .btn-edit { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: #0284c7; color: #fff; font-weight: 500; font-size: 0.9375rem; border-radius: 0.75rem; transition: background .15s; }
+        .btn-edit:hover { background: #0369a1; }
+        .btn-print { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: #7c3aed; color: #fff; font-weight: 500; font-size: 0.9375rem; border-radius: 0.75rem; transition: background .15s; }
+        .btn-print:hover { background: #6d28d9; }
+        .btn-delete { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: #dc2626; color: #fff; font-weight: 500; font-size: 0.9375rem; border-radius: 0.75rem; transition: background .15s; }
+        .btn-delete:hover { background: #b91c1c; }
         @media (max-width: 1023px) { .btn-primary, .btn-secondary { min-height: 44px; } }
         .page-title { font-size: 1.5rem; font-weight: 600; color: #0f172a; letter-spacing: -.02em; }
         .page-desc { font-size: 0.9375rem; color: #64748b; margin-top: 0.25rem; }
@@ -68,6 +76,30 @@
         .dark .btn-primary:hover { background: #047857; }
         .dark .btn-secondary { background: #334155; color: #e2e8f0; }
         .dark .btn-secondary:hover { background: #475569; }
+        .dark .btn-view { background: #059669; }
+        .dark .btn-view:hover { background: #047857; }
+        .dark .btn-edit { background: #0369a1; }
+        .dark .btn-edit:hover { background: #075985; }
+        .dark .btn-print { background: #6d28d9; }
+        .dark .btn-print:hover { background: #5b21b6; }
+        .dark .btn-delete { background: #b91c1c; }
+        .dark .btn-delete:hover { background: #991b1b; }
+        .action-btn-view { color: #059669 !important; }
+        .action-btn-view:hover { color: #047857 !important; background: #ecfdf5 !important; }
+        .dark .action-btn-view { color: #34d399 !important; }
+        .dark .action-btn-view:hover { background: rgba(16,185,129,.15) !important; }
+        .action-btn-edit { color: #0284c7 !important; }
+        .action-btn-edit:hover { color: #0369a1 !important; background: #f0f9ff !important; }
+        .dark .action-btn-edit { color: #38bdf8 !important; }
+        .dark .action-btn-edit:hover { background: rgba(14,165,233,.15) !important; }
+        .action-btn-print { color: #7c3aed !important; }
+        .action-btn-print:hover { color: #6d28d9 !important; background: #f5f3ff !important; }
+        .dark .action-btn-print { color: #a78bfa !important; }
+        .dark .action-btn-print:hover { background: rgba(139,92,246,.15) !important; }
+        .action-btn-delete { color: #dc2626 !important; }
+        .action-btn-delete:hover { color: #b91c1c !important; background: #fef2f2 !important; }
+        .dark .action-btn-delete { color: #f87171 !important; }
+        .dark .action-btn-delete:hover { background: rgba(220,38,38,.15) !important; }
         .amount-negative, .text-negative { color: #dc2626 !important; }
         .dark .amount-negative, .dark .text-negative { color: #f87171 !important; }
         [x-cloak] { display: none !important; }
@@ -75,7 +107,7 @@
         .safe-area-footer { padding-bottom: max(0.5rem, env(safe-area-inset-bottom)); }
         .main-offset { padding-top: calc(3.5rem + env(safe-area-inset-top, 0px)); }
         .touch-manipulation { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-        .form-items-section-box { border: 2px solid #cbd5e1; border-radius: 1rem; padding: 1.5rem; margin-top: 0.5rem; background: #f8fafc; }
+        .form-items-section-box { border: 2px solid #cbd5e1; border-radius: 0.75rem; padding: 1rem; margin-top: 0.5rem; background: #f8fafc; }
         .dark .form-items-section-box { border-color: #475569; background: #1e293b; }
         .form-item-row { border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 1rem; background: #fff; }
         .dark .form-item-row { border-color: #475569; background: #334155; }
@@ -153,6 +185,7 @@
                 <p class="px-3 pt-4 pb-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest">CRM</p>
                 <a href="{{ route('customers.index') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm {{ request()->routeIs('customers.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>Müşteriler</a>
                 <a href="{{ route('suppliers.index') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm {{ request()->routeIs('suppliers.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>Tedarikçiler</a>
+                <a href="{{ route('shipping-companies.index') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm {{ request()->routeIs('shipping-companies.*') || request()->routeIs('shipping-company-payments.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>Nakliye Firmaları</a>
                 <p class="px-3 pt-4 pb-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Ürün & Stok</p>
                 <a href="{{ route('products.index') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm {{ request()->routeIs('products.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>Ürünler</a>
                 <a href="{{ route('xml-feeds.index') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm {{ request()->routeIs('xml-feeds.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>XML Ürün Çekme</a>
@@ -163,9 +196,10 @@
                 <a href="{{ route('sales.index') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm {{ request()->routeIs('sales.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>Satışlar</a>
                 <a href="{{ route('purchases.index') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm {{ request()->routeIs('purchases.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>Alışlar</a>
                 <p class="px-3 pt-4 pb-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Ödemeler & Kasa</p>
-                <a href="{{ route('customer-payments.create') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm {{ request()->routeIs('customer-payments.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>Ödeme Al</a>
-                <a href="{{ route('supplier-payments.create') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm {{ request()->routeIs('supplier-payments.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>Ödeme Yap</a>
-                <a href="{{ route('kasa.index') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm {{ request()->routeIs('kasa.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>Kasa</a>
+                <a href="{{ route('customer-payments.create') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm {{ request()->routeIs('customer-payments.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>Müşteri Ödeme Al</a>
+                <a href="{{ route('supplier-payments.create') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm {{ request()->routeIs('supplier-payments.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>Tedarikçi Ödeme Yap</a>
+                <a href="{{ route('shipping-company-payments.create') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm {{ request()->routeIs('shipping-company-payments.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>Nakliye Ödemesi Yap</a>
+                <a href="{{ route('kasa.index') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm {{ request()->routeIs('kasa.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75m15.75 0h.75.75v-.75c0-.414-.336-.75-.75-.75h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"></path></svg>Kasa</a>
                 <a href="{{ route('expenses.index') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm {{ request()->routeIs('expenses.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"></path></svg>Giderler</a>
                 <p class="px-3 pt-4 pb-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Raporlar</p>
                 <a href="{{ route('reports.index') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm {{ request()->routeIs('reports.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>Raporlar</a>
@@ -230,7 +264,7 @@
             </a>
             <a href="{{ route('customer-payments.create') }}" class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] py-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 {{ request()->routeIs('customer-payments.*') ? 'text-emerald-600 dark:text-emerald-400' : '' }}">
                 <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                <span class="text-[10px] font-medium">Ödeme Al</span>
+                <span class="text-[10px] font-medium">Müşteri Ödeme Al</span>
             </a>
             <button type="button" @click="sidebarOpen = true" class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] py-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 touch-manipulation" aria-label="Menüyü aç">
                 <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>

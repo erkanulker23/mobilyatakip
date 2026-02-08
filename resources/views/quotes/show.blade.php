@@ -16,7 +16,7 @@
         <div class="w-full p-4 rounded-lg bg-red-50 border border-red-200 text-red-700">{{ session('error') }}</div>
         @endif
         <div class="flex flex-wrap items-center gap-3">
-            <a href="{{ route('quotes.edit', $quote) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
+            <a href="{{ route('quotes.edit', $quote) }}" class="btn-edit">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                 Düzenle
             </a>
@@ -29,7 +29,7 @@
             @if($quote->convertedSaleId)
             <a href="{{ route('sales.show', $quote->convertedSale) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 font-medium">Satış #{{ $quote->convertedSale?->saleNumber ?? '' }}</a>
             @endif
-            <a href="{{ route('quotes.print', $quote) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium">
+            <a href="{{ route('quotes.print', $quote) }}" target="_blank" class="btn-print">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                 Yazdır
             </a>

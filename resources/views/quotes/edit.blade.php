@@ -80,7 +80,7 @@
                     </div>
                     <div>
                         <label class="form-label">Fiyat *</label>
-                        <input type="number" step="0.01" min="0" name="items[{{ $idx }}][unitPrice]" required value="{{ old("items.{$idx}.unitPrice", $item->unitPrice) }}" class="form-input item-price">
+                        <input type="text" inputmode="decimal" name="items[{{ $idx }}][unitPrice]" required value="{{ old("items.{$idx}.unitPrice", number_format($item->unitPrice ?? 0, 0, ',', '.')) }}" class="form-input item-price" placeholder="0" title="Örn: 20.000">
                     </div>
                     <div>
                         <label class="form-label">Adet *</label>
@@ -112,7 +112,7 @@
                             @endforeach
                         </select>
                     </div>
-                    <div><label class="form-label">Fiyat *</label><input type="number" step="0.01" min="0" name="items[0][unitPrice]" required class="form-input item-price"></div>
+                    <div><label class="form-label">Fiyat *</label><input type="text" inputmode="decimal" name="items[0][unitPrice]" required class="form-input item-price" placeholder="0" title="Örn: 20.000"></div>
                     <div><label class="form-label">Adet *</label><input type="number" name="items[0][quantity]" value="1" required min="1" class="form-input item-qty"></div>
                     <div><label class="form-label">KDV %</label><input type="number" step="0.01" min="0" max="100" name="items[0][kdvRate]" value="18" class="form-input item-kdv"></div>
                     <div><label class="form-label text-xs">İnd. %</label><input type="number" step="0.01" min="0" max="100" name="items[0][lineDiscountPercent]" value="" class="form-input" placeholder="0"></div>
@@ -131,6 +131,12 @@
     </form>
 </div>
 <script>
+function fmt(n) { return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n || 0); }
+function parseTrNum(s) {
+    if (s == null || s === '') return NaN;
+    const t = String(s).replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
+    return parseFloat(t) || NaN;
+}
 let idx = {{ $quote->items->count() ?: 1 }};
 function addRow() {
     const t = document.querySelector('.item-row');
@@ -159,7 +165,7 @@ function addRow() {
             if (row) {
                 const priceEl = row.querySelector('.item-price');
                 const kdvEl = row.querySelector('.item-kdv');
-                if (priceEl && o.dataset.price) priceEl.value = o.dataset.price;
+                if (priceEl && o.dataset.price) priceEl.value = fmt(parseFloat(o.dataset.price) || 0);
                 if (kdvEl && o.dataset.kdv) kdvEl.value = o.dataset.kdv;
             }
         }
@@ -175,9 +181,15 @@ document.querySelectorAll('.item-product').forEach(s => {
         const o = this.selectedOptions[0];
         if (o) {
             const row = this.closest('.item-row');
-            if (o.dataset.price) row.querySelector('.item-price').value = o.dataset.price;
+            if (o.dataset.price) row.querySelector('.item-price').value = fmt(parseFloat(o.dataset.price) || 0);
             if (o.dataset.kdv) row.querySelector('.item-kdv').value = o.dataset.kdv;
         }
+    });
+});
+document.querySelector('form')?.addEventListener('submit', function() {
+    document.querySelectorAll('.item-price').forEach(function(inp) {
+        const v = parseTrNum(inp.value);
+        inp.value = isNaN(v) || v < 0 ? '' : String(v);
     });
 });
 </script>

@@ -57,9 +57,9 @@
                         <span class="inline-flex px-2 py-1 text-xs font-medium rounded-lg {{ $k->type === 'banka' ? 'bg-sky-50 text-sky-700' : 'bg-emerald-50 text-emerald-700' }}">{{ $k->type === 'banka' ? 'Banka' : 'Kasa' }}</span>
                     </td>
                     <td class="table-td font-mono text-sm">{{ $k->iban ?? $k->accountNumber ?? '-' }}</td>
-                    <td class="table-td text-right font-medium {{ ($k->openingBalance ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600' }}">{{ number_format((float)($k->openingBalance ?? 0), 2, ',', '.') }} ₺</td>
+                    <td class="table-td text-right font-medium {{ ($k->openingBalance ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600' }}">{{ number_format((float)($k->openingBalance ?? 0), 0, ',', '.') }} ₺</td>
                     @php $guncelBakiye = (float)($k->openingBalance ?? 0) + (float)($k->hareketler_sum_amount ?? 0); @endphp
-                    <td class="table-td text-right font-semibold {{ $guncelBakiye >= 0 ? 'text-emerald-600' : 'text-red-600' }}">{{ number_format($guncelBakiye, 2, ',', '.') }} ₺</td>
+                    <td class="table-td text-right font-semibold {{ $guncelBakiye >= 0 ? 'text-emerald-600' : 'text-red-600' }}">{{ number_format($guncelBakiye, 0, ',', '.') }} ₺</td>
                     <td class="table-td">
                         @include('partials.action-buttons', [
                             'show' => route('kasa.show', $k),

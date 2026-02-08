@@ -16,7 +16,7 @@
         </div>
         <div class="flex flex-wrap items-center gap-3">
             @if(!($sale->isCancelled ?? false))
-            <a href="{{ route('customer-payments.create') }}?customerId={{ $sale->customerId ?? '' }}&saleId={{ $sale->id ?? '' }}" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Ödeme Al</a>
+            <a href="{{ route('customer-payments.create') }}?customerId={{ $sale->customerId ?? '' }}&saleId={{ $sale->id ?? '' }}" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Müşteri Ödeme Al</a>
             <form method="POST" action="{{ route('sales.cancel', $sale) }}" class="inline" onsubmit="return confirm('Bu satışı iptal etmek istediğinize emin misiniz?');">
                 @csrf
                 <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 font-medium">İptal Et</button>

@@ -12,7 +12,7 @@
             <h1 class="text-2xl font-bold text-slate-900">{{ $warehouse->name }}</h1>
             <p class="text-slate-600 mt-1">Depo detayları ve stok listesi</p>
         </div>
-        <a href="{{ route('warehouses.edit', $warehouse) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
+        <a href="{{ route('warehouses.edit', $warehouse) }}" class="btn-edit">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
             Düzenle
         </a>

@@ -43,7 +43,7 @@
 
         <div class="p-6 bg-emerald-50 rounded-xl border-2 border-emerald-200 mb-6">
             <p class="text-sm font-semibold text-slate-600 uppercase mb-1">Tahsil Edilen Tutar</p>
-            <p class="text-3xl font-bold text-emerald-700">{{ number_format($customerPayment->amount ?? 0, 2, ',', '.') }} ₺</p>
+            <p class="text-3xl font-bold text-emerald-700">{{ number_format($customerPayment->amount ?? 0, 0, ',', '.') }} ₺</p>
         </div>
 
         @if(!empty($customerPayment->notes))

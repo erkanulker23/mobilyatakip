@@ -63,6 +63,8 @@ Test öncesi örnek veri: `php artisan db:seed --class=TestDataSeeder`
 - [ ] **Liste** `/kasa`
 - [ ] **Yeni kasa** (nakit/banka)
 - [ ] Kayıt **veritabanında** `kasa` tablosunda
+- [ ] **Kasa detay** `/kasa/{id}` — Hareketler tablosunda **Ödeme tipi** sütunu, tahsilatlar için müşteri ödemesindeki tipi (Nakit/Havale/Kredi Kartı vb.) **renkli rozet** ile gösteriyor; tedarikçi ödemelerinde de ödeme tipi doğru görünüyor
+- [ ] **Filtre:** Ödeme tipi ve cari (müşteri/tedarikçi adı) ile filtreleme çalışıyor
 
 ---
 
@@ -118,10 +120,30 @@ Test öncesi örnek veri: `php artisan db:seed --class=TestDataSeeder`
 
 ## 11. Ödeme Al / Ödeme Yap
 
-- [ ] **Ödeme al** `/odeme-al` — Müşteri, satış seçimi, tutar, kasa
-- [ ] Kaydet → **veritabanında** `customer_payments` ve satışta `paidAmount` güncel
-- [ ] **Ödeme yap** `/odeme-yap` — Tedarikçi, alış, tutar, kasa
-- [ ] Kaydet → **veritabanında** `supplier_payments` ve alışta `paidAmount` güncel
+- [ ] **Ödeme al** `/odeme-al` — Müşteri, satış seçimi, tutar, **Ödeme tipi** (Nakit / Havale / Kredi Kartı / Çek / Senet / Diğer), kasa
+- [ ] Nakit, Havale, Kredi Kartı seçildiğinde **kasa zorunlu**; kaydet → **veritabanında** `customer_payments.paymentType` doğru, satışta `paidAmount` güncel
+- [ ] **Ödeme yap** `/odeme-yap` — Tedarikçi, alış, tutar, **Ödeme tipi**, kasa
+- [ ] Kaydet → **veritabanında** `supplier_payments` ve alışta `paidAmount` güncel; kasa seçildiyse çıkış hareketi oluşuyor
+
+---
+
+## 11b. Tam akış testi (Tedarikçi → Alış → Müşteri → Satış → Tahsilat → Tedarikçi ödemesi → Kasa)
+
+**Muhasebeci gözüyle kasa ve tutar tutarlılığı:**
+
+1. **Tedarikçi ekle** `/suppliers/create` — Ad, e-posta (sipariş maili için), telefon vb. Kaydet.
+2. **Ürün ekle** (yoksa) `/products/create` — Birim fiyat, KDV oranı. Kaydet.
+3. **Alış yap** `/purchases/create` — Tedarikçi seç, kalem ekle (ürün, adet, birim fiyat). **Grand total** (toplam) not al (örn. 10.000 ₺). Kaydet.
+4. **Müşteri ekle** `/customers/create`. Kaydet.
+5. **Satış yap** `/sales/create` — Müşteri seç, aynı ürünü sat (fiyat ≥ alış). **Grand total** not al (örn. 15.000 ₺). Kaydet.
+6. **Tahsilat (müşteriden ödeme al)** `/odeme-al` — Müşteri seç, az önceki satışı seç, tutar = satış toplamı (veya bir kısmı), **Ödeme tipi = Havale** (veya Nakit/Kredi Kartı), **Kasa** seç. Kaydet.
+7. **Tedarikçiye ödeme yap** `/odeme-yap` — Tedarikçi seç, az önceki alışı seç, tutar = alış toplamı, **Ödeme tipi = Nakit** (veya Havale), **Kasa** seç. Kaydet.
+8. **Tedarikçiye sipariş maili** — Satış detayına git `/sales/{id}`. "Tedarikçiye Sipariş Maili Gönder" butonuna tıkla (satıştaki ürünlerin tedarikçilerine mail gider). Başarı mesajı.
+9. **Kasa kontrolü** `/kasa` → İlgili kasaya gir:
+   - **Giriş:** Tahsilat tutarı (müşteriden alınan) görünmeli; **Ödeme tipi** sütununda seçtiğiniz tip (örn. **Havale**) **renkli rozet** ile net görünmeli.
+   - **Çıkış:** Tedarikçi ödemesi tutarı görünmeli; **Ödeme tipi** sütununda (örn. **Nakit**) net görünmeli.
+   - **Bakiye:** Açılış + Girişler − Çıkışlar = Güncel bakiye. Tutarlar doğru toplanıyor mu kontrol et.
+10. **Fiyat tutarlılığı:** Satış toplamı ≥ alış toplamı (marj); müşteri ödemesi ≤ satış toplamı; tedarikçi ödemesi ≤ alış toplamı. **Veritabanı:** `customer_payments.amount`, `sales.paidAmount`, `supplier_payments.amount`, `purchases.paidAmount` ve `kasa_hareket.amount` değerleri bu mantıkla uyumlu olmalı.
 
 ---
 

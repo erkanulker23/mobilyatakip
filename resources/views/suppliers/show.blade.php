@@ -21,7 +21,7 @@
         @include('partials.action-buttons', ['edit' => route('suppliers.edit', $supplier), 'print' => route('suppliers.print', $supplier)])
         <a href="{{ route('supplier-payments.create', ['supplierId' => $supplier->id]) }}" class="btn-primary">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
-            Ödeme Yap
+            Tedarikçi Ödeme Yap
         </a>
     </div>
 </div>
@@ -58,7 +58,7 @@
                 @if(($balance ?? 0) != 0)<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ ($balance ?? 0) > 0 ? 'Tedarikçiye borç' : 'Tedarikçiden alacak' }}</p>@endif
             </div>
             <div class="p-3 rounded-xl {{ ($balance ?? 0) > 0 ? 'bg-red-50 dark:bg-red-900/20' : (($balance ?? 0) < 0 ? 'bg-emerald-50 dark:bg-emerald-900/30' : 'bg-slate-100 dark:bg-slate-700') }}">
-                <svg class="w-6 h-6 {{ ($balance ?? 0) > 0 ? 'text-red-600 dark:text-red-400' : (($balance ?? 0) < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400') }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <svg class="w-6 h-6 {{ ($balance ?? 0) > 0 ? 'text-red-600 dark:text-red-400' : (($balance ?? 0) < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400') }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75m15.75 0h.75.75v-.75c0-.414-.336-.75-.75-.75h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"></path></svg>
             </div>
         </div>
     </div>
@@ -131,7 +131,7 @@
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full">
-                    <thead><tr class="border-b border-slate-100 dark:border-slate-700"><th class="table-th">Tarih</th><th class="table-th text-right">Tutar</th><th class="table-th">Tip</th><th class="table-th">İlgili Fatura</th></tr></thead>
+                    <thead><tr class="border-b border-slate-100 dark:border-slate-700"><th class="table-th">Tarih</th><th class="table-th text-right">Tutar</th><th class="table-th">Tip</th><th class="table-th">İlgili Fatura</th><th class="table-th text-right w-40">İşlem</th></tr></thead>
                     <tbody>
                         @php $pt = ['nakit'=>'Nakit','havale'=>'Havale','kredi_karti'=>'Kredi Kartı','cek'=>'Çek','senet'=>'Senet','diger'=>'Diğer']; @endphp
                         @forelse($supplier->payments->sortByDesc('paymentDate') as $pm)
@@ -140,9 +140,10 @@
                             <td class="table-td text-right font-medium text-emerald-600 dark:text-emerald-400">{{ number_format($pm->amount ?? 0, 0, ',', '.') }} ₺</td>
                             <td class="table-td">{{ $pt[$pm->paymentType ?? ''] ?? ucfirst($pm->paymentType ?? '—') }}</td>
                             <td class="table-td">@if($pm->purchaseId && $pm->purchase)<a href="{{ route('purchases.show', $pm->purchase) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">{{ $pm->purchase->purchaseNumber }}</a>@else{{ $pm->reference ?? '—' }}@endif</td>
+                            <td class="table-td text-right">@include('partials.action-buttons', ['show' => route('supplier-payments.show', $pm), 'edit' => route('supplier-payments.edit', $pm)])</td>
                         </tr>
                         @empty
-                        <tr><td colspan="4" class="table-td text-center text-slate-500 dark:text-slate-400 py-8">Henüz ödeme yok.</td></tr>
+                        <tr><td colspan="5" class="table-td text-center text-slate-500 dark:text-slate-400 py-8">Henüz ödeme yok.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

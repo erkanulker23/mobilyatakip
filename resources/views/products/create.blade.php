@@ -26,18 +26,6 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-                <label class="form-label">Birim Fiyat (₺) *</label>
-                <input type="number" step="0.01" min="0" name="unitPrice" required value="{{ old('unitPrice') }}" class="form-input" placeholder="0.00">
-                @error('unitPrice')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-            </div>
-            <div>
-                <label class="form-label">KDV Oranı (%)</label>
-                <input type="number" step="0.01" min="0" max="100" name="kdvRate" value="{{ old('kdvRate', 18) }}" class="form-input" placeholder="18">
-                @error('kdvRate')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-            </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div>
                 <label class="form-label">Tedarikçi</label>
                 <select name="supplierId" class="form-select">
                     <option value="">Seçiniz</option>
@@ -46,6 +34,23 @@
                     @endforeach
                 </select>
                 @error('supplierId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label class="form-label">Net Alış Fiyatı (₺)</label>
+                <input type="number" step="0.01" min="0" name="netPurchasePrice" value="{{ old('netPurchasePrice') }}" class="form-input" placeholder="0.00">
+                @error('netPurchasePrice')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+                <label class="form-label">Satış Fiyatı (₺) *</label>
+                <input type="number" step="0.01" min="0" name="unitPrice" required value="{{ old('unitPrice') }}" class="form-input" placeholder="0.00">
+                @error('unitPrice')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label class="form-label">KDV Oranı (%)</label>
+                <input type="number" step="0.01" min="0" max="100" name="kdvRate" value="{{ old('kdvRate', 18) }}" class="form-input" placeholder="18">
+                @error('kdvRate')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
             <div>
                 <label class="form-label">Min. Stok Seviyesi</label>

@@ -1,14 +1,14 @@
 @extends('layouts.app')
-@section('title', 'Ödeme Al')
+@section('title', 'Müşteri Ödeme Al')
 @push('head')
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
 @endpush
 @section('content')
 <div class="mb-6">
     <div class="flex items-center gap-2 text-slate-500 text-sm mb-1">
-        <span class="text-slate-700">Ödeme Al (Tahsilat)</span>
+        <span class="text-slate-700">Müşteri Ödeme Al (Tahsilat)</span>
     </div>
-    <h1 class="text-2xl font-bold text-slate-900">Ödeme Al</h1>
+    <h1 class="text-2xl font-bold text-slate-900">Müşteri Ödeme Al</h1>
     <p class="text-slate-600 mt-1">Müşteriden tahsilat kaydı oluşturun</p>
 </div>
 
@@ -32,9 +32,9 @@
         <div class="p-4 rounded-lg border {{ $totalDebt > 0 ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' : 'bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600' }}">
             <p class="text-sm font-medium text-slate-700 dark:text-slate-300">Bu müşterinin borç özeti</p>
             <p class="mt-1 text-lg font-semibold {{ $totalDebt > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white' }}">
-                Toplam kalan borç: {{ number_format($totalDebt, 2, ',', '.') }} ₺
+                Toplam kalan borç: {{ number_format($totalDebt, 0, ',', '.') }} ₺
             </p>
-            <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Toplam satış: {{ number_format($totalSalesSum ?? 0, 2, ',', '.') }} ₺ — Toplam tahsilat: {{ number_format($totalPaidSum ?? 0, 2, ',', '.') }} ₺</p>
+            <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Toplam satış: {{ number_format($totalSalesSum ?? 0, 0, ',', '.') }} ₺ — Toplam tahsilat: {{ number_format($totalPaidSum ?? 0, 0, ',', '.') }} ₺</p>
         </div>
         @endif
         @if($openSales->isNotEmpty())
