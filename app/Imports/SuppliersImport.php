@@ -17,6 +17,7 @@ class SuppliersImport implements ToModel, WithHeadingRow, WithValidation
         }
 
         return new Supplier([
+            'code' => $this->trim($row['kod'] ?? $row['code'] ?? null),
             'name' => $name,
             'email' => $this->trim($row['e_posta'] ?? $row['email'] ?? null),
             'phone' => $this->trim($row['telefon'] ?? $row['phone'] ?? null),
@@ -30,6 +31,8 @@ class SuppliersImport implements ToModel, WithHeadingRow, WithValidation
     public function rules(): array
     {
         return [
+            'kod' => 'nullable|string|max:50',
+            'code' => 'nullable|string|max:50',
             'ad' => 'nullable|string',
             'e_posta' => 'nullable|email',
             'telefon' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],

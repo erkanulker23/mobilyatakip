@@ -12,6 +12,7 @@ class SuppliersExport implements FromCollection, WithHeadings
     {
         return Supplier::query()->orderBy('name')->get()->map(function ($row) {
             return [
+                $row->code,
                 $row->name,
                 $row->email,
                 $row->phone,
@@ -26,6 +27,7 @@ class SuppliersExport implements FromCollection, WithHeadings
     public function headings(): array
     {
         return [
+            'Kod',
             'Ad',
             'E-posta',
             'Telefon',

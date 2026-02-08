@@ -15,7 +15,7 @@
             <span class="text-slate-700 dark:text-slate-300 font-medium">{{ $supplier->name }}</span>
         </nav>
         <h1 class="page-title">{{ $supplier->name }}</h1>
-        <p class="page-desc">Tedarikçi detayları ve bakiye özeti</p>
+        <p class="page-desc">@if($supplier->code)<span class="font-mono text-slate-500 dark:text-slate-400">{{ $supplier->code }}</span> · @endif Tedarikçi detayları ve bakiye özeti</p>
     </div>
     <div class="flex flex-wrap items-center gap-2">
         @include('partials.action-buttons', ['edit' => route('suppliers.edit', $supplier), 'print' => route('suppliers.print', $supplier)])

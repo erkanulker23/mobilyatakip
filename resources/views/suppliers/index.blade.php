@@ -29,7 +29,7 @@
 <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 mb-6">
     <form method="GET" class="flex flex-wrap gap-4 items-end">
         <div class="min-w-[200px] flex-1">
-            <label class="form-label">Ara (ad, e-posta, telefon, vergi no)</label>
+            <label class="form-label">Ara (kod, ad, e-posta, telefon, vergi no)</label>
             <input type="text" name="search" placeholder="Ara..." value="{{ request('search') }}" class="form-input">
         </div>
         <div class="min-w-[140px]">
@@ -69,6 +69,7 @@
                         <input type="checkbox" class="rounded border-slate-300 text-green-600 focus:ring-green-500"
                                @change="toggleAll($event.target.checked)" :checked="selected.length === items.length && items.length > 0">
                     </th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Kod</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Ad</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Telefon</th>
                     <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Bakiye</th>
@@ -82,6 +83,7 @@
                         <input type="checkbox" name="ids[]" value="{{ $s->id }}" class="supplier-row-check rounded border-slate-300 text-green-600 focus:ring-green-500"
                                @change="toggleRow('{{ $s->id }}', $event.target.checked)">
                     </td>
+                    <td class="px-6 py-4 text-slate-600 dark:text-slate-400 font-mono text-sm">{{ $s->code ?? '-' }}</td>
                     <td class="px-6 py-4">
                         <span class="font-medium text-slate-900 dark:text-slate-100">{{ $s->name }}</span>
                         @if(!($s->isActive ?? true))<span class="ml-1 text-xs text-slate-400">(Pasif)</span>@endif
@@ -134,7 +136,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="5" class="px-6 py-12 text-center text-slate-500 dark:text-slate-400">Kayıt bulunamadı.</td></tr>
+                <tr><td colspan="6" class="px-6 py-12 text-center text-slate-500 dark:text-slate-400">Kayıt bulunamadı.</td></tr>
                 @endforelse
             </tbody>
         </table>

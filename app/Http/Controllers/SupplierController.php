@@ -27,7 +27,8 @@ class SupplierController extends Controller
         if ($request->filled('search')) {
             $s = $request->search;
             $q->where(function ($w) use ($s) {
-                $w->where('name', 'like', "%{$s}%")
+                $w->where('code', 'like', "%{$s}%")
+                    ->orWhere('name', 'like', "%{$s}%")
                     ->orWhere('email', 'like', "%{$s}%")
                     ->orWhere('phone', 'like', "%{$s}%")
                     ->orWhere('taxNumber', 'like', "%{$s}%")
@@ -70,6 +71,7 @@ class SupplierController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'code' => 'nullable|string|max:50',
             'name' => 'required|string|max:255',
             'email' => 'nullable|email',
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
@@ -101,6 +103,7 @@ class SupplierController extends Controller
     public function update(Request $request, Supplier $supplier)
     {
         $validated = $request->validate([
+            'code' => 'nullable|string|max:50',
             'name' => 'required|string|max:255',
             'email' => 'nullable|email',
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],

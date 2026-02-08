@@ -17,6 +17,11 @@
     <form method="POST" action="{{ route('suppliers.update', $supplier) }}" class="space-y-5">
         @csrf @method('PUT')
         <div>
+            <label class="form-label">Kod</label>
+            <input type="text" name="code" value="{{ old('code', $supplier->code) }}" class="form-input" placeholder="Örn: TED-001" maxlength="50">
+            @error('code')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+        </div>
+        <div>
             <label class="form-label">Firma / Ad *</label>
             <input type="text" name="name" required value="{{ old('name', $supplier->name) }}" class="form-input">
             @error('name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror

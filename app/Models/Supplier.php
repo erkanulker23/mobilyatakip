@@ -26,6 +26,7 @@ class Supplier extends BaseModel
     }
 
     protected $fillable = [
+        'code',
         'name',
         'email',
         'phone',
