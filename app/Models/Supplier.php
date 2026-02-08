@@ -11,6 +11,7 @@ class Supplier extends BaseModel
 
     protected static function booted(): void
     {
+        parent::booted();
         static::deleting(function (Supplier $supplier) {
             $id = $supplier->getKey();
             $purchaseIds = DB::table('purchases')->where('supplierId', $id)->pluck('id');
