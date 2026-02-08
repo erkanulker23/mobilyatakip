@@ -14,6 +14,11 @@ class XmlFeed extends BaseModel
         'name',
         'url',
         'supplierId',
+        'createSuppliers',
+    ];
+
+    protected $casts = [
+        'createSuppliers' => 'boolean',
     ];
 
     public function supplier(): BelongsTo

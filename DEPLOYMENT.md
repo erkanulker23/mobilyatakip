@@ -101,14 +101,39 @@ Laravel’de zamanlanmış görev varsa Forge **Scheduler** kullanın. Forge oto
 
 ---
 
-## 7. Queue Worker (İsteğe bağlı)
+## 7. Queue Worker — Forge’da Process ekleme
 
-Eğer `QUEUE_CONNECTION=database` veya `redis` kullanıyorsanız, Forge’da **Daemon** (Queue Worker) tanımlayın:
+XML feed “Ürün Çek” ve diğer arka plan işleri için **queue worker** çalışmalıdır. Forge’da bunu **Processes** ile tanımlayın.
 
-- **Command:** `php artisan queue:work --sleep=3 --tries=3 --max-time=3600`
-- **Directory:** Site kök dizini
+### Adımlar
 
-Deploy script’teki `php artisan queue:restart` satırının yorumunu kaldırırsanız, her deploy’da worker temiz şekilde yeniden başlar.
+1. Forge’da ilgili **Site** sayfasına gidin.
+2. Sol menüden **Processes** (veya **Daemons**) sekmesine tıklayın.
+3. **New Process** / **Add Process** ile yeni process ekleyin.
+4. Şu değerleri girin:
+
+| Alan | Değer |
+|------|--------|
+| **Command** | `php artisan queue:work --sleep=3 --tries=3 --max-time=3600` |
+| **Directory** | Site kök dizini (örn. `/home/forge/siteniz` — Forge genelde otomatik doldurur) |
+| **User** | `forge` (varsayılan) |
+| **Processes** | `1` |
+
+5. Kaydedin. Forge (Supervisor ile) bu komutu sürekli çalıştırır; durursa yeniden başlatır.
+
+### .env ayarı
+
+Queue’nun çalışması için `.env` içinde:
+
+```env
+QUEUE_CONNECTION=database
+```
+
+kullanın (`sync` değil). Veritabanı kuyruğu için `jobs` tablosu migration’da oluşturulmuş olmalıdır.
+
+### Deploy sonrası worker yenileme
+
+`forge-deploy.sh` içinde `php artisan queue:restart` açıktır. Her deploy’da worker’a “yeniden başla” sinyali gider; mevcut iş bitince worker yeni kodu alıp tekrar başlar.
 
 ---
 
@@ -120,7 +145,7 @@ Deploy script’teki `php artisan queue:restart` satırının yorumunu kaldırı
 - [ ] Deploy Script: `bash forge-deploy.sh` (veya eşdeğeri).
 - [ ] İlk deploy sonrası `php artisan migrate --force` hatasız bitti.
 - [ ] SSL açıldı; `SESSION_SECURE_COOKIE=true` (HTTPS kullanıyorsanız).
-- [ ] Gerekirse Scheduler ve Queue Worker Forge’da tanımlı.
+- [ ] Scheduler ve **Processes** (queue worker) Forge’da tanımlı; `QUEUE_CONNECTION=database`.
 
 Bu adımlar tamamlandığında proje Laravel Forge üzerinden yayına hazırdır.
 

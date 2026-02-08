@@ -60,6 +60,6 @@
 </div>
 
 <div class="mt-4 p-4 bg-slate-50 rounded-lg text-sm text-slate-600">
-    <strong>Nasıl çalışır?</strong> XML feed URL'si ekleyin (ör. tedarikçinin ürün kataloğu). "Ürün Çek" butonu ile ürünler otomatik olarak sisteme aktarılır. Google Merchant / g:item veya standart product/item formatları desteklenir.
+    <strong>Nasıl çalışır?</strong> XML feed URL'si ekleyin (ör. tedarikçinin ürün kataloğu). "Ürün Çek" butonu ile ürünler otomatik olarak sisteme aktarılır (arka planda çalışır, sayfa donmaz). Google Merchant / g:item veya standart product/item formatları desteklenir. Arka plan işleri için sunucuda <code class="bg-slate-200 px-1 rounded">php artisan queue:work</code> çalışıyor olmalıdır.
 </div>
 @endsection

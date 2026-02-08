@@ -6,13 +6,16 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\XmlFeed;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class XmlFeedService
 {
-    public function syncFeed(XmlFeed $feed): array
+    public function syncFeed(XmlFeed $feed, bool $createMissingSuppliers = true): array
     {
-        $response = Http::timeout(30)->get($feed->url);
+        set_time_limit(600);
+
+        $response = Http::timeout(60)->get($feed->url);
         if (!$response->successful()) {
             throw new \RuntimeException(sprintf('XML feed indirilemedi: HTTP %d — URL: %s', $response->status(), $feed->url));
         }
@@ -29,17 +32,23 @@ class XmlFeedService
 
         $items = $this->parseXmlToProducts($xml);
         $created = 0;
+        $updated = 0;
         $errors = [];
         $suppliersCreated = 0;
 
-        // Resolve suppliers from XML: unique by (feed.url, xml supplier id/code) -> our Supplier id
+        // Resolve suppliers from XML: sistemde ad veya kod ile varsa mevcut tedarikçi, yoksa yeni oluştur
         $supplierMap = [];
         $defaultSupplierId = $feed->supplierId;
+        if ($defaultSupplierId && !Supplier::where('id', $defaultSupplierId)->exists()) {
+            $defaultSupplierId = null;
+            $feed->update(['supplierId' => null]);
+        }
 
         foreach ($items as $row) {
             $sup = $row['supplier'] ?? null;
             if ($sup && !empty(trim($sup['name'] ?? ''))) {
-                $extKey = (string) ($sup['id'] ?? $sup['code'] ?? $sup['name']);
+                $name = trim($sup['name']);
+                $extKey = (string) ($sup['code'] ?? $sup['id'] ?? $name);
                 if ($extKey === '') {
                     continue;
                 }
@@ -47,32 +56,46 @@ class XmlFeedService
                     $address = trim($sup['contact'] ?? '');
                     $address = $address !== '' ? 'Yetkili: ' . $address : null;
                     $code = trim($sup['code'] ?? '') ?: null;
-                    $supplier = Supplier::firstOrCreate(
-                        [
-                            'externalSource' => $feed->url,
-                            'externalId' => $extKey,
-                        ],
-                        [
+
+                    // Önce sistemde kod veya ad ile eşleşen tedarikçi var mı?
+                    $supplier = null;
+                    if ($code !== null && $code !== '') {
+                        $supplier = Supplier::where('code', $code)->first();
+                    }
+                    if ($supplier === null) {
+                        $supplier = Supplier::where('name', $name)->first();
+                    }
+
+                    if ($supplier !== null) {
+                        // Mevcut tedarikçiyi kullan; bilgileri güncelle (XML’deki daha güncel olabilir)
+                        $supplier->update([
+                            'code' => $code ?? $supplier->code,
+                            'name' => $name,
+                            'email' => trim($sup['email'] ?? '') ?: $supplier->email,
+                            'phone' => trim($sup['phone'] ?? '') ?: $supplier->phone,
+                            'address' => $address ?? $supplier->address,
+                        ]);
+                        $supplierMap[$extKey] = $supplier->id;
+                    } elseif ($createMissingSuppliers) {
+                        // Sistemde yok, yeni tedarikçi oluştur
+                        $supplier = Supplier::create([
                             'code' => $code,
-                            'name' => trim($sup['name']),
+                            'name' => $name,
                             'email' => trim($sup['email'] ?? '') ?: null,
                             'phone' => trim($sup['phone'] ?? '') ?: null,
                             'address' => $address,
                             'isActive' => true,
-                        ]
-                    );
-                    if ($supplier->wasRecentlyCreated) {
-                        $suppliersCreated++;
-                    } else {
-                        $supplier->update([
-                            'code' => $code,
-                            'name' => trim($sup['name']),
-                            'email' => trim($sup['email'] ?? '') ?: null,
-                            'phone' => trim($sup['phone'] ?? '') ?: null,
-                            'address' => $address,
+                            'externalSource' => $feed->url,
+                            'externalId' => $extKey,
                         ]);
+                        $suppliersCreated++;
+                        $supplierMap[$extKey] = $supplier->id;
+                    } else {
+                        // Olmayan tedarikçileri kaydetme kapalı: varsayılan tedarikçiye bağla (sadece geçerli id ise)
+                        if ($defaultSupplierId) {
+                            $supplierMap[$extKey] = $defaultSupplierId;
+                        }
                     }
-                    $supplierMap[$extKey] = $supplier->id;
                 }
             }
         }
@@ -81,7 +104,7 @@ class XmlFeedService
             $defaultSupplierId = reset($supplierMap);
             $feed->update(['supplierId' => $defaultSupplierId]);
         }
-        if (!$defaultSupplierId) {
+        if (!$defaultSupplierId && $createMissingSuppliers) {
             $brands = array_filter(array_unique(array_column($items, 'brand')));
             if (!empty($brands)) {
                 $brandName = reset($brands);
@@ -107,11 +130,16 @@ class XmlFeedService
                     $rowSupplierId = $supplierMap[$extKey] ?? $defaultSupplierId;
                 }
                 $productSupplierId = $rowSupplierId ?? $defaultSupplierId;
+                if ($productSupplierId && !Supplier::where('id', $productSupplierId)->exists()) {
+                    $productSupplierId = null;
+                }
 
                 $sku = trim($row['sku'] ?? '') ?: null;
                 $extId = $row['externalId'] ?? $sku;
+
+                // Mevcut ürünü bul: aynı feed'den aynı ürün iki kez oluşturulmasın (önce sku/externalId, sonra ad)
                 $existing = null;
-                if ($extId) {
+                if ($extId !== null && $extId !== '') {
                     $existing = Product::where('externalSource', $feed->url)->where(function ($q) use ($extId) {
                         $q->where('externalId', $extId)->orWhere('sku', $extId);
                     })->first();
@@ -119,39 +147,100 @@ class XmlFeedService
                 if (!$existing && $sku) {
                     $existing = Product::where('externalSource', $feed->url)->where('sku', $sku)->first();
                 }
-                if (!$existing && $name) {
+                if (!$existing && $name !== '') {
                     $existing = Product::where('externalSource', $feed->url)->where('name', $name)->first();
                 }
 
+                $imageUrls = $row['imageUrls'] ?? [];
+                $images = !empty($imageUrls) ? $this->downloadProductImages($imageUrls) : null;
+
                 if ($existing) {
+                    // Feed'deki fiyat her zaman geçerli: değişmişse güncelle
                     $updateData = [
-                        'unitPrice' => $row['unitPrice'] ?? $existing->unitPrice,
-                        'kdvRate' => $row['kdvRate'] ?? $existing->kdvRate,
+                        'name' => $name,
+                        'unitPrice' => (float) ($row['unitPrice'] ?? $existing->unitPrice),
+                        'kdvRate' => (float) ($row['kdvRate'] ?? $existing->kdvRate),
                         'supplierId' => $productSupplierId,
                     ];
-                    if (array_key_exists('netPurchasePrice', $row) && $row['netPurchasePrice'] !== null) {
-                        $updateData['netPurchasePrice'] = $row['netPurchasePrice'];
+                    if (array_key_exists('netPurchasePrice', $row)) {
+                        $updateData['netPurchasePrice'] = $row['netPurchasePrice'] !== null && $row['netPurchasePrice'] !== '' ? (float) $row['netPurchasePrice'] : null;
+                    }
+                    if ($images !== null && $images !== []) {
+                        $updateData['images'] = $images;
+                    }
+                    // SKU feed'de varsa ve mevcut üründe yoksa güncelle (bir daha eşleşsin)
+                    if ($sku && !$existing->sku) {
+                        $updateData['sku'] = $sku;
+                        $updateData['externalId'] = $extId ?: $sku;
                     }
                     $existing->update($updateData);
+                    $updated++;
                 } else {
-                    Product::create([
-                        'name' => $name,
-                        'sku' => $sku ?? $this->generateSku(),
-                        'unitPrice' => (float) ($row['unitPrice'] ?? 0),
-                        'netPurchasePrice' => $row['netPurchasePrice'] ?? null,
-                        'kdvRate' => (float) ($row['kdvRate'] ?? 18),
-                        'externalId' => $row['externalId'] ?? null,
-                        'externalSource' => $feed->url,
-                        'supplierId' => $productSupplierId,
-                    ]);
-                    $created++;
+                    // Aynı SKU ile (hangi feed’den olursa olsun) başka ürün var mı? Varsa güncelle, çift kayıt oluşturma
+                    if ($sku) {
+                        $existingBySku = Product::where('sku', $sku)->first();
+                        if ($existingBySku) {
+                            $updateData = [
+                                'name' => $name,
+                                'unitPrice' => (float) ($row['unitPrice'] ?? $existingBySku->unitPrice),
+                                'kdvRate' => (float) ($row['kdvRate'] ?? $existingBySku->kdvRate),
+                                'supplierId' => $productSupplierId,
+                                'externalId' => $extId ?: $sku,
+                                'externalSource' => $feed->url,
+                            ];
+                            if (array_key_exists('netPurchasePrice', $row)) {
+                                $updateData['netPurchasePrice'] = $row['netPurchasePrice'] !== null && $row['netPurchasePrice'] !== '' ? (float) $row['netPurchasePrice'] : null;
+                            }
+                            if ($images !== null && $images !== []) {
+                                $updateData['images'] = $images;
+                            }
+                            $existingBySku->update($updateData);
+                            $updated++;
+                            continue;
+                        }
+                    }
+                    // Son kontrol: aynı feed + aynı ad ile kayıt var mı? Varsa güncelle, çift kayıt oluşturma
+                    $existingByName = Product::where('externalSource', $feed->url)->where('name', $name)->first();
+                    if ($existingByName) {
+                        $updateData = [
+                            'name' => $name,
+                            'unitPrice' => (float) ($row['unitPrice'] ?? $existingByName->unitPrice),
+                            'kdvRate' => (float) ($row['kdvRate'] ?? $existingByName->kdvRate),
+                            'supplierId' => $productSupplierId,
+                        ];
+                        if (array_key_exists('netPurchasePrice', $row)) {
+                            $updateData['netPurchasePrice'] = $row['netPurchasePrice'] !== null && $row['netPurchasePrice'] !== '' ? (float) $row['netPurchasePrice'] : null;
+                        }
+                        if ($sku) {
+                            $updateData['sku'] = $sku;
+                            $updateData['externalId'] = $extId ?: $sku;
+                        }
+                        if ($images !== null && $images !== []) {
+                            $updateData['images'] = $images;
+                        }
+                        $existingByName->update($updateData);
+                        $updated++;
+                    } else {
+                        Product::create([
+                            'name' => $name,
+                            'sku' => $sku ?? $this->generateSku(),
+                            'unitPrice' => (float) ($row['unitPrice'] ?? 0),
+                            'netPurchasePrice' => array_key_exists('netPurchasePrice', $row) && $row['netPurchasePrice'] !== null && $row['netPurchasePrice'] !== '' ? (float) $row['netPurchasePrice'] : null,
+                            'kdvRate' => (float) ($row['kdvRate'] ?? 18),
+                            'externalId' => $extId ?: $sku,
+                            'externalSource' => $feed->url,
+                            'supplierId' => $productSupplierId,
+                            'images' => $images ?? [],
+                        ]);
+                        $created++;
+                    }
                 }
             } catch (\Throwable $e) {
                 $errors[] = $e->getMessage();
             }
         }
 
-        return ['created' => $created, 'updated' => count($items) - $created, 'errors' => $errors, 'suppliersCreated' => $suppliersCreated];
+        return ['created' => $created, 'updated' => $updated, 'errors' => $errors, 'suppliersCreated' => $suppliersCreated];
     }
 
     private function parseXmlToProducts(\SimpleXMLElement $xml): array
@@ -280,6 +369,8 @@ class XmlFeedService
 
         $supplier = $this->parseSupplierNode($p);
 
+        $imageUrls = $this->parseProductImageUrls($p, $g);
+
         return [
             'name' => $name,
             'sku' => $sku,
@@ -289,7 +380,127 @@ class XmlFeedService
             'externalId' => $sku,
             'brand' => $brand ?: null,
             'supplier' => $supplier,
+            'imageUrls' => $imageUrls,
         ];
+    }
+
+    /**
+     * XML ürün node'undan resim URL'lerini toplar (tek veya çoklu).
+     * @return string[]
+     */
+    private function parseProductImageUrls(\SimpleXMLElement $p, ?string $g): array
+    {
+        $urls = [];
+        $seen = [];
+
+        $candidates = [
+            'image', 'image_link', 'image_link_1', 'image_link_2', 'image_link_3',
+            'img', 'resim', 'picture', 'product_image', 'photo', 'thumbnail',
+            'Image', 'ImageLink', 'ProductImage', 'Picture',
+        ];
+        foreach ($candidates as $tag) {
+            $el = $p->{$tag} ?? null;
+            if ($el === null) {
+                continue;
+            }
+            $text = trim((string) $el);
+            if ($text !== '' && $this->isValidImageUrl($text) && !isset($seen[$text])) {
+                $urls[] = $text;
+                $seen[$text] = true;
+            }
+            $href = $el->attributes()->url ?? $el->attributes()->href ?? null;
+            if ($href !== null) {
+                $text = trim((string) $href);
+                if ($text !== '' && $this->isValidImageUrl($text) && !isset($seen[$text])) {
+                    $urls[] = $text;
+                    $seen[$text] = true;
+                }
+            }
+        }
+        if ($g) {
+            $gImage = $p->children($g)->image_link ?? $p->children($g)->image ?? null;
+            if ($gImage !== null) {
+                $text = trim((string) $gImage);
+                if ($text !== '' && $this->isValidImageUrl($text) && !isset($seen[$text])) {
+                    $urls[] = $text;
+                }
+            }
+        }
+        if (isset($p->enclosure)) {
+            $enc = is_array($p->enclosure) ? $p->enclosure[0] : $p->enclosure;
+            $type = strtolower((string) ($enc->attributes()->type ?? ''));
+            $url = trim((string) ($enc->attributes()->url ?? ''));
+            if ($url !== '' && (str_contains($type, 'image') || $type === '') && $this->isValidImageUrl($url) && !isset($seen[$url])) {
+                $urls[] = $url;
+            }
+        }
+        return array_values(array_unique($urls));
+    }
+
+    private function isValidImageUrl(string $url): bool
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return false;
+        }
+        return str_starts_with($url, 'http://') || str_starts_with($url, 'https://');
+    }
+
+    /**
+     * Resim URL'lerini indirip storage'a kaydeder, dönen dizide yol (/storage/...) verir.
+     * @param string[] $imageUrls
+     * @return string[]
+     */
+    private function downloadProductImages(array $imageUrls): array
+    {
+        $paths = [];
+        $dir = 'products/' . date('Y-m-d');
+        foreach ($imageUrls as $url) {
+            try {
+                $response = Http::timeout(15)->get($url);
+                if (!$response->successful()) {
+                    continue;
+                }
+                $body = $response->body();
+                $contentType = $response->header('Content-Type') ?? '';
+                $ext = $this->extensionFromContentType($contentType) ?: $this->extensionFromUrl($url) ?: 'jpg';
+                $filename = Str::random(16) . '.' . $ext;
+                $path = $dir . '/' . $filename;
+                if (Storage::disk('public')->put($path, $body)) {
+                    $paths[] = '/storage/' . $path;
+                }
+            } catch (\Throwable $e) {
+                continue;
+            }
+        }
+        return $paths;
+    }
+
+    private function extensionFromContentType(string $contentType): ?string
+    {
+        $map = [
+            'image/jpeg' => 'jpg',
+            'image/jpg' => 'jpg',
+            'image/png' => 'png',
+            'image/gif' => 'gif',
+            'image/webp' => 'webp',
+        ];
+        foreach ($map as $mime => $ext) {
+            if (stripos($contentType, $mime) !== false) {
+                return $ext;
+            }
+        }
+        return null;
+    }
+
+    private function extensionFromUrl(string $url): ?string
+    {
+        $path = parse_url($url, PHP_URL_PATH);
+        if ($path === null || $path === '') {
+            return null;
+        }
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        return in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true) ? $ext : null;
     }
 
     private function getNodeText(\SimpleXMLElement $node, array $tagNames): string

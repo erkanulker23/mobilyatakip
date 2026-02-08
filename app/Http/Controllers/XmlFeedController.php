@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SyncXmlFeedJob;
 use App\Models\Product;
 use App\Models\XmlFeed;
 use App\Models\Supplier;
@@ -30,25 +31,17 @@ class XmlFeedController extends Controller
             'name' => 'required|string|max:255',
             'url' => 'required|url|max:2048',
             'supplierId' => 'nullable|exists:suppliers,id',
-            'supplier_mode' => 'nullable|in:existing,new',
-            'newSupplierName' => 'nullable|string|max:255',
+            'create_suppliers' => 'nullable|boolean',
         ]);
 
-        $supplierId = null;
-        if (($request->input('supplier_mode') === 'new') && !empty(trim($request->input('newSupplierName')))) {
-            $supplier = Supplier::create([
-                'name' => trim($request->input('newSupplierName')),
-                'isActive' => true,
-            ]);
-            $supplierId = $supplier->id;
-        } elseif (!empty($request->input('supplierId'))) {
-            $supplierId = $request->input('supplierId');
-        }
+        $supplierId = $request->filled('supplierId') ? $request->input('supplierId') : null;
+        $createSuppliers = $request->boolean('create_suppliers');
 
         XmlFeed::create([
             'name' => $validated['name'],
             'url' => $validated['url'],
             'supplierId' => $supplierId,
+            'createSuppliers' => $createSuppliers,
         ]);
         return redirect()->route('xml-feeds.index')->with('success', 'XML Feed kaydedildi.');
     }
@@ -64,30 +57,23 @@ class XmlFeedController extends Controller
 
     public function sync(Request $request, XmlFeed $xmlFeed)
     {
-        if (!$xmlFeed->supplierId) {
-            $request->validate([
-                'supplierId' => 'nullable|exists:suppliers,id',
-                'newSupplierName' => 'nullable|string|max:255',
-            ]);
-            $supplierId = null;
-            if (!empty(trim((string) $request->input('newSupplierName')))) {
-                $supplier = Supplier::create([
-                    'name' => trim($request->input('newSupplierName')),
-                    'isActive' => true,
-                ]);
-                $supplierId = $supplier->id;
-            } elseif (!empty($request->input('supplierId'))) {
-                $supplierId = $request->input('supplierId');
-            }
-            if (!$supplierId) {
-                return redirect()->route('xml-feeds.sync-supplier', $xmlFeed)
-                    ->with('error', 'Ürünleri eklemek için bir tedarikçi seçin veya yeni tedarikçi adı girin.');
-            }
-            $xmlFeed->update(['supplierId' => $supplierId]);
+        if (!$xmlFeed->supplierId && $request->filled('supplierId')) {
+            $request->validate(['supplierId' => 'exists:suppliers,id']);
+            $xmlFeed->update(['supplierId' => $request->input('supplierId')]);
         }
 
+        $createSuppliers = $request->has('create_suppliers') ? $request->boolean('create_suppliers') : ($xmlFeed->createSuppliers ?? true);
+        $runInBackground = $request->boolean('run_in_background', true);
+
+        if ($runInBackground) {
+            SyncXmlFeedJob::dispatch($xmlFeed->fresh(), $createSuppliers);
+            return redirect()->route('xml-feeds.index')
+                ->with('success', 'Ürün çekme işi kuyruğa alındı. Arka planda işlenecek, sayfa donmaz. Queue worker çalışıyorsa kısa süre içinde tamamlanır.');
+        }
+
+        set_time_limit(600);
         try {
-            $result = $this->xmlFeedService->syncFeed($xmlFeed);
+            $result = $this->xmlFeedService->syncFeed($xmlFeed, $createSuppliers);
             $msg = sprintf('%d ürün eklendi, %d güncellendi.', $result['created'], $result['updated'] ?? 0);
             $suppliersCreated = $result['suppliersCreated'] ?? 0;
             if ($suppliersCreated > 0) {

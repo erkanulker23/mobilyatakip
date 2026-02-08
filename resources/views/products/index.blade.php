@@ -53,14 +53,26 @@
 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" x-data="productsBulk" data-product-ids='{{ json_encode($productIds ?? []) }}'>
     <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between gap-4 flex-wrap">
         <span class="text-sm text-slate-600" x-show="selected.length > 0" x-text="selected.length + ' ürün seçildi'"></span>
-        <button type="button" x-show="selected.length > 0" @click="confirmBulkDelete = true"
-                class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium text-sm">
-            Seçilenleri sil
-        </button>
+        <div class="flex flex-wrap items-center gap-2">
+            <button type="button" x-show="selected.length > 0" @click="confirmBulkDelete = true"
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium text-sm">
+                Seçilenleri sil
+            </button>
+            <button type="button" @click="confirmBulkDeleteAll = true"
+                    class="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 font-medium text-sm">
+                Filtrelenen tümünü sil
+            </button>
+        </div>
     </div>
     {{-- Toplu silme için ayrı form (tablo içinde tekil silme formları olduğu için form iç içe olmasın) --}}
     <form id="products-bulk-form" method="POST" action="{{ route('products.bulk-destroy') }}" class="hidden">
         @csrf
+        <input type="hidden" name="all_filtered" id="products-bulk-all-filtered" value="0">
+        <input type="hidden" name="search" value="{{ request('search') }}">
+        <input type="hidden" name="supplierId" value="{{ request('supplierId') }}">
+        <input type="hidden" name="isActive" value="{{ request('isActive') }}">
+        <input type="hidden" name="minPrice" value="{{ request('minPrice') }}">
+        <input type="hidden" name="maxPrice" value="{{ request('maxPrice') }}">
         <div id="products-bulk-form-ids"></div>
     </form>
     <div class="overflow-x-auto">
@@ -71,7 +83,7 @@
                         <label class="inline-flex items-center gap-2 cursor-pointer select-none">
                             <input type="checkbox" class="rounded border-slate-300 text-green-600 focus:ring-green-500"
                                    @change="toggleAll($event.target.checked)" :checked="selected.length === items.length && items.length > 0">
-                            <span class="text-xs font-medium text-slate-600">Tümünü seç</span>
+                            <span class="text-xs font-medium text-slate-600">Tümünü seç (bu sayfa)</span>
                         </label>
                     </th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Ürün</th>
@@ -124,7 +136,7 @@
     </div>
     <div class="px-6 py-3 border-t border-slate-200">{{ $products->links() }}</div>
 
-    {{-- Toplu silme onay modal --}}
+    {{-- Toplu silme onay modal (seçilenler) --}}
     <div x-show="confirmBulkDelete" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
         <div x-show="confirmBulkDelete" x-transition class="fixed inset-0 bg-black/50" @click="confirmBulkDelete = false"></div>
         <div x-show="confirmBulkDelete" x-transition class="relative bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-sm w-full p-6 border border-slate-200 dark:border-slate-700">
@@ -133,6 +145,18 @@
             <div class="mt-6 flex gap-3 justify-end">
                 <button type="button" @click="confirmBulkDelete = false" class="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 font-medium hover:bg-slate-300 dark:hover:bg-slate-500">İptal</button>
                 <button type="button" @click="submitBulkDelete()" class="px-4 py-2 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700">Sil</button>
+            </div>
+        </div>
+    </div>
+    {{-- Filtrelenen tümünü sil onay modal --}}
+    <div x-show="confirmBulkDeleteAll" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+        <div x-show="confirmBulkDeleteAll" x-transition class="fixed inset-0 bg-black/50" @click="confirmBulkDeleteAll = false"></div>
+        <div x-show="confirmBulkDeleteAll" x-transition class="relative bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-sm w-full p-6 border border-slate-200 dark:border-slate-700">
+            <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Filtrelenen tümünü sil</h2>
+            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Filtreye uyan tüm ürünler kalıcı olarak silinecek. (Arama, tedarikçi, fiyat vb. filtrelere uyan kayıtlar.) Emin misiniz?</p>
+            <div class="mt-6 flex gap-3 justify-end">
+                <button type="button" @click="confirmBulkDeleteAll = false" class="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 font-medium hover:bg-slate-300 dark:hover:bg-slate-500">İptal</button>
+                <button type="button" @click="submitBulkDeleteAll()" class="px-4 py-2 rounded-xl bg-amber-600 text-white font-medium hover:bg-amber-700">Tümünü sil</button>
             </div>
         </div>
     </div>
@@ -150,6 +174,7 @@
                 items: items,
                 selected: [],
                 confirmBulkDelete: false,
+                confirmBulkDeleteAll: false,
                 toggleAll: function(checked) {
                     this.selected = checked ? this.items.slice() : [];
                     var self = this;
@@ -162,8 +187,11 @@
                     else this.selected = this.selected.filter(function(x) { return x !== id; });
                 },
                 submitBulkDelete: function() {
+                    this.confirmBulkDelete = false;
                     var sel = this.selected;
+                    var form = document.getElementById('products-bulk-form');
                     var container = document.getElementById('products-bulk-form-ids');
+                    document.getElementById('products-bulk-all-filtered').value = '0';
                     if (container) {
                         container.innerHTML = '';
                         sel.forEach(function(id) {
@@ -174,6 +202,12 @@
                             container.appendChild(inp);
                         });
                     }
+                    form.submit();
+                },
+                submitBulkDeleteAll: function() {
+                    this.confirmBulkDeleteAll = false;
+                    document.getElementById('products-bulk-all-filtered').value = '1';
+                    document.getElementById('products-bulk-form-ids').innerHTML = '';
                     document.getElementById('products-bulk-form').submit();
                 }
             };

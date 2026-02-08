@@ -128,6 +128,34 @@ class ProductController extends Controller
 
     public function bulkDestroy(Request $request)
     {
+        if ($request->boolean('all_filtered')) {
+            $q = Product::query();
+            if ($request->filled('search')) {
+                $s = $request->search;
+                $q->where(function ($w) use ($s) {
+                    $w->where('name', 'like', "%{$s}%")
+                        ->orWhere('sku', 'like', "%{$s}%")
+                        ->orWhere('description', 'like', "%{$s}%");
+                });
+            }
+            if ($request->filled('supplierId')) {
+                $q->where('supplierId', $request->supplierId);
+            }
+            if ($request->filled('isActive')) {
+                $q->where('isActive', $request->boolean('isActive'));
+            }
+            if ($request->filled('minPrice')) {
+                $q->where('unitPrice', '>=', $request->minPrice);
+            }
+            if ($request->filled('maxPrice')) {
+                $q->where('unitPrice', '<=', $request->maxPrice);
+            }
+            $ids = $q->pluck('id')->all();
+            $this->deleteProductsAndDependents($ids);
+            return redirect()->route('products.index', $request->only(['search', 'supplierId', 'isActive', 'minPrice', 'maxPrice']))
+                ->with('success', count($ids) . ' ürün silindi.');
+        }
+
         $request->validate(['ids' => 'required|array', 'ids.*' => 'required|uuid|exists:products,id']);
         $ids = $request->ids;
         $this->deleteProductsAndDependents($ids);

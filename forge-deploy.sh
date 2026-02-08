@@ -34,7 +34,7 @@ php artisan view:cache
 # 6. Storage link (yoksa oluşturur, varsa atlar)
 php artisan storage:link --quiet || true
 
-# 7. Queue kullanıyorsanız worker'ı yeniden başlatın (Forge'da ayrı Daemon tanımlı olmalı)
-# php artisan queue:restart
+# 7. Queue worker'ı yeniden başlat (Forge Processes'te queue:work tanımlı olmalı)
+php artisan queue:restart
 
 echo "Deploy tamamlandı: $(date -Iseconds)"
