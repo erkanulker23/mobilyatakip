@@ -46,12 +46,14 @@ class XmlFeedService
                 if (!isset($supplierMap[$extKey])) {
                     $address = trim($sup['contact'] ?? '');
                     $address = $address !== '' ? 'Yetkili: ' . $address : null;
+                    $code = trim($sup['code'] ?? '') ?: null;
                     $supplier = Supplier::firstOrCreate(
                         [
                             'externalSource' => $feed->url,
                             'externalId' => $extKey,
                         ],
                         [
+                            'code' => $code,
                             'name' => trim($sup['name']),
                             'email' => trim($sup['email'] ?? '') ?: null,
                             'phone' => trim($sup['phone'] ?? '') ?: null,
@@ -63,6 +65,7 @@ class XmlFeedService
                         $suppliersCreated++;
                     } else {
                         $supplier->update([
+                            'code' => $code,
                             'name' => trim($sup['name']),
                             'email' => trim($sup['email'] ?? '') ?: null,
                             'phone' => trim($sup['phone'] ?? '') ?: null,
