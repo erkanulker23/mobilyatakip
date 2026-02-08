@@ -3,10 +3,27 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 class Supplier extends BaseModel
 {
     protected $table = 'suppliers';
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Supplier $supplier) {
+            $id = $supplier->getKey();
+            $purchaseIds = DB::table('purchases')->where('supplierId', $id)->pluck('id');
+            if ($purchaseIds->isNotEmpty()) {
+                DB::table('supplier_payments')->whereIn('purchaseId', $purchaseIds)->update(['purchaseId' => null]);
+                DB::table('purchase_items')->whereIn('purchaseId', $purchaseIds)->delete();
+                DB::table('purchases')->where('supplierId', $id)->delete();
+            }
+            DB::table('supplier_payments')->where('supplierId', $id)->delete();
+            DB::table('supplier_statements')->where('supplierId', $id)->delete();
+            DB::table('xml_feeds')->where('supplierId', $id)->update(['supplierId' => null]);
+        });
+    }
 
     protected $fillable = [
         'name',

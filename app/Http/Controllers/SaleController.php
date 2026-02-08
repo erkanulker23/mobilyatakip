@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Mail\SaleNotificationToSupplier;
 use App\Models\Sale;
 use App\Models\SaleActivity;
+use App\Models\Quote;
 use App\Models\Customer;
 use App\Models\CustomerPayment;
 use App\Models\Product;
@@ -98,7 +99,40 @@ class SaleController extends Controller
         }
         $sales = $q->paginate(20)->withQueryString();
         $customers = Customer::orderBy('name')->get();
-        return view('sales.index', compact('sales', 'customers'));
+        $saleIds = $sales->getCollection()->pluck('id')->values()->all();
+        return view('sales.index', compact('sales', 'customers', 'saleIds'));
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate(['ids' => 'required|array', 'ids.*' => 'required|uuid|exists:sales,id']);
+        $ids = $request->input('ids', []);
+        $withPayment = Sale::whereIn('id', $ids)->where(function ($q) {
+            $q->where('paidAmount', '>', 0)->orWhereHas('payments');
+        })->pluck('saleNumber')->toArray();
+        if (!empty($withPayment)) {
+            return redirect()->back()->with('error', 'Ödeme alınmış satışlar silinemez: ' . implode(', ', $withPayment));
+        }
+        $count = 0;
+        foreach ($ids as $id) {
+            $sale = Sale::find($id);
+            if (!$sale) {
+                continue;
+            }
+            $saleNumber = $sale->saleNumber;
+            $grandTotal = (float) $sale->grandTotal;
+            $saleId = $sale->id;
+            DB::transaction(function () use ($sale, $saleId, $saleNumber, $grandTotal) {
+                Quote::where('convertedSaleId', $saleId)->update(['convertedSaleId' => null]);
+                CustomerPayment::where('saleId', $saleId)->update(['saleId' => null]);
+                $this->reverseSaleStock($saleId, $saleNumber, 'satis_silme');
+                $sale->items()->delete();
+                $sale->delete();
+                $this->auditService->logDelete('sale', $saleId, ['saleNumber' => $saleNumber, 'grandTotal' => $grandTotal]);
+            });
+            $count++;
+        }
+        return redirect()->route('sales.index')->with('success', $count . ' satış silindi.');
     }
 
     public function show(Sale $sale)
@@ -130,10 +164,16 @@ class SaleController extends Controller
 
     public function destroy(Sale $sale)
     {
+        $paidAmount = (float) ($sale->paidAmount ?? 0);
+        $hasPayments = CustomerPayment::where('saleId', $sale->id)->exists();
+        if ($paidAmount > 0 || $hasPayments) {
+            return redirect()->back()->with('error', 'Ödeme alınmış satış silinemez. Önce tahsilatları iptal edin veya satışı iptal edin.');
+        }
         $saleNumber = $sale->saleNumber;
         $grandTotal = (float) $sale->grandTotal;
         $saleId = $sale->id;
         DB::transaction(function () use ($sale, $saleId, $saleNumber, $grandTotal) {
+            Quote::where('convertedSaleId', $saleId)->update(['convertedSaleId' => null]);
             CustomerPayment::where('saleId', $saleId)->update(['saleId' => null]);
             $this->reverseSaleStock($saleId, $saleNumber, 'satis_silme');
             $sale->items()->delete();

@@ -15,6 +15,7 @@ use App\Models\Supplier;
 use App\Models\SupplierPayment;
 use App\Rules\TurkishTaxId;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -120,6 +121,7 @@ class SupplierController extends Controller
         } else {
             $supplier->products()->update(['supplierId' => null]);
         }
+        $this->detachSupplierDependents($supplier);
         $supplier->delete();
         return redirect()->route('suppliers.index')->with('success', 'Tedarikçi silindi.');
     }
@@ -139,10 +141,28 @@ class SupplierController extends Controller
             } else {
                 $supplier->products()->update(['supplierId' => null]);
             }
+            $this->detachSupplierDependents($supplier);
             $supplier->delete();
             $count++;
         }
         return redirect()->route('suppliers.index')->with('success', $count . ' tedarikçi silindi.');
+    }
+
+    /**
+     * Tedarikçiyi silmeden önce alımlar, ödemeler ve diğer bağları kaldırır (FK ihlalini önler).
+     */
+    private function detachSupplierDependents(Supplier $supplier): void
+    {
+        $id = $supplier->getKey();
+        $purchaseIds = DB::table('purchases')->where('supplierId', $id)->pluck('id');
+        if ($purchaseIds->isNotEmpty()) {
+            DB::table('supplier_payments')->whereIn('purchaseId', $purchaseIds)->update(['purchaseId' => null]);
+            DB::table('purchase_items')->whereIn('purchaseId', $purchaseIds)->delete();
+            DB::table('purchases')->where('supplierId', $id)->delete();
+        }
+        DB::table('supplier_payments')->where('supplierId', $id)->delete();
+        DB::table('supplier_statements')->where('supplierId', $id)->delete();
+        DB::table('xml_feeds')->where('supplierId', $id)->update(['supplierId' => null]);
     }
 
     /**

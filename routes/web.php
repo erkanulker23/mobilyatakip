@@ -51,6 +51,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/quotes/{quote}/convert', [QuoteController::class, 'convert'])->name('quotes.convert');
 
     Route::resource('sales', SaleController::class);
+    Route::post('/sales/actions/bulk-destroy', [SaleController::class, 'bulkDestroy'])->name('sales.bulk-destroy');
     Route::get('/sales/{sale}/print', [SaleController::class, 'print'])->name('sales.print');
     Route::post('/sales/{sale}/cancel', [SaleController::class, 'cancel'])->name('sales.cancel');
     Route::post('/sales/{sale}/send-supplier-email', [SaleController::class, 'sendSupplierEmail'])->name('sales.send-supplier-email');
@@ -58,6 +59,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/sales/{sale}/efatura/send', [\App\Http\Controllers\EInvoiceController::class, 'sendSale'])->name('sales.efatura.send');
     Route::get('/sales/{sale}/efatura/xml', [\App\Http\Controllers\EInvoiceController::class, 'downloadSaleXml'])->name('sales.efatura.xml');
     Route::resource('purchases', PurchaseController::class);
+    Route::post('/purchases/actions/bulk-destroy', [PurchaseController::class, 'bulkDestroy'])->name('purchases.bulk-destroy');
     Route::get('/purchases/{purchase}/print', [PurchaseController::class, 'print'])->name('purchases.print');
     Route::post('/purchases/{purchase}/cancel', [PurchaseController::class, 'cancel'])->name('purchases.cancel');
     Route::post('/purchases/{purchase}/efatura/send', [\App\Http\Controllers\EInvoiceController::class, 'sendPurchase'])->name('purchases.efatura.send');

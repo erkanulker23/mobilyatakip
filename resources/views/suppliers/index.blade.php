@@ -70,7 +70,6 @@
                                @change="toggleAll($event.target.checked)" :checked="selected.length === items.length && items.length > 0">
                     </th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Ad</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">E-posta</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Telefon</th>
                     <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Bakiye</th>
                     <th class="px-6 py-3 text-center text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase w-40">İşlem</th>
@@ -87,7 +86,6 @@
                         <span class="font-medium text-slate-900 dark:text-slate-100">{{ $s->name }}</span>
                         @if(!($s->isActive ?? true))<span class="ml-1 text-xs text-slate-400">(Pasif)</span>@endif
                     </td>
-                    <td class="px-6 py-4 text-slate-600 dark:text-slate-400">{{ $s->email ?? '-' }}</td>
                     <td class="px-6 py-4 text-slate-600 dark:text-slate-400">{{ $s->phone ?? '-' }}</td>
                     @php
                         $borc = $borcBySupplier[$s->id] ?? 0;
@@ -136,7 +134,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="6" class="px-6 py-12 text-center text-slate-500 dark:text-slate-400">Kayıt bulunamadı.</td></tr>
+                <tr><td colspan="5" class="px-6 py-12 text-center text-slate-500 dark:text-slate-400">Kayıt bulunamadı.</td></tr>
                 @endforelse
             </tbody>
         </table>

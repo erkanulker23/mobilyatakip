@@ -39,7 +39,8 @@ class PurchaseController extends Controller
         }
         $purchases = $q->paginate(20)->withQueryString();
         $suppliers = Supplier::orderBy('name')->get();
-        return view('purchases.index', compact('purchases', 'suppliers'));
+        $purchaseIds = $purchases->getCollection()->pluck('id')->values()->all();
+        return view('purchases.index', compact('purchases', 'suppliers', 'purchaseIds'));
     }
 
     public function create()
@@ -285,6 +286,67 @@ class PurchaseController extends Controller
 
         $this->auditService->logUpdate('purchase', $purchase->id, [], $purchase->fresh()->toArray());
         return redirect()->route('purchases.show', $purchase)->with('success', 'Alış güncellendi.');
+    }
+
+    public function destroy(Purchase $purchase)
+    {
+        DB::transaction(function () use ($purchase) {
+            if (!$purchase->isCancelled && $purchase->warehouseId) {
+                foreach ($purchase->items as $item) {
+                    $this->stockService->movement(
+                        $item->productId,
+                        $purchase->warehouseId,
+                        'cikis',
+                        (int) $item->quantity,
+                        [
+                            'refType' => 'purchase_silme',
+                            'refId' => $purchase->id,
+                            'description' => 'Alış silme: ' . $purchase->purchaseNumber,
+                        ]
+                    );
+                }
+            }
+            \Illuminate\Support\Facades\DB::table('supplier_payments')->where('purchaseId', $purchase->id)->update(['purchaseId' => null]);
+            $purchase->items()->delete();
+            $purchase->delete();
+        });
+        $this->auditService->logDelete('purchase', $purchase->id, ['purchaseNumber' => $purchase->purchaseNumber]);
+        return redirect()->route('purchases.index')->with('success', 'Alış silindi.');
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate(['ids' => 'required|array', 'ids.*' => 'required|uuid|exists:purchases,id']);
+        $count = 0;
+        foreach ($request->input('ids', []) as $id) {
+            $purchase = Purchase::find($id);
+            if (!$purchase) {
+                continue;
+            }
+            DB::transaction(function () use ($purchase) {
+                if (!$purchase->isCancelled && $purchase->warehouseId) {
+                    foreach ($purchase->items as $item) {
+                        $this->stockService->movement(
+                            $item->productId,
+                            $purchase->warehouseId,
+                            'cikis',
+                            (int) $item->quantity,
+                            [
+                                'refType' => 'purchase_silme',
+                                'refId' => $purchase->id,
+                                'description' => 'Alış silme: ' . $purchase->purchaseNumber,
+                            ]
+                        );
+                    }
+                }
+                \Illuminate\Support\Facades\DB::table('supplier_payments')->where('purchaseId', $purchase->id)->update(['purchaseId' => null]);
+                $purchase->items()->delete();
+                $purchase->delete();
+            });
+            $this->auditService->logDelete('purchase', $purchase->id, ['purchaseNumber' => $purchase->purchaseNumber]);
+            $count++;
+        }
+        return redirect()->route('purchases.index')->with('success', $count . ' alış silindi.');
     }
 
     public function cancel(Purchase $purchase)

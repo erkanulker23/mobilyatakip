@@ -9,6 +9,13 @@ class Quote extends BaseModel
 {
     protected $table = 'quotes';
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Quote $quote) {
+            $quote->sales()->update(['quoteId' => null]);
+        });
+    }
+
     protected $fillable = [
         'quoteNumber',
         'customerId',
@@ -53,6 +60,11 @@ class Quote extends BaseModel
     public function items(): HasMany
     {
         return $this->hasMany(QuoteItem::class, 'quoteId');
+    }
+
+    public function sales(): HasMany
+    {
+        return $this->hasMany(Sale::class, 'quoteId');
     }
 
     public function convertedSale(): BelongsTo
