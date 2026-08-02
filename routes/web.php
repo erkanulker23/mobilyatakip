@@ -114,6 +114,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/sales/{sale}/shipment/pdf', [SaleController::class, 'shipmentPdf'])->name('sales.shipment.pdf');
     Route::get('/sales/{sale}/pdf', [SaleController::class, 'pdf'])->name('sales.pdf');
     Route::post('/sales/{sale}/cancel', [SaleController::class, 'cancel'])->name('sales.cancel');
+    Route::post('/sales/{sale}/delivered', [SaleController::class, 'markDelivered'])->name('sales.mark-delivered');
+    Route::post('/sales/{sale}/undelivered', [SaleController::class, 'unmarkDelivered'])->name('sales.unmark-delivered');
     Route::post('/sales/{sale}/send-supplier-email', [SaleController::class, 'sendSupplierEmail'])->name('sales.send-supplier-email');
     Route::post('/sales/{sale}/send-customer-email', [SaleController::class, 'sendCustomerEmail'])->name('sales.send-customer-email');
     Route::post('/sales/{sale}/activity', [SaleController::class, 'addActivity'])->name('sales.activity');

@@ -28,6 +28,22 @@
                     @endforeach
                 </select>
             </div>
+            <div class="min-w-[160px]">
+                <label class="form-label">Kesin Ölçü</label>
+                <select name="needsFinalMeasurement" class="form-select">
+                    <option value="">Tümü</option>
+                    <option value="1" {{ request('needsFinalMeasurement') === '1' ? 'selected' : '' }}>Kesin ölçüye gidilecek</option>
+                    <option value="0" {{ request('needsFinalMeasurement') === '0' ? 'selected' : '' }}>Kesin ölçü yok</option>
+                </select>
+            </div>
+            <div class="min-w-[160px]">
+                <label class="form-label">Teslim</label>
+                <select name="deliveryStatus" class="form-select">
+                    <option value="">Tümü</option>
+                    <option value="delivered" {{ request('deliveryStatus') === 'delivered' ? 'selected' : '' }}>Teslim edildi</option>
+                    <option value="pending" {{ request('deliveryStatus') === 'pending' ? 'selected' : '' }}>Teslim bekliyor</option>
+                </select>
+            </div>
             <div class="min-w-[130px]">
                 <label class="form-label">Başlangıç</label>
                 <input type="date" name="from" value="{{ request('from') }}" class="form-input">
@@ -62,6 +78,7 @@
                     </th>
                     <th class="table-th">No</th>
                     <th class="table-th">Müşteri</th>
+                    <th class="table-th">Satışı Yapan</th>
                     <th class="table-th">Tarih</th>
                     <th class="table-th text-right">Toplam</th>
                     <th class="table-th text-right">Ödenen</th>
@@ -84,11 +101,19 @@
                         @if($s->needsFinalMeasurement ?? false)<span class="block mt-1">@include('partials.final-measurement-badge', ['sale' => $s])</span>@endif
                     </td>
                     <td class="table-td">{{ $s->customer?->name ?? '-' }}</td>
+                    <td class="table-td text-neutral-600">{{ $s->personnel?->name ?? '—' }}</td>
                     <td class="table-td">{{ $s->saleDate?->format('d.m.Y') ?? '-' }}</td>
                     <td class="table-td text-right font-medium text-neutral-900">{{ number_format($s->grandTotal ?? 0, 0, ',', '.') }} ₺</td>
                     <td class="table-td text-right text-emerald-600">{{ number_format($s->paidAmount ?? 0, 0, ',', '.') }} ₺</td>
                     <td class="table-td text-right {{ \App\Support\CustomerBalance::saleRemaining($s) > 0 ? 'text-red-600 dark:text-red-400 font-medium' : (\App\Support\CustomerBalance::saleRemaining($s) < 0 ? 'amount-negative' : 'text-neutral-500 dark:text-slate-400') }}">{{ number_format(\App\Support\CustomerBalance::saleRemaining($s), 0, ',', '.') }} ₺</td>
-                    <td class="table-td">@if(!($s->isCancelled ?? false))@include('partials.payment-status-badge', ['status' => $saleStatus])@else—@endif</td>
+                    <td class="table-td">
+                        @if(!($s->isCancelled ?? false))
+                        <div class="flex flex-col items-start gap-1">
+                            @include('partials.payment-status-badge', ['status' => $saleStatus])
+                            @include('partials.delivery-status-badge', ['sale' => $s])
+                        </div>
+                        @else—@endif
+                    </td>
                     <td class="table-td">
                         @include('partials.action-buttons', [
                             'show' => route('sales.show', $s),
@@ -101,7 +126,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="9" class="px-6 py-16 text-center">
+                    <td colspan="10" class="px-6 py-16 text-center">
                         <div class="max-w-sm mx-auto">
                             <div class="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto">
                                 <svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>

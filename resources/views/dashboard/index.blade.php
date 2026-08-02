@@ -33,15 +33,44 @@
 
     {{-- Aylık Satış --}}
     <div class="card p-6">
-        <p class="text-sm text-neutral-500">Aylık Satış</p>
-        <p class="text-3xl font-semibold text-neutral-900 mt-1">
-            @if($monthlySales > 0)
-                ₺{{ number_format($monthlySales, 0, ',', '.') }}
-            @else
-                <span class="text-neutral-400">— TL</span>
-            @endif
-        </p>
-        <div class="flex items-center gap-1.5 mt-2">
+        <div class="flex items-start justify-between gap-3">
+            <div>
+                <p class="text-sm text-neutral-500">Aylık Satış</p>
+                <p class="text-3xl font-semibold text-neutral-900 mt-1">
+                    @if($monthlySales > 0)
+                        ₺{{ number_format($monthlySales, 0, ',', '.') }}
+                    @else
+                        <span class="text-neutral-400">₺0</span>
+                    @endif
+                </p>
+                <p class="text-xs text-neutral-400 mt-1">
+                    @if($monthlySalesCount > 0)
+                        Bu ay {{ $monthlySalesCount }} satış · tahsilat olsun olmasın toplam ciro
+                    @else
+                        Bu ay henüz satış yok
+                    @endif
+                </p>
+            </div>
+        </div>
+        @if($monthlySales > 0)
+        @php
+            $collectedPct = min(100, round(($monthlyCollected / $monthlySales) * 100));
+        @endphp
+        <div class="mt-4 h-2 rounded-full bg-neutral-100 overflow-hidden">
+            <div class="h-full rounded-full bg-emerald-500 transition-all" style="width: {{ $collectedPct }}%;"></div>
+        </div>
+        @endif
+        <div class="mt-4 space-y-2">
+            <div class="flex items-center justify-between text-sm">
+                <span class="text-neutral-500">Alınmış</span>
+                <span class="font-semibold text-emerald-600">₺{{ number_format($monthlyCollected, 0, ',', '.') }}</span>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+                <span class="text-neutral-500">Alınacak</span>
+                <span class="font-semibold {{ $monthlyReceivable > 0 ? 'text-amber-600' : 'text-neutral-400' }}">₺{{ number_format($monthlyReceivable, 0, ',', '.') }}</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-1.5 mt-4 pt-4 border-t border-neutral-100">
             @if($monthlyChange >= 0)
                 <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
                 <span class="text-sm text-green-600 font-medium">{{ abs($monthlyChange) }}%</span>
@@ -49,9 +78,9 @@
                 <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
                 <span class="text-sm text-red-500 font-medium">{{ abs($monthlyChange) }}%</span>
             @endif
-            <span class="text-sm text-neutral-400">geçen aya göre</span>
+            <span class="text-sm text-neutral-400">geçen aya göre satış cirosu</span>
         </div>
-        <div class="mt-6 pt-4 border-t border-neutral-100 space-y-2">
+        <div class="mt-4 pt-4 border-t border-neutral-100 space-y-2">
             <div class="flex justify-between text-sm">
                 <span class="text-neutral-500">Ort. Sipariş Değeri</span>
                 <span class="font-medium text-neutral-900">{{ $avgOrderValue > 0 ? '₺' . number_format($avgOrderValue, 0, ',', '.') : '—' }}</span>

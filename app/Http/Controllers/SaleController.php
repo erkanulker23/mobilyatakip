@@ -210,7 +210,7 @@ class SaleController extends Controller
 
     public function index(Request $request)
     {
-        $q = Sale::with('customer')->orderBy('createdAt', 'desc');
+        $q = Sale::with(['customer', 'personnel'])->orderBy('createdAt', 'desc');
         if ($request->filled('search')) {
             $s = $request->search;
             $q->where(function ($w) use ($s) {
@@ -226,6 +226,16 @@ class SaleController extends Controller
         }
         if ($request->filled('to')) {
             $q->whereDate('saleDate', '<=', $request->to);
+        }
+        if ($request->filled('needsFinalMeasurement')) {
+            $q->where('needsFinalMeasurement', $request->needsFinalMeasurement === '1');
+        }
+        if ($request->filled('deliveryStatus')) {
+            if ($request->deliveryStatus === 'delivered') {
+                $q->whereNotNull('deliveredAt')->where('isCancelled', false);
+            } elseif ($request->deliveryStatus === 'pending') {
+                $q->whereNull('deliveredAt')->where('isCancelled', false);
+            }
         }
         $sales = $q->paginate(20)->withQueryString();
         $customers = Customer::orderBy('name')->get();
@@ -459,6 +469,27 @@ class SaleController extends Controller
         });
         $this->auditService->logCancel('sale', $sale->id);
         return redirect()->route('sales.show', $sale)->with('success', 'Satış iptal edildi.');
+    }
+
+    public function markDelivered(Sale $sale)
+    {
+        if ($sale->isCancelled) {
+            return redirect()->route('sales.show', $sale)->with('error', 'İptal edilmiş satış teslim edildi olarak işaretlenemez.');
+        }
+        if ($sale->deliveredAt) {
+            return redirect()->route('sales.show', $sale)->with('info', 'Bu satış zaten teslim edildi olarak işaretli.');
+        }
+        $sale->update(['deliveredAt' => now()]);
+        return redirect()->route('sales.show', $sale)->with('success', 'Satış teslim edildi olarak işaretlendi.');
+    }
+
+    public function unmarkDelivered(Sale $sale)
+    {
+        if (!$sale->deliveredAt) {
+            return redirect()->route('sales.show', $sale)->with('info', 'Bu satış teslim edildi olarak işaretli değil.');
+        }
+        $sale->update(['deliveredAt' => null]);
+        return redirect()->route('sales.show', $sale)->with('success', 'Teslim işareti kaldırıldı.');
     }
 
     /** Satış iptal/silme: Bu satıştan yapılan stok çıkışlarını depoya iade eder. */

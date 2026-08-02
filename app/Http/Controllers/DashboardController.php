@@ -39,9 +39,18 @@ class DashboardController extends Controller
         $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
         $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
 
-        $monthlySales = (float) Sale::where('isCancelled', false)
-            ->where('saleDate', '>=', $monthStart)
-            ->sum('grandTotal');
+        $monthEnd = Carbon::now()->endOfMonth();
+
+        $monthlySalesBase = Sale::query()
+            ->where('isCancelled', false)
+            ->whereBetween('saleDate', [$monthStart->toDateString(), $monthEnd->toDateString()]);
+
+        $monthlySales = (float) (clone $monthlySalesBase)->sum('grandTotal');
+        $monthlyCollected = (float) (clone $monthlySalesBase)->sum('paidAmount');
+        $monthlyReceivable = (float) (clone $monthlySalesBase)
+            ->selectRaw('COALESCE(SUM(GREATEST(grandTotal - COALESCE(paidAmount, 0), 0)), 0) as total')
+            ->value('total');
+        $monthlySalesCount = (int) (clone $monthlySalesBase)->count();
 
         $lastMonthSales = (float) Sale::where('isCancelled', false)
             ->whereBetween('saleDate', [$lastMonthStart, $lastMonthEnd])
@@ -105,6 +114,9 @@ class DashboardController extends Controller
             'stats',
             'last3Days',
             'monthlySales',
+            'monthlyCollected',
+            'monthlyReceivable',
+            'monthlySalesCount',
             'monthlyChange',
             'avgOrderValue',
             'totalCustomers',

@@ -15,6 +15,10 @@
                 Satış faturası @if($sale->customer)· Müşteri: <a href="{{ route('customers.show', $sale->customer) }}" class="font-medium text-emerald-600 hover:text-emerald-700">{{ $sale->customer->name }}</a>@else· Müşteri: —@endif
                 @if(!($sale->isCancelled ?? false))
                 · @include('partials.payment-status-badge', ['sale' => $sale])
+                @if(\App\Support\SaleDelivery::isDelivered($sale))
+                · @include('partials.delivery-status-badge', ['sale' => $sale])
+                <span class="text-neutral-500 text-sm">({{ $sale->deliveredAt->format('d.m.Y') }})</span>
+                @endif
                 <span class="text-neutral-500 text-sm">{{ \App\Support\CustomerBalance::saleStatus($sale)['description'] }}</span>
                 @endif
             </p>
@@ -43,6 +47,17 @@
             <button type="button" @click="showPaymentModal = true" class="btn-primary">Ödeme Al</button>
             @endif
             @if(!($sale->isCancelled ?? false))
+            @if(\App\Support\SaleDelivery::isDelivered($sale))
+            <form method="POST" action="{{ route('sales.unmark-delivered', $sale) }}" class="inline" onsubmit="return confirm('Teslim işaretini kaldırmak istediğinize emin misiniz?');">
+                @csrf
+                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100 text-indigo-800 rounded-lg hover:bg-indigo-200 font-medium">Teslim İşaretini Kaldır</button>
+            </form>
+            @else
+            <form method="POST" action="{{ route('sales.mark-delivered', $sale) }}" class="inline" onsubmit="return confirm('Bu satışı teslim edildi olarak işaretlemek istediğinize emin misiniz?');">
+                @csrf
+                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Teslim Edildi</button>
+            </form>
+            @endif
             <form method="POST" action="{{ route('sales.cancel', $sale) }}" class="inline" onsubmit="return confirm('Bu satışı iptal etmek istediğinize emin misiniz?');">
                 @csrf
                 <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 font-medium">İptal Et</button>
