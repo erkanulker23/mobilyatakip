@@ -64,9 +64,12 @@ Deploy script sırasıyla şunları yapar:
 1. `git pull` (Forge’un seçtiği branch)
 2. `composer install --no-dev --optimize-autoloader`
 3. `php artisan migrate --force`
-4. `npm ci` + `npm run build` (Vite asset’leri)
-5. `php artisan config:cache` / `route:cache` / `view:cache`
-6. `php artisan storage:link` (gerekirse)
+4. `php artisan db:seed --force` (süper admin yoksa oluşturur; mevcut şifreyi değiştirmez)
+5. `php artisan turkey-locations:sync` (API erişilemezse deploy devam eder)
+6. `npm ci` + `npm run build` (Vite asset'leri; `package-lock.json` repoda)
+7. `php artisan config:cache` / `route:cache` / `view:cache`
+8. `php artisan storage:link` (gerekirse)
+9. `php artisan queue:restart`
 
 ---
 
