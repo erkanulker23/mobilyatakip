@@ -208,23 +208,8 @@
             </thead>
             <tbody class="divide-y divide-neutral-100 dark:divide-slate-700">
                 @foreach($upcomingDueSales as $sale)
-                @php
-                    $daysLeft = $sale->dueDate ? (int) now()->startOfDay()->diffInDays($sale->dueDate, false) : null;
-                    if ($daysLeft === null) {
-                        $daysLabel = '—';
-                        $daysClass = 'text-neutral-500';
-                    } elseif ($daysLeft < 0) {
-                        $daysLabel = abs($daysLeft) . ' gün gecikti';
-                        $daysClass = 'text-red-600 dark:text-red-400 font-medium';
-                    } elseif ($daysLeft === 0) {
-                        $daysLabel = 'Bugün';
-                        $daysClass = 'text-amber-600 dark:text-amber-400 font-medium';
-                    } else {
-                        $daysLabel = $daysLeft . ' gün';
-                        $daysClass = $daysLeft <= 3 ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-neutral-600 dark:text-slate-300';
-                    }
-                    $terminClass = $daysLeft !== null && $daysLeft < 0 ? 'text-red-600 dark:text-red-400 font-medium' : ($daysLeft !== null && $daysLeft <= 3 ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-neutral-600 dark:text-slate-300');
-                @endphp
+                @php($daysLeft = $sale->dueDate ? (int) now()->startOfDay()->diffInDays($sale->dueDate, false) : null)
+                @php($terminClass = $daysLeft !== null && $daysLeft < 0 ? 'text-red-600 dark:text-red-400 font-medium' : ($daysLeft !== null && $daysLeft <= 3 ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-neutral-600 dark:text-slate-300'))
                 <tr class="hover:bg-neutral-50/50 dark:hover:bg-slate-800/40 transition-colors">
                     <td class="table-td">
                         <a href="{{ route('sales.show', $sale) }}" class="font-medium text-neutral-900 dark:text-white hover:text-emerald-600">{{ $sale->saleNumber }}</a>
@@ -232,7 +217,13 @@
                     <td class="table-td">{{ $sale->customer?->name ?? '—' }}</td>
                     <td class="table-td text-neutral-600 dark:text-slate-300">{{ $sale->customer?->phone ?? '—' }}</td>
                     <td class="table-td {{ $terminClass }}">{{ $sale->dueDate?->format('d.m.Y') ?? '—' }}</td>
-                    <td class="table-td {{ $daysClass }}">{{ $daysLabel }}</td>
+                    <td class="table-td {{ $daysLeft !== null && $daysLeft < 0 ? 'text-red-600 dark:text-red-400 font-medium' : ($daysLeft !== null && $daysLeft <= 3 ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-neutral-600 dark:text-slate-300') }}">
+                        @if($daysLeft === null)—
+                        @elseif($daysLeft < 0){{ abs($daysLeft) }} gün gecikti
+                        @elseif($daysLeft === 0)Bugün
+                        @else{{ $daysLeft }} gün
+                        @endif
+                    </td>
                     <td class="table-td">@include('partials.delivery-status-badge', ['sale' => $sale])</td>
                     <td class="table-td text-right">
                         <a href="{{ route('sales.show', $sale) }}" class="text-sm font-medium text-emerald-600 hover:text-emerald-700">Gör</a>
@@ -271,7 +262,7 @@
             </thead>
             <tbody class="divide-y divide-neutral-100 dark:divide-slate-700">
                 @forelse($sales as $sale)
-                @php $saleStatus = \App\Support\CustomerBalance::saleStatus($sale); @endphp
+                @php($saleStatus = \App\Support\CustomerBalance::saleStatus($sale))
                 <tr class="hover:bg-neutral-50/50 dark:hover:bg-slate-800/40 transition-colors {{ ($sale->isCancelled ?? false) ? 'opacity-60' : '' }}">
                     <td class="table-td">
                         <a href="{{ route('sales.show', $sale) }}" class="font-medium text-neutral-900 dark:text-white hover:text-emerald-600">{{ $sale->saleNumber }}</a>
