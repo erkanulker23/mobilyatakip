@@ -214,6 +214,19 @@ class CustomerController extends Controller
         return view('customers.print', compact('customer', 'totalSales', 'totalPaid', 'customerBalance'));
     }
 
+    public function printPayments(Customer $customer)
+    {
+        $customer->load([
+            'payments' => fn ($q) => $q->with(['sale', 'kasa'])->orderBy('paymentDate')->orderBy('createdAt'),
+            'city',
+            'district',
+        ]);
+
+        $totalPaid = (float) $customer->payments->sum('amount');
+
+        return view('customers.payments-print', compact('customer', 'totalPaid'));
+    }
+
     public function destroy(Customer $customer)
     {
         $id = $customer->getKey();

@@ -22,6 +22,7 @@
                 @endif
                 <span class="text-neutral-500 text-sm">{{ \App\Support\CustomerBalance::saleStatus($sale)['description'] }}</span>
                 @endif
+                @endif
             </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">

@@ -28,16 +28,22 @@ class UserTaskController extends Controller
             if ($request->filled('userId')) {
                 $query->where('userId', $request->userId);
             }
+
+            // Yönetici: seçili ay + tüm personelin tamamlanmamış görevleri
+            $query->where(function ($w) use ($monthStart, $monthEnd) {
+                $w->whereBetween('dueDate', [$monthStart->toDateString(), $monthEnd->toDateString()])
+                    ->orWhere('isCompleted', false);
+            });
         } else {
             $query->where('userId', $user->id);
-        }
 
-        $query->where(function ($w) use ($monthStart, $monthEnd) {
-            $w->whereBetween('dueDate', [$monthStart->toDateString(), $monthEnd->toDateString()])
-                ->orWhere(function ($inner) {
-                    $inner->whereNull('dueDate')->where('isCompleted', false);
-                });
-        });
+            $query->where(function ($w) use ($monthStart, $monthEnd) {
+                $w->whereBetween('dueDate', [$monthStart->toDateString(), $monthEnd->toDateString()])
+                    ->orWhere(function ($inner) {
+                        $inner->whereNull('dueDate')->where('isCompleted', false);
+                    });
+            });
+        }
 
         $tasks = $query
             ->orderBy('isCompleted')

@@ -84,6 +84,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/api/user-tasks/{userTask}', [\App\Http\Controllers\UserTaskController::class, 'update'])->name('api.user-tasks.update');
     Route::delete('/api/user-tasks/{userTask}', [\App\Http\Controllers\UserTaskController::class, 'destroy'])->name('api.user-tasks.destroy');
     Route::get('/customers/{customer}/print', [CustomerController::class, 'print'])->name('customers.print');
+    Route::get('/customers/{customer}/tahsilatlar/yazdir', [CustomerController::class, 'printPayments'])->name('customers.payments.print');
     Route::get('/customers/excel/export', [CustomerController::class, 'exportExcel'])->name('customers.excel.export');
     Route::post('/customers/excel/import', [CustomerController::class, 'importExcel'])->name('customers.excel.import');
     Route::resource('customers', CustomerController::class);

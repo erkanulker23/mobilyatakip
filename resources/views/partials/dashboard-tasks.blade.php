@@ -16,7 +16,13 @@
     <div class="card-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
             <span class="text-base font-semibold">Yapılacaklar</span>
-            <p class="text-xs font-normal text-neutral-500 mt-0.5">Kişisel görev listeniz ve takvim</p>
+            <p class="text-xs font-normal text-neutral-500 mt-0.5">
+                @if($isTaskAdmin)
+                    Tüm personelin görevlerini görüntüleyebilir ve yönetebilirsiniz
+                @else
+                    Kişisel görev listeniz ve takvim
+                @endif
+            </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
             @if($isTaskAdmin)
@@ -116,7 +122,9 @@
                             <template x-for="task in cell.tasks.slice(0, 3)" :key="task.id">
                                 <div class="text-[10px] leading-tight truncate px-1 py-0.5 rounded border"
                                     :class="colorClasses(task.color).bg + ' ' + colorClasses(task.color).border + ' ' + colorClasses(task.color).text + (task.isCompleted ? ' opacity-50 line-through' : '')"
-                                    x-text="task.title"></div>
+                                    :title="isTaskAdmin && task.userName ? task.userName + ': ' + task.title : task.title">
+                                    <span x-show="isTaskAdmin && task.userId !== currentUserId && task.userName" class="font-semibold" x-text="task.userName.split(' ')[0] + ': '"></span><span x-text="task.title"></span>
+                                </div>
                             </template>
                             <p x-show="cell.tasks.length > 3" class="text-[10px] text-neutral-400 px-1" x-text="'+' + (cell.tasks.length - 3)"></p>
                         </div>
@@ -167,6 +175,32 @@
                 </div>
             </div>
 
+            @if($isTaskAdmin)
+            <div x-show="teamOpenTasks.length > 0">
+                <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-3">Personel görevleri</h3>
+                <div class="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+                    <template x-for="task in teamOpenTasks" :key="'team-' + task.id">
+                        <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 p-3 bg-white dark:bg-neutral-900/40">
+                            <div class="flex items-start gap-2">
+                                <input type="checkbox" :checked="task.isCompleted" @change="toggleComplete(task)" class="mt-1 rounded">
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-[11px] font-medium text-neutral-500" x-text="task.userName"></p>
+                                    <div class="flex items-center gap-2 mt-0.5">
+                                        <span class="w-2 h-2 rounded-full shrink-0" :class="colorClasses(task.color).dot"></span>
+                                        <p class="text-sm font-medium text-neutral-800 dark:text-neutral-200" :class="task.isCompleted ? 'line-through opacity-60' : ''" x-text="task.title"></p>
+                                    </div>
+                                    <p x-show="task.dueDate" class="text-[11px] text-neutral-500 mt-1" x-text="formatTaskDate(task.dueDate)"></p>
+                                </div>
+                                <button type="button" @click="deleteTask(task)" class="p-1 text-neutral-400 hover:text-red-600">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+            @endif
+
             <div x-show="undatedTasks.length > 0">
                 <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-3">Tarihsiz görevler</h3>
                 <div class="space-y-2">
@@ -204,6 +238,7 @@ function dashboardTasks() {
     const apiUpdateBase = @json(url('/api/user-tasks'));
     const today = @json(now()->format('Y-m-d'));
     const currentUserId = @json($currentUserId);
+    const isTaskAdmin = @json($isTaskAdmin);
 
     return {
         tasks: [],
@@ -229,6 +264,17 @@ function dashboardTasks() {
         },
         get undatedTasks() {
             return this.tasks.filter(t => !t.dueDate && !t.isCompleted);
+        },
+        get teamOpenTasks() {
+            if (!isTaskAdmin) return [];
+            return this.tasks
+                .filter(t => !t.isCompleted && t.userId !== currentUserId)
+                .sort((a, b) => {
+                    if (!a.dueDate && !b.dueDate) return 0;
+                    if (!a.dueDate) return 1;
+                    if (!b.dueDate) return -1;
+                    return a.dueDate.localeCompare(b.dueDate);
+                });
         },
         get selectedDayTasks() {
             return this.tasks.filter(t => t.dueDate === this.selectedDate);
@@ -265,6 +311,12 @@ function dashboardTasks() {
             return y + '-' + m + '-' + day;
         },
 
+        formatTaskDate(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr + 'T12:00:00');
+            return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
+        },
+
         colorClasses(color) {
             return colorMap[color] || colorMap.emerald;
         },
@@ -280,7 +332,10 @@ function dashboardTasks() {
                 const url = new URL(apiIndex, window.location.origin);
                 url.searchParams.set('month', this.currentMonth);
                 if (this.filterUserId) url.searchParams.set('userId', this.filterUserId);
-                const res = await fetch(url, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                const res = await fetch(url, {
+                    credentials: 'same-origin',
+                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message || 'Yüklenemedi');
                 this.tasks = data.tasks || [];

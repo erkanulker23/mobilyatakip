@@ -119,17 +119,28 @@
         </div>
         @endif
         @if($customer->payments->count() > 0)
+        @php
+            $allPayments = $customer->payments->sortByDesc('paymentDate');
+        @endphp
         <div class="card overflow-hidden" id="tahsilatlar">
-            <div class="card-header flex items-center justify-between">
-                <span>Tahsilatlar</span>
-                <span class="text-xs font-normal text-neutral-500 dark:text-slate-400">{{ $customer->payments->count() }} tahsilat</span>
+            <div class="card-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                    <span>Tahsilatlar</span>
+                    <span class="text-xs font-normal text-neutral-500 dark:text-slate-400 ml-2">{{ $allPayments->count() }} tahsilat</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <a href="{{ route('customers.payments.print', $customer) }}" target="_blank" rel="noopener" class="btn-print text-sm min-h-[36px] py-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                        Tüm Tahsilatları Yazdır
+                    </a>
+                </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full">
-                    <thead><tr class="border-b border-neutral-100 dark:border-slate-700"><th class="table-th">Tarih</th><th class="table-th">Tutar</th><th class="table-th">Tip</th><th class="table-th">İlgili Fatura</th><th class="table-th text-right">İşlem</th></tr></thead>
+                    <thead><tr class="border-b border-neutral-100 dark:border-slate-700"><th class="table-th">Tahsilat Tarihi</th><th class="table-th">Tutar</th><th class="table-th">Tip</th><th class="table-th">İlgili Fatura</th><th class="table-th text-right">İşlem</th></tr></thead>
                     <tbody>
                         @php $pt = \App\Support\PaymentType::labels(); @endphp
-                        @foreach($customer->payments->sortByDesc('paymentDate')->take(15) as $p)
+                        @foreach($allPayments as $p)
                         <tr class="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
                             <td class="table-td"><a href="{{ route('customer-payments.show', $p) }}" class="font-medium text-emerald-600 dark:text-emerald-400 hover:underline">{{ $p->paymentDate?->format('d.m.Y') ?? '—' }}</a></td>
                             <td class="table-td"><a href="{{ route('customer-payments.show', $p) }}" class="font-medium text-emerald-600 dark:text-emerald-400 hover:underline">{{ number_format($p->amount ?? 0, 0, ',', '.') }} ₺</a></td>
@@ -139,6 +150,13 @@
                         </tr>
                         @endforeach
                     </tbody>
+                    <tfoot>
+                        <tr class="border-t border-neutral-200 dark:border-slate-700 bg-neutral-50/50 dark:bg-slate-800/30">
+                            <td class="table-td font-semibold text-neutral-700 dark:text-slate-300" colspan="2">Toplam ({{ $allPayments->count() }} tahsilat)</td>
+                            <td class="table-td font-semibold text-emerald-600 dark:text-emerald-400">{{ number_format($totalPaid ?? 0, 0, ',', '.') }} ₺</td>
+                            <td class="table-td" colspan="2"></td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         </div>
