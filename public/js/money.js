@@ -6,10 +6,22 @@
 
   var MONEY_NAMES = /^(amount|depositAmount|serviceChargeAmount|openingBalance|unitPrice|netPurchasePrice|grandTotalOverride|generalDiscountAmount|minPrice|maxPrice)$/;
   var MONEY_NESTED = /\[(unitPrice|listPrice|lineDiscountAmount)\]$/;
+  var LINE_PRICE_CLASS = /item-price|item-listprice|item-disc-amt/;
 
   function decimalsFor(el) {
     var d = el.getAttribute('data-money-decimals');
     return d !== null && d !== '' ? parseInt(d, 10) : 0;
+  }
+
+  function isLinePriceField(el) {
+    if (!el || !el.classList) return false;
+    return LINE_PRICE_CLASS.test(el.className || '');
+  }
+
+  function formatMode(el) {
+    var mode = el.getAttribute('data-money-format');
+    if (mode) return mode;
+    return isLinePriceField(el) ? 'blur' : 'input';
   }
 
   window.fmtMoney = function (n, decimals) {
@@ -58,6 +70,43 @@
     return parseFloat(t);
   };
 
+  /** Satış/alış satır fiyatı: 7,5 → 75 (virgül yanlışlık), 75,000 → 75000, 75.000 → 75000 */
+  window.parseLinePrice = function (s) {
+    if (s == null || s === '') return NaN;
+    var t = String(s).trim().replace(/\s/g, '');
+    if (!t) return NaN;
+
+    if (t.indexOf('.') !== -1) {
+      return window.parseMoney(t);
+    }
+
+    if (t.indexOf(',') === -1) {
+      return parseFloat(t);
+    }
+
+    var parts = t.split(',');
+    if (parts.length !== 2 || !/^\d+$/.test(parts[0]) || !/^\d+$/.test(parts[1])) {
+      return window.parseMoney(t);
+    }
+
+    if (parts[1].length === 3) {
+      return parseFloat(parts[0] + parts[1]);
+    }
+
+    if (parts[1].length === 1 && parts[0].length <= 3) {
+      return parseFloat(parts[0] + parts[1]);
+    }
+
+    return window.parseMoney(t);
+  };
+
+  function parseForField(el, raw) {
+    if (isLinePriceField(el)) {
+      return window.parseLinePrice(raw);
+    }
+    return window.parseMoney(raw);
+  }
+
   /** Yazarken 50.000 gibi binlik girişi bozmayalım */
   function isPartialMoneyInput(value) {
     var t = String(value || '').trim();
@@ -77,7 +126,7 @@
   function isMoneyField(el) {
     if (!el || el.tagName !== 'INPUT' || el.type === 'hidden') return false;
     if (el.dataset.input === 'money' || el.classList.contains('money-input')) return true;
-    if (el.classList.contains('item-price') || el.classList.contains('item-listprice') || el.classList.contains('item-disc-amt')) return true;
+    if (isLinePriceField(el)) return true;
     if (el.id === 'grandTotalOverride' || el.id === 'depositAmount') return true;
     var name = el.getAttribute('name') || '';
     if (MONEY_NAMES.test(name)) return true;
@@ -88,13 +137,22 @@
   function formatMoneyInput(el) {
     if (!el || !isMoneyField(el)) return;
     var decimals = decimalsFor(el);
-    var v = window.parseMoney(el.value);
+    var v = parseForField(el, el.value);
     if (isNaN(v)) {
       if (el.value.trim() === '') el.removeAttribute('data-raw');
       return;
     }
     el.value = window.fmtMoney(v, decimals);
     el.setAttribute('data-raw', String(v));
+  }
+
+  function syncRawValue(el) {
+    var v = parseForField(el, el.value);
+    if (!isNaN(v)) {
+      el.setAttribute('data-raw', String(v));
+    } else if (el.value.trim() === '') {
+      el.removeAttribute('data-raw');
+    }
   }
 
   function bindMoney(el) {
@@ -111,6 +169,11 @@
     if (el.value) formatMoneyInput(el);
 
     el.addEventListener('input', function () {
+      syncRawValue(el);
+      if (formatMode(el) === 'blur') {
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        return;
+      }
       if (isPartialMoneyInput(el.value)) return;
       formatMoneyInput(el);
       el.dispatchEvent(new Event('change', { bubbles: true }));
@@ -131,7 +194,7 @@
     if (!form || form.tagName !== 'FORM') return;
     form.querySelectorAll('input').forEach(function (el) {
       if (!isMoneyField(el) || el.dataset.moneyKeepFormatted === '1') return;
-      var v = window.parseMoney(el.value);
+      var v = parseForField(el, el.value);
       el.value = isNaN(v) ? '' : String(v);
     });
   }, true);

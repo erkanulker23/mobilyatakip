@@ -56,13 +56,36 @@ class SaleDocument
             'partyEmail' => $sale->customer?->email,
             'personnelName' => $sale->personnel?->name,
             'items' => collect($sale->items ?? [])->map(fn ($i) => [
-                'name' => $i->productName ?? $i->product?->name ?? '-',
+                'name' => self::shipmentItemName($i),
                 'description' => $i->description ?? null,
                 'quantity' => (int) ($i->quantity ?? 0),
                 'sku' => $i->product?->sku ?? null,
             ])->values()->toArray(),
             'notes' => $sale->notes,
         ];
+    }
+
+    /** Ürün adından fiyat parantezlerini kaldırır: "Koltuk (75.000 ₺)" → "Koltuk" */
+    public static function shipmentItemName(object $item): string
+    {
+        $name = $item->product?->name
+            ?? (filled($item->productName ?? null) ? $item->productName : null)
+            ?? '-';
+
+        return self::stripPriceFromLabel((string) $name);
+    }
+
+    public static function stripPriceFromLabel(string $name): string
+    {
+        $trimmed = trim($name);
+        if ($trimmed === '') {
+            return '-';
+        }
+
+        $clean = preg_replace('/\s*\([0-9][0-9.,\s]*(?:₺|TL)?\s*\)\s*$/ui', '', $trimmed) ?? $trimmed;
+        $clean = trim($clean);
+
+        return $clean !== '' ? $clean : $trimmed;
     }
 
     public static function extraInfoHtml(Sale $sale): string

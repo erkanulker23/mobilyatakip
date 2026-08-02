@@ -358,8 +358,10 @@ class SaleController extends Controller
             abort(404);
         }
         $filename = 'sevkiyat-' . preg_replace('/[^a-zA-Z0-9\-]/', '-', $sale->saleNumber) . '.pdf';
-        $pdf = Pdf::loadView('sales.shipment-pdf', compact('sale'))
-            ->setPaper('a4', 'portrait');
+        $pdf = Pdf::loadView('sales.shipment-pdf', array_merge(
+            SaleDocument::shipmentParams($sale),
+            ['company' => \App\Models\Company::first()]
+        ))->setPaper('a4', 'portrait');
 
         return $pdf->download($filename);
     }

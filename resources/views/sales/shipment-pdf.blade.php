@@ -1,7 +1,5 @@
 @php
-    $company = \App\Models\Company::first();
-    $params = \App\Support\SaleDocument::shipmentParams($sale);
-    extract($params);
+    $company = $company ?? \App\Models\Company::first();
 @endphp
 <!DOCTYPE html>
 <html lang="tr">

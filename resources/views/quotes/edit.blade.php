@@ -415,6 +415,10 @@ function fmt(n) { return new Intl.NumberFormat('tr-TR', { minimumFractionDigits:
 function parseTrNum(s) {
     if (s == null || s === '') return NaN;
     if (typeof s === 'number') return s;
+    if (window.parseLinePrice) {
+        var v = window.parseLinePrice(s);
+        if (!isNaN(v)) return v;
+    }
     return window.parseMoney ? window.parseMoney(s) : NaN;
 }
 function updateQuoteTotals() {
