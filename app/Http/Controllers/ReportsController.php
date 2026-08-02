@@ -141,7 +141,17 @@ class ReportsController extends Controller
 
         return view('reports.print.upcoming-due', array_merge(
             $this->upcomingDueData($days),
-            ['print' => true],
+            ['print' => true, 'forShipment' => false],
+        ));
+    }
+
+    public function upcomingDueShipmentPrint(Request $request): View
+    {
+        $days = max(1, min(90, (int) $request->input('days', self::TERMIN_DEFAULT_DAYS)));
+
+        return view('reports.print.upcoming-due-shipment', array_merge(
+            $this->upcomingDueData($days),
+            ['print' => true, 'forShipment' => true],
         ));
     }
 
@@ -263,13 +273,13 @@ class ReportsController extends Controller
         return [
             'days' => $days,
             'horizon' => $horizon,
-            'upcomingSales' => Sale::with('customer')
+            'upcomingSales' => Sale::with(['customer.city', 'customer.district'])
                 ->where('isCancelled', false)
                 ->whereNotNull('dueDate')
                 ->whereDate('dueDate', '<=', $horizon)
                 ->orderBy('dueDate')
                 ->get(),
-            'upcomingServiceTickets' => ServiceTicket::with(['customer', 'sale'])
+            'upcomingServiceTickets' => ServiceTicket::with(['customer.city', 'customer.district', 'sale'])
                 ->whereNotIn('status', ['tamamlandi', 'iptal'])
                 ->whereNotNull('dueDate')
                 ->whereDate('dueDate', '<=', $horizon)

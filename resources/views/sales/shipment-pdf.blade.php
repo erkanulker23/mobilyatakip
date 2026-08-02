@@ -9,31 +9,31 @@
     <style>
         @page { size: A4 portrait; margin: 12mm; }
         * { box-sizing: border-box; }
-        body { font-family: DejaVu Sans, sans-serif; font-size: 11px; color: #334155; margin: 0; padding: 0; line-height: 1.45; }
-        h1 { font-size: 16px; margin: 0 0 4px; color: #0f172a; }
-        h2 { font-size: 12px; margin: 0; color: #475569; font-weight: 600; }
-        .header { border-bottom: 2px solid #171717; padding-bottom: 10px; margin-bottom: 14px; }
+        body { font-family: DejaVu Sans, sans-serif; font-size: 11px; color: #000; margin: 0; padding: 0; line-height: 1.45; }
+        h1 { font-size: 16px; margin: 0 0 4px; color: #000; }
+        h2 { font-size: 12px; margin: 0; color: #000; font-weight: 700; }
+        .header { border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 14px; }
         .header-table { width: 100%; border-collapse: collapse; }
-        .header-table td { vertical-align: top; padding: 0; }
-        .doc-no { font-size: 20px; font-weight: bold; color: #1e293b; line-height: 1.1; }
+        .header-table td { vertical-align: top; padding: 0; color: #000; }
+        .doc-no { font-size: 20px; font-weight: bold; color: #000; line-height: 1.1; }
         .section { width: 100%; margin-bottom: 14px; }
         .section-table { width: 100%; border-collapse: collapse; }
-        .section-table td { vertical-align: top; padding: 0; width: 50%; }
-        .label { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: bold; margin-bottom: 5px; letter-spacing: 0.04em; }
+        .section-table td { vertical-align: top; padding: 0; width: 50%; color: #000; }
+        .label { font-size: 9px; text-transform: uppercase; color: #000; font-weight: bold; margin-bottom: 5px; letter-spacing: 0.04em; }
         .items { width: 100%; border-collapse: collapse; margin: 10px 0; }
-        .items th, .items td { border: 1px solid #e2e8f0; padding: 7px 8px; font-size: 10px; line-height: 1.4; }
-        .items th { background: #171717; color: #fff; font-size: 9px; text-transform: uppercase; }
+        .items th, .items td { border: 1px solid #000; padding: 7px 8px; font-size: 10px; line-height: 1.4; color: #000; }
+        .items th { background: #000; color: #fff; font-size: 9px; text-transform: uppercase; font-weight: 700; }
         .items td.center, .items th.center { text-align: center; }
-        .check { display: inline-block; width: 12px; height: 12px; border: 1px solid #64748b; }
+        .check { display: inline-block; width: 12px; height: 12px; border: 1px solid #000; }
         .desc-list { margin: 4px 0 0; padding-left: 14px; list-style: disc; }
-        .desc-list li { color: #64748b; font-size: 9px; line-height: 1.35; margin: 1px 0; }
-        .muted { color: #64748b; font-size: 10px; margin: 2px 0; line-height: 1.4; }
+        .desc-list li { color: #000; font-size: 9px; line-height: 1.35; margin: 1px 0; }
+        .muted { color: #000; font-size: 10px; margin: 2px 0; line-height: 1.4; }
         .right { text-align: right; }
-        .signatures { border-top: 1px solid #d4d4d4; padding-top: 12px; margin-top: 14px; page-break-inside: avoid; }
+        .signatures { border-top: 1px solid #000; padding-top: 12px; margin-top: 14px; page-break-inside: avoid; }
         .sign-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .sign-table td { width: 50%; vertical-align: top; padding-right: 16px; }
-        .sign-line { border-top: 1px solid #171717; padding-top: 5px; margin-top: 36px; font-size: 10px; color: #525252; }
-        .notice { background: #fffbeb; border-left: 3px solid #d97706; padding: 8px 10px; margin-bottom: 12px; font-size: 10px; color: #92400e; }
+        .sign-table td { width: 50%; vertical-align: top; padding-right: 16px; color: #000; }
+        .sign-line { border-top: 1px solid #000; padding-top: 5px; margin-top: 36px; font-size: 10px; color: #000; }
+        .notice { background: #fff; border-left: 3px solid #000; padding: 8px 10px; margin-bottom: 12px; font-size: 10px; color: #000; }
     </style>
 </head>
 <body>

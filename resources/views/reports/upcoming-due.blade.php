@@ -6,7 +6,16 @@
         <h1 class="page-title">Termin Tarihi Yaklaşanlar</h1>
         <p class="page-desc">Önümüzdeki {{ $days }} gün içinde termin tarihi gelen sipariş ve SSH formları</p>
     </div>
-    @include('reports.partials.toolbar', ['printRoute' => 'reports.upcoming-due.print'])
+    @include('reports.partials.toolbar', [
+        'printRoute' => 'reports.upcoming-due.print',
+        'extraLinks' => [[
+            'url' => route('reports.upcoming-due.shipment-print', request()->query()),
+            'label' => 'Sevkiyat için Yazdır',
+            'class' => 'btn-secondary',
+            'target' => '_blank',
+            'rel' => 'noopener',
+        ]],
+    ])
 </div>
 
 <div class="card p-6 mb-6">

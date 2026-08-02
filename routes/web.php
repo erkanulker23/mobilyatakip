@@ -170,6 +170,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/raporlar', [\App\Http\Controllers\ReportsController::class, 'index'])->name('reports.index');
     Route::get('/raporlar/termin-yaklasan', [\App\Http\Controllers\ReportsController::class, 'upcomingDue'])->name('reports.upcoming-due');
     Route::get('/raporlar/termin-yaklasan/yazdir', [\App\Http\Controllers\ReportsController::class, 'upcomingDuePrint'])->name('reports.upcoming-due.print');
+    Route::get('/raporlar/termin-yaklasan/sevkiyat-yazdir', [\App\Http\Controllers\ReportsController::class, 'upcomingDueShipmentPrint'])->name('reports.upcoming-due.shipment-print');
     Route::get('/raporlar/satislar', [\App\Http\Controllers\ReportsController::class, 'sales'])->name('reports.sales');
     Route::get('/raporlar/satislar/yazdir', [\App\Http\Controllers\ReportsController::class, 'salesPrint'])->name('reports.sales.print');
     Route::get('/raporlar/gelir-gider', [\App\Http\Controllers\ReportsController::class, 'incomeExpense'])->name('reports.income-expense');

@@ -11,7 +11,7 @@
     @endif
     @if(!empty($extraLinks))
         @foreach($extraLinks as $link)
-        <a href="{{ $link['url'] }}" class="{{ $link['class'] ?? 'btn-secondary' }}">{{ $link['label'] }}</a>
+        <a href="{{ $link['url'] }}" @if(!empty($link['target'])) target="{{ $link['target'] }}" @endif @if(!empty($link['rel'])) rel="{{ $link['rel'] }}" @endif class="{{ $link['class'] ?? 'btn-secondary' }}">{{ $link['label'] }}</a>
         @endforeach
     @endif
     <a href="{{ route('reports.index') }}" class="btn-secondary">Raporlar</a>
