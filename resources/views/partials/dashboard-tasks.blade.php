@@ -2,9 +2,17 @@
     $isTaskAdmin = auth()->user()?->isAdmin() ?? false;
     $currentUserId = (string) auth()->id();
     $taskColorPalette = \App\Support\UserTaskColor::PALETTE;
+    $taskColorMapJson = collect($taskColorPalette)->map(function ($c) {
+        return [
+            'bg' => $c['bg'],
+            'border' => $c['border'],
+            'text' => $c['text'],
+            'dot' => $c['dot'],
+        ];
+    })->all();
 @endphp
 
-<div class="card overflow-hidden mb-8" x-data="dashboardTasks()" x-init="init()">
+<div class="card overflow-hidden mb-8" id="yapilacaklar" x-data="dashboardTasks()" x-init="init()">
     <div class="card-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
             <span class="text-base font-semibold">Yapılacaklar</span>
@@ -189,12 +197,7 @@
 
 <script>
 function dashboardTasks() {
-    const colorMap = @json(collect($taskColorPalette)->map(fn ($c) => [
-        'bg' => $c['bg'],
-        'border' => $c['border'],
-        'text' => $c['text'],
-        'dot' => $c['dot'],
-    ])->all());
+    const colorMap = @json($taskColorMapJson);
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
     const apiIndex = @json(route('api.user-tasks.index'));
     const apiStore = @json(route('api.user-tasks.store'));

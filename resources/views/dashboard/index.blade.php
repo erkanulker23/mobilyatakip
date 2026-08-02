@@ -22,8 +22,6 @@
     <p class="page-desc">İstatistiklerinize genel bakış</p>
 </div>
 
-@include('partials.dashboard-tasks')
-
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-8">
     {{-- Son 3 Gün --}}
     <div class="card p-6">

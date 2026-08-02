@@ -114,10 +114,6 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        $taskUsers = auth()->user()?->isAdmin()
-            ? User::where('isActive', true)->orderBy('name')->get(['id', 'name', 'role'])
-            : collect();
-
         return view('dashboard.index', compact(
             'stats',
             'last3Days',
@@ -134,7 +130,20 @@ class DashboardController extends Controller
             'upcomingSales',
             'upcomingServiceTickets',
             'topPersonnel',
-            'taskUsers',
         ));
+    }
+
+    public function tasks()
+    {
+        return view('tasks.index', [
+            'taskUsers' => $this->taskUsersForCurrentUser(),
+        ]);
+    }
+
+    private function taskUsersForCurrentUser()
+    {
+        return auth()->user()?->isAdmin()
+            ? User::where('isActive', true)->orderBy('name')->get(['id', 'name', 'role'])
+            : collect();
     }
 }

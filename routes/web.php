@@ -59,6 +59,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middl
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/yapilacaklar', [DashboardController::class, 'tasks'])->name('tasks.index');
 
     Route::get('/company-logo', function () {
         $company = Company::first();
