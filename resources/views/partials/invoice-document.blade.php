@@ -58,7 +58,7 @@
                         <td class="px-4 py-3 font-medium text-neutral-900">
                             {{ $item['name'] ?? '-' }}
                             @if(!empty($item['description']))
-                                <span class="block text-xs text-neutral-500 dark:text-slate-400 mt-0.5">{{ $item['description'] }}</span>
+                                @include('partials.item-description-list', ['description' => $item['description']])
                             @endif
                         </td>
                         @if(isset($showListPrice) && $showListPrice)

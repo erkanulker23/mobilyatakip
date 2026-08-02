@@ -25,7 +25,8 @@
         .items th { background: #171717; color: #fff; font-size: 9px; text-transform: uppercase; }
         .items td.center, .items th.center { text-align: center; }
         .check { display: inline-block; width: 12px; height: 12px; border: 1px solid #64748b; }
-        .desc { color: #64748b; font-size: 9px; line-height: 1.35; }
+        .desc-list { margin: 4px 0 0; padding-left: 14px; list-style: disc; }
+        .desc-list li { color: #64748b; font-size: 9px; line-height: 1.35; margin: 1px 0; }
         .muted { color: #64748b; font-size: 10px; margin: 2px 0; line-height: 1.4; }
         .right { text-align: right; }
         .signatures { border-top: 1px solid #d4d4d4; padding-top: 12px; margin-top: 14px; page-break-inside: avoid; }
@@ -93,7 +94,13 @@
             <td>{{ $i + 1 }}</td>
             <td>
                 {{ $item['name'] ?? '-' }}
-                @if(!empty($item['description']))<br><span class="desc">{{ $item['description'] }}</span>@endif
+                @if(!empty($item['description']))
+                <ul class="desc-list">
+                    @foreach(\App\Support\ItemDescription::lines($item['description']) as $line)
+                    <li>{{ $line }}</li>
+                    @endforeach
+                </ul>
+                @endif
             </td>
             <td>{{ $item['sku'] ?? '—' }}</td>
             <td class="center"><strong>{{ $item['quantity'] ?? 0 }}</strong></td>

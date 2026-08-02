@@ -173,11 +173,11 @@
                             </div>
                         </div>
                         <div class="mt-2">
-                            <label class="form-label">Açıklama</label>
-                            <textarea name="items[__IDX__][description]" rows="2" class="form-input form-textarea item-desc w-full text-sm" placeholder="Renk, ölçü, kumaş vb."></textarea>
+                            @include('partials.item-description-fields')
                         </div>
                     </div>
                     </template>
+                    @include('partials.item-description-form-assets')
                     <div id="items" class="space-y-0"></div>
                     <button type="button" onclick="addQuoteRow()" class="add-row-btn mt-3">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -521,6 +521,7 @@ function addQuoteRow(focusNew) {
     const rowEl = document.getElementById('items').lastElementChild;
     const sel = rowEl.querySelector('.item-product');
     initQuoteProductSelect(sel, quoteIdx);
+    if (window.ItemDescriptionLines) ItemDescriptionLines.initRow(rowEl, null);
     quoteIdx++;
     reindexQuoteRows();
     updateQuoteTotals();

@@ -32,7 +32,8 @@
         .totals .grand { font-size: 13px; font-weight: bold; border-top: 2px solid #cbd5e1; padding-top: 6px; }
         .notes { margin-top: 14px; padding-top: 8px; border-top: 1px solid #e2e8f0; }
         .muted { color: #64748b; font-size: 10px; margin: 2px 0; line-height: 1.4; }
-        .desc { color: #64748b; font-size: 9px; line-height: 1.35; }
+        .desc-list { margin: 4px 0 0; padding-left: 14px; list-style: disc; }
+        .desc-list li { color: #64748b; font-size: 9px; line-height: 1.35; margin: 1px 0; }
         .notice { background: #fffbeb; border-left: 3px solid #d97706; padding: 8px 10px; margin-bottom: 12px; font-size: 10px; color: #92400e; font-weight: 600; }
     </style>
 </head>
@@ -94,7 +95,13 @@
             <td>{{ $i + 1 }}</td>
             <td>
                 {{ $item['name'] ?? '-' }}
-                @if(!empty($item['description']))<br><span class="desc">{{ $item['description'] }}</span>@endif
+                @if(!empty($item['description']))
+                <ul class="desc-list">
+                    @foreach(\App\Support\ItemDescription::lines($item['description']) as $line)
+                    <li>{{ $line }}</li>
+                    @endforeach
+                </ul>
+                @endif
             </td>
             <td class="right">{{ number_format($item['unitPrice'] ?? 0, 0, ',', '.') }} ₺</td>
             <td class="center">{{ $item['quantity'] ?? 0 }}</td>

@@ -20,6 +20,7 @@ use App\Services\SaleService;
 use App\Services\StockService;
 use App\Support\SaleDocument;
 use App\Support\DrawingFiles;
+use App\Support\ItemDescription;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -68,7 +69,9 @@ class SaleController extends Controller
             'items' => 'required|array|min:1',
             'items.*.productId' => 'nullable|string',
             'items.*.productName' => 'nullable|string|max:255',
-            'items.*.description' => 'nullable|string|max:1000',
+            'items.*.descriptionLines' => 'nullable|array|max:30',
+            'items.*.descriptionLines.*' => 'nullable|string|max:500',
+            'items.*.description' => 'nullable|string|max:3000',
             'items.*.unitPrice' => 'required|numeric|min:0',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.kdvRate' => 'nullable|numeric|min:0|max:100',
@@ -78,10 +81,10 @@ class SaleController extends Controller
         $items = collect($validated['items'])->map(function ($item) {
             $product = !empty($item['productId']) ? \App\Models\Product::find($item['productId']) : null;
             if ($product) {
-                return ['productId' => $product->id, 'productName' => null, 'description' => isset($item['description']) ? trim((string) $item['description']) : null, 'unitPrice' => $item['unitPrice'], 'quantity' => $item['quantity'], 'kdvRate' => $item['kdvRate'] ?? 10, 'lineDiscountPercent' => $item['lineDiscountPercent'] ?? null, 'lineDiscountAmount' => $item['lineDiscountAmount'] ?? null];
+                return ['productId' => $product->id, 'productName' => null, 'description' => ItemDescription::fromInput($item['descriptionLines'] ?? $item['description'] ?? null), 'unitPrice' => $item['unitPrice'], 'quantity' => $item['quantity'], 'kdvRate' => $item['kdvRate'] ?? 10, 'lineDiscountPercent' => $item['lineDiscountPercent'] ?? null, 'lineDiscountAmount' => $item['lineDiscountAmount'] ?? null];
             }
             $name = trim($item['productName'] ?? '') ?: trim($item['productId'] ?? '');
-            return ['productId' => null, 'productName' => $name, 'description' => isset($item['description']) ? trim((string) $item['description']) : null, 'unitPrice' => $item['unitPrice'], 'quantity' => $item['quantity'], 'kdvRate' => $item['kdvRate'] ?? 10, 'lineDiscountPercent' => $item['lineDiscountPercent'] ?? null, 'lineDiscountAmount' => $item['lineDiscountAmount'] ?? null];
+            return ['productId' => null, 'productName' => $name, 'description' => ItemDescription::fromInput($item['descriptionLines'] ?? $item['description'] ?? null), 'unitPrice' => $item['unitPrice'], 'quantity' => $item['quantity'], 'kdvRate' => $item['kdvRate'] ?? 10, 'lineDiscountPercent' => $item['lineDiscountPercent'] ?? null, 'lineDiscountAmount' => $item['lineDiscountAmount'] ?? null];
         })->filter(fn($i) => !empty($i['productId']) || !empty($i['productName']))->values()->all();
         if (empty($items)) {
             return redirect()->back()->withInput()->with('error', 'En az bir geçerli kalem girin (ürün seçin veya manuel ürün adı yazın).');
@@ -309,7 +312,9 @@ class SaleController extends Controller
             'items.*.id' => 'nullable|string|exists:sale_items,id',
             'items.*.productId' => 'nullable|string',
             'items.*.productName' => 'nullable|string|max:255',
-            'items.*.description' => 'nullable|string|max:1000',
+            'items.*.descriptionLines' => 'nullable|array|max:30',
+            'items.*.descriptionLines.*' => 'nullable|string|max:500',
+            'items.*.description' => 'nullable|string|max:3000',
             'items.*.unitPrice' => 'required|numeric|min:0',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.kdvRate' => 'nullable|numeric|min:0|max:100',
@@ -323,7 +328,7 @@ class SaleController extends Controller
                 'id' => $item['id'] ?? null,
                 'productId' => $product ? $product->id : null,
                 'productName' => $name,
-                'description' => isset($item['description']) ? trim((string) $item['description']) : null,
+                'description' => ItemDescription::fromInput($item['descriptionLines'] ?? $item['description'] ?? null),
                 'unitPrice' => (float) $item['unitPrice'],
                 'quantity' => (int) $item['quantity'],
                 'kdvRate' => (float) ($item['kdvRate'] ?? 18),

@@ -43,7 +43,13 @@
     <tr>
         <td style="padding: 10px 12px; border-bottom: 1px solid #f1f5f9;">
             {{ $item->productName ?? $item->product?->name ?? '-' }}
-            @if($item->description)<br><span style="font-size: 12px; color: #64748b;">{{ $item->description }}</span>@endif
+            @if($item->description)
+            <ul style="margin:4px 0 0; padding-left:14px; color:#64748b; font-size:12px;">
+                @foreach(\App\Support\ItemDescription::lines($item->description) as $line)
+                <li>{{ $line }}</li>
+                @endforeach
+            </ul>
+            @endif
         </td>
         <td align="center" style="padding: 10px 12px; border-bottom: 1px solid #f1f5f9;">{{ $item->quantity }}</td>
         <td align="right" style="padding: 10px 12px; border-bottom: 1px solid #f1f5f9;">{{ number_format($item->lineTotal ?? 0, 2, ',', '.') }} ₺</td>

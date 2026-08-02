@@ -55,7 +55,7 @@
                         <td class="px-4 py-3">
                             <p class="font-medium text-neutral-900">{{ $item['name'] ?? '-' }}</p>
                             @if(!empty($item['description']))
-                            <p class="text-xs text-neutral-500 whitespace-pre-wrap mt-0.5">{{ $item['description'] }}</p>
+                            @include('partials.item-description-list', ['description' => $item['description'], 'listClass' => 'item-description-list list-disc list-inside text-xs text-neutral-500 mt-0.5 space-y-0.5'])
                             @endif
                         </td>
                         <td class="px-4 py-3 text-sm text-slate-600">{{ $item['sku'] ?? '—' }}</td>

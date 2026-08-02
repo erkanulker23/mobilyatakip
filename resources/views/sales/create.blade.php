@@ -220,11 +220,11 @@
                             </div>
                         </div>
                         <div class="mt-2">
-                            <label class="form-label">Açıklama</label>
-                            <textarea name="items[__IDX__][description]" rows="2" class="form-input form-textarea item-desc w-full text-sm" placeholder="Renk, ölçü, kumaş vb."></textarea>
+                            @include('partials.item-description-fields')
                         </div>
                     </div>
                     </template>
+                    @include('partials.item-description-form-assets')
                     <div id="items" class="space-y-0"></div>
                     <button type="button" onclick="addRow(true)" class="add-row-btn mt-3 touch-manipulation">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -595,12 +595,11 @@ function addRow(focusNew) {
     c.querySelector('.item-price').value = '';
     c.querySelector('.item-qty').value = '1';
     c.querySelector('.item-kdv').value = '10';
-    const descEl = c.querySelector('.item-desc');
-    if (descEl) descEl.value = '';
     document.getElementById('items').appendChild(c);
     const rowEl = document.getElementById('items').lastElementChild;
     const sel = rowEl.querySelector('.item-product');
     initProductSelect(sel, idx);
+    if (window.ItemDescriptionLines) ItemDescriptionLines.initRow(rowEl, null);
     idx++;
     reindexSaleRows();
     updateSaleTotals();
@@ -623,14 +622,13 @@ function restoreSaleRow(item) {
 
     const qtyEl = rowEl.querySelector('.item-qty');
     const kdvEl = rowEl.querySelector('.item-kdv');
-    const descEl = rowEl.querySelector('.item-desc');
     const priceEl = rowEl.querySelector('.item-price');
     const idInput = rowEl.querySelector('.item-product-id');
     const nameInput = rowEl.querySelector('.item-product-name');
 
     if (qtyEl) qtyEl.value = item.quantity ?? 1;
     if (kdvEl) kdvEl.value = item.kdvRate ?? 10;
-    if (descEl) descEl.value = item.description ?? '';
+    if (window.ItemDescriptionLines) ItemDescriptionLines.initRow(rowEl, item);
 
     const productId = item.productId ? String(item.productId) : '';
     const productName = String(item.productName || '').trim();
@@ -667,13 +665,14 @@ function duplicateSaleRow(btn) {
     if (!src) return;
     const newRow = addRow(false);
     if (!newRow) return;
-    ['.item-price', '.item-qty', '.item-kdv', '.item-desc'].forEach(function(cls) {
+    ['.item-price', '.item-qty', '.item-kdv'].forEach(function(cls) {
         const from = src.querySelector(cls), to = newRow.querySelector(cls);
         if (from && to) {
             to.value = from.value;
             if (from.hasAttribute('data-raw')) to.setAttribute('data-raw', from.getAttribute('data-raw'));
         }
     });
+    if (window.ItemDescriptionLines) ItemDescriptionLines.duplicateLines(src, newRow);
     const srcTs = src.querySelector('.item-product')?.tomselect;
     const newTs = newRow.querySelector('.item-product')?.tomselect;
     const val = srcTs && srcTs.getValue();

@@ -10,6 +10,7 @@ use App\Models\Personnel;
 use App\Services\SaleService;
 use App\Services\AuditService;
 use App\Support\DrawingFiles;
+use App\Support\ItemDescription;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -67,7 +68,9 @@ class QuoteController extends Controller
             'personnelId' => 'nullable|exists:personnel,id',
             'items' => 'required|array|min:1',
             'items.*.productId' => 'required|exists:products,id',
-            'items.*.description' => 'nullable|string|max:2000',
+            'items.*.descriptionLines' => 'nullable|array|max:30',
+            'items.*.descriptionLines.*' => 'nullable|string|max:500',
+            'items.*.description' => 'nullable|string|max:3000',
             'items.*.unitPrice' => 'required|numeric|min:0',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.kdvRate' => 'nullable|numeric|min:0|max:100',
@@ -121,7 +124,7 @@ class QuoteController extends Controller
                 QuoteItem::create([
                     'quoteId' => $quote->id,
                     'productId' => $row['productId'],
-                    'description' => isset($row['description']) ? trim((string) $row['description']) : null,
+                    'description' => ItemDescription::fromInput($row['descriptionLines'] ?? $row['description'] ?? null),
                     'unitPrice' => $unitPrice,
                     'quantity' => $qty,
                     'kdvRate' => $kdvRate,
@@ -219,7 +222,9 @@ class QuoteController extends Controller
             'status' => 'nullable|in:taslak,onaylandi,reddedildi',
             'items' => 'required|array|min:1',
             'items.*.productId' => 'required|exists:products,id',
-            'items.*.description' => 'nullable|string|max:2000',
+            'items.*.descriptionLines' => 'nullable|array|max:30',
+            'items.*.descriptionLines.*' => 'nullable|string|max:500',
+            'items.*.description' => 'nullable|string|max:3000',
             'items.*.unitPrice' => 'required|numeric|min:0',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.kdvRate' => 'nullable|numeric|min:0|max:100',
@@ -267,7 +272,7 @@ class QuoteController extends Controller
             QuoteItem::create([
                 'quoteId' => $quote->id,
                 'productId' => $row['productId'],
-                'description' => isset($row['description']) ? trim((string) $row['description']) : null,
+                'description' => ItemDescription::fromInput($row['descriptionLines'] ?? $row['description'] ?? null),
                 'unitPrice' => $unitPrice,
                 'quantity' => $qty,
                 'kdvRate' => $kdvRate,
