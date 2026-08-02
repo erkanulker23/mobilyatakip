@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @include('partials.page-seo', \App\Support\PageSeo::sale($sale))
 @section('content')
-<div x-data="{ showCustomerEmail: false, showStatusModal: false, showPaymentModal: @json(session('open_payment_modal') || (old('redirectToSale') && old('redirectToSale') == $sale->id)) }">
+<div x-data="{ showCustomerEmail: false, showStatusModal: @json(old('deliveryStatus') !== null || $errors->has('deliveredAt')), showPaymentModal: @json(session('open_payment_modal') || (old('redirectToSale') && old('redirectToSale') == $sale->id)) }">
 <div class="mb-6">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -197,6 +197,7 @@
 
 {{-- Sipariş durumu güncelle --}}
 @if(!($sale->isCancelled ?? false))
+@php($currentOrderStatus = \App\Support\SaleDelivery::currentStatus($sale))
 <div x-show="showStatusModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="sale-status-title">
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showStatusModal = false"></div>
     <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-neutral-900 shadow-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
@@ -204,7 +205,7 @@
             <h2 id="sale-status-title" class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Sipariş Durumunu Güncelle</h2>
             <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{{ $sale->saleNumber }}</p>
         </div>
-        <form method="POST" action="{{ route('sales.update-status', $sale) }}" class="p-5 space-y-4">
+        <form method="POST" action="{{ route('sales.update-status', $sale) }}" class="p-5 space-y-4" x-data="{ deliveryStatus: @json(old('deliveryStatus', $currentOrderStatus)) }">
             @csrf
             <div class="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-100 dark:border-neutral-700 text-sm space-y-2">
                 <div class="flex items-center justify-between gap-3">
@@ -214,7 +215,7 @@
                 @if(\App\Support\SaleDelivery::isDelivered($sale))
                 <div class="flex items-center justify-between gap-3">
                     <span class="text-neutral-500">Teslim tarihi</span>
-                    <span class="font-medium text-neutral-900 dark:text-neutral-100">{{ $sale->deliveredAt->format('d.m.Y H:i') }}</span>
+                    <span class="font-medium text-neutral-900 dark:text-neutral-100">{{ $sale->deliveredAt->format('d.m.Y') }}</span>
                 </div>
                 @endif
                 @if($sale->serviceTickets->isNotEmpty())
@@ -233,15 +234,32 @@
             </div>
             <div>
                 <label class="form-label">Sipariş durumu</label>
-                @php($currentOrderStatus = \App\Support\SaleDelivery::currentStatus($sale))
-                <select name="deliveryStatus" class="form-select min-h-[44px]">
-                    <option value="pending" {{ $currentOrderStatus === \App\Support\SaleDelivery::PENDING ? 'selected' : '' }}>Teslim bekliyor</option>
-                    <option value="delivered" {{ $currentOrderStatus === \App\Support\SaleDelivery::DELIVERED ? 'selected' : '' }}>Teslim edildi</option>
-                    <option value="ssh" {{ $currentOrderStatus === \App\Support\SaleDelivery::SSH ? 'selected' : '' }}>SSH var</option>
+                <select name="deliveryStatus" x-model="deliveryStatus" class="form-select min-h-[44px]">
+                    <option value="pending" {{ old('deliveryStatus', $currentOrderStatus) === \App\Support\SaleDelivery::PENDING ? 'selected' : '' }}>Teslim bekliyor</option>
+                    <option value="delivered" {{ old('deliveryStatus', $currentOrderStatus) === \App\Support\SaleDelivery::DELIVERED ? 'selected' : '' }}>Teslim edildi</option>
+                    <option value="ssh" {{ old('deliveryStatus', $currentOrderStatus) === \App\Support\SaleDelivery::SSH ? 'selected' : '' }}>SSH var</option>
                 </select>
+                @error('deliveryStatus')
+                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
                 @if($sale->serviceTickets->isEmpty())
                 <p class="mt-2 text-xs text-neutral-500">SSH kaydı oluşturmak için <a href="{{ route('service-tickets.create', ['saleId' => $sale->id, 'customerId' => $sale->customerId]) }}" class="text-emerald-600 hover:text-emerald-700">yeni servis kaydı</a> açabilirsiniz.</p>
                 @endif
+            </div>
+            <div x-show="deliveryStatus === 'delivered'" x-cloak>
+                <label class="form-label" for="deliveredAt">Teslim tarihi</label>
+                <input
+                    type="date"
+                    id="deliveredAt"
+                    name="deliveredAt"
+                    value="{{ old('deliveredAt', $sale->deliveredAt?->format('Y-m-d') ?? now()->format('Y-m-d')) }}"
+                    class="form-input min-h-[44px]"
+                    :required="deliveryStatus === 'delivered'"
+                    :disabled="deliveryStatus !== 'delivered'"
+                >
+                @error('deliveredAt')
+                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
             </div>
             <div class="flex gap-3 justify-end pt-2">
                 <button type="button" @click="showStatusModal = false" class="btn-secondary min-h-[44px]">İptal</button>

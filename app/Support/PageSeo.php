@@ -23,9 +23,7 @@ class PageSeo
 {
     public static function siteName(): string
     {
-        $company = \App\Models\Company::first();
-
-        return $company?->appName ?? $company?->name ?? 'Mobilya Takip';
+        return CompanyBranding::siteName();
     }
 
     /** @param  array<int, array{name: string, url?: string|null}>  $breadcrumbs */

@@ -605,7 +605,7 @@ function updateQuoteCustomerInfo(customerId) {
         row.classList.toggle('hidden', v === '—');
     };
     setRow('Phone', c.phone);
-    setRow('Email', c.email);
+    setRow('E-posta', c.email);
     setRow('Address', c.address);
     const taxParts = [c.identityNumber, c.taxNumber, c.taxOffice].filter(Boolean);
     setRow('Tax', taxParts.length ? taxParts.join(' · ') : null);

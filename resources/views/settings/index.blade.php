@@ -57,7 +57,7 @@
             <div class="card-header">Firma Bilgileri</div>
             <div class="p-5">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label class="form-label">Uygulama Adı</label><input type="text" name="appName" value="{{ old('appName', $company?->appName ?? 'Mobilya Takip') }}" class="form-input" placeholder="Mobilya Takip"><p class="mt-1 text-xs text-neutral-500 dark:text-slate-400">Sistemdeki "Mobilya Takip" yazıları bu adla değiştirilir.</p></div>
+                    <div><label class="form-label">Uygulama Adı</label><input type="text" name="appName" value="{{ old('appName', $company?->appName) }}" class="form-input" placeholder="{{ \App\Support\CompanyBranding::siteName($company) }}"><p class="mt-1 text-xs text-neutral-500 dark:text-slate-400">Menü, giriş ve link paylaşımında görünen ad. Boş bırakılırsa firma adı kullanılır.</p></div>
                     <div><label class="form-label">Firma Adı</label><input type="text" name="name" value="{{ old('name', $company?->name) }}" class="form-input" placeholder="Firma adı"></div>
                     <div><label class="form-label">Vergi No</label><input type="text" name="taxNumber" value="{{ old('taxNumber', $company?->taxNumber) }}" class="form-input"></div>
                     <div><label class="form-label">Vergi Dairesi</label><input type="text" name="taxOffice" value="{{ old('taxOffice', $company?->taxOffice) }}" class="form-input"></div>
@@ -95,7 +95,7 @@
         <div x-show="activeTab === 'seo'" x-cloak class="card overflow-hidden mb-6">
             <div class="card-header">SEO Ayarları</div>
             <div class="p-5">
-                <p class="text-sm text-neutral-500 dark:text-slate-400 mb-4">Fatura ve PDF çıktıları, arama motoru meta bilgileri.</p>
+                <p class="text-sm text-neutral-500 dark:text-slate-400 mb-4">Link paylaşımında (WhatsApp, iMessage vb.) görünen başlık ve açıklama. Boş bırakılırsa firma adı kullanılır.</p>
                 <div class="space-y-4">
                     <div><label class="form-label">Meta Başlık (max 70)</label><input type="text" name="metaTitle" value="{{ old('metaTitle', $company?->metaTitle ?? $company?->name) }}" class="form-input" maxlength="70"></div>
                     <div><label class="form-label">Meta Açıklama (max 160)</label><textarea name="metaDescription" rows="2" class="form-input form-textarea" maxlength="160">{{ old('metaDescription', $company?->metaDescription) }}</textarea></div>

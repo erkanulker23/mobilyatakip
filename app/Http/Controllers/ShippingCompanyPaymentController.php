@@ -35,7 +35,7 @@ class ShippingCompanyPaymentController extends Controller
             ->orderBy('purchaseDate', 'desc')
             ->get();
         $sales = $this->salesForSelect();
-        $serviceTickets = $this->serviceTicketsForSelect();
+        $serviceTickets = $this->serviceTicketsForSelect($shippingCompanyPayment->shippingCompanyId);
         $linkType = $this->resolveLinkType($shippingCompanyPayment);
 
         return view('shipping-company-payments.edit', compact(
@@ -62,14 +62,17 @@ class ShippingCompanyPaymentController extends Controller
             ->get();
 
         $sales = $this->salesForSelect();
-        $serviceTickets = $this->serviceTicketsForSelect();
+        $serviceTickets = $this->serviceTicketsForSelect($shippingCompanyId);
 
         $totalPaid = null;
         if ($shippingCompanyId) {
             $totalPaid = (float) ShippingCompanyPayment::where('shippingCompanyId', $shippingCompanyId)->sum('amount');
         }
 
-        $linkType = old('linkType', '');
+        $preselectedSaleId = $request->get('saleId');
+        $preselectedServiceTicketId = $request->get('serviceTicketId');
+        $preselectedPurchaseId = $request->get('purchaseId');
+        $linkType = old('linkType', $request->get('linkType', $preselectedSaleId ? 'sale' : ($preselectedServiceTicketId ? 'service_ticket' : ($preselectedPurchaseId ? 'purchase' : ''))));
 
         return view('shipping-company-payments.create', compact(
             'shippingCompanies',
@@ -80,6 +83,9 @@ class ShippingCompanyPaymentController extends Controller
             'shippingCompanyId',
             'totalPaid',
             'linkType',
+            'preselectedSaleId',
+            'preselectedServiceTicketId',
+            'preselectedPurchaseId',
         ));
     }
 
@@ -169,13 +175,14 @@ class ShippingCompanyPaymentController extends Controller
     }
 
     /** @return \Illuminate\Database\Eloquent\Collection<int, ServiceTicket> */
-    private function serviceTicketsForSelect()
+    private function serviceTicketsForSelect(?string $shippingCompanyId = null)
     {
         return ServiceTicket::with(['customer', 'sale'])
+            ->when($shippingCompanyId, fn ($q) => $q->where('shippingCompanyId', $shippingCompanyId))
             ->orderBy('openedAt', 'desc')
             ->orderBy('createdAt', 'desc')
             ->limit(300)
-            ->get(['id', 'ticketNumber', 'customerId', 'saleId', 'openedAt', 'status']);
+            ->get(['id', 'ticketNumber', 'customerId', 'saleId', 'openedAt', 'status', 'shippingCompanyId']);
     }
 
     private function resolveLinkType(ShippingCompanyPayment $payment): string
@@ -199,7 +206,7 @@ class ShippingCompanyPaymentController extends Controller
     private function validatePayment(Request $request, bool $creating): array
     {
         $rules = [
-            'linkType' => 'nullable|in:,purchase,sale,service_ticket,manual',
+            'linkType' => 'required|in:purchase,sale,service_ticket,manual',
             'purchaseId' => 'nullable|exists:purchases,id',
             'saleId' => 'nullable|exists:sales,id',
             'serviceTicketId' => 'nullable|exists:service_tickets,id',
@@ -237,7 +244,7 @@ class ShippingCompanyPaymentController extends Controller
             throw ValidationException::withMessages(['purchaseId' => 'Alış faturası seçiniz.']);
         }
         if ($linkType === 'sale' && empty($validated['saleId'])) {
-            throw ValidationException::withMessages(['saleId' => 'Satış seçiniz.']);
+            throw ValidationException::withMessages(['saleId' => 'Sipariş seçiniz.']);
         }
         if ($linkType === 'service_ticket' && empty($validated['serviceTicketId'])) {
             throw ValidationException::withMessages(['serviceTicketId' => 'SSH kaydı seçiniz.']);
@@ -268,7 +275,7 @@ class ShippingCompanyPaymentController extends Controller
         } elseif (! empty($validated['saleId'])) {
             $sale = Sale::find($validated['saleId']);
             if ($sale) {
-                $desc .= ' - Satış: ' . $sale->saleNumber;
+                $desc .= ' - Sipariş: ' . $sale->saleNumber;
             }
         } elseif (! empty($validated['serviceTicketId'])) {
             $ticket = ServiceTicket::find($validated['serviceTicketId']);

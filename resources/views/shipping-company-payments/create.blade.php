@@ -12,7 +12,7 @@
         <span class="text-neutral-700 dark:text-neutral-300">Nakliye Ödemesi Yap</span>
     </div>
     <h1 class="page-title">Nakliye Ödemesi Yap</h1>
-    <p class="page-desc">Nakliye firmasına ödeme kaydı oluşturun — alış, satış, SSH veya manuel açıklama ile ilişkilendirebilirsiniz</p>
+    <p class="page-desc">Nakliye firmasına ödeme kaydı — ürün teslimatında sipariş, SSH ödemesinde servis kaydı seçin</p>
 </div>
 
 @if(session('error'))
@@ -44,6 +44,9 @@
             'sales' => $sales,
             'serviceTickets' => $serviceTickets,
             'linkType' => $linkType,
+            'preselectedSaleId' => $preselectedSaleId ?? null,
+            'preselectedServiceTicketId' => $preselectedServiceTicketId ?? null,
+            'preselectedPurchaseId' => $preselectedPurchaseId ?? null,
         ])
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -101,12 +104,26 @@ document.addEventListener('DOMContentLoaded', function() {
         placeholder: 'Nakliye firması ara veya seçin...',
         searchField: ['text'],
         onChange: function(value) {
+            const params = new URLSearchParams(window.location.search);
             if (value) {
-                const url = createUrl + (createUrl.indexOf('?') >= 0 ? '&' : '?') + 'shippingCompanyId=' + encodeURIComponent(value);
-                window.location = url;
+                params.set('shippingCompanyId', value);
             } else {
-                window.location = createUrl;
+                params.delete('shippingCompanyId');
             }
+            const linkTypeEl = document.getElementById('payment-link-type');
+            if (linkTypeEl?.value) {
+                params.set('linkType', linkTypeEl.value);
+            }
+            const saleEl = document.getElementById('payment-sale-id');
+            if (saleEl?.value) {
+                params.set('saleId', saleEl.value);
+            }
+            const sshEl = document.getElementById('payment-service-ticket-id');
+            if (sshEl?.value) {
+                params.set('serviceTicketId', sshEl.value);
+            }
+            const qs = params.toString();
+            window.location = createUrl + (qs ? '?' + qs : '');
         }
     });
 });

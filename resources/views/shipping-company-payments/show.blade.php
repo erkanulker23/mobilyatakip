@@ -71,7 +71,7 @@
             @endif
             @if($shippingCompanyPayment->sale)
             <div>
-                <dt class="form-label">İlgili satış</dt>
+                <dt class="form-label">Ürün teslimatı (sipariş)</dt>
                 <dd class="font-medium">
                     <a href="{{ route('sales.show', $shippingCompanyPayment->sale) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">{{ $shippingCompanyPayment->sale->saleNumber ?? '—' }}</a>
                     <span class="text-neutral-500 text-sm">({{ $shippingCompanyPayment->sale->customer?->name ?? '' }})</span>

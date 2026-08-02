@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Dashboard')
+@section('title', 'Kontrol Paneli')
 @section('content')
 <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800/60 p-4 sm:p-5">
     <div class="flex gap-3 sm:gap-4">
@@ -18,7 +18,7 @@
 </div>
 
 <div class="mb-8">
-    <h1 class="page-title">Dashboard</h1>
+    <h1 class="page-title">Kontrol Paneli</h1>
     <p class="page-desc">İstatistiklerinize genel bakış</p>
 </div>
 

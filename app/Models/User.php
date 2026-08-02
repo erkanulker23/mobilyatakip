@@ -28,12 +28,14 @@ class User extends Authenticatable implements CanResetPasswordContract
         'role',
         'isActive',
         'photoUrl',
+        'notificationsDismissedAt',
     ];
 
     protected $hidden = ['password', 'passwordHash', 'remember_token'];
 
     protected $casts = [
         'isActive' => 'boolean',
+        'notificationsDismissedAt' => 'datetime',
     ];
 
     protected static function booted(): void

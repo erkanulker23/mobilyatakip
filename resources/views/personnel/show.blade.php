@@ -64,7 +64,7 @@
 
     <div class="card p-5 space-y-3 md:col-span-1 lg:col-span-2">
         <h2 class="text-sm font-semibold text-neutral-900 dark:text-white">Sipariş Özeti</h2>
-        <dl class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+        <dl class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-sm">
             <div class="rounded-lg bg-neutral-50 dark:bg-slate-800/60 p-3">
                 <dt class="text-neutral-500 text-xs">Toplam sipariş</dt>
                 <dd class="mt-1 text-lg font-semibold tabular-nums">{{ $salesStats->count }}</dd>
@@ -77,11 +77,82 @@
                 <dt class="text-neutral-500 text-xs">Toplam ciro</dt>
                 <dd class="mt-1 text-lg font-semibold tabular-nums">₺{{ number_format($salesStats->total, 0, ',', '.') }}</dd>
             </div>
+            <div class="rounded-lg bg-red-50 dark:bg-red-950/30 p-3 border border-red-100 dark:border-red-900/40">
+                <dt class="text-red-700 dark:text-red-300 text-xs">Alınması gereken ödeme</dt>
+                <dd class="mt-1 text-lg font-semibold tabular-nums text-red-700 dark:text-red-300">₺{{ number_format($salesStats->totalReceivable ?? 0, 0, ',', '.') }}</dd>
+            </div>
             <div class="rounded-lg bg-neutral-50 dark:bg-slate-800/60 p-3">
                 <dt class="text-neutral-500 text-xs">Bu ay</dt>
                 <dd class="mt-1 font-semibold tabular-nums">{{ $salesStats->monthCount }} sipariş</dd>
             </div>
         </dl>
+    </div>
+</div>
+
+<div class="card overflow-hidden mb-6 w-full">
+    <div class="px-6 py-4 border-b border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/30 flex items-center justify-between gap-3 flex-wrap">
+        <div>
+            <h2 class="text-lg font-semibold text-neutral-900 dark:text-white">Termini 1 Hafta Kalan Müşteriler</h2>
+            <p class="text-sm text-neutral-600 dark:text-slate-400 mt-1">Önümüzdeki 7 gün içinde termin tarihi gelen siparişler (gecikenler dahil)</p>
+        </div>
+        @if($upcomingDueSales->isNotEmpty())
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">{{ $upcomingDueSales->count() }} sipariş</span>
+        @endif
+    </div>
+    <div class="overflow-x-auto">
+        @if($upcomingDueSales->isEmpty())
+        <div class="px-6 py-10 text-center text-neutral-500 dark:text-slate-400">
+            Önümüzdeki 7 gün içinde termin tarihi olan sipariş yok.
+        </div>
+        @else
+        <table class="min-w-full w-full">
+            <thead>
+                <tr class="border-b border-neutral-100 dark:border-slate-700">
+                    <th class="table-th">Sipariş No</th>
+                    <th class="table-th">Müşteri</th>
+                    <th class="table-th">Telefon</th>
+                    <th class="table-th">Termin</th>
+                    <th class="table-th">Kalan Süre</th>
+                    <th class="table-th">Teslimat</th>
+                    <th class="table-th text-right w-24">İşlem</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-neutral-100 dark:divide-slate-700">
+                @foreach($upcomingDueSales as $sale)
+                @php
+                    $daysLeft = $sale->dueDate ? (int) now()->startOfDay()->diffInDays($sale->dueDate, false) : null;
+                    if ($daysLeft === null) {
+                        $daysLabel = '—';
+                        $daysClass = 'text-neutral-500';
+                    } elseif ($daysLeft < 0) {
+                        $daysLabel = abs($daysLeft) . ' gün gecikti';
+                        $daysClass = 'text-red-600 dark:text-red-400 font-medium';
+                    } elseif ($daysLeft === 0) {
+                        $daysLabel = 'Bugün';
+                        $daysClass = 'text-amber-600 dark:text-amber-400 font-medium';
+                    } else {
+                        $daysLabel = $daysLeft . ' gün';
+                        $daysClass = $daysLeft <= 3 ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-neutral-600 dark:text-slate-300';
+                    }
+                    $terminClass = $daysLeft !== null && $daysLeft < 0 ? 'text-red-600 dark:text-red-400 font-medium' : ($daysLeft !== null && $daysLeft <= 3 ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-neutral-600 dark:text-slate-300');
+                @endphp
+                <tr class="hover:bg-neutral-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                    <td class="table-td">
+                        <a href="{{ route('sales.show', $sale) }}" class="font-medium text-neutral-900 dark:text-white hover:text-emerald-600">{{ $sale->saleNumber }}</a>
+                    </td>
+                    <td class="table-td">{{ $sale->customer?->name ?? '—' }}</td>
+                    <td class="table-td text-neutral-600 dark:text-slate-300">{{ $sale->customer?->phone ?? '—' }}</td>
+                    <td class="table-td {{ $terminClass }}">{{ $sale->dueDate?->format('d.m.Y') ?? '—' }}</td>
+                    <td class="table-td {{ $daysClass }}">{{ $daysLabel }}</td>
+                    <td class="table-td">@include('partials.delivery-status-badge', ['sale' => $sale])</td>
+                    <td class="table-td text-right">
+                        <a href="{{ route('sales.show', $sale) }}" class="text-sm font-medium text-emerald-600 hover:text-emerald-700">Gör</a>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        @endif
     </div>
 </div>
 

@@ -169,7 +169,7 @@
                             @if($pm->purchase)
                             <a href="{{ route('purchases.show', $pm->purchase) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">Alış: {{ $pm->purchase->purchaseNumber }}</a>
                             @elseif($pm->sale)
-                            <a href="{{ route('sales.show', $pm->sale) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">Satış: {{ $pm->sale->saleNumber }}</a>
+                            <a href="{{ route('sales.show', $pm->sale) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">Sipariş: {{ $pm->sale->saleNumber }}</a>
                             @elseif($pm->serviceTicket)
                             <a href="{{ route('service-tickets.show', $pm->serviceTicket) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">SSH: {{ $pm->serviceTicket->ticketNumber }}</a>
                             @elseif($pm->paymentFor)

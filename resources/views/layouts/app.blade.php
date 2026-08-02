@@ -21,12 +21,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     @php
         $pageTitle = trim($__env->yieldContent('title'));
-        $siteName = $company?->appName ?? $company?->name ?? 'Mobilya Takip';
-        $documentTitle = $pageTitle !== '' ? $pageTitle . ' | ' . $siteName : ($company?->metaTitle ?? $siteName);
-        $metaDescription = trim($__env->yieldContent('meta_description'));
-        if ($metaDescription === '') {
-            $metaDescription = $company?->metaDescription ?? '';
-        }
+        $metaDescriptionOverride = trim($__env->yieldContent('meta_description'));
         $canonicalUrl = trim($__env->yieldContent('canonical'));
         if ($canonicalUrl === '') {
             $canonicalUrl = url()->current();
@@ -35,30 +30,14 @@
         if ($robotsContent === '') {
             $robotsContent = 'noindex, nofollow';
         }
-        $metaDescriptionPlain = $metaDescription !== '' ? \Illuminate\Support\Str::limit(preg_replace('/\s+/', ' ', strip_tags($metaDescription)) ?? '', 160) : '';
     @endphp
-    <title>{{ $documentTitle }}</title>
-    @if($metaDescriptionPlain !== '')
-    <meta name="description" content="{{ $metaDescriptionPlain }}">
-    @endif
-    <link rel="canonical" href="{{ $canonicalUrl }}">
-    <meta name="robots" content="{{ $robotsContent }}">
-    <meta property="og:type" content="website">
-    <meta property="og:locale" content="tr_TR">
-    <meta property="og:site_name" content="{{ $siteName }}">
-    <meta property="og:title" content="{{ $documentTitle }}">
-    @if($metaDescriptionPlain !== '')
-    <meta property="og:description" content="{{ $metaDescriptionPlain }}">
-    @endif
-    <meta property="og:url" content="{{ $canonicalUrl }}">
-    @if($company?->logoDisplayUrl())
-    <meta property="og:image" content="{{ $company->logoDisplayUrl() }}">
-    @endif
-    <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="{{ $documentTitle }}">
-    @if($metaDescriptionPlain !== '')
-    <meta name="twitter:description" content="{{ $metaDescriptionPlain }}">
-    @endif
+    @include('partials.site-meta', [
+        'company' => $company,
+        'pageTitle' => $pageTitle,
+        'metaDescription' => $metaDescriptionOverride !== '' ? $metaDescriptionOverride : null,
+        'canonicalUrl' => $canonicalUrl,
+        'robots' => $robotsContent,
+    ])
     @stack('structured_data')
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -242,6 +221,35 @@
         .ts-dropdown.sale-product-dropdown .option:last-child { border-bottom: 0; }
         .dark .ts-dropdown.sale-product-dropdown .option { border-bottom-color: rgba(255,255,255,.06); }
         @media (max-width: 1023px) { main { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); } }
+        @media (max-width: 767px) {
+            .page-title { font-size: 1.375rem; }
+            .table-th, .table-td { padding: 0.75rem 0.875rem; }
+            .table-td { font-size: 0.875rem; }
+            .card > .overflow-x-auto {
+                -webkit-overflow-scrolling: touch;
+                overscroll-behavior-x: contain;
+            }
+            .card > .overflow-x-auto > table { min-width: 34rem; }
+            .cell-phone { white-space: nowrap; min-width: 8.75rem; }
+            .col-hide-mobile { display: none; }
+        }
+        .pagination-nav { width: 100%; }
+        .pagination-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-height: 2.75rem; padding: 0.5rem 0.875rem;
+            font-size: 0.875rem; font-weight: 500; line-height: 1.25rem;
+            border-radius: 0.625rem; border: 1px solid #e5e5e5;
+            background: #fff; color: #404040;
+            transition: background .15s, border-color .15s, color .15s;
+        }
+        .pagination-btn:hover { background: #fafafa; border-color: #d4d4d4; color: #171717; }
+        .pagination-btn-icon { min-width: 2.75rem; padding-left: 0.625rem; padding-right: 0.625rem; }
+        .pagination-btn-active { background: #171717; border-color: #171717; color: #fff; }
+        .pagination-btn-disabled { opacity: .55; cursor: not-allowed; background: #fafafa; color: #a3a3a3; }
+        .dark .pagination-btn { background: #262626; border-color: #404040; color: #e5e5e5; }
+        .dark .pagination-btn:hover { background: #404040; border-color: #525252; color: #f5f5f5; }
+        .dark .pagination-btn-active { background: #059669; border-color: #059669; color: #fff; }
+        .dark .pagination-btn-disabled { background: #171717; color: #737373; }
         @media print { .no-print { display: none !important; } aside { display: none !important; } }
     </style>
     @stack('head')
@@ -279,8 +287,20 @@
                         @endif
                     </button>
                     <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="absolute right-0 mt-2 w-[min(320px,100vw-2rem)] rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xl z-[60] overflow-hidden">
-                        <div class="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/80">
-                            <h3 class="font-semibold text-neutral-900">Bildirimler</h3>
+                        <div class="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/80 flex items-center justify-between gap-2">
+                            <h3 class="font-semibold text-neutral-900 dark:text-white">Bildirimler</h3>
+                            @if(($recentActivities ?? collect())->isNotEmpty())
+                            <div class="flex items-center gap-1 shrink-0">
+                                <form method="POST" action="{{ route('notifications.dismiss') }}">
+                                    @csrf
+                                    <button type="submit" class="text-[11px] font-medium px-2 py-1 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors">Okundu</button>
+                                </form>
+                                <form method="POST" action="{{ route('notifications.dismiss') }}">
+                                    @csrf
+                                    <button type="submit" class="text-[11px] font-medium px-2 py-1 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors">Temizle</button>
+                                </form>
+                            </div>
+                            @endif
                         </div>
                         <div class="max-h-72 overflow-y-auto">
                             @if(session('success'))
@@ -356,18 +376,18 @@
         <div x-show="sidebarOpen" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" @click="sidebarOpen = false" class="fixed inset-0 bg-black/40 z-40 lg:hidden backdrop-blur-sm"></div>
         <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'" class="fixed lg:static inset-y-0 left-0 w-64 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 flex flex-col shrink-0 z-40 transform transition-transform duration-200 ease-out border-r border-neutral-200 dark:border-neutral-800 pb-[env(safe-area-inset-bottom)] lg:pb-0">
             <div class="h-16 flex items-center justify-center px-4 border-b border-neutral-200 dark:border-neutral-800 shrink-0">
-                <a href="{{ route('dashboard') }}" class="brand-logo flex items-center justify-center w-full min-w-0" title="{{ $company?->appName ?? $company?->name ?? 'Mobilya Takip' }}">
+                <a href="{{ route('dashboard') }}" class="brand-logo flex items-center justify-center w-full min-w-0" title="{{ \App\Support\CompanyBranding::siteName($company) }}">
                     @if($company?->logoUrl)
                         <img src="{{ $company->logoDisplayUrl() }}" alt="{{ $company->appName ?? $company->name ?? 'Logo' }}">
                     @else
-                        <span class="text-xl text-neutral-900 dark:text-white uppercase truncate text-center">{{ $company?->appName ?? $company?->name ?? 'Mobilya Takip' }}</span>
+                        <span class="text-xl text-neutral-900 dark:text-white uppercase truncate text-center">{{ \App\Support\CompanyBranding::siteName($company) }}</span>
                     @endif
                 </a>
             </div>
             <nav class="flex-1 px-3 py-4 overflow-y-auto" aria-label="Ana menü">
                 <a href="{{ route('dashboard') }}" class="nav-link flex items-center gap-3 px-3 py-2 text-sm {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z"></path></svg>
-                    Dashboard
+                    Kontrol Paneli
                 </a>
                 <a href="{{ route('tasks.index') }}" class="nav-link flex items-center gap-3 px-3 py-2 text-sm {{ request()->routeIs('tasks.*') ? 'active' : '' }}">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>

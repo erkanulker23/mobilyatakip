@@ -16,7 +16,7 @@
             @if(!($purchase->isCancelled ?? false))
             <a href="{{ route('supplier-payments.create', ['supplierId' => $purchase->supplierId]) }}" class="btn-primary">Tedarikçi Ödeme Yap</a>
             @if($purchase->shippingCompanyId)
-            <a href="{{ route('shipping-company-payments.create', ['shippingCompanyId' => $purchase->shippingCompanyId]) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 font-medium">Nakliye Ödemesi Yap</a>
+            <a href="{{ route('shipping-company-payments.create', ['shippingCompanyId' => $purchase->shippingCompanyId, 'linkType' => 'purchase', 'purchaseId' => $purchase->id]) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 font-medium">Nakliye Ödemesi Yap</a>
             @endif
             <form method="POST" action="{{ route('purchases.cancel', $purchase) }}" class="inline" onsubmit="return confirm('Bu alışı iptal etmek istediğinize emin misiniz?');">
                 @csrf

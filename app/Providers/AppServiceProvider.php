@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\AuditLog;
 use App\Support\ActivityMessage;
 use App\Support\ProductionCommandGuard;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -26,6 +27,10 @@ class AppServiceProvider extends ServiceProvider
     {
         ProductionCommandGuard::register();
 
+        app()->setLocale(config('app.locale', 'tr'));
+        Paginator::defaultView('vendor.pagination.tailwind');
+        Paginator::defaultSimpleView('vendor.pagination.tailwind');
+
         Blade::directive('money', function (string $expression) {
             return "<?php echo \\App\\Support\\Money::format($expression); ?>";
         });
@@ -37,8 +42,11 @@ class AppServiceProvider extends ServiceProvider
                 return;
             }
 
+            $dismissedAt = auth()->user()->notificationsDismissedAt;
+
             $recentActivities = AuditLog::query()
                 ->with('user')
+                ->when($dismissedAt, fn ($q) => $q->where('createdAt', '>', $dismissedAt))
                 ->orderByDesc('createdAt')
                 ->limit(25)
                 ->get()

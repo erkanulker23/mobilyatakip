@@ -73,6 +73,7 @@ class ActivityMessage
         $displayUser = $userName ?: 'Sistem';
 
         return [
+            'id' => $log->id,
             'message' => "{$displayUser} {$text}",
             'text' => $text,
             'user' => $displayUser,

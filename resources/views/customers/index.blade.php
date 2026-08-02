@@ -38,9 +38,9 @@
                 <tr class="border-b border-neutral-100">
                     <th class="table-th">İsim</th>
                     <th class="table-th">Telefon</th>
-                    <th class="table-th">Adres</th>
+                    <th class="table-th col-hide-mobile">Adres</th>
                     <th class="table-th">Cari</th>
-                    <th class="table-th">Tarih</th>
+                    <th class="table-th col-hide-mobile">Tarih</th>
                     <th class="table-th text-right">İşlemler</th>
                 </tr>
             </thead>
@@ -51,15 +51,15 @@
                     <td class="table-td">
                         <a href="{{ route('customers.show', $c) }}" class="font-medium text-neutral-900 hover:underline">{{ $c->name }}</a>
                     </td>
-                    <td class="table-td">{{ $c->phone ?? '—' }}</td>
-                    <td class="table-td text-neutral-500 max-w-xs truncate">{{ $c->full_address ?: '—' }}</td>
+                    <td class="table-td cell-phone">{{ $c->phone ?? '—' }}</td>
+                    <td class="table-td text-neutral-500 max-w-xs truncate col-hide-mobile">{{ $c->full_address ?: '—' }}</td>
                     <td class="table-td">
                         @include('partials.payment-status-badge', ['status' => ['key' => $cari['key'], 'label' => $cari['label']]])
                         @if($cari['amount'] > 0)
                         <span class="block text-xs text-neutral-500 mt-0.5">{{ number_format($cari['amount'], 0, ',', '.') }} ₺</span>
                         @endif
                     </td>
-                    <td class="table-td text-neutral-500">{{ $c->createdAt?->format('d.m.Y') ?? '—' }}</td>
+                    <td class="table-td text-neutral-500 col-hide-mobile">{{ $c->createdAt?->format('d.m.Y') ?? '—' }}</td>
                     <td class="table-td">
                         @include('partials.action-buttons', [
                             'edit' => route('customers.edit', $c),
@@ -79,7 +79,7 @@
         </table>
     </div>
     @if($customers->hasPages())
-    <div class="px-5 py-3 border-t border-neutral-100 text-sm text-neutral-500">{{ $customers->links() }}</div>
+    <div class="px-4 sm:px-5 py-3 border-t border-neutral-100">{{ $customers->links() }}</div>
     @endif
 </div>
 

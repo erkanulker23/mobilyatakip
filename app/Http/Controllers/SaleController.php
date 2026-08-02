@@ -22,6 +22,7 @@ use App\Support\SaleDocument;
 use App\Support\DrawingFiles;
 use App\Support\ItemDescription;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -451,13 +452,16 @@ class SaleController extends Controller
 
         $validated = $request->validate([
             'deliveryStatus' => 'required|in:pending,delivered,ssh',
+            'deliveredAt' => 'nullable|date|required_if:deliveryStatus,delivered',
+        ], [
+            'deliveredAt.required_if' => 'Teslim tarihi seçilmelidir.',
         ]);
 
         $status = $validated['deliveryStatus'];
         if ($status === 'delivered') {
             $sale->update([
                 'orderStatus' => 'delivered',
-                'deliveredAt' => $sale->deliveredAt ?? now(),
+                'deliveredAt' => Carbon::parse($validated['deliveredAt'])->startOfDay(),
             ]);
             $message = 'Sipariş teslim edildi olarak işaretlendi.';
         } elseif ($status === 'ssh') {

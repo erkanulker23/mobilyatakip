@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Personnel;
 use App\Services\AuditService;
 use App\Services\PersonnelAccessService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -110,20 +111,35 @@ class PersonnelController extends Controller
 
         $salesQuery = $personnel->sales()->with('customer')->orderByDesc('saleDate')->orderByDesc('createdAt');
 
+        $activeSalesQuery = (clone $salesQuery)->where('isCancelled', false);
+
         $salesStats = (object) [
             'count' => (clone $salesQuery)->count(),
-            'activeCount' => (clone $salesQuery)->where('isCancelled', false)->count(),
-            'total' => (float) (clone $salesQuery)->where('isCancelled', false)->sum('grandTotal'),
-            'monthCount' => (clone $salesQuery)->where('isCancelled', false)->whereMonth('saleDate', now()->month)->whereYear('saleDate', now()->year)->count(),
+            'activeCount' => (clone $activeSalesQuery)->count(),
+            'total' => (float) (clone $activeSalesQuery)->sum('grandTotal'),
+            'totalReceivable' => (float) (clone $activeSalesQuery)
+                ->selectRaw('COALESCE(SUM(GREATEST(grandTotal - COALESCE(paidAmount, 0), 0)), 0) as receivable')
+                ->value('receivable'),
+            'monthCount' => (clone $activeSalesQuery)->whereMonth('saleDate', now()->month)->whereYear('saleDate', now()->year)->count(),
         ];
 
         $sales = $salesQuery->paginate(20)->withQueryString();
+
+        $terminHorizon = Carbon::today()->addDays(7);
+
+        $upcomingDueSales = $personnel->sales()
+            ->with('customer')
+            ->where('isCancelled', false)
+            ->whereNotNull('dueDate')
+            ->whereDate('dueDate', '<=', $terminHorizon)
+            ->orderBy('dueDate')
+            ->get();
 
         $quotes = $personnel->quotes()->with('customer')->orderByDesc('createdAt')->limit(10)->get();
 
         $viewingOwnProfile = auth()->user()?->personnel?->id === $personnel->id;
 
-        return view('personnel.show', compact('personnel', 'sales', 'quotes', 'salesStats', 'viewingOwnProfile'));
+        return view('personnel.show', compact('personnel', 'sales', 'quotes', 'salesStats', 'viewingOwnProfile', 'upcomingDueSales'));
     }
 
     public function edit(Personnel $personnel)

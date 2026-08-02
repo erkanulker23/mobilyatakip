@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\ValidatesTurkeyAddress;
 use App\Models\Company;
 use App\Services\AuditService;
+use App\Support\CompanyBranding;
 use App\Rules\TurkishTaxId;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -64,6 +65,12 @@ class SettingsController extends Controller
         if (empty($request->ntgsmPassword)) unset($validated['ntgsmPassword']);
         if (empty($request->efaturaPassword)) unset($validated['efaturaPassword']);
         if (empty($request->mailPassword)) unset($validated['mailPassword']);
+
+        $appName = trim((string) ($validated['appName'] ?? ''));
+        $firmaName = trim((string) ($validated['name'] ?? ''));
+        if ($appName === '' || (CompanyBranding::isGenericName($appName) && $firmaName !== '')) {
+            $validated['appName'] = null;
+        }
 
         // metaTitle/metaDescription kolonları yoksa çıkar (eski DB uyumluluğu)
         if (!Schema::hasColumn('companies', 'metaTitle')) unset($validated['metaTitle']);
