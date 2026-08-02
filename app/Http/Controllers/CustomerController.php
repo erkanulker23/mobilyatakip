@@ -7,10 +7,13 @@ use App\Http\Controllers\Concerns\ValidatesTurkeyAddress;
 use App\Imports\CustomersImport;
 use App\Models\Customer;
 use App\Models\Sale;
+use App\Rules\TurkishTaxId;
+use App\Rules\UniqueCustomerPhone;
+use App\Support\CustomerPhone;
 use App\Services\AuditService;
 use Illuminate\Support\Facades\DB;
-use App\Rules\TurkishTaxId;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -19,6 +22,31 @@ class CustomerController extends Controller
     use ValidatesTurkeyAddress;
 
     public function __construct(private AuditService $auditService) {}
+
+    /** @return list<string|UniqueCustomerPhone> */
+    private function phoneRules(?string $exceptCustomerId = null): array
+    {
+        return [
+            'nullable',
+            'string',
+            'max:20',
+            'regex:/^[0-9+][0-9\s\-()]{9,19}$/',
+            new UniqueCustomerPhone($exceptCustomerId),
+        ];
+    }
+
+    /** @param  array<string, mixed>  $validated */
+    private function assertCustomerPhones(array $validated): void
+    {
+        $phoneKey = CustomerPhone::normalize($validated['phone'] ?? null);
+        $phone2Key = CustomerPhone::normalize($validated['phone2'] ?? null);
+
+        if ($phoneKey !== null && $phone2Key !== null && $phoneKey === $phone2Key) {
+            throw ValidationException::withMessages([
+                'phone2' => 'Telefon 1 ve Telefon 2 aynı numara olamaz.',
+            ]);
+        }
+    }
 
     public function index(Request $request)
     {
@@ -56,8 +84,8 @@ class CustomerController extends Controller
             $validated = $request->validate(array_merge([
                 'name' => 'required|string|max:255',
                 'email' => 'nullable|email',
-                'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
-                'phone2' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
+                'phone' => $this->phoneRules(),
+                'phone2' => $this->phoneRules(),
             ], \App\Support\AddressFormat::validationRules()), [
                 'phone.regex' => 'Geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67)',
                 'phone2.regex' => 'Geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67)',
@@ -67,6 +95,11 @@ class CustomerController extends Controller
         }
         if ($message = \App\Support\AddressFormat::assertDistrictMatchesCity($validated)) {
             return response()->json(['message' => $message], 422);
+        }
+        try {
+            $this->assertCustomerPhones($validated);
+        } catch (ValidationException $e) {
+            return response()->json(['message' => collect($e->errors())->flatten()->first()], 422);
         }
         $customer = Customer::create([
             'name' => $validated['name'],
@@ -110,8 +143,8 @@ class CustomerController extends Controller
         $validated = $this->validateWithTurkeyAddress($request, [
             'name' => 'required|string|max:255',
             'email' => 'nullable|email',
-            'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
-            'phone2' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
+            'phone' => $this->phoneRules(),
+            'phone2' => $this->phoneRules(),
             'identityNumber' => ['nullable', 'string', 'size:11', 'regex:/^[0-9]+$/', new TurkishTaxId('tckn')],
             'taxNumber' => ['nullable', 'string', 'size:10', 'regex:/^[0-9]+$/', new TurkishTaxId('vkn')],
             'taxOffice' => 'nullable|string|max:255',
@@ -122,6 +155,7 @@ class CustomerController extends Controller
             'identityNumber.regex' => 'TC kimlik numarası sadece rakamlardan oluşmalıdır.',
             'taxNumber.size' => 'Vergi numarası 10 haneli olmalıdır.',
         ]);
+        $this->assertCustomerPhones($validated);
         $customer = Customer::create($validated);
         $this->auditService->logCreate('customer', $customer->id, ['name' => $customer->name]);
         return redirect()->route('customers.index')->with('success', 'Müşteri kaydedildi.');
@@ -154,8 +188,8 @@ class CustomerController extends Controller
         $validated = $this->validateWithTurkeyAddress($request, [
             'name' => 'required|string|max:255',
             'email' => 'nullable|email',
-            'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
-            'phone2' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
+            'phone' => $this->phoneRules($customer->id),
+            'phone2' => $this->phoneRules($customer->id),
             'identityNumber' => ['nullable', 'string', 'size:11', 'regex:/^[0-9]+$/', new TurkishTaxId('tckn')],
             'taxNumber' => ['nullable', 'string', 'size:10', 'regex:/^[0-9]+$/', new TurkishTaxId('vkn')],
             'taxOffice' => 'nullable|string|max:255',
@@ -167,6 +201,7 @@ class CustomerController extends Controller
             'identityNumber.regex' => 'TC kimlik numarası sadece rakamlardan oluşmalıdır.',
             'taxNumber.size' => 'Vergi numarası 10 haneli olmalıdır.',
         ]);
+        $this->assertCustomerPhones($validated);
         $oldData = ['name' => $customer->name];
         $customer->update($validated);
         $this->auditService->logUpdate('customer', $customer->id, $oldData, ['name' => $customer->name]);

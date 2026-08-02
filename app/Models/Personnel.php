@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Personnel extends BaseModel
@@ -11,6 +12,7 @@ class Personnel extends BaseModel
     protected $fillable = [
         'name',
         'email',
+        'userId',
         'phone',
         'category',
         'title',
@@ -27,5 +29,23 @@ class Personnel extends BaseModel
     public function quotes(): HasMany
     {
         return $this->hasMany(Quote::class, 'personnelId');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'userId');
+    }
+
+    public function hasSystemAccess(): bool
+    {
+        if (! $this->userId) {
+            return false;
+        }
+
+        if ($this->relationLoaded('user')) {
+            return (bool) ($this->user?->isActive);
+        }
+
+        return User::query()->whereKey($this->userId)->where('isActive', true)->exists();
     }
 }

@@ -34,6 +34,22 @@
                 <div><dt class="text-sm text-neutral-500">Telefon</dt><dd class="font-medium">{{ $personnel->phone ?: '-' }}</dd></div>
                 <div><dt class="text-sm text-neutral-500">Unvan</dt><dd class="font-medium">{{ $personnel->title ?: '-' }}</dd></div>
                 <div><dt class="text-sm text-neutral-500">Kategori</dt><dd class="font-medium">{{ $personnel->category ?: '-' }}</dd></div>
+                @if(auth()->user()?->isAdmin())
+                <div class="pt-2 border-t border-neutral-100 dark:border-slate-700">
+                    <dt class="text-sm text-neutral-500">Sistem erişimi</dt>
+                    <dd class="font-medium mt-1">
+                        @if($personnel->hasSystemAccess())
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                Giriş açık · {{ $personnel->user?->role === 'admin' ? 'Yönetici' : 'Personel' }}
+                            </span>
+                        @elseif($personnel->user)
+                            <span class="text-neutral-500">Hesap var, giriş kapalı</span>
+                        @else
+                            <span class="text-neutral-500">Sistem kullanıcısı değil</span>
+                        @endif
+                    </dd>
+                </div>
+                @endif
             </dl>
         </div>
     </div>

@@ -3,6 +3,7 @@
 namespace App\Imports;
 
 use App\Models\Customer;
+use App\Support\CustomerPhone;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
@@ -49,12 +50,28 @@ class CustomersImport implements ToCollection, WithHeadingRow
             $existing = $this->findExisting($row, $data);
 
             if ($existing) {
+                $phoneErrors = CustomerPhone::duplicateFieldErrors(
+                    $data['phone'] ?? $existing->phone,
+                    $data['phone2'] ?? $existing->phone2,
+                    $existing->id
+                );
+                if ($phoneErrors !== []) {
+                    $this->errors[] = 'Satır '.$line.': '.implode(' ', $phoneErrors);
+                    $this->skipped++;
+                    continue;
+                }
                 // Excel'de boş bırakılan alanlar mevcut veriyi silmesin
                 $existing->fill(array_filter($data, fn ($v) => $v !== null && $v !== ''));
                 $existing->isActive = $data['isActive'];
                 $existing->save();
                 $this->updated++;
             } else {
+                $phoneErrors = CustomerPhone::duplicateFieldErrors($data['phone'], $data['phone2']);
+                if ($phoneErrors !== []) {
+                    $this->errors[] = 'Satır '.$line.': '.implode(' ', $phoneErrors);
+                    $this->skipped++;
+                    continue;
+                }
                 Customer::create($data);
                 $this->created++;
             }
@@ -71,12 +88,26 @@ class CustomersImport implements ToCollection, WithHeadingRow
             }
         }
 
-        foreach (['identityNumber', 'taxNumber', 'email', 'phone'] as $key) {
-            if (!empty($data[$key])) {
+        foreach (['identityNumber', 'taxNumber', 'email'] as $key) {
+            if (! empty($data[$key])) {
                 $match = Customer::where($key, $data[$key])->first();
                 if ($match) {
                     return $match;
                 }
+            }
+        }
+
+        if (! empty($data['phone'])) {
+            $match = CustomerPhone::findOwner($data['phone']);
+            if ($match) {
+                return $match;
+            }
+        }
+
+        if (! empty($data['phone2'])) {
+            $match = CustomerPhone::findOwner($data['phone2']);
+            if ($match) {
+                return $match;
             }
         }
 

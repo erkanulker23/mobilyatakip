@@ -49,6 +49,9 @@
                 @error('category')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
         </div>
+
+        @include('partials.personnel-system-access-fields', ['personnel' => $personnel])
+
         <div class="flex gap-3 pt-2">
             <button type="submit" class="btn-primary">Kaydet</button>
             <a href="{{ route('personnel.index') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-200 text-neutral-700 rounded-lg hover:bg-slate-300 font-medium">İptal</a>

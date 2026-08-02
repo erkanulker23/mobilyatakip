@@ -167,6 +167,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/raporlar/tedarikci-cari/{supplier}', [\App\Http\Controllers\ReportsController::class, 'supplierLedgerDetail'])->name('reports.supplier-ledger-detail');
     Route::get('/raporlar/tedarikci-cari/{supplier}/yazdir', [\App\Http\Controllers\ReportsController::class, 'supplierLedgerDetailPrint'])->name('reports.supplier-ledger-detail.print');
 
+    Route::get('/profil', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profil', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profil/foto-sil', [\App\Http\Controllers\ProfileController::class, 'deletePhoto'])->name('profile.delete-photo');
+
     Route::middleware(['role:admin'])->group(function () {
         Route::get('/ayarlar', [\App\Http\Controllers\SettingsController::class, 'index'])->name('settings.index');
         Route::post('/ayarlar', [\App\Http\Controllers\SettingsController::class, 'update'])->name('settings.update');

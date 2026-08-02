@@ -376,16 +376,19 @@
             @auth
             @php
                 $user = auth()->user();
-                $initials = collect(explode(' ', $user->name ?? 'K'))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->join('');
             @endphp
             <div class="p-4 border-t border-neutral-200 dark:border-neutral-800">
-                <div class="flex items-center gap-3 px-2 py-2">
-                    <div class="w-9 h-9 rounded-full bg-neutral-900 dark:bg-neutral-700 text-white flex items-center justify-center text-xs font-semibold shrink-0">{{ $initials ?: 'K' }}</div>
+                <a href="{{ route('profile.edit') }}" class="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors {{ request()->routeIs('profile.*') ? 'bg-neutral-100 dark:bg-neutral-800' : '' }}">
+                    @if($user->photoDisplayUrl())
+                        <img src="{{ $user->photoDisplayUrl() }}" alt="" class="w-9 h-9 rounded-full object-cover shrink-0 border border-neutral-200 dark:border-neutral-600">
+                    @else
+                        <div class="w-9 h-9 rounded-full bg-neutral-900 dark:bg-neutral-700 text-white flex items-center justify-center text-xs font-semibold shrink-0">{{ $user->initials() }}</div>
+                    @endif
                     <div class="min-w-0 flex-1">
                         <p class="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">{{ $user->name ?? 'Kullanıcı' }}</p>
                         <p class="text-xs text-neutral-500 dark:text-neutral-400 truncate">{{ $user->email }}</p>
                     </div>
-                </div>
+                </a>
                 <form method="POST" action="{{ route('logout') }}" class="mt-1">
                     @csrf
                     <button type="submit" class="nav-link w-full flex items-center gap-3 px-3 py-2 text-sm text-neutral-500">

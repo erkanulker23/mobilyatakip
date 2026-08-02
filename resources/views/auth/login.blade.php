@@ -13,7 +13,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Giriş - Mobilya Takip</title>
+    <title>Giriş - {{ $company?->appName ?? $company?->name ?? 'Mobilya Takip' }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -45,7 +45,13 @@
     <div class="w-full max-w-[400px]">
         <div class="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 shadow-sm p-8">
             <div class="text-center mb-8">
-                <h1 class="text-xl font-semibold text-neutral-900 dark:text-neutral-100 tracking-tight">Mobilya Takip</h1>
+                @if($company?->logoUrl && $company->logoDisplayUrl())
+                    <div class="flex justify-center mb-3">
+                        <img src="{{ $company->logoDisplayUrl() }}" alt="{{ $company->appName ?? $company->name ?? 'Logo' }}" class="h-16 w-auto max-w-[12rem] object-contain mx-auto">
+                    </div>
+                @else
+                    <h1 class="text-xl font-semibold text-neutral-900 dark:text-neutral-100 tracking-tight">{{ $company?->appName ?? $company?->name ?? 'Mobilya Takip' }}</h1>
+                @endif
                 <p class="text-neutral-500 dark:text-neutral-400 text-sm mt-1.5">Hesabınıza giriş yapın</p>
             </div>
             <form method="POST" action="{{ route('login') }}" class="space-y-5" id="login-form">

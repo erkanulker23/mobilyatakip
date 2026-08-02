@@ -71,6 +71,9 @@
             <input type="checkbox" name="isActive" value="1" {{ old('isActive', $personnel->isActive ?? true) ? 'checked' : '' }} class="rounded border-slate-300 text-green-600 focus:ring-green-500">
             <label class="form-label mb-0">Aktif</label>
         </div>
+
+        @include('partials.personnel-system-access-fields', ['personnel' => $personnel])
+
         <div class="flex gap-3 pt-2">
             <button type="submit" class="btn-primary">Güncelle</button>
             <a href="{{ route('personnel.show', $personnel) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-200 text-neutral-700 rounded-lg hover:bg-slate-300 font-medium">İptal</a>

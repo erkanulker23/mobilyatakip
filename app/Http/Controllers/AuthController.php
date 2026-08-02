@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Company;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,7 +12,9 @@ class AuthController extends Controller
 {
     public function showLogin()
     {
-        return view('auth.login');
+        $company = Company::first();
+
+        return view('auth.login', compact('company'));
     }
 
     public function login(Request $request)
