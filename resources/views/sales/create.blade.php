@@ -223,34 +223,60 @@
                     </div>
                 </div>
 
-                {{-- Kapora --}}
+                {{-- İlk tahsilat --}}
+                @php
+                    $initialPaymentMode = old('initialPaymentMode', 'none');
+                @endphp
                 <div class="sale-form-section">
-                    <div class="sale-form-section-head"><h2 class="sale-form-section-title">Kapora (Opsiyonel)</h2></div>
+                    <div class="sale-form-section-head"><h2 class="sale-form-section-title">İlk Tahsilat (Opsiyonel)</h2></div>
                     <div class="sale-form-section-body">
-                        <div class="sale-meta-grid">
-                            <div>
+                        <p class="text-sm text-neutral-600 mb-4">Kapora veya siparişin tamamı tahsil edilebilir. Ödeme alınmayacaksa «Ödeme yok» bırakın.</p>
+                        <div class="flex flex-wrap gap-2 mb-5">
+                            <label class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer text-sm font-medium transition-colors {{ $initialPaymentMode === 'none' ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300' }}">
+                                <input type="radio" name="initialPaymentMode" value="none" class="sr-only" {{ $initialPaymentMode === 'none' ? 'checked' : '' }}>
+                                Ödeme yok
+                            </label>
+                            <label class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer text-sm font-medium transition-colors {{ $initialPaymentMode === 'kapora' ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300' }}">
+                                <input type="radio" name="initialPaymentMode" value="kapora" class="sr-only" {{ $initialPaymentMode === 'kapora' ? 'checked' : '' }}>
+                                Kapora
+                            </label>
+                            <label class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer text-sm font-medium transition-colors {{ $initialPaymentMode === 'full' ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300' }}">
+                                <input type="radio" name="initialPaymentMode" value="full" class="sr-only" {{ $initialPaymentMode === 'full' ? 'checked' : '' }}>
+                                Hepsi ödendi
+                            </label>
+                        </div>
+                        @error('initialPaymentMode')<p class="mb-3 text-sm text-red-600">{{ $message }}</p>@enderror
+
+                        <div id="initialPaymentDetails" class="{{ in_array($initialPaymentMode, ['kapora', 'full'], true) ? '' : 'hidden' }}">
+                            <div id="depositAmountWrap" class="mb-4 {{ $initialPaymentMode === 'kapora' ? '' : 'hidden' }}">
                                 <label class="form-label">Kapora Tutarı (₺)</label>
                                 <input type="text" inputmode="decimal" name="depositAmount" id="depositAmount" value="{{ old('depositAmount') ? money(old('depositAmount')) : '' }}" class="form-input min-h-[44px] money-input" placeholder="0" autocomplete="off">
                                 @error('depositAmount')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                             </div>
-                            <div>
-                                <label class="form-label">Ödeme Tipi</label>
-                                <select name="depositPaymentType" id="depositPaymentType" class="form-select min-h-[44px]">
-                                    @foreach(\App\Support\PaymentType::SELECTABLE as $value => $label)
-                                    <option value="{{ $value }}" {{ old('depositPaymentType', 'nakit') == $value ? 'selected' : '' }}>{{ $label }}</option>
-                                    @endforeach
-                                </select>
+                            <div id="fullPaymentHint" class="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-900 {{ $initialPaymentMode === 'full' ? '' : 'hidden' }}">
+                                <span class="font-semibold">Hepsi ödendi:</span> Genel toplamın tamamı tahsil edilecek — <span id="fullPaymentAmountDisplay" class="font-semibold tabular-nums">0 ₺</span>
                             </div>
-                            <div class="sm:col-span-2">
-                                @include('partials.payment-kasa-field', [
-                                    'kasalar' => $kasalar,
-                                    'name' => 'depositKasaId',
-                                    'id' => 'depositKasaId',
-                                    'paymentTypeId' => 'depositPaymentType',
-                                    'amountId' => 'depositAmount',
-                                    'errorName' => 'depositKasaId',
-                                    'wrapperClass' => '',
-                                ])
+                            <div class="sale-meta-grid">
+                                <div>
+                                    <label class="form-label">Ödeme Tipi</label>
+                                    <select name="depositPaymentType" id="depositPaymentType" class="form-select min-h-[44px]">
+                                        @foreach(\App\Support\PaymentType::SELECTABLE as $value => $label)
+                                        <option value="{{ $value }}" {{ old('depositPaymentType', 'nakit') == $value ? 'selected' : '' }}>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="sm:col-span-2">
+                                    @include('partials.payment-kasa-field', [
+                                        'kasalar' => $kasalar,
+                                        'name' => 'depositKasaId',
+                                        'id' => 'depositKasaId',
+                                        'paymentTypeId' => 'depositPaymentType',
+                                        'amountId' => 'depositAmount',
+                                        'paymentModeName' => 'initialPaymentMode',
+                                        'errorName' => 'depositKasaId',
+                                        'wrapperClass' => '',
+                                    ])
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -296,7 +322,7 @@
                         <span id="grandTotalCalculated">0 ₺</span>
                     </div>
                     <div id="depositSummaryRow" class="sale-summary-row hidden mt-2">
-                        <span class="text-emerald-300">Kapora</span>
+                        <span id="depositSummaryLabel" class="text-emerald-300">Kapora</span>
                         <strong id="depositSummaryDisplay" class="text-emerald-300">0 ₺</strong>
                     </div>
                     <div id="remainingSummaryRow" class="sale-summary-row hidden">
@@ -765,25 +791,36 @@ function updateSaleTotals() {
     if (grandTotalCalculatedEl) grandTotalCalculatedEl.textContent = fmt(grandTotalFromDisc) + ' ₺';
     const override = parseTrNum(grandTotalOverrideInp?.value);
     const finalGrand = !isNaN(override) && override > 0 ? override : grandTotalFromDisc;
-    const deposit = parseTrNum(document.getElementById('depositAmount')?.value) || 0;
+    const paymentMode = document.querySelector('input[name="initialPaymentMode"]:checked')?.value || 'none';
+    let deposit = 0;
+    if (paymentMode === 'kapora') {
+        deposit = parseTrNum(document.getElementById('depositAmount')?.value) || 0;
+    } else if (paymentMode === 'full') {
+        deposit = finalGrand;
+    }
     const remaining = Math.round((finalGrand - deposit) * 100) / 100;
     const depositRow = document.getElementById('depositSummaryRow');
+    const depositLabel = document.getElementById('depositSummaryLabel');
     const depositDisp = document.getElementById('depositSummaryDisplay');
     const remainingRow = document.getElementById('remainingSummaryRow');
     const remainingDisp = document.getElementById('remainingSummaryDisplay');
     const depositWarn = document.getElementById('depositOverTotalWarning');
+    const fullPaymentAmountDisplay = document.getElementById('fullPaymentAmountDisplay');
+    if (fullPaymentAmountDisplay) fullPaymentAmountDisplay.textContent = fmt(finalGrand) + ' ₺';
     if (depositRow && depositDisp) {
         depositRow.classList.toggle('hidden', !(deposit > 0));
+        if (depositLabel) depositLabel.textContent = paymentMode === 'full' ? 'Tahsilat (Tam)' : 'Kapora';
         depositDisp.textContent = fmt(deposit) + ' ₺';
     }
     if (remainingRow && remainingDisp) {
-        remainingRow.classList.toggle('hidden', !(deposit > 0));
+        remainingRow.classList.toggle('hidden', !(deposit > 0) || paymentMode === 'full');
         remainingDisp.textContent = fmt(Math.max(0, remaining)) + ' ₺';
         remainingDisp.classList.toggle('text-amber-300', remaining > 0);
         remainingDisp.classList.toggle('text-emerald-300', remaining <= 0);
     }
     if (depositWarn) {
-        depositWarn.classList.toggle('hidden', !(deposit > 0 && deposit > finalGrand));
+        depositWarn.classList.toggle('hidden', !(paymentMode === 'kapora' && deposit > 0 && deposit > finalGrand));
+        depositWarn.textContent = 'Kapora, genel toplamdan büyük olamaz.';
     }
     const badge = document.getElementById('itemCountBadge');
     if (badge) badge.textContent = String(validRows);
@@ -794,9 +831,40 @@ function updateSaleTotals() {
         sticky.textContent = fmt(finalGrand) + ' ₺';
     }
     if (stickyRemainingWrap && stickyRemaining) {
-        stickyRemainingWrap.classList.toggle('hidden', !(deposit > 0));
+        stickyRemainingWrap.classList.toggle('hidden', !(deposit > 0) || paymentMode === 'full');
         stickyRemaining.textContent = fmt(Math.max(0, remaining)) + ' ₺';
     }
+}
+function updateInitialPaymentMode() {
+    const mode = document.querySelector('input[name="initialPaymentMode"]:checked')?.value || 'none';
+    const details = document.getElementById('initialPaymentDetails');
+    const amountWrap = document.getElementById('depositAmountWrap');
+    const fullHint = document.getElementById('fullPaymentHint');
+    const amountInput = document.getElementById('depositAmount');
+    if (details) details.classList.toggle('hidden', mode === 'none');
+    if (amountWrap) amountWrap.classList.toggle('hidden', mode !== 'kapora');
+    if (fullHint) fullHint.classList.toggle('hidden', mode !== 'full');
+    if (amountInput) {
+        amountInput.required = mode === 'kapora';
+        if (mode !== 'kapora') amountInput.removeAttribute('required');
+    }
+    document.querySelectorAll('input[name="initialPaymentMode"]').forEach(function(radio) {
+        const label = radio.closest('label');
+        if (!label) return;
+        const active = radio.checked;
+        const isNone = radio.value === 'none';
+        label.classList.toggle('border-neutral-900', active && isNone);
+        label.classList.toggle('bg-neutral-900', active && isNone);
+        label.classList.toggle('text-white', active && isNone);
+        label.classList.toggle('border-emerald-600', active && !isNone);
+        label.classList.toggle('bg-emerald-600', active && !isNone);
+        label.classList.toggle('text-white', active && !isNone);
+        label.classList.toggle('border-neutral-200', !active);
+        label.classList.toggle('bg-white', !active);
+        label.classList.toggle('text-neutral-700', !active);
+    });
+    if (window.initPaymentKasaFields) window.initPaymentKasaFields();
+    updateSaleTotals();
 }
 function onGrandTotalOverrideInput() {
     const overrideInp = document.getElementById('grandTotalOverride');
@@ -911,11 +979,15 @@ function updateCustomerInfo(customerId) {
     setRow('customerTax', taxParts.length ? taxParts.join(' · ') : null);
 }
 function initSalesForm() {
+    document.querySelectorAll('input[name="initialPaymentMode"]').forEach(function(radio) {
+        radio.addEventListener('change', updateInitialPaymentMode);
+    });
     const depositAmount = document.getElementById('depositAmount');
     if (depositAmount) {
         depositAmount.addEventListener('input', updateSaleTotals);
         depositAmount.addEventListener('change', updateSaleTotals);
     }
+    updateInitialPaymentMode();
     if (window.initPaymentKasaFields) window.initPaymentKasaFields();
     const customerSel = document.getElementById('customerSelect');
     if (customerSel) {

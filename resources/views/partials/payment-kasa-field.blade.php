@@ -16,7 +16,8 @@
      data-amount-id="{{ $amountId ?? '' }}"
      data-kasa-id="{{ $fieldId }}"
      data-hint-id="{{ $hintId }}"
-     data-label-id="{{ $labelId }}">
+     data-label-id="{{ $labelId }}"
+     @if(!empty($paymentModeName)) data-payment-mode-name="{{ $paymentModeName }}" @endif>
     <label class="form-label" id="{{ $labelId }}">
         Kasa <span class="text-amber-600 dark:text-amber-400" id="{{ $hintId }}" data-kasa-required-star>*</span>
     </label>

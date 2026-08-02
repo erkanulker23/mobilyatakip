@@ -44,6 +44,10 @@ class SaleController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->input('initialPaymentMode') === 'kapora' && $request->filled('depositAmount')) {
+            $request->merge(['depositAmount' => money_parse($request->input('depositAmount'))]);
+        }
+
         $validated = $request->validate([
             'customerId' => 'required|exists:customers,id',
             'personnelId' => 'nullable|exists:personnel,id',
@@ -54,6 +58,7 @@ class SaleController extends Controller
             'notes' => 'nullable|string',
             'saleDiscountPercent' => 'nullable|numeric|min:0|max:100',
             'grandTotalOverride' => 'nullable|numeric|min:0',
+            'initialPaymentMode' => 'nullable|in:none,kapora,full',
             'depositAmount' => 'nullable|numeric|min:0',
             'depositPaymentType' => \App\Support\PaymentType::validationRule(),
             'depositKasaId' => 'nullable|exists:kasa,id',
@@ -82,12 +87,23 @@ class SaleController extends Controller
             return redirect()->back()->withInput()->with('error', 'En az bir geçerli kalem girin (ürün seçin veya manuel ürün adı yazın).');
         }
 
-        $depositAmount = (float) ($validated['depositAmount'] ?? 0);
+        $paymentMode = $validated['initialPaymentMode'] ?? 'none';
         $depositPaymentType = $validated['depositPaymentType'] ?? 'nakit';
+        $depositAmount = 0.0;
+        $isFullPayment = $paymentMode === 'full';
+
+        if ($paymentMode === 'kapora') {
+            $depositAmount = (float) ($validated['depositAmount'] ?? 0);
+            if ($depositAmount <= 0) {
+                return redirect()->back()->withInput()->with('error', 'Kapora seçildi — lütfen kapora tutarını girin.');
+            }
+        }
+
+        $kasaRequired = in_array($paymentMode, ['kapora', 'full'], true);
         $kasaError = \App\Support\PaymentType::validateKasaSelection(
             $validated['depositKasaId'] ?? null,
             $depositPaymentType,
-            $depositAmount > 0
+            $kasaRequired
         );
         if ($kasaError) {
             return redirect()->back()->withInput()->with('error', $kasaError);
@@ -112,15 +128,37 @@ class SaleController extends Controller
                 $sale->update(['drawingFiles' => $drawingFiles]);
             }
 
-            if ($depositAmount > 0) {
-                if ($depositAmount > (float) $sale->grandTotal) {
+            if ($isFullPayment || $depositAmount > 0) {
+                if ($isFullPayment) {
+                    $depositAmount = (float) $sale->grandTotal;
+                }
+                if ($depositAmount <= 0) {
                     return redirect()->route('sales.show', $sale)
                         ->with('success', 'Satış oluşturuldu.')
-                        ->with('error', 'Kapora kaydedilemedi: tutar genel toplamdan fazla.')
+                        ->with('error', 'Tahsilat kaydedilemedi: genel toplam sıfır.')
                         ->with('show_supplier_email_prompt', true)
                         ->with('show_sale_actions', true);
                 }
-                $this->recordSaleDeposit($sale, $depositAmount, $depositPaymentType, $validated['depositKasaId'] ?? null, $validated['saleDate']);
+                if ($depositAmount > (float) $sale->grandTotal) {
+                    return redirect()->route('sales.show', $sale)
+                        ->with('success', 'Satış oluşturuldu.')
+                        ->with('error', 'Tahsilat kaydedilemedi: tutar genel toplamdan fazla.')
+                        ->with('show_supplier_email_prompt', true)
+                        ->with('show_sale_actions', true);
+                }
+                $paymentLabel = $isFullPayment ? 'Tam ödeme' : 'Kapora';
+                $paymentNotes = $isFullPayment
+                    ? 'Satış oluşturulurken tam ödeme alındı'
+                    : 'Satış oluşturulurken alınan kapora';
+                $this->recordSaleDeposit(
+                    $sale,
+                    $depositAmount,
+                    $depositPaymentType,
+                    $validated['depositKasaId'] ?? null,
+                    $validated['saleDate'],
+                    $paymentLabel,
+                    $paymentNotes
+                );
                 $sale->refresh();
             }
 
@@ -132,7 +170,9 @@ class SaleController extends Controller
             }
 
             $message = 'Satış oluşturuldu.';
-            if ($depositAmount > 0) {
+            if ($isFullPayment && $depositAmount > 0) {
+                $message .= ' Tam ödeme: ' . number_format($depositAmount, 0, ',', '.') . ' ₺ kaydedildi.';
+            } elseif ($depositAmount > 0) {
                 $message .= ' Kapora: ' . number_format($depositAmount, 0, ',', '.') . ' ₺ kaydedildi.';
             }
             if ($emailSent) {
@@ -523,9 +563,16 @@ class SaleController extends Controller
             ->with('success', 'Zaman çizelgesi güncellendi.');
     }
 
-    private function recordSaleDeposit(Sale $sale, float $amount, string $paymentType, ?string $kasaId, string $paymentDate): void
-    {
-        DB::transaction(function () use ($sale, $amount, $paymentType, $kasaId, $paymentDate) {
+    private function recordSaleDeposit(
+        Sale $sale,
+        float $amount,
+        string $paymentType,
+        ?string $kasaId,
+        string $paymentDate,
+        string $paymentLabel = 'Kapora',
+        ?string $paymentNotes = null
+    ): void {
+        DB::transaction(function () use ($sale, $amount, $paymentType, $kasaId, $paymentDate, $paymentLabel, $paymentNotes) {
             $payment = CustomerPayment::create([
                 'customerId' => $sale->customerId,
                 'saleId' => $sale->id,
@@ -533,7 +580,7 @@ class SaleController extends Controller
                 'paymentDate' => $paymentDate,
                 'paymentType' => $paymentType,
                 'kasaId' => $kasaId,
-                'notes' => 'Satış oluşturulurken alınan kapora',
+                'notes' => $paymentNotes ?? 'Satış oluşturulurken alınan kapora',
             ]);
             $sale->increment('paidAmount', $amount);
             $this->auditService->logCreate('customer_payment', $payment->id, [
@@ -549,7 +596,7 @@ class SaleController extends Controller
                     'kredi_karti' => 'Kredi Kartı',
                     default => '',
                 };
-                $desc = 'Kapora - ' . ($sale->customer?->name ?? 'Müşteri');
+                $desc = $paymentLabel . ' - ' . ($sale->customer?->name ?? 'Müşteri');
                 if ($paymentTypeLabel) {
                     $desc .= ' (' . $paymentTypeLabel . ')';
                 }

@@ -39,6 +39,12 @@
         return Number.isFinite(n) ? n : 0;
     }
 
+    function getPaymentMode(root) {
+        if (!root.dataset.paymentModeName) return 'none';
+        var checked = document.querySelector('input[name="' + root.dataset.paymentModeName + '"]:checked');
+        return checked ? checked.value : 'none';
+    }
+
     function updateField(root) {
         var ptEl = document.getElementById(root.dataset.paymentTypeId);
         var amountEl = root.dataset.amountId ? document.getElementById(root.dataset.amountId) : null;
@@ -51,9 +57,11 @@
 
         var pt = ptEl.value || 'diger';
         var cfg = CONFIG[pt] || CONFIG.diger;
+        var mode = getPaymentMode(root);
         var amount = parseAmount(amountEl);
-        var needsKasa = requiresKasa(pt) && amount > 0;
-        var showField = requiresKasa(pt);
+        var paymentActive = mode === 'kapora' || mode === 'full';
+        var needsKasa = paymentActive && requiresKasa(pt) && (mode === 'full' || amount > 0);
+        var showField = paymentActive && requiresKasa(pt);
 
         root.style.display = showField ? '' : 'none';
 
@@ -120,6 +128,11 @@
         if (amountEl) {
             amountEl.addEventListener('input', refresh);
             amountEl.addEventListener('change', refresh);
+        }
+        if (root.dataset.paymentModeName) {
+            document.querySelectorAll('input[name="' + root.dataset.paymentModeName + '"]').forEach(function (radio) {
+                radio.addEventListener('change', refresh);
+            });
         }
         refresh();
     }
