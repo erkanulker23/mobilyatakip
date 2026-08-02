@@ -49,13 +49,29 @@
     </div>
 
     {{-- Özet kartları --}}
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    @php $hasOpening = abs($summary['opening'] ?? 0) >= 0.005; @endphp
+    @if($hasOpening && ($summary['count'] ?? 0) === 0)
+    <div class="mb-4 p-4 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 text-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <p>Güncel bakiye yalnızca <strong>açılış bakiyesi</strong> alanından geliyor; hareket kaydı yok. Başlangıç tutarı tanımlamadıysanız sıfırlayabilirsiniz.</p>
+        <form method="POST" action="{{ route('kasa.reset-opening', $kasa) }}" class="shrink-0" onsubmit="return confirm('Açılış bakiyesini sıfırlamak istediğinize emin misiniz?');">
+            @csrf
+            <button type="submit" class="btn-secondary text-sm whitespace-nowrap">Açılış bakiyesini sıfırla</button>
+        </form>
+    </div>
+    @endif
+    <div class="grid grid-cols-2 {{ $hasOpening ? 'lg:grid-cols-4' : 'lg:grid-cols-3' }} gap-4 mb-6">
+        @if($hasOpening)
         <div class="card p-4">
-            <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Açılış bakiyesi</p>
+            <div class="flex items-start justify-between gap-2">
+                <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Açılış bakiyesi</p>
+                <a href="{{ route('kasa.edit', $kasa) }}" class="text-xs text-sky-600 hover:underline shrink-0">Düzenle</a>
+            </div>
             <p class="mt-1 text-xl font-bold tabular-nums {{ $summary['opening'] >= 0 ? 'text-neutral-900' : 'text-red-600' }}">
                 {{ number_format($summary['opening'], 0, ',', '.') }} ₺
             </p>
+            <p class="mt-1 text-xs text-neutral-500">Kasa oluşturulurken girilen başlangıç tutarı</p>
         </div>
+        @endif
         <div class="card p-4 border-emerald-100 bg-emerald-50/40">
             <p class="text-xs font-medium text-emerald-700 uppercase tracking-wide">Toplam giriş</p>
             <p class="mt-1 text-xl font-bold tabular-nums text-emerald-700">+{{ number_format($summary['totalIn'], 0, ',', '.') }} ₺</p>

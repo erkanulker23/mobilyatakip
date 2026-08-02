@@ -44,7 +44,9 @@
         </div>
         <div>
             <label class="form-label">Açılış Bakiyesi (₺)</label>
-            <input type="text" inputmode="decimal" name="openingBalance" value="{{ old('openingBalance', money($kasa->openingBalance ?? 0)) }}" class="form-input money-input" placeholder="0" autocomplete="off">
+            <input type="text" inputmode="decimal" name="openingBalance" value="{{ old('openingBalance', ($kasa->openingBalance ?? 0) != 0 ? money($kasa->openingBalance) : '') }}" class="form-input money-input" placeholder="0" autocomplete="off">
+            <p class="mt-1 text-xs text-neutral-500">Boş bırakılırsa 0 ₺ kabul edilir. Hareketlerden bağımsızdır; silinen tahsilat/virman bu alanı etkilemez.</p>
+            @error('openingBalance')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
         <div class="flex items-center gap-2">
             <input type="checkbox" name="isActive" value="1" {{ old('isActive', $kasa->isActive ?? true) ? 'checked' : '' }} class="rounded border-slate-300 text-green-600 focus:ring-green-500">

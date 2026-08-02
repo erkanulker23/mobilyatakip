@@ -42,7 +42,8 @@
         </div>
         <div>
             <label class="form-label">Açılış Bakiyesi (₺)</label>
-            <input type="text" inputmode="decimal" name="openingBalance" value="{{ old('openingBalance', money(0)) }}" class="form-input money-input" placeholder="0" autocomplete="off">
+            <input type="text" inputmode="decimal" name="openingBalance" value="{{ old('openingBalance') }}" class="form-input money-input" placeholder="0" autocomplete="off">
+            <p class="mt-1 text-xs text-neutral-500">İsteğe bağlı. Boş bırakılırsa 0 ₺.</p>
             @error('openingBalance')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
         <div class="flex gap-3 pt-2">

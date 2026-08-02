@@ -150,6 +150,8 @@ class KasaController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge(['openingBalance' => $this->parseOpeningBalance($request)]);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'nullable|in:kasa,banka',
@@ -160,7 +162,7 @@ class KasaController extends Controller
             'currency' => 'nullable|string|max:10',
         ]);
         $validated['type'] = $validated['type'] ?? 'kasa';
-        $validated['openingBalance'] = $validated['openingBalance'] ?? 0;
+        $validated['openingBalance'] = (float) ($validated['openingBalance'] ?? 0);
         $validated['currency'] = $validated['currency'] ?? 'TRY';
         $kasa = Kasa::create($validated);
         $this->auditService->logCreate('kasa', $kasa->id, ['name' => $kasa->name]);
@@ -175,6 +177,8 @@ class KasaController extends Controller
 
     public function update(Request $request, Kasa $kasa)
     {
+        $request->merge(['openingBalance' => $this->parseOpeningBalance($request)]);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'nullable|in:kasa,banka',
@@ -186,13 +190,39 @@ class KasaController extends Controller
             'isActive' => 'nullable|boolean',
         ]);
         $validated['type'] = $validated['type'] ?? 'kasa';
-        $validated['openingBalance'] = $validated['openingBalance'] ?? 0;
+        $validated['openingBalance'] = (float) ($validated['openingBalance'] ?? 0);
         $validated['isActive'] = $request->boolean('isActive');
-        $oldData = ['name' => $kasa->name];
+        $oldData = ['name' => $kasa->name, 'openingBalance' => (float) ($kasa->openingBalance ?? 0)];
         $kasa->update($validated);
-        $this->auditService->logUpdate('kasa', $kasa->id, $oldData, ['name' => $kasa->name]);
+        $this->auditService->logUpdate('kasa', $kasa->id, $oldData, [
+            'name' => $kasa->name,
+            'openingBalance' => (float) ($kasa->openingBalance ?? 0),
+        ]);
 
-        return redirect()->route('kasa.index')->with('success', 'Kasa güncellendi.');
+        return redirect()->route('kasa.show', $kasa)->with('success', 'Kasa güncellendi.');
+    }
+
+    public function resetOpeningBalance(Kasa $kasa)
+    {
+        $old = (float) ($kasa->openingBalance ?? 0);
+        if ($old === 0.0) {
+            return back()->with('info', 'Açılış bakiyesi zaten sıfır.');
+        }
+
+        $kasa->update(['openingBalance' => 0]);
+        $this->auditService->logUpdate('kasa', $kasa->id, ['openingBalance' => $old], ['openingBalance' => 0.0]);
+
+        return back()->with('success', 'Açılış bakiyesi sıfırlandı.');
+    }
+
+    private function parseOpeningBalance(Request $request): float
+    {
+        $raw = $request->input('openingBalance');
+        if ($raw === null || trim((string) $raw) === '') {
+            return 0.0;
+        }
+
+        return money_parse((string) $raw);
     }
 
     public function destroyMovement(Kasa $kasa, KasaHareket $hareket)

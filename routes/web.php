@@ -92,6 +92,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/personnel/{personnel}/resim-sil', [\App\Http\Controllers\PersonnelController::class, 'deletePhoto'])->name('personnel.delete-photo');
     Route::resource('personnel', \App\Http\Controllers\PersonnelController::class);
     Route::post('/kasa/{kasa}/virman', [KasaController::class, 'transfer'])->name('kasa.transfer');
+    Route::post('/kasa/{kasa}/acilis-sifirla', [KasaController::class, 'resetOpeningBalance'])->name('kasa.reset-opening');
     Route::delete('/kasa/{kasa}/hareketler/{hareket}', [KasaController::class, 'destroyMovement'])->name('kasa.hareketler.destroy');
     Route::resource('kasa', KasaController::class)->parameters(['kasa' => 'kasa']);
 
