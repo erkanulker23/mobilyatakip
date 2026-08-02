@@ -10,7 +10,7 @@
                 <span>/</span>
                 <span class="text-neutral-700">{{ $sale->saleNumber }}</span>
             </div>
-            <h1 class="page-title">{{ $sale->saleNumber }} @if($sale->isCancelled ?? false)<span class="ml-2 text-sm font-normal px-2 py-1 rounded-full bg-red-100 text-red-700">İptal</span>@endif</h1>
+            <h1 class="page-title">{{ $sale->saleNumber }} @if($sale->isCancelled ?? false)<span class="ml-2 text-sm font-normal px-2 py-1 rounded-full bg-red-100 text-red-700">İptal</span>@endif @include('partials.final-measurement-badge', ['sale' => $sale, 'class' => 'align-middle'])</h1>
             <p class="page-desc">
                 Satış faturası @if($sale->customer)· Müşteri: <a href="{{ route('customers.show', $sale->customer) }}" class="font-medium text-emerald-600 hover:text-emerald-700">{{ $sale->customer->name }}</a>@else· Müşteri: —@endif
                 @if(!($sale->isCancelled ?? false))
@@ -97,6 +97,20 @@
     </form>
 </div>
 @endif
+@endif
+
+@if($sale->needsFinalMeasurement ?? false)
+<div class="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-950">
+    <div class="flex items-start gap-3">
+        <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-200 text-amber-900" aria-hidden="true">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+        </span>
+        <div>
+            <p class="font-semibold text-lg">Kesin ölçüye gidilecek</p>
+            <p class="text-sm text-amber-900/90 mt-1">Bu sipariş için saha ölçüsü alınacaktır. Üretim ve teslimat kesin ölçü sonrası planlanır.</p>
+        </div>
+    </div>
+</div>
 @endif
 
 @include('partials.invoice-document', \App\Support\SaleDocument::invoiceParams($sale))

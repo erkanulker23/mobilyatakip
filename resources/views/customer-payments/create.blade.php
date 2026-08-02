@@ -102,15 +102,11 @@
                         </select>
                     </div>
                     <div>
-                        <label class="form-label">Kasa <span class="text-amber-600 dark:text-amber-400" id="kasaRequiredHint">*</span></label>
-                        <select name="kasaId" class="form-select" id="kasaId">
-                            <option value="">Seçiniz</option>
-                            @foreach($kasalar as $k)
-                            <option value="{{ $k->id }}" {{ old('kasaId') == $k->id ? 'selected' : '' }}>{{ $k->name }}</option>
-                            @endforeach
-                        </select>
-                        <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400">Nakit, havale ve kredi kartı tahsilatları kasaya giriş olarak yansır.</p>
-                        @error('kasaId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                        @include('partials.payment-kasa-field', [
+                            'kasalar' => $kasalar,
+                            'paymentTypeId' => 'paymentTypeSelect',
+                            'amountId' => 'amountInput',
+                        ])
                     </div>
                 </div>
 
@@ -255,17 +251,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-function updateKasaRequired() {
-    const pt = document.getElementById('paymentTypeSelect');
-    const kasa = document.getElementById('kasaId');
-    const hint = document.getElementById('kasaRequiredHint');
-    if (!pt || !kasa || !hint) return;
-    const needsKasa = ['nakit', 'havale', 'kredi_karti'].includes(pt.value);
-    hint.style.display = needsKasa ? 'inline' : 'none';
-    kasa.required = needsKasa;
-}
-
-function selectedSaleRemaining() {
+function initPaymentPage() {
     const saleSelect = document.getElementById('saleSelect');
     if (!saleSelect || !saleSelect.value) return null;
     const option = saleSelect.selectedOptions[0];
@@ -313,11 +299,7 @@ function highlightInvoiceButtons() {
 }
 
 function initPaymentPage() {
-    const pt = document.getElementById('paymentTypeSelect');
-    if (pt) {
-        pt.addEventListener('change', updateKasaRequired);
-        updateKasaRequired();
-    }
+    if (window.initPaymentKasaFields) window.initPaymentKasaFields();
 
     const saleSelect = document.getElementById('saleSelect');
     if (saleSelect) {

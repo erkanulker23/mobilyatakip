@@ -46,6 +46,7 @@ class SaleService
                 'personnelId' => $data['personnelId'] ?? null,
                 'saleDate' => $data['saleDate'] ?? now(),
                 'dueDate' => $data['dueDate'] ?? null,
+                'needsFinalMeasurement' => (bool) ($data['needsFinalMeasurement'] ?? false),
                 'subtotal' => 0,
                 'kdvTotal' => 0,
                 'grandTotal' => 0,

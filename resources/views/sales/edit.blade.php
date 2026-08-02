@@ -136,6 +136,17 @@
                                     @endforeach
                                 </select>
                             </div>
+                            <div class="sm:col-span-2">
+                                <input type="hidden" name="needsFinalMeasurement" value="0">
+                                <label class="flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors {{ old('needsFinalMeasurement', $sale->needsFinalMeasurement) ? 'border-amber-400 bg-amber-50' : 'border-amber-200 bg-amber-50/60 hover:border-amber-300' }}">
+                                    <input type="checkbox" name="needsFinalMeasurement" value="1" class="mt-1 rounded border-amber-300 text-amber-600 focus:ring-amber-500" {{ old('needsFinalMeasurement', $sale->needsFinalMeasurement) ? 'checked' : '' }}>
+                                    <span>
+                                        <span class="block font-semibold text-amber-950">Kesin ölçüye gidilecek</span>
+                                        <span class="block text-sm text-amber-900/80 mt-1">Bu sipariş için saha ölçüsü alınacak. Üretim ve teslimat kesin ölçü sonrası planlanır.</span>
+                                    </span>
+                                </label>
+                                @error('needsFinalMeasurement')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                            </div>
                         </div>
                         <div id="customerInfoBox" class="customer-info-panel hidden">
                             <div class="flex items-start justify-between gap-3 mb-3">

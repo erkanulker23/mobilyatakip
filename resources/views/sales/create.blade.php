@@ -123,6 +123,17 @@
                                     @endforeach
                                 </select>
                             </div>
+                            <div class="sm:col-span-2">
+                                <input type="hidden" name="needsFinalMeasurement" value="0">
+                                <label class="flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors {{ old('needsFinalMeasurement') ? 'border-amber-400 bg-amber-50' : 'border-amber-200 bg-amber-50/60 hover:border-amber-300' }}">
+                                    <input type="checkbox" name="needsFinalMeasurement" value="1" class="mt-1 rounded border-amber-300 text-amber-600 focus:ring-amber-500" {{ old('needsFinalMeasurement') ? 'checked' : '' }}>
+                                    <span>
+                                        <span class="block font-semibold text-amber-950">Kesin ölçüye gidilecek</span>
+                                        <span class="block text-sm text-amber-900/80 mt-1">Bu sipariş için saha ölçüsü alınacak. Üretim ve teslimat kesin ölçü sonrası planlanır; siparişte ve yazdırmalarda belirgin şekilde görünür.</span>
+                                    </span>
+                                </label>
+                                @error('needsFinalMeasurement')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                            </div>
                         </div>
                         <div id="customerInfoBox" class="customer-info-panel hidden">
                             <div class="flex items-start justify-between gap-3 mb-3">
@@ -231,15 +242,15 @@
                                 </select>
                             </div>
                             <div class="sm:col-span-2">
-                                <label class="form-label">Kasa <span class="text-amber-600" id="depositKasaRequiredHint">*</span></label>
-                                <select name="depositKasaId" id="depositKasaId" class="form-select min-h-[44px]">
-                                    <option value="">Seçiniz</option>
-                                    @foreach($kasalar as $k)
-                                    <option value="{{ $k->id }}" {{ old('depositKasaId') == $k->id ? 'selected' : '' }}>{{ $k->name }}</option>
-                                    @endforeach
-                                </select>
-                                <p class="mt-1 text-xs text-neutral-500">Nakit, havale ve kredi kartı kapora ödemeleri kasaya giriş olarak yansır.</p>
-                                @error('depositKasaId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                                @include('partials.payment-kasa-field', [
+                                    'kasalar' => $kasalar,
+                                    'name' => 'depositKasaId',
+                                    'id' => 'depositKasaId',
+                                    'paymentTypeId' => 'depositPaymentType',
+                                    'amountId' => 'depositAmount',
+                                    'errorName' => 'depositKasaId',
+                                    'wrapperClass' => '',
+                                ])
                             </div>
                         </div>
                     </div>
@@ -899,30 +910,13 @@ function updateCustomerInfo(customerId) {
     const taxParts = [c.identityNumber, c.taxNumber, c.taxOffice].filter(Boolean);
     setRow('customerTax', taxParts.length ? taxParts.join(' · ') : null);
 }
-function updateDepositKasaRequired() {
-    const pt = document.getElementById('depositPaymentType');
-    const kasa = document.getElementById('depositKasaId');
-    const hint = document.getElementById('depositKasaRequiredHint');
-    const amount = (window.parseMoney || parseFloat)(document.getElementById('depositAmount')?.value || '0') || 0;
-    if (!pt || !kasa || !hint) return;
-    const needsKasa = amount > 0 && ['nakit', 'havale', 'kredi_karti'].includes(pt.value);
-    hint.style.display = needsKasa ? 'inline' : 'none';
-    kasa.required = needsKasa;
-}
 function initSalesForm() {
-    const depositPt = document.getElementById('depositPaymentType');
     const depositAmount = document.getElementById('depositAmount');
-    if (depositPt) {
-        depositPt.addEventListener('change', updateDepositKasaRequired);
-    }
     if (depositAmount) {
-        depositAmount.addEventListener('input', function() {
-            updateDepositKasaRequired();
-            updateSaleTotals();
-        });
+        depositAmount.addEventListener('input', updateSaleTotals);
         depositAmount.addEventListener('change', updateSaleTotals);
     }
-    updateDepositKasaRequired();
+    if (window.initPaymentKasaFields) window.initPaymentKasaFields();
     const customerSel = document.getElementById('customerSelect');
     if (customerSel) {
         window.customerTomSelect = new TomSelect(customerSel, {

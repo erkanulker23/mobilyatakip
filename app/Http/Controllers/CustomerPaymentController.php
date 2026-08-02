@@ -156,15 +156,20 @@ class CustomerPaymentController extends Controller
         };
 
         // Nakit, havale ve kredi kartı tahsilatları kasaya işlendiği için kasa zorunlu
-        $paymentTypesThatRequireKasa = ['nakit', 'havale', 'kredi_karti'];
-        $kasaRequired = in_array($validated['paymentType'], $paymentTypesThatRequireKasa);
-        if ($kasaRequired && empty($validated['kasaId'])) {
+        $kasaError = \App\Support\PaymentType::validateKasaSelection(
+            $validated['kasaId'] ?? null,
+            $validated['paymentType'],
+            true
+        );
+        if ($kasaError) {
             $response = $redirectBackToSale();
             if ($response) {
-                return $response->with('error', 'Nakit, havale ve kredi kartı tahsilatları için kasa seçimi zorunludur.');
+                return $response->with('error', $kasaError);
             }
-            return back()->withInput()->with('error', 'Nakit, havale ve kredi kartı tahsilatları için kasa seçimi zorunludur.');
+            return back()->withInput()->with('error', $kasaError);
         }
+
+        $kasaRequired = \App\Support\PaymentType::requiresKasa($validated['paymentType']);
 
         if (!empty($validated['saleId'])) {
             $sale = Sale::findOrFail($validated['saleId']);
@@ -270,10 +275,13 @@ class CustomerPaymentController extends Controller
         $validated['paymentType'] = $validated['paymentType'] ?? 'nakit';
 
         // Nakit, havale ve kredi kartı tahsilatları kasaya işlendiği için kasa zorunlu
-        $paymentTypesThatRequireKasa = ['nakit', 'havale', 'kredi_karti'];
-        $kasaRequired = in_array($validated['paymentType'], $paymentTypesThatRequireKasa);
-        if ($kasaRequired && empty($validated['kasaId'])) {
-            return back()->withInput()->with('error', 'Nakit, havale ve kredi kartı tahsilatları için kasa seçimi zorunludur.');
+        $kasaError = \App\Support\PaymentType::validateKasaSelection(
+            $validated['kasaId'] ?? null,
+            $validated['paymentType'],
+            true
+        );
+        if ($kasaError) {
+            return back()->withInput()->with('error', $kasaError);
         }
 
         if (!empty($validated['saleId'])) {

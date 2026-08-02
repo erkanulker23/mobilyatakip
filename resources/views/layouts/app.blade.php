@@ -66,6 +66,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3/dist/cdn.min.js"></script>
     <script defer src="{{ route('assets.js', ['file' => 'money.js']) }}?v={{ @filemtime(public_path('js/money.js')) ?: 1 }}"></script>
+    <script defer src="{{ route('assets.js', ['file' => 'payment-kasa.js']) }}?v={{ @filemtime(public_path('js/payment-kasa.js')) ?: 1 }}"></script>
     <script defer src="{{ route('assets.js', ['file' => 'turkey-address.js']) }}?v={{ @filemtime(public_path('js/turkey-address.js')) ?: 1 }}"></script>
     <script defer src="{{ route('assets.js', ['file' => 'form-inputs.js']) }}?v={{ @filemtime(public_path('js/form-inputs.js')) ?: 1 }}"></script>
     <script>

@@ -78,7 +78,11 @@
                         <input type="checkbox" name="ids[]" value="{{ $s->id }}" class="sale-row-check rounded border-slate-300 text-green-600 focus:ring-green-500"
                                @change="toggleRow('{{ $s->id }}', $event.target.checked)">
                     </td>
-                    <td class="table-td"><span class="font-medium text-neutral-900">{{ $s->saleNumber }}</span> @if($s->isCancelled ?? false)<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 font-medium">İptal</span>@endif</td>
+                    <td class="table-td">
+                        <span class="font-medium text-neutral-900">{{ $s->saleNumber }}</span>
+                        @if($s->isCancelled ?? false)<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 font-medium">İptal</span>@endif
+                        @if($s->needsFinalMeasurement ?? false)<span class="block mt-1">@include('partials.final-measurement-badge', ['sale' => $s])</span>@endif
+                    </td>
                     <td class="table-td">{{ $s->customer?->name ?? '-' }}</td>
                     <td class="table-td">{{ $s->saleDate?->format('d.m.Y') ?? '-' }}</td>
                     <td class="table-td text-right font-medium text-neutral-900">{{ number_format($s->grandTotal ?? 0, 0, ',', '.') }} ₺</td>

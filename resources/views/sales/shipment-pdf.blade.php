@@ -7,31 +7,32 @@
     <meta charset="UTF-8">
     <title>{{ $documentNumber }} - Sevkiyat Gönder Fişi</title>
     <style>
-        @page { size: A4 portrait; margin: 10mm; }
+        @page { size: A4 portrait; margin: 12mm; }
         * { box-sizing: border-box; }
-        body { font-family: DejaVu Sans, sans-serif; font-size: 9px; color: #334155; margin: 0; padding: 0; line-height: 1.35; }
-        h1 { font-size: 13px; margin: 0 0 2px; color: #0f172a; }
-        h2 { font-size: 10px; margin: 0; color: #475569; font-weight: 600; }
-        .header { border-bottom: 2px solid #171717; padding-bottom: 6px; margin-bottom: 10px; }
+        body { font-family: DejaVu Sans, sans-serif; font-size: 11px; color: #334155; margin: 0; padding: 0; line-height: 1.45; }
+        h1 { font-size: 16px; margin: 0 0 4px; color: #0f172a; }
+        h2 { font-size: 12px; margin: 0; color: #475569; font-weight: 600; }
+        .header { border-bottom: 2px solid #171717; padding-bottom: 10px; margin-bottom: 14px; }
         .header-table { width: 100%; border-collapse: collapse; }
         .header-table td { vertical-align: top; padding: 0; }
-        .doc-no { font-size: 15px; font-weight: bold; color: #1e293b; }
-        .section { width: 100%; margin-bottom: 10px; }
+        .doc-no { font-size: 20px; font-weight: bold; color: #1e293b; line-height: 1.1; }
+        .section { width: 100%; margin-bottom: 14px; }
         .section-table { width: 100%; border-collapse: collapse; }
         .section-table td { vertical-align: top; padding: 0; width: 50%; }
-        .label { font-size: 7px; text-transform: uppercase; color: #64748b; font-weight: bold; margin-bottom: 4px; }
-        .items { width: 100%; border-collapse: collapse; margin: 8px 0; }
-        .items th, .items td { border: 1px solid #e2e8f0; padding: 4px 5px; font-size: 8px; }
-        .items th { background: #171717; color: #fff; font-size: 7px; text-transform: uppercase; }
+        .label { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: bold; margin-bottom: 5px; letter-spacing: 0.04em; }
+        .items { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        .items th, .items td { border: 1px solid #e2e8f0; padding: 7px 8px; font-size: 10px; line-height: 1.4; }
+        .items th { background: #171717; color: #fff; font-size: 9px; text-transform: uppercase; }
         .items td.center, .items th.center { text-align: center; }
-        .check { display: inline-block; width: 10px; height: 10px; border: 1px solid #64748b; }
-        .desc { color: #64748b; font-size: 7px; }
-        .muted { color: #64748b; font-size: 8px; margin: 1px 0; }
+        .check { display: inline-block; width: 12px; height: 12px; border: 1px solid #64748b; }
+        .desc { color: #64748b; font-size: 9px; line-height: 1.35; }
+        .muted { color: #64748b; font-size: 10px; margin: 2px 0; line-height: 1.4; }
         .right { text-align: right; }
-        .signatures { border-top: 1px solid #d4d4d4; padding-top: 10px; margin-top: 10px; page-break-inside: avoid; }
-        .sign-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-        .sign-table td { width: 50%; vertical-align: top; padding-right: 12px; }
-        .sign-line { border-top: 1px solid #171717; padding-top: 4px; margin-top: 28px; font-size: 8px; color: #525252; }
+        .signatures { border-top: 1px solid #d4d4d4; padding-top: 12px; margin-top: 14px; page-break-inside: avoid; }
+        .sign-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .sign-table td { width: 50%; vertical-align: top; padding-right: 16px; }
+        .sign-line { border-top: 1px solid #171717; padding-top: 5px; margin-top: 36px; font-size: 10px; color: #525252; }
+        .notice { background: #fffbeb; border-left: 3px solid #d97706; padding: 8px 10px; margin-bottom: 12px; font-size: 10px; color: #92400e; }
     </style>
 </head>
 <body>
@@ -52,6 +53,10 @@
         </tr>
     </table>
 </div>
+
+@if(!empty($documentNotice))
+<div class="notice">{!! strip_tags($documentNotice, '<strong><b>') !!}</div>
+@endif
 
 <div class="section">
     <table class="section-table">

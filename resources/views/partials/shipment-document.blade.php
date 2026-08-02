@@ -8,6 +8,12 @@
             'documentSubtitle' => !empty($dueDate) ? 'Teslim: ' . $dueDate->format('d.m.Y') : null,
         ])
 
+        @if(!empty($documentNotice))
+        <div class="print-info-banner print-section text-sm text-neutral-800 p-3 mb-4">
+            {!! $documentNotice !!}
+        </div>
+        @endif
+
         <div class="print-section-lg grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
                 <h3 class="text-xs font-semibold text-neutral-500 uppercase mb-2">{{ $partyLabel ?? 'Teslimat Adresi' }}</h3>

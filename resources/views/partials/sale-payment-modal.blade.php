@@ -41,7 +41,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="form-label">Tutar (₺) <span class="text-red-500">*</span></label>
-                    <input type="text" inputmode="decimal" name="amount" required
+                    <input type="text" inputmode="decimal" name="amount" id="salePaymentAmount" required
                         value="{{ old('redirectToSale') == $sale->id ? old('amount') : ($saleRemaining > 0 ? money($saleRemaining) : '') }}"
                         class="form-input min-h-[44px] money-input" placeholder="0" autocomplete="off" @if($saleRemaining <= 0) disabled @endif>
                     @if($saleRemaining <= 0)
@@ -65,13 +65,13 @@
                     </select>
                 </div>
                 <div>
-                    <label class="form-label">Kasa <span class="text-amber-600" id="salePaymentKasaHint">*</span></label>
-                    <select name="kasaId" class="form-select min-h-[44px]" id="salePaymentKasaId" @if($saleRemaining <= 0) disabled @endif>
-                        <option value="">Seçiniz</option>
-                        @foreach($kasalar as $k)
-                        <option value="{{ $k->id }}" {{ (old('redirectToSale') == $sale->id ? old('kasaId') : '') == $k->id ? 'selected' : '' }}>{{ $k->name }}</option>
-                        @endforeach
-                    </select>
+                    @include('partials.payment-kasa-field', [
+                        'kasalar' => $kasalar,
+                        'paymentTypeId' => 'salePaymentType',
+                        'amountId' => 'salePaymentAmount',
+                        'selected' => old('redirectToSale') == $sale->id ? old('kasaId') : '',
+                        'disabled' => $saleRemaining <= 0,
+                    ])
                 </div>
             </div>
 
@@ -89,23 +89,3 @@
         </form>
     </div>
 </div>
-<script>
-(function() {
-    function updateSalePaymentKasaRequired() {
-        const pt = document.getElementById('salePaymentType');
-        const kasa = document.getElementById('salePaymentKasaId');
-        const hint = document.getElementById('salePaymentKasaHint');
-        if (!pt || !kasa || !hint) return;
-        const needsKasa = ['nakit', 'havale', 'kredi_karti'].includes(pt.value);
-        hint.style.display = needsKasa ? 'inline' : 'none';
-        kasa.required = needsKasa && !kasa.disabled;
-    }
-    document.addEventListener('DOMContentLoaded', function() {
-        const pt = document.getElementById('salePaymentType');
-        if (pt) {
-            pt.addEventListener('change', updateSalePaymentKasaRequired);
-            updateSalePaymentKasaRequired();
-        }
-    });
-})();
-</script>

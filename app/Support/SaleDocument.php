@@ -37,6 +37,9 @@ class SaleDocument
             'paidAmountLabel' => 'Kapora / Ödenen',
             'paymentStatus' => CustomerBalance::saleStatus($sale),
             'notes' => $sale->notes,
+            'documentNotice' => ($sale->needsFinalMeasurement ?? false)
+                ? '<strong>KESİN ÖLÇÜYE GİDİLECEK</strong> — Bu sipariş için saha ölçüsü alınacaktır. Üretim ve teslimat kesin ölçü sonrası planlanır.'
+                : null,
         ];
     }
 
@@ -55,6 +58,9 @@ class SaleDocument
             'partyPhone2' => $sale->customer?->phone2 ?? null,
             'partyEmail' => $sale->customer?->email,
             'personnelName' => $sale->personnel?->name,
+            'documentNotice' => ($sale->needsFinalMeasurement ?? false)
+                ? '<strong>KESİN ÖLÇÜYE GİDİLECEK</strong> — Teslimattan önce kesin ölçü alınacaktır.'
+                : null,
             'items' => collect($sale->items ?? [])->map(fn ($i) => [
                 'name' => self::shipmentItemName($i),
                 'description' => $i->description ?? null,
@@ -98,6 +104,9 @@ class SaleDocument
         if ($sale->personnel) {
             $parts[] = '<p class="text-sm text-slate-600">Satış Temsilcisi: '
                 . e($sale->personnel->name) . '</p>';
+        }
+        if ($sale->needsFinalMeasurement ?? false) {
+            $parts[] = '<p class="text-sm font-semibold text-amber-800"><strong>Kesin ölçü:</strong> Evet — saha ölçüsü alınacak</p>';
         }
         $paymentStatus = CustomerBalance::saleStatus($sale);
         $parts[] = '<p class="text-sm text-slate-600"><strong>Ödeme Durumu:</strong> '

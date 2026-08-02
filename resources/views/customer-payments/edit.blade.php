@@ -59,14 +59,11 @@
                 </select>
             </div>
             <div>
-                <label class="form-label" id="editKasaLabel">Kasa <span class="text-amber-600 dark:text-amber-400" id="editKasaRequired">*</span></label>
-                <select name="kasaId" class="form-select" id="editKasaId">
-                    <option value="">Seçiniz</option>
-                    @foreach($kasalar as $k)
-                    <option value="{{ $k->id }}" {{ old('kasaId', $customerPayment->kasaId) == $k->id ? 'selected' : '' }}>{{ $k->name }}</option>
-                    @endforeach
-                </select>
-                <p class="mt-1 text-sm text-neutral-500 dark:text-slate-400" id="editKasaHint">Nakit ve kredi kartı tahsilatları kasaya giriş olarak yansır.</p>
+                @include('partials.payment-kasa-field', [
+                    'kasalar' => $kasalar,
+                    'paymentTypeId' => 'editPaymentType',
+                    'selected' => old('kasaId', $customerPayment->kasaId),
+                ])
             </div>
         </div>
         <div>
@@ -83,19 +80,4 @@
         </div>
     </form>
 </div>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const pt = document.getElementById('editPaymentType');
-    const kasaRequired = document.getElementById('editKasaRequired');
-    if (pt && kasaRequired) {
-        function updateKasaRequired() {
-            const needsKasa = ['nakit', 'havale', 'kredi_karti'].includes(pt.value);
-            kasaRequired.style.display = needsKasa ? 'inline' : 'none';
-            document.getElementById('editKasaId').required = needsKasa;
-        }
-        pt.addEventListener('change', updateKasaRequired);
-        updateKasaRequired();
-    }
-});
-</script>
 @endsection

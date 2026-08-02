@@ -49,6 +49,7 @@ class SaleController extends Controller
             'personnelId' => 'nullable|exists:personnel,id',
             'saleDate' => 'required|date',
             'dueDate' => 'nullable|date',
+            'needsFinalMeasurement' => 'nullable|boolean',
             'kdvIncluded' => 'nullable|boolean',
             'notes' => 'nullable|string',
             'saleDiscountPercent' => 'nullable|numeric|min:0|max:100',
@@ -83,9 +84,13 @@ class SaleController extends Controller
 
         $depositAmount = (float) ($validated['depositAmount'] ?? 0);
         $depositPaymentType = $validated['depositPaymentType'] ?? 'nakit';
-        $depositKasaRequired = in_array($depositPaymentType, ['nakit', 'havale', 'kredi_karti'], true);
-        if ($depositAmount > 0 && $depositKasaRequired && empty($validated['depositKasaId'])) {
-            return redirect()->back()->withInput()->with('error', 'Kapora için nakit, havale veya kredi kartı seçildiyse kasa zorunludur.');
+        $kasaError = \App\Support\PaymentType::validateKasaSelection(
+            $validated['depositKasaId'] ?? null,
+            $depositPaymentType,
+            $depositAmount > 0
+        );
+        if ($kasaError) {
+            return redirect()->back()->withInput()->with('error', $kasaError);
         }
 
         try {
@@ -94,6 +99,7 @@ class SaleController extends Controller
                 'personnelId' => $validated['personnelId'] ?? null,
                 'saleDate' => $validated['saleDate'],
                 'dueDate' => $validated['dueDate'] ?? null,
+                'needsFinalMeasurement' => $request->boolean('needsFinalMeasurement'),
                 'kdvIncluded' => $request->boolean('kdvIncluded'),
                 'notes' => $validated['notes'] ?? null,
                 'saleDiscountPercent' => (float) ($validated['saleDiscountPercent'] ?? 0),
@@ -244,6 +250,7 @@ class SaleController extends Controller
             'personnelId' => 'nullable|exists:personnel,id',
             'saleDate' => 'required|date',
             'dueDate' => 'nullable|date',
+            'needsFinalMeasurement' => 'nullable|boolean',
             'kdvIncluded' => 'nullable|boolean',
             'notes' => 'nullable|string',
             'saleDiscountPercent' => 'nullable|numeric|min:0|max:100',
@@ -287,6 +294,7 @@ class SaleController extends Controller
                 'personnelId' => $validated['personnelId'] ?? null,
                 'saleDate' => $validated['saleDate'],
                 'dueDate' => $validated['dueDate'] ?? null,
+                'needsFinalMeasurement' => $request->boolean('needsFinalMeasurement'),
                 'kdvIncluded' => $request->boolean('kdvIncluded'),
                 'notes' => $validated['notes'] ?? null,
                 'drawingFiles' => DrawingFiles::syncFromRequest(
