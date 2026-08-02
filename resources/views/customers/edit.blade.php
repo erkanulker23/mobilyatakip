@@ -262,7 +262,7 @@
             <div class="card-header">Son Siparişler</div>
             <div class="divide-y divide-neutral-100 dark:divide-slate-700">
                 @foreach($customer->sales->where('isCancelled', false)->sortByDesc('saleDate')->take(3) as $sale)
-                @php $saleStatus = \App\Support\CustomerBalance::saleStatus($sale); @endphp
+                @php($saleStatus = \App\Support\CustomerBalance::saleStatus($sale))
                 <a href="{{ route('sales.show', $sale) }}" class="flex items-center justify-between gap-3 px-4 py-3 hover:bg-neutral-50 dark:hover:bg-slate-800/50 transition-colors">
                     <div class="min-w-0">
                         <p class="font-medium text-sm text-neutral-900 dark:text-white truncate">{{ $sale->saleNumber }}</p>
