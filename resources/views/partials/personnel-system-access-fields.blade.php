@@ -48,7 +48,12 @@
                         @error('password')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                     </div>
                     <div>
-                        <label class="form-label">Şifre tekrar@if(! $linkedUser)<span class="text-red-500">*</span>@endif</label>
+                        <label class="form-label">
+                            Şifre tekrar
+                            @if(! $linkedUser)
+                            <span class="text-red-500">*</span>
+                            @endif
+                        </label>
                         <input type="password" name="password_confirmation" class="form-input" autocomplete="new-password" placeholder="Şifreyi tekrar girin">
                     </div>
                 </div>
