@@ -1,4 +1,4 @@
-<div class="space-y-4" x-data="TurkeyAddress.initAlpine({{ $model ?? 'quickCustomer' }})" x-init="initPicker()">
+<div class="space-y-4" x-data="TurkeyAddress.initAlpine('{{ $model ?? 'quickCustomer' }}')" x-init="initPicker()">
     <div>
         <label class="form-label">Adres</label>
         <textarea x-model="{{ $model ?? 'quickCustomer' }}.address" rows="2" class="form-input form-textarea" placeholder="Mahalle, sokak, bina no..."></textarea>

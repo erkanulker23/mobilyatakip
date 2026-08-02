@@ -6,6 +6,13 @@
     $summary = $summary ?? ['opening' => 0, 'totalIn' => 0, 'totalOut' => 0, 'current' => 0, 'count' => 0];
 @endphp
 
+@if(session('success'))
+<div class="mb-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-sm">{{ session('success') }}</div>
+@endif
+@if(session('error'))
+<div class="mb-4 p-4 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm">{{ session('error') }}</div>
+@endif
+
 <div class="mb-6" x-data="{ showVirman: @json($errors->has('toKasaId') || $errors->has('amount') || $errors->has('movementDate') || $errors->has('description')) }">
     <div class="flex items-start justify-between flex-wrap gap-4 mb-6">
         <div>
@@ -36,6 +43,7 @@
             @endif
             @include('partials.action-buttons', [
                 'edit' => route('kasa.edit', $kasa),
+                'destroy' => route('kasa.destroy', $kasa),
             ])
         </div>
     </div>
@@ -145,6 +153,7 @@
                                 <th class="table-th">Detay</th>
                                 <th class="table-th">Açıklama</th>
                                 <th class="table-th text-right">Tutar</th>
+                                <th class="table-th text-right w-16">Sil</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-neutral-100">
@@ -207,10 +216,24 @@
                                 <td class="table-td text-right whitespace-nowrap font-semibold tabular-nums {{ $tutar >= 0 ? 'text-emerald-600' : 'text-rose-600' }}">
                                     {{ $tutar >= 0 ? '+' : '' }}{{ number_format($tutar, 0, ',', '.') }} ₺
                                 </td>
+                                <td class="table-td text-right">
+                                    @php
+                                        $deleteConfirm = $h->refType === 'kasa_transfer'
+                                            ? 'Bu virman kaydının her iki tarafı da silinecek. Devam edilsin mi?'
+                                            : 'Bu hareketi silmek istediğinize emin misiniz? Bağlı tahsilat/ödeme/gider kaydı da kaldırılır.';
+                                    @endphp
+                                    <form method="POST" action="{{ route('kasa.hareketler.destroy', [$kasa, $h]) }}" class="inline" onsubmit="return confirm({{ \Illuminate\Support\Js::from($deleteConfirm) }})">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="action-btn-delete p-2 rounded-xl transition-colors" title="Sil" aria-label="Hareketi sil">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        </button>
+                                    </form>
+                                </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="5" class="px-6 py-12 text-center text-neutral-500">
+                                <td colspan="6" class="px-6 py-12 text-center text-neutral-500">
                                     <p class="font-medium">Henüz hareket yok</p>
                                     <p class="text-sm mt-1">Tahsilat, ödeme veya virman yapıldığında burada görünür.</p>
                                 </td>

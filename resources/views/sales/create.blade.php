@@ -706,13 +706,8 @@ function initProductSelect(sel, rowIdx) {
 function fmt(n) { return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n || 0); }
 function parseTrNum(s) {
     if (s == null || s === '') return NaN;
-    const t = String(s).replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
-    return parseFloat(t) || NaN;
-}
-function formatPriceInput(inp) {
-    if (!inp || inp.classList && !inp.classList.contains('item-price')) return;
-    const v = parseTrNum(inp.value);
-    if (!isNaN(v) && v >= 0) { inp.value = fmt(v); inp.setAttribute('data-raw', String(v)); }
+    if (typeof s === 'number') return s;
+    return window.parseMoney ? window.parseMoney(s) : NaN;
 }
 function updateSaleTotals() {
     const subtotalEl = document.getElementById('subtotalBeforeDiscDisplay');
@@ -813,12 +808,10 @@ function onGrandTotalOverrideInput() {
     updateSaleTotals();
 }
 document.getElementById('saleForm')?.addEventListener('input', function(e) {
-    if (e.target.classList.contains('item-price')) formatPriceInput(e.target);
     if (e.target.id === 'grandTotalOverride') { onGrandTotalOverrideInput(); return; }
     updateSaleTotals();
 });
 document.getElementById('saleForm')?.addEventListener('change', function(e) {
-    if (e.target.classList.contains('item-price')) formatPriceInput(e.target);
     if (e.target.id === 'grandTotalOverride') { onGrandTotalOverrideInput(); return; }
     updateSaleTotals();
 });

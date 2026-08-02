@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CustomerPayment;
 use App\Models\Kasa;
+use App\Models\KasaHareket;
 use App\Models\SupplierPayment;
 use App\Services\AuditService;
 use App\Services\KasaService;
@@ -194,16 +195,52 @@ class KasaController extends Controller
         return redirect()->route('kasa.index')->with('success', 'Kasa güncellendi.');
     }
 
+    public function destroyMovement(Kasa $kasa, KasaHareket $hareket)
+    {
+        if ($hareket->kasaId !== $kasa->id) {
+            abort(404);
+        }
+
+        try {
+            $this->kasaService->deleteMovement($kasa, $hareket);
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        $this->auditService->logDelete('kasa_hareket', $hareket->id, [
+            'kasaId' => $kasa->id,
+            'refType' => $hareket->refType,
+            'amount' => (float) ($hareket->amount ?? 0),
+        ]);
+
+        return redirect()
+            ->route('kasa.show', $kasa)
+            ->with('success', 'Kasa hareketi silindi.');
+    }
+
     public function destroy(Kasa $kasa)
     {
-        if ($kasa->hareketler()->exists()) {
-            return back()->with('error', 'Hareket kaydı olan kasa silinemez.');
+        $movementCount = (int) $kasa->hareketler()->count();
+        $customerPaymentCount = (int) $kasa->customerPayments()->count();
+        $supplierPaymentCount = (int) $kasa->supplierPayments()->count();
+        $expenseCount = (int) \App\Models\Expense::where('kasaId', $kasa->id)->count();
+
+        if ($movementCount > 0) {
+            return back()->with('error', 'Bu kasada ' . $movementCount . ' hareket kaydı var. Önce kasa detayından hareketleri silin.');
         }
-        if ($kasa->customerPayments()->exists() || $kasa->supplierPayments()->exists()) {
-            return back()->with('error', 'Ödeme kaydı bağlı kasa silinemez.');
+        if ($customerPaymentCount > 0 || $supplierPaymentCount > 0) {
+            $parts = [];
+            if ($customerPaymentCount > 0) {
+                $parts[] = $customerPaymentCount . ' tahsilat';
+            }
+            if ($supplierPaymentCount > 0) {
+                $parts[] = $supplierPaymentCount . ' tedarikçi ödemesi';
+            }
+
+            return back()->with('error', 'Bu kasaya bağlı ' . implode(' ve ', $parts) . ' kaydı var. Silinemez.');
         }
-        if (\App\Models\Expense::where('kasaId', $kasa->id)->exists()) {
-            return back()->with('error', 'Gider kaydı bağlı kasa silinemez.');
+        if ($expenseCount > 0) {
+            return back()->with('error', 'Bu kasaya bağlı ' . $expenseCount . ' gider kaydı var. Silinemez.');
         }
 
         $this->auditService->logDelete('kasa', $kasa->id, ['name' => $kasa->name]);

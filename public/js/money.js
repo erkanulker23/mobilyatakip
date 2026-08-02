@@ -24,17 +24,52 @@
     if (s == null || s === '') return NaN;
     var t = String(s).trim().replace(/\s/g, '');
     if (!t) return NaN;
-    // Laravel/DB kaynaklı 80.00 veya 25000.50 gibi noktalı ondalık
-    if (/^\d+\.\d+$/.test(t)) {
-      return parseFloat(t);
-    }
+
     if (t.indexOf(',') !== -1) {
       t = t.replace(/\./g, '').replace(',', '.');
       return parseFloat(t);
     }
-    t = t.replace(/\./g, '');
+
+    var dotCount = (t.match(/\./g) || []).length;
+    if (dotCount > 1) {
+      return parseFloat(t.replace(/\./g, ''));
+    }
+
+    if (dotCount === 1) {
+      var parts = t.split('.');
+      var intPart = parts[0];
+      var frac = parts[1] || '';
+
+      if (frac === '') return parseFloat(intPart);
+
+      if (frac.length >= 3 && /^0+$/.test(frac)) {
+        return parseFloat(intPart + frac.substring(0, 3));
+      }
+
+      if (frac.length === 3 && /^\d+$/.test(frac)) {
+        return parseFloat(intPart + frac);
+      }
+
+      if (frac.length <= 2 && /^\d+$/.test(frac)) {
+        return parseFloat(intPart + '.' + frac);
+      }
+    }
+
     return parseFloat(t);
   };
+
+  /** Yazarken 50.000 gibi binlik girişi bozmayalım */
+  function isPartialMoneyInput(value) {
+    var t = String(value || '').trim();
+    if (/^\d+\.$/.test(t)) return true;
+    if (t.indexOf(',') !== -1) return false;
+    var m = t.match(/^(\d+)\.(\d+)$/);
+    if (!m) return false;
+    var frac = m[2];
+    if (frac.length < 3) return true;
+    if (frac.length >= 3 && !/^0+$/.test(frac)) return false;
+    return false;
+  }
 
   if (!window.fmt) window.fmt = window.fmtMoney;
   if (!window.parseTrNum) window.parseTrNum = window.parseMoney;
@@ -76,6 +111,7 @@
     if (el.value) formatMoneyInput(el);
 
     el.addEventListener('input', function () {
+      if (isPartialMoneyInput(el.value)) return;
       formatMoneyInput(el);
       el.dispatchEvent(new Event('change', { bubbles: true }));
     });

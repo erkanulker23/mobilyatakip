@@ -33,7 +33,7 @@
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
   </button>
   {{-- Silme onay modal --}}
-  <div x-show="deleteOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+  <div x-show="deleteOpen" x-cloak class="fixed inset-0 z-[200] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
     <div x-show="deleteOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-black/50" @click="deleteOpen = false"></div>
     <div x-show="deleteOpen" x-transition class="relative card max-w-sm w-full p-6" @keydown.escape.window="deleteOpen = false">
       <h2 id="delete-modal-title" class="text-base font-semibold text-neutral-900">Kaydı sil</h2>

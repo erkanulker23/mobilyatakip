@@ -137,30 +137,55 @@
         loadDistricts: loadDistricts,
         fillSelect: fillSelect,
         init: initAll,
-        initAlpine: function (root, cityModel, districtModel, cityKey, districtKey) {
+        initAlpine: function (rootOrKey, cityKey, districtKey) {
             cityKey = cityKey || 'cityId';
             districtKey = districtKey || 'districtId';
+            var modelKey = typeof rootOrKey === 'string' ? rootOrKey : null;
+            var staticRoot = typeof rootOrKey === 'object' && rootOrKey !== null ? rootOrKey : null;
+
+            function resolveRoot(component) {
+                if (staticRoot) {
+                    return staticRoot;
+                }
+                if (modelKey && component.$parent) {
+                    return component.$parent[modelKey];
+                }
+                return null;
+            }
 
             return {
                 cities: [],
                 districts: [],
-                cityId: root[cityKey] || '',
-                districtId: root[districtKey] || '',
+                cityId: '',
+                districtId: '',
                 async initPicker() {
+                    var root = resolveRoot(this);
+                    if (!root) {
+                        console.error('[TurkeyAddress] Parent model bulunamadı:', modelKey || rootOrKey);
+                        return;
+                    }
                     this.cities = await loadCities();
-                    this.cityId = root[cityKey] || '';
-                    this.districtId = root[districtKey] || '';
+                    this.cityId = root[cityKey] ? String(root[cityKey]) : '';
+                    this.districtId = root[districtKey] ? String(root[districtKey]) : '';
                     if (this.cityId) {
                         this.districts = await loadDistricts(this.cityId);
                     }
                 },
                 async onCityChange() {
+                    var root = resolveRoot(this);
+                    if (!root) {
+                        return;
+                    }
                     root[cityKey] = this.cityId;
                     root[districtKey] = '';
                     this.districtId = '';
                     this.districts = this.cityId ? await loadDistricts(this.cityId) : [];
                 },
                 onDistrictChange() {
+                    var root = resolveRoot(this);
+                    if (!root) {
+                        return;
+                    }
                     root[districtKey] = this.districtId;
                 },
             };

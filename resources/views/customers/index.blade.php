@@ -30,9 +30,6 @@
                 <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 <input type="text" name="search" id="customerSearchInput" placeholder="Müşteri adı, telefon veya adres ara..." value="{{ request('search') }}" class="form-input pl-11" autocomplete="off">
             </div>
-            @if(request('isActive') !== null && request('isActive') !== '')
-                <input type="hidden" name="isActive" value="{{ request('isActive') }}">
-            @endif
         </form>
     </div>
     <div class="overflow-x-auto">
@@ -43,7 +40,6 @@
                     <th class="table-th">Telefon</th>
                     <th class="table-th">Adres</th>
                     <th class="table-th">Cari</th>
-                    <th class="table-th">Durum</th>
                     <th class="table-th">Tarih</th>
                     <th class="table-th text-right">İşlemler</th>
                 </tr>
@@ -63,13 +59,6 @@
                         <span class="block text-xs text-neutral-500 mt-0.5">{{ number_format($cari['amount'], 0, ',', '.') }} ₺</span>
                         @endif
                     </td>
-                    <td class="table-td">
-                        @if($c->isActive ?? true)
-                            <span class="badge badge-dark">Aktif</span>
-                        @else
-                            <span class="badge bg-neutral-100 text-neutral-600">Pasif</span>
-                        @endif
-                    </td>
                     <td class="table-td text-neutral-500">{{ $c->createdAt?->format('d.m.Y') ?? '—' }}</td>
                     <td class="table-td">
                         @include('partials.action-buttons', [
@@ -80,7 +69,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="px-6 py-16 text-center">
+                    <td colspan="6" class="px-6 py-16 text-center">
                         <p class="text-neutral-500 text-sm">Kayıt bulunamadı.</p>
                         <a href="{{ route('customers.create') }}" class="btn-primary mt-4">Yeni müşteri ekle</a>
                     </td>

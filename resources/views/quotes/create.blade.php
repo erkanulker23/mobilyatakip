@@ -377,13 +377,8 @@ function quoteCreateForm() {
 function fmt(n) { return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n || 0); }
 function parseTrNum(s) {
     if (s == null || s === '') return NaN;
-    const t = String(s).replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
-    return parseFloat(t) || NaN;
-}
-function formatPriceInput(inp) {
-    if (!inp || !inp.classList.contains('item-price')) return;
-    const v = parseTrNum(inp.value);
-    if (!isNaN(v) && v >= 0) inp.value = fmt(v);
+    if (typeof s === 'number') return s;
+    return window.parseMoney ? window.parseMoney(s) : NaN;
 }
 function updateQuoteTotals() {
     const kdvIncl = document.querySelector('select[name="kdvIncluded"]')?.value === '1';
@@ -622,12 +617,10 @@ function initQuoteForm() {
         setTimeout(function() { updateQuoteCustomerInfo(window.customerQuoteTomSelect?.getValue()); }, 0);
     }
     addQuoteRow();
-    document.getElementById('quoteForm')?.addEventListener('input', function(e) {
-        if (e.target.classList.contains('item-price')) formatPriceInput(e.target);
+    document.getElementById('quoteForm')?.addEventListener('input', function() {
         updateQuoteTotals();
     });
-    document.getElementById('quoteForm')?.addEventListener('change', function(e) {
-        if (e.target.classList.contains('item-price')) formatPriceInput(e.target);
+    document.getElementById('quoteForm')?.addEventListener('change', function() {
         updateQuoteTotals();
     });
     document.getElementById('quoteForm')?.addEventListener('submit', function() {

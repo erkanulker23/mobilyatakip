@@ -66,9 +66,6 @@ class CustomerController extends Controller
                     ->orWhere('taxNumber', 'like', "%{$s}%");
             });
         }
-        if ($request->filled('isActive')) {
-            $q->where('isActive', $request->boolean('isActive'));
-        }
         $customers = $q->paginate(20)->withQueryString();
         return view('customers.index', compact('customers'));
     }

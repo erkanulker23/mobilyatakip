@@ -1,6 +1,13 @@
 @extends('layouts.app')
 @section('title', 'Kasa')
 @section('content')
+@if(session('success'))
+<div class="mb-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-sm">{{ session('success') }}</div>
+@endif
+@if(session('error'))
+<div class="mb-4 p-4 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm">{{ session('error') }}</div>
+@endif
+
 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
     <div>
         <h1 class="page-title">Kasa</h1>
