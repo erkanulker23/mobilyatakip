@@ -2,7 +2,7 @@
     $print = $print ?? false;
     $forShipment = $forShipment ?? false;
     $today = now()->startOfDay();
-    $salesColspan = 6 + ($forShipment ? 0 : 1) + ($print ? 0 : 1);
+    $salesColspan = 6 + ($forShipment ? 0 : 2) + ($print ? 0 : 1);
     $sshColspan = 7 + ($print ? 0 : 1);
 @endphp
 
@@ -22,6 +22,7 @@
                     <th class="table-th">Kalan Gün</th>
                     @if(!$forShipment)
                     <th class="table-th text-right">Tutar</th>
+                    <th class="table-th text-right">Kalan Bakiye</th>
                     @endif
                     @if(!$print)<th class="table-th"></th>@endif
                 </tr>
@@ -31,6 +32,7 @@
                 @php
                     $daysLeft = $s->dueDate ? $today->diffInDays($s->dueDate, false) : null;
                     $rowClass = $daysLeft !== null && $daysLeft < 0 ? 'text-red-600' : ($daysLeft !== null && $daysLeft <= 3 ? 'text-amber-700' : 'text-slate-600');
+                    $remaining = \App\Support\CustomerBalance::saleRemaining($s);
                 @endphp
                 <tr>
                     <td class="table-td font-medium text-neutral-900">{{ $s->saleNumber }}</td>
@@ -47,6 +49,13 @@
                     </td>
                     @if(!$forShipment)
                     <td class="table-td text-right font-medium">{{ number_format($s->grandTotal ?? 0, 0, ',', '.') }} ₺</td>
+                    <td class="table-td text-right font-medium {{ $remaining > 0 ? 'text-red-600' : 'text-neutral-400' }}">
+                        @if($remaining > 0)
+                            {{ number_format($remaining, 0, ',', '.') }} ₺
+                        @else
+                            —
+                        @endif
+                    </td>
                     @endif
                     @if(!$print)
                     <td class="table-td"><a href="{{ route('sales.show', $s) }}" class="text-primary-600 hover:underline text-sm">Detay</a></td>

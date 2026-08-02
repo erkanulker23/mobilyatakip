@@ -75,6 +75,10 @@
     <p class="page-desc">İstatistiklerinize genel bakış</p>
 </div>
 
+@if($employeeOfTheMonth)
+    @include('partials.employee-of-the-month')
+@endif
+
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-8">
     {{-- Son 3 Gün --}}
     <div class="card p-6">

@@ -125,6 +125,9 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        $employeeOfTheMonth = $topPersonnel->first();
+        $employeeOfTheMonthLabel = Carbon::now()->locale('tr')->isoFormat('MMMM YYYY');
+
         return view('dashboard.index', compact(
             'stats',
             'last3Days',
@@ -142,6 +145,8 @@ class DashboardController extends Controller
             'upcomingServiceTickets',
             'urgentDueSales',
             'topPersonnel',
+            'employeeOfTheMonth',
+            'employeeOfTheMonthLabel',
         ) + ['terminAlertDays' => self::TERMIN_ALERT_DAYS]);
     }
 

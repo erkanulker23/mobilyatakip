@@ -123,6 +123,28 @@ class PersonnelController extends Controller
             'monthCount' => (clone $activeSalesQuery)->whereMonth('saleDate', now()->month)->whereYear('saleDate', now()->year)->count(),
         ];
 
+        $thisMonthStart = Carbon::now()->startOfMonth();
+        $thisMonthEnd = Carbon::now()->endOfMonth();
+        $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
+        $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
+
+        $thisMonthStats = $this->personnelPeriodStats($personnel, $thisMonthStart, $thisMonthEnd);
+        $lastMonthStats = $this->personnelPeriodStats($personnel, $lastMonthStart, $lastMonthEnd);
+
+        $monthlyPerformance = [
+            'thisMonth' => [
+                'label' => $thisMonthStart->locale('tr')->isoFormat('MMMM YYYY'),
+                ...$thisMonthStats,
+            ],
+            'lastMonth' => [
+                'label' => $lastMonthStart->locale('tr')->isoFormat('MMMM YYYY'),
+                ...$lastMonthStats,
+            ],
+            'countChange' => $this->periodChangePercent($thisMonthStats['count'], $lastMonthStats['count']),
+            'totalChange' => $this->periodChangePercent($thisMonthStats['total'], $lastMonthStats['total']),
+            'collectedChange' => $this->periodChangePercent($thisMonthStats['collected'], $lastMonthStats['collected']),
+        ];
+
         $sales = $salesQuery->paginate(20)->withQueryString();
 
         $terminHorizon = Carbon::today()->addDays(7);
@@ -139,7 +161,7 @@ class PersonnelController extends Controller
 
         $viewingOwnProfile = auth()->user()?->personnel?->id === $personnel->id;
 
-        return view('personnel.show', compact('personnel', 'sales', 'quotes', 'salesStats', 'viewingOwnProfile', 'upcomingDueSales'));
+        return view('personnel.show', compact('personnel', 'sales', 'quotes', 'salesStats', 'viewingOwnProfile', 'upcomingDueSales', 'monthlyPerformance'));
     }
 
     public function edit(Personnel $personnel)
@@ -229,6 +251,31 @@ class PersonnelController extends Controller
         if ($path && Storage::disk('public')->exists($path)) {
             Storage::disk('public')->delete($path);
         }
+    }
+
+    private function personnelPeriodStats(Personnel $personnel, Carbon $start, Carbon $end): array
+    {
+        $base = $personnel->sales()
+            ->where('isCancelled', false)
+            ->whereBetween('saleDate', [$start->toDateString(), $end->toDateString()]);
+
+        return [
+            'count' => (int) (clone $base)->count(),
+            'total' => (float) (clone $base)->sum('grandTotal'),
+            'collected' => (float) (clone $base)->sum('paidAmount'),
+        ];
+    }
+
+    private function periodChangePercent(float|int $current, float|int $previous): float
+    {
+        $current = (float) $current;
+        $previous = (float) $previous;
+
+        if ($previous <= 0.005) {
+            return $current > 0.005 ? 100.0 : 0.0;
+        }
+
+        return round((($current - $previous) / $previous) * 100, 1);
     }
 
     private function authorizeView(Personnel $personnel): void

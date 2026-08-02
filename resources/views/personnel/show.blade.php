@@ -89,6 +89,95 @@
     </div>
 </div>
 
+@php
+    $perf = $monthlyPerformance ?? null;
+    $maxCount = max(1, ($perf['thisMonth']['count'] ?? 0), ($perf['lastMonth']['count'] ?? 0));
+    $maxTotal = max(1, ($perf['thisMonth']['total'] ?? 0), ($perf['lastMonth']['total'] ?? 0));
+@endphp
+@if($perf)
+<div class="card overflow-hidden mb-6">
+    <div class="px-6 py-4 border-b border-neutral-200 dark:border-slate-700 bg-neutral-50/80 dark:bg-slate-800/40">
+        <h2 class="text-lg font-semibold text-neutral-900 dark:text-white">Aylık Performans</h2>
+        <p class="text-sm text-neutral-500 dark:text-slate-400 mt-1">Geçen ay ile bu ay karşılaştırması (iptal edilmeyen siparişler)</p>
+    </div>
+    <div class="p-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="rounded-2xl border border-neutral-200 dark:border-slate-700 p-5 bg-white dark:bg-slate-900/40">
+                <p class="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-slate-400 mb-4">Geçen Ay</p>
+                <p class="text-sm font-medium text-neutral-700 dark:text-slate-300 capitalize mb-4">{{ $perf['lastMonth']['label'] }}</p>
+                <dl class="space-y-4">
+                    <div>
+                        <dt class="text-xs text-neutral-500 dark:text-slate-400 mb-1">Sipariş sayısı</dt>
+                        <dd class="flex items-end justify-between gap-3">
+                            <span class="text-2xl font-semibold tabular-nums text-neutral-900 dark:text-white">{{ $perf['lastMonth']['count'] }}</span>
+                            <div class="flex-1 max-w-[8rem] h-2 rounded-full bg-neutral-100 dark:bg-slate-700 overflow-hidden">
+                                <div class="h-full rounded-full bg-neutral-400 dark:bg-slate-500" style="width: {{ min(100, ($perf['lastMonth']['count'] / $maxCount) * 100) }}%"></div>
+                            </div>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-neutral-500 dark:text-slate-400 mb-1">Satış cirosu</dt>
+                        <dd class="text-xl font-semibold tabular-nums text-neutral-900 dark:text-white">₺{{ number_format($perf['lastMonth']['total'], 0, ',', '.') }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-neutral-500 dark:text-slate-400 mb-1">Tahsil edilen</dt>
+                        <dd class="text-lg font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">₺{{ number_format($perf['lastMonth']['collected'], 0, ',', '.') }}</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <div class="rounded-2xl border border-emerald-200 dark:border-emerald-900/50 p-5 bg-emerald-50/40 dark:bg-emerald-950/20 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-200/30 dark:bg-emerald-800/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" aria-hidden="true"></div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300 mb-4">Bu Ay</p>
+                <p class="text-sm font-medium text-emerald-900 dark:text-emerald-100 capitalize mb-4">{{ $perf['thisMonth']['label'] }}</p>
+                <dl class="space-y-4 relative">
+                    <div>
+                        <dt class="text-xs text-emerald-800/70 dark:text-emerald-300/80 mb-1">Sipariş sayısı</dt>
+                        <dd class="flex items-end justify-between gap-3 flex-wrap">
+                            <span class="text-2xl font-semibold tabular-nums text-neutral-900 dark:text-white">{{ $perf['thisMonth']['count'] }}</span>
+                            @include('partials.performance-change-badge', ['change' => $perf['countChange']])
+                            <div class="w-full h-2 rounded-full bg-emerald-100 dark:bg-emerald-900/40 overflow-hidden">
+                                <div class="h-full rounded-full bg-emerald-500" style="width: {{ min(100, ($perf['thisMonth']['count'] / $maxCount) * 100) }}%"></div>
+                            </div>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-emerald-800/70 dark:text-emerald-300/80 mb-1">Satış cirosu</dt>
+                        <dd class="flex items-center justify-between gap-3 flex-wrap">
+                            <span class="text-xl font-semibold tabular-nums text-neutral-900 dark:text-white">₺{{ number_format($perf['thisMonth']['total'], 0, ',', '.') }}</span>
+                            @include('partials.performance-change-badge', ['change' => $perf['totalChange']])
+                        </dd>
+                        <div class="mt-2 h-2 rounded-full bg-emerald-100 dark:bg-emerald-900/40 overflow-hidden">
+                            <div class="h-full rounded-full bg-emerald-600" style="width: {{ min(100, ($perf['thisMonth']['total'] / $maxTotal) * 100) }}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-emerald-800/70 dark:text-emerald-300/80 mb-1">Tahsil edilen</dt>
+                        <dd class="flex items-center justify-between gap-3 flex-wrap">
+                            <span class="text-lg font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">₺{{ number_format($perf['thisMonth']['collected'], 0, ',', '.') }}</span>
+                            @include('partials.performance-change-badge', ['change' => $perf['collectedChange']])
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+
+        @php($overallUp = ($perf['totalChange'] ?? 0) >= 0)
+        <p class="mt-5 pt-5 border-t border-neutral-200 dark:border-slate-700 text-sm text-neutral-600 dark:text-slate-400">
+            @if(($perf['thisMonth']['count'] ?? 0) === 0 && ($perf['lastMonth']['count'] ?? 0) === 0)
+                Bu personel için karşılaştırılacak aylık satış verisi henüz yok.
+            @elseif($overallUp && ($perf['totalChange'] ?? 0) > 0)
+                Bu ay cirosu geçen aya göre <span class="font-semibold text-emerald-600 dark:text-emerald-400">%{{ abs($perf['totalChange']) }} artış</span> gösteriyor.
+            @elseif(($perf['totalChange'] ?? 0) < 0)
+                Bu ay cirosu geçen aya göre <span class="font-semibold text-red-600 dark:text-red-400">%{{ abs($perf['totalChange']) }} azalış</span> gösteriyor.
+            @else
+                Bu ay cirosu geçen ay ile aynı seviyede.
+            @endif
+        </p>
+    </div>
+</div>
+@endif
+
 <div class="card overflow-hidden mb-6 w-full">
     <div class="px-6 py-4 border-b border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/30 flex items-center justify-between gap-3 flex-wrap">
         <div>
