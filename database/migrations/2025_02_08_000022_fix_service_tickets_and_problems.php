@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\MigrationForeignKeys;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -10,24 +11,16 @@ return new class extends Migration
     public function up(): void
     {
         if (Schema::hasTable('service_tickets') && Schema::hasColumn('service_tickets', 'saleId')) {
-            if (Schema::getConnection()->getDriverName() === 'mysql') {
-                $fks = DB::select(
-                    'SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ? AND REFERENCED_TABLE_NAME IS NOT NULL',
-                    [DB::getDatabaseName(), 'service_tickets', 'saleId']
+            if (Schema::getConnection()->getDriverName() === 'mysql' && Schema::hasTable('sales')) {
+                MigrationForeignKeys::dropOnColumn('service_tickets', 'saleId');
+                MigrationForeignKeys::alignColumn('service_tickets', 'saleId', 'sales', 'id');
+                MigrationForeignKeys::addIfMissing(
+                    'service_tickets',
+                    'saleId',
+                    'sales',
+                    'id',
+                    'service_tickets_saleid_foreign'
                 );
-                foreach ($fks as $fk) {
-                    DB::statement("ALTER TABLE service_tickets DROP FOREIGN KEY `{$fk->CONSTRAINT_NAME}`");
-                }
-
-                DB::statement('ALTER TABLE service_tickets MODIFY saleId VARCHAR(36) NULL');
-
-                $remaining = DB::select(
-                    'SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ? AND REFERENCED_TABLE_NAME IS NOT NULL',
-                    [DB::getDatabaseName(), 'service_tickets', 'saleId']
-                );
-                if (empty($remaining)) {
-                    DB::statement('ALTER TABLE service_tickets ADD CONSTRAINT service_tickets_saleid_foreign FOREIGN KEY (saleId) REFERENCES sales(id) ON DELETE SET NULL');
-                }
             }
         }
 

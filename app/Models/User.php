@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use App\Support\UserSchema;
 
 class User extends Authenticatable
 {
@@ -39,10 +40,17 @@ class User extends Authenticatable
     protected static function booted(): void
     {
         static::creating(function (User $user) {
-            if (empty($user->getKey())) {
-                $user->setAttribute($user->getKeyName(), (string) Str::uuid());
+            if (! empty($user->getKey()) || ! UserSchema::idIsUuid()) {
+                return;
             }
+
+            $user->setAttribute($user->getKeyName(), (string) Str::uuid());
         });
+    }
+
+    public function getIncrementing(): bool
+    {
+        return ! UserSchema::idIsUuid();
     }
 
     public function getAuthPassword(): string

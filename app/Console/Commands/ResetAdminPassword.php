@@ -16,13 +16,8 @@ class ResetAdminPassword extends Command
     public function handle(): int
     {
         $email = (string) $this->argument('email');
-        $user = User::where('email', $email)->first();
 
-        if (! $user) {
-            $this->error("Kullanıcı bulunamadı: {$email}");
-
-            return self::FAILURE;
-        }
+        $user = User::where('email', $email)->first() ?? new User(['email' => $email]);
 
         $user->name = $user->name ?: 'Süper Admin';
         $user->role = 'admin';
