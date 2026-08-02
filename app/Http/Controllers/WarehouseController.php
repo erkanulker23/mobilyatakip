@@ -2,11 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ValidatesTurkeyAddress;
 use App\Models\Warehouse;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 
 class WarehouseController extends Controller
 {
+    use ValidatesTurkeyAddress;
+
+    public function __construct(private AuditService $auditService) {}
+
     public function index(Request $request)
     {
         $q = Warehouse::query()->orderBy('name');
@@ -29,12 +35,12 @@ class WarehouseController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validated = $this->validateWithTurkeyAddress($request, [
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:50|unique:warehouses,code',
-            'address' => 'nullable|string',
         ]);
-        Warehouse::create($validated);
+        $warehouse = Warehouse::create($validated);
+        $this->auditService->logCreate('warehouse', $warehouse->id, ['name' => $warehouse->name]);
         return redirect()->route('warehouses.index')->with('success', 'Depo kaydedildi.');
     }
 
@@ -51,18 +57,20 @@ class WarehouseController extends Controller
 
     public function update(Request $request, Warehouse $warehouse)
     {
-        $validated = $request->validate([
+        $validated = $this->validateWithTurkeyAddress($request, [
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:50|unique:warehouses,code,' . $warehouse->id,
-            'address' => 'nullable|string',
             'isActive' => 'boolean',
         ]);
+        $oldData = ['name' => $warehouse->name];
         $warehouse->update($validated);
+        $this->auditService->logUpdate('warehouse', $warehouse->id, $oldData, ['name' => $warehouse->name]);
         return redirect()->route('warehouses.index')->with('success', 'Depo güncellendi.');
     }
 
     public function destroy(Warehouse $warehouse)
     {
+        $this->auditService->logDelete('warehouse', $warehouse->id, ['name' => $warehouse->name]);
         $warehouse->delete();
         return redirect()->route('warehouses.index')->with('success', 'Depo silindi.');
     }

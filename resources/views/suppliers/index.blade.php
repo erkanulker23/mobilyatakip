@@ -3,53 +3,52 @@
 @section('content')
 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
     <div>
-        <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Tedarikçiler</h1>
-        <p class="text-slate-600 dark:text-slate-400 mt-1">Tedarikçi listesi ve borç takibi</p>
+        <h1 class="page-title">Tedarikçiler</h1>
+        <p class="page-desc">Tedarikçi listesi ve borç takibi</p>
     </div>
     <div class="flex flex-wrap items-center gap-2">
-        <a href="{{ route('suppliers.excel.export') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 font-medium">
+        <a href="{{ route('suppliers.excel.export') }}" class="btn-secondary text-sm">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
             Excel İndir
         </a>
-        <form action="{{ route('suppliers.excel.import') }}" method="POST" enctype="multipart/form-data" class="inline">
+        <form action="{{ route('suppliers.excel.import') }}" method="POST" enctype="multipart/form-data" class="inline-flex">
             @csrf
-            <label class="inline-flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 font-medium cursor-pointer">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 16m4-4v12"></path></svg>
+            <label class="btn-secondary text-sm cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 16m4-4v12"></path></svg>
                 Excel Yükle
                 <input type="file" name="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="this.form.submit()">
             </label>
         </form>
-        <a href="{{ route('suppliers.create') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        <a href="{{ route('suppliers.create') }}" class="btn-primary">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
             Yeni Tedarikçi
         </a>
     </div>
 </div>
 
-<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 mb-6">
-    <form method="GET" class="flex flex-wrap gap-4 items-end">
-        <div class="min-w-[200px] flex-1">
-            <label class="form-label">Ara (kod, ad, e-posta, telefon, vergi no)</label>
-            <input type="text" name="search" placeholder="Ara..." value="{{ request('search') }}" class="form-input">
-        </div>
-        <div class="min-w-[140px]">
-            <label class="form-label">Durum</label>
-            <select name="isActive" class="form-select">
-                <option value="">Tümü</option>
-                <option value="1" {{ request('isActive') === '1' ? 'selected' : '' }}>Aktif</option>
-                <option value="0" {{ request('isActive') === '0' ? 'selected' : '' }}>Pasif</option>
-            </select>
-        </div>
-        <div class="flex gap-2">
-            <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Filtrele</button>
-            <a href="{{ route('suppliers.index') }}" class="px-4 py-2 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 font-medium">Temizle</a>
-        </div>
-    </form>
-</div>
-
-<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden" x-data="suppliersBulk" data-supplier-ids='{{ json_encode($supplierIds ?? []) }}'>
-    <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-600 flex items-center justify-between gap-4 flex-wrap" x-show="selected.length > 0">
-        <span class="text-sm text-slate-600 dark:text-slate-400" x-text="selected.length + ' tedarikçi seçildi'"></span>
+<div class="card overflow-hidden" x-data="suppliersBulk" data-supplier-ids='{{ json_encode($supplierIds ?? []) }}'>
+    <div class="p-4 border-b border-neutral-100">
+        <form method="GET" class="flex flex-wrap gap-4 items-end">
+            <div class="min-w-[200px] flex-1">
+                <label class="form-label">Ara (kod, ad, e-posta, telefon, vergi no)</label>
+                <input type="text" name="search" placeholder="Ara..." value="{{ request('search') }}" class="form-input">
+            </div>
+            <div class="min-w-[140px]">
+                <label class="form-label">Durum</label>
+                <select name="isActive" class="form-select">
+                    <option value="">Tümü</option>
+                    <option value="1" {{ request('isActive') === '1' ? 'selected' : '' }}>Aktif</option>
+                    <option value="0" {{ request('isActive') === '0' ? 'selected' : '' }}>Pasif</option>
+                </select>
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="btn-primary">Filtrele</button>
+                <a href="{{ route('suppliers.index') }}" class="btn-secondary">Temizle</a>
+            </div>
+        </form>
+    </div>
+    <div class="px-4 py-3 border-b border-neutral-100 flex items-center justify-between gap-4 flex-wrap" x-show="selected.length > 0">
+        <span class="text-sm text-neutral-500" x-text="selected.length + ' tedarikçi seçildi'"></span>
         <button type="button" @click="showBulkDeleteModal = true"
                 class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium text-sm">
             Seçilenleri sil
@@ -62,40 +61,40 @@
         <div id="suppliers-bulk-form-ids"></div>
     </form>
     <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
-            <thead class="bg-slate-50 dark:bg-slate-700/50">
+            <table class="min-w-full">
+            <thead>
                 <tr>
                     <th class="px-4 py-3 text-left w-12">
                         <input type="checkbox" class="rounded border-slate-300 text-green-600 focus:ring-green-500"
                                @change="toggleAll($event.target.checked)" :checked="selected.length === items.length && items.length > 0">
                     </th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Kod</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Ad</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Telefon</th>
-                    <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Bakiye</th>
-                    <th class="px-6 py-3 text-center text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase w-40">İşlem</th>
+                    <th class="table-th">Kod</th>
+                    <th class="table-th">Ad</th>
+                    <th class="table-th">Telefon</th>
+                    <th class="table-th text-right">Bakiye</th>
+                    <th class="table-th text-center w-40">İşlem</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-200 dark:divide-slate-600">
+            <tbody>
                 @forelse($suppliers as $s)
-                <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50" x-data="{ deleteOpen: false }">
-                    <td class="px-4 py-4">
+                <tr class="hover:bg-neutral-50/50 transition-colors border-b border-neutral-50" x-data="{ deleteOpen: false }">
+                    <td class="table-td">
                         <input type="checkbox" name="ids[]" value="{{ $s->id }}" class="supplier-row-check rounded border-slate-300 text-green-600 focus:ring-green-500"
                                @change="toggleRow('{{ $s->id }}', $event.target.checked)">
                     </td>
-                    <td class="px-6 py-4 text-slate-600 dark:text-slate-400 font-mono text-sm">{{ $s->code ?? '-' }}</td>
-                    <td class="px-6 py-4">
-                        <span class="font-medium text-slate-900 dark:text-slate-100">{{ $s->name }}</span>
+                    <td class="table-td text-neutral-500 font-mono text-sm">{{ $s->code ?? '-' }}</td>
+                    <td class="table-td">
+                        <span class="font-medium text-neutral-900">{{ $s->name }}</span>
                         @if(!($s->isActive ?? true))<span class="ml-1 text-xs text-slate-400">(Pasif)</span>@endif
                     </td>
-                    <td class="px-6 py-4 text-slate-600 dark:text-slate-400">{{ $s->phone ?? '-' }}</td>
+                    <td class="table-td text-neutral-500">{{ $s->phone ?? '-' }}</td>
                     @php
                         $borc = $borcBySupplier[$s->id] ?? 0;
                         $alacak = $alacakBySupplier[$s->id] ?? 0;
                         $bakiye = $borc - $alacak;
                     @endphp
-                    <td class="px-6 py-4 text-right font-medium {{ $bakiye > 0 ? 'text-red-600 dark:text-red-400' : ($bakiye < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400') }}">{{ number_format($bakiye, 0, ',', '.') }} ₺</td>
-                    <td class="px-6 py-4">
+                    <td class="table-td text-right font-medium {{ $bakiye > 0 ? 'text-red-600 dark:text-red-400' : ($bakiye < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-500') }}">{{ number_format($bakiye, 0, ',', '.') }} ₺</td>
+                    <td class="table-td">
                         <div class="flex items-center justify-end gap-1">
                             <a href="{{ route('suppliers.show', $s) }}" aria-label="Görüntüle" title="Görüntüle" class="action-btn-view p-2 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
@@ -112,11 +111,11 @@
                             {{-- Tekil silme: tedarikçiye ait ürünler silinsin mi? --}}
                             <div x-show="deleteOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
                                 <div x-show="deleteOpen" x-transition class="fixed inset-0 bg-black/50" @click="deleteOpen = false"></div>
-                                <div x-show="deleteOpen" x-transition class="relative bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-700">
-                                    <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Tedarikçiyi sil</h2>
-                                    <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Tedarikçiye ait tüm ürünler de kalıcı olarak silinsin mi?</p>
+                                <div x-show="deleteOpen" x-transition class="relative bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full p-6 border border-neutral-200 dark:border-slate-700">
+                                    <h2 class="text-base font-semibold text-neutral-900">Tedarikçiyi sil</h2>
+                                    <p class="mt-2 text-sm text-neutral-500 dark:text-slate-400">Tedarikçiye ait tüm ürünler de kalıcı olarak silinsin mi?</p>
                                     <div class="mt-6 flex flex-col sm:flex-row gap-3 justify-end">
-                                        <button type="button" @click="deleteOpen = false" class="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 font-medium hover:bg-slate-300 dark:hover:bg-slate-500">İptal</button>
+                                        <button type="button" @click="deleteOpen = false" class="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-600 text-neutral-700 dark:text-slate-200 font-medium hover:bg-slate-300 dark:hover:bg-slate-500">İptal</button>
                                         <form method="POST" action="{{ route('suppliers.destroy', $s) }}" class="inline">
                                             @csrf
                                             @method('DELETE')
@@ -136,21 +135,21 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="6" class="px-6 py-12 text-center text-slate-500 dark:text-slate-400">Kayıt bulunamadı.</td></tr>
+                <tr><td colspan="6" class="px-6 py-12 text-center text-neutral-500 dark:text-slate-400">Kayıt bulunamadı.</td></tr>
                 @endforelse
             </tbody>
         </table>
     </div>
-    <div class="px-6 py-3 border-t border-slate-200 dark:border-slate-600">{{ $suppliers->links() }}</div>
+    <div class="px-5 py-3 border-t border-neutral-100">{{ $suppliers->links() }}</div>
 
     {{-- Toplu silme onay: ürünler de silinsin mi? --}}
     <div x-show="showBulkDeleteModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
         <div x-show="showBulkDeleteModal" x-transition class="fixed inset-0 bg-black/50" @click="showBulkDeleteModal = false"></div>
-        <div x-show="showBulkDeleteModal" x-transition class="relative bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-700">
-            <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Toplu tedarikçi silme</h2>
-            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Seçili <span x-text="selected.length"></span> tedarikçi silinecek. Tedarikçilere ait tüm ürünler de kalıcı olarak silinsin mi?</p>
+        <div x-show="showBulkDeleteModal" x-transition class="relative bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full p-6 border border-neutral-200 dark:border-slate-700">
+            <h2 class="text-base font-semibold text-neutral-900">Toplu tedarikçi silme</h2>
+            <p class="mt-2 text-sm text-neutral-500 dark:text-slate-400">Seçili <span x-text="selected.length"></span> tedarikçi silinecek. Tedarikçilere ait tüm ürünler de kalıcı olarak silinsin mi?</p>
             <div class="mt-6 flex flex-col sm:flex-row gap-3 justify-end">
-                <button type="button" @click="showBulkDeleteModal = false" class="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 font-medium hover:bg-slate-300 dark:hover:bg-slate-500">İptal</button>
+                <button type="button" @click="showBulkDeleteModal = false" class="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-600 text-neutral-700 dark:text-slate-200 font-medium hover:bg-slate-300 dark:hover:bg-slate-500">İptal</button>
                 <button type="button" @click="bulkDeleteProducts = false; submitBulkDelete()" class="px-4 py-2 rounded-xl bg-slate-600 text-white font-medium hover:bg-slate-700">Sadece tedarikçileri sil</button>
                 <button type="button" @click="bulkDeleteProducts = true; submitBulkDelete()" class="px-4 py-2 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700">Tedarikçileri ve ürünlerini sil</button>
             </div>

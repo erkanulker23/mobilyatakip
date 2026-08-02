@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasTurkeyAddress;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 
 class Supplier extends BaseModel
 {
+    use HasTurkeyAddress;
+
     protected $table = 'suppliers';
 
     protected static function booted(): void
@@ -32,14 +35,18 @@ class Supplier extends BaseModel
         'email',
         'phone',
         'address',
+        'cityId',
+        'districtId',
         'taxNumber',
         'taxOffice',
+        'marginPercent',
         'isActive',
         'externalId',
         'externalSource',
     ];
 
     protected $casts = [
+        'marginPercent' => 'decimal:2',
         'isActive' => 'boolean',
     ];
 

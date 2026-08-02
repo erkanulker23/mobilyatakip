@@ -3,53 +3,134 @@
 namespace App\Imports;
 
 use App\Models\Customer;
-use Maatwebsite\Excel\Concerns\ToModel;
+use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Concerns\WithValidation;
 
-class CustomersImport implements ToModel, WithHeadingRow, WithValidation
+class CustomersImport implements ToCollection, WithHeadingRow
 {
-    public function model(array $row): ?Customer
-    {
-        $name = $this->trim($row['ad'] ?? $row['name'] ?? '');
-        if ($name === '') {
-            return null;
-        }
+    public int $created = 0;
 
-        return new Customer([
-            'name' => $name,
-            'email' => $this->trim($row['e_posta'] ?? $row['email'] ?? null),
-            'phone' => $this->trim($row['telefon'] ?? $row['phone'] ?? null),
-            'address' => $this->trim($row['adres'] ?? $row['address'] ?? null),
-            'identityNumber' => $this->trim($row['tc_kimlik_no'] ?? $row['identity_number'] ?? null),
-            'taxNumber' => $this->trim($row['vergi_no'] ?? $row['tax_number'] ?? null),
-            'taxOffice' => $this->trim($row['vergi_dairesi'] ?? $row['tax_office'] ?? null),
-            'isActive' => $this->parseBool($row['aktif_1_0'] ?? $row['is_active'] ?? true),
-        ]);
+    public int $updated = 0;
+
+    public int $skipped = 0;
+
+    /** @var array<int, string> */
+    public array $errors = [];
+
+    public function collection(Collection $rows): void
+    {
+        foreach ($rows as $i => $row) {
+            $line = $i + 2; // başlık satırı 1. satır
+            $row = $row->toArray();
+
+            $name = $this->trim($row['ad'] ?? $row['name'] ?? null);
+            if ($name === null) {
+                // Tamamen boş satırları sessizce atla, kısmen dolu olanları bildir
+                if (collect($row)->filter(fn ($v) => $this->trim($v) !== null)->isNotEmpty()) {
+                    $this->errors[] = "Satır {$line}: Ad boş olduğu için atlandı.";
+                    $this->skipped++;
+                }
+                continue;
+            }
+
+            $data = [
+                'name' => $name,
+                'email' => $this->email($row['e_posta'] ?? $row['email'] ?? null),
+                'phone' => $this->phone($row['telefon'] ?? $row['phone'] ?? null),
+                'phone2' => $this->phone($row['telefon_2'] ?? $row['phone2'] ?? null),
+                'address' => $this->trim($row['adres'] ?? $row['address'] ?? null),
+                'identityNumber' => $this->digits($row['tc_kimlik_no'] ?? $row['identity_number'] ?? null, 11),
+                'taxNumber' => $this->digits($row['vergi_no'] ?? $row['tax_number'] ?? null, 10),
+                'taxOffice' => $this->trim($row['vergi_dairesi'] ?? $row['tax_office'] ?? null),
+                'isActive' => $this->parseBool($row['aktif_1_0'] ?? $row['is_active'] ?? true),
+            ];
+
+            $existing = $this->findExisting($row, $data);
+
+            if ($existing) {
+                // Excel'de boş bırakılan alanlar mevcut veriyi silmesin
+                $existing->fill(array_filter($data, fn ($v) => $v !== null && $v !== ''));
+                $existing->isActive = $data['isActive'];
+                $existing->save();
+                $this->updated++;
+            } else {
+                Customer::create($data);
+                $this->created++;
+            }
+        }
     }
 
-    public function rules(): array
+    private function findExisting(array $row, array $data): ?Customer
     {
-        return [
-            'ad' => 'nullable|string',
-            'e_posta' => 'nullable|email',
-            'telefon' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
-            'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
-            'adres' => 'nullable|string',
-            'tc_kimlik_no' => 'nullable|string|size:11|regex:/^[0-9]+$/',
-            'vergi_no' => 'nullable|string',
-            'vergi_dairesi' => 'nullable|string',
-            'aktif_1_0' => 'nullable',
-        ];
+        $id = $this->trim($row['id'] ?? null);
+        if ($id !== null) {
+            $byId = Customer::find($id);
+            if ($byId) {
+                return $byId;
+            }
+        }
+
+        foreach (['identityNumber', 'taxNumber', 'email', 'phone'] as $key) {
+            if (!empty($data[$key])) {
+                $match = Customer::where($key, $data[$key])->first();
+                if ($match) {
+                    return $match;
+                }
+            }
+        }
+
+        return Customer::where('name', $data['name'])->first();
     }
 
     private function trim($value): ?string
     {
-        if ($value === null || $value === '') {
+        if ($value === null || is_bool($value)) {
             return null;
         }
         $s = trim((string) $value);
         return $s === '' ? null : $s;
+    }
+
+    private function email($value): ?string
+    {
+        $s = $this->trim($value);
+        return $s !== null && filter_var($s, FILTER_VALIDATE_EMAIL) ? $s : null;
+    }
+
+    /**
+     * Excel telefonları sayı olarak okuyabildiği için (baştaki 0 kaybolur)
+     * sadece rakamları alıp 10 haneli numaraların başına 0 ekliyoruz.
+     */
+    private function phone($value): ?string
+    {
+        $s = $this->trim($value);
+        if ($s === null) {
+            return null;
+        }
+        // Metin olarak gelmişse kullanıcının yazdığı biçimi koru
+        if (str_starts_with($s, '0') || str_starts_with($s, '+')) {
+            return substr($s, 0, 20);
+        }
+        $digits = preg_replace('/\D/', '', $s);
+        if ($digits === '') {
+            return null;
+        }
+        // Excel sayı olarak okuduysa baştaki 0 kaybolmuştur, geri ekle
+        if (strlen($digits) === 10) {
+            $digits = '0' . $digits;
+        }
+        return substr($digits, 0, 20);
+    }
+
+    private function digits($value, int $length): ?string
+    {
+        $s = $this->trim($value);
+        if ($s === null) {
+            return null;
+        }
+        $digits = preg_replace('/\D/', '', $s);
+        return strlen($digits) === $length ? $digits : null;
     }
 
     private function parseBool($value): bool

@@ -8,16 +8,21 @@ use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Personnel;
 use App\Services\SaleService;
+use App\Services\AuditService;
+use App\Support\DrawingFiles;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class QuoteController extends Controller
 {
-    public function __construct(private SaleService $saleService) {}
+    public function __construct(
+        private SaleService $saleService,
+        private AuditService $auditService,
+    ) {}
 
     public function index(Request $request)
     {
-        $q = Quote::with('customer')->orderBy('createdAt', 'desc');
+        $q = Quote::with(['customer', 'convertedSale'])->orderBy('createdAt', 'desc');
         if ($request->filled('search')) {
             $s = $request->search;
             $q->where(function ($w) use ($s) {
@@ -44,8 +49,8 @@ class QuoteController extends Controller
 
     public function create()
     {
-        $customers = Customer::orderBy('name')->get();
-        $products = Product::with('supplier')->orderBy('name')->get();
+        $customers = Customer::with(['city', 'district'])->where('isActive', true)->orderBy('name')->get();
+        $products = Product::where('isActive', true)->orderBy('name')->get();
         $personnel = Personnel::where('isActive', true)->orderBy('name')->get();
         return view('quotes.create', compact('customers', 'products', 'personnel'));
     }
@@ -62,15 +67,16 @@ class QuoteController extends Controller
             'personnelId' => 'nullable|exists:personnel,id',
             'items' => 'required|array|min:1',
             'items.*.productId' => 'required|exists:products,id',
+            'items.*.description' => 'nullable|string|max:2000',
             'items.*.unitPrice' => 'required|numeric|min:0',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.kdvRate' => 'nullable|numeric|min:0|max:100',
             'items.*.lineDiscountPercent' => 'nullable|numeric|min:0|max:100',
             'items.*.lineDiscountAmount' => 'nullable|numeric|min:0',
-        ]);
+        ] + DrawingFiles::validationRules());
         $kdvIncluded = $request->boolean('kdvIncluded');
 
-        $quote = DB::transaction(function () use ($validated, $kdvIncluded) {
+        $quote = DB::transaction(function () use ($validated, $kdvIncluded, $request) {
             $last = Quote::whereYear('createdAt', date('Y'))
                 ->orderBy('quoteNumber', 'desc')
                 ->lockForUpdate()
@@ -115,6 +121,7 @@ class QuoteController extends Controller
                 QuoteItem::create([
                     'quoteId' => $quote->id,
                     'productId' => $row['productId'],
+                    'description' => isset($row['description']) ? trim((string) $row['description']) : null,
                     'unitPrice' => $unitPrice,
                     'quantity' => $qty,
                     'kdvRate' => $kdvRate,
@@ -129,8 +136,19 @@ class QuoteController extends Controller
             $kdvTotal = round($ratio * $lineKdvSum, 2);
             $grandTotal = round($afterDisc + $kdvTotal, 2);
             $quote->update(['subtotal' => $subtotal, 'kdvTotal' => $kdvTotal, 'grandTotal' => $grandTotal]);
+
+            $drawingFiles = DrawingFiles::storeUploads($request, 'drawings/quotes');
+            if ($drawingFiles !== []) {
+                $quote->update(['drawingFiles' => $drawingFiles]);
+            }
+
             return $quote;
         });
+
+        $this->auditService->logCreate('quote', $quote->id, [
+            'quoteNumber' => $quote->quoteNumber,
+            'grandTotal' => $quote->grandTotal,
+        ]);
 
         return redirect()->route('quotes.show', $quote)->with('success', 'Teklif oluşturuldu.');
     }
@@ -158,6 +176,7 @@ class QuoteController extends Controller
         $validated = $request->validate(['email' => 'required|email']);
         $quote->load(['customer', 'items.product']);
         // TODO: Mail gönderimi - Company mail ayarları ile
+        $this->auditService->logAction('quote', $quote->id, 'email', ['quoteNumber' => $quote->quoteNumber]);
         return redirect()->route('quotes.show', $quote)->with('success', 'Teklif e-posta ile gönderildi.');
     }
 
@@ -165,6 +184,10 @@ class QuoteController extends Controller
     {
         try {
             $sale = $this->saleService->createFromQuote($quote->id);
+            $this->auditService->logAction('quote', $quote->id, 'convert', [
+                'quoteNumber' => $quote->quoteNumber,
+                'saleNumber' => $sale->saleNumber,
+            ]);
             return redirect()->route('sales.show', $sale)->with('success', 'Teklif satışa dönüştürüldü.');
         } catch (\RuntimeException $e) {
             return redirect()->back()->withInput()->with('error', $e->getMessage());
@@ -173,9 +196,12 @@ class QuoteController extends Controller
 
     public function edit(Quote $quote)
     {
+        if ($quote->convertedSaleId) {
+            return redirect()->route('quotes.show', $quote)->with('error', 'Satışa dönüştürülmüş teklif düzenlenemez.');
+        }
         $quote->load('items.product');
-        $customers = Customer::orderBy('name')->get();
-        $products = Product::with('supplier')->orderBy('name')->get();
+        $customers = Customer::with(['city', 'district'])->where('isActive', true)->orderBy('name')->get();
+        $products = Product::where('isActive', true)->orderBy('name')->get();
         $personnel = Personnel::where('isActive', true)->orderBy('name')->get();
         return view('quotes.edit', compact('quote', 'customers', 'products', 'personnel'));
     }
@@ -193,12 +219,13 @@ class QuoteController extends Controller
             'status' => 'nullable|in:taslak,onaylandi,reddedildi',
             'items' => 'required|array|min:1',
             'items.*.productId' => 'required|exists:products,id',
+            'items.*.description' => 'nullable|string|max:2000',
             'items.*.unitPrice' => 'required|numeric|min:0',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.kdvRate' => 'nullable|numeric|min:0|max:100',
             'items.*.lineDiscountPercent' => 'nullable|numeric|min:0|max:100',
             'items.*.lineDiscountAmount' => 'nullable|numeric|min:0',
-        ]);
+        ] + DrawingFiles::validationRules());
         $kdvIncluded = $request->boolean('kdvIncluded');
         $quote->update([
             'customerId' => $validated['customerId'],
@@ -209,6 +236,11 @@ class QuoteController extends Controller
             'notes' => $validated['notes'] ?? null,
             'personnelId' => $validated['personnelId'] ?? null,
             'status' => $validated['status'] ?? $quote->status,
+            'drawingFiles' => DrawingFiles::syncFromRequest(
+                $request,
+                DrawingFiles::entries($quote->drawingFiles),
+                'drawings/quotes'
+            ),
         ]);
         $quote->items()->delete();
         $subtotal = 0;
@@ -235,6 +267,7 @@ class QuoteController extends Controller
             QuoteItem::create([
                 'quoteId' => $quote->id,
                 'productId' => $row['productId'],
+                'description' => isset($row['description']) ? trim((string) $row['description']) : null,
                 'unitPrice' => $unitPrice,
                 'quantity' => $qty,
                 'kdvRate' => $kdvRate,
@@ -249,11 +282,16 @@ class QuoteController extends Controller
         $kdvTotal = round($ratio * $lineKdvSum, 2);
         $grandTotal = round($afterDisc + $kdvTotal, 2);
         $quote->update(['subtotal' => $subtotal, 'kdvTotal' => $kdvTotal, 'grandTotal' => $grandTotal]);
+        $this->auditService->logUpdate('quote', $quote->id, [], [
+            'quoteNumber' => $quote->quoteNumber,
+            'grandTotal' => $grandTotal,
+        ]);
         return redirect()->route('quotes.show', $quote)->with('success', 'Teklif güncellendi.');
     }
 
     public function destroy(Quote $quote)
     {
+        $this->auditService->logDelete('quote', $quote->id, ['quoteNumber' => $quote->quoteNumber]);
         $quote->delete();
         return redirect()->route('quotes.index')->with('success', 'Teklif silindi.');
     }

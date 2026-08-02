@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasTurkeyAddress;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ShippingCompany extends BaseModel
 {
+    use HasTurkeyAddress;
+
     protected $table = 'shipping_companies';
 
     protected $fillable = [
@@ -13,6 +16,8 @@ class ShippingCompany extends BaseModel
         'phone',
         'email',
         'address',
+        'cityId',
+        'districtId',
         'isActive',
     ];
 
@@ -28,5 +33,15 @@ class ShippingCompany extends BaseModel
     public function payments(): HasMany
     {
         return $this->hasMany(ShippingCompanyPayment::class, 'shippingCompanyId');
+    }
+
+    public function vehicles(): HasMany
+    {
+        return $this->hasMany(ShippingCompanyVehicle::class, 'shippingCompanyId')->orderBy('vehiclePlate');
+    }
+
+    public function activeVehicles(): HasMany
+    {
+        return $this->vehicles()->where('isActive', true);
     }
 }

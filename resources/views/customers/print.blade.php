@@ -1,63 +1,84 @@
 @extends('layouts.print')
 @section('title', 'Müşteri Extresi - ' . $customer->name)
 @section('content')
-@php $company = \App\Models\Company::first(); @endphp
-<div class="max-w-4xl mx-auto">
-    <div class="flex justify-between items-start mb-8 pb-6 border-b-2 border-slate-200">
-        <div>
-            @if($company?->logoUrl)<img src="{{ asset($company->logoUrl) }}" alt="Logo" class="h-14 mb-2">@endif
-            <h1 class="text-xl font-bold text-slate-900">{{ $company?->name ?? 'Firma' }}</h1>
-            <p class="text-sm text-slate-600">{{ $company?->address }}</p>
+<div class="print-document print-document--fit card overflow-hidden print:shadow-none print:border-0">
+    <div class="print-doc-inner p-4 md:p-6 lg:p-8">
+        @include('partials.print-brand-header', [
+            'documentTitle' => 'Müşteri Extresi',
+            'documentNumber' => $customer->name,
+            'documentDate' => now(),
+        ])
+
+        <div class="print-section-lg mb-4 p-3 border border-neutral-200">
+            <h3 class="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">Müşteri Bilgileri</h3>
+            <p class="font-bold text-neutral-900">{{ $customer->name }}</p>
+            @if($customer->full_address)<p class="text-[11px] text-neutral-600 mt-1 whitespace-pre-wrap">{{ $customer->full_address }}</p>@endif
+            <p class="text-[11px] text-neutral-600 mt-1">{{ $customer->phone }}{{ $customer->phone2 ? ' / ' . $customer->phone2 : '' }}{{ $customer->email ? ' · ' . $customer->email : '' }}</p>
+            @if($customer->taxNumber)<p class="text-[11px] text-neutral-600">Vergi No: {{ $customer->taxNumber }}@if($customer->taxOffice) / {{ $customer->taxOffice }}@endif</p>@endif
         </div>
-        <div class="text-right">
-            <h2 class="text-lg font-semibold text-slate-800">MÜŞTERİ EXTRESİ</h2>
-            <p class="text-sm text-slate-600">{{ now()->format('d.m.Y H:i') }}</p>
+
+        <div class="print-section mb-4 p-3 print-info-banner">
+            <h3 class="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">Bakiye Özeti</h3>
+            <table class="w-full text-[11px]">
+                <tr><td class="py-1 text-neutral-600">Toplam Satış</td><td class="text-right font-medium">{{ number_format($totalSales ?? 0, 0, ',', '.') }} ₺</td></tr>
+                <tr><td class="py-1 text-neutral-600">Toplam Ödenen</td><td class="text-right font-medium">{{ number_format($totalPaid ?? 0, 0, ',', '.') }} ₺</td></tr>
+                <tr><td class="py-1 font-semibold">Cari Durum</td><td class="text-right font-semibold">{{ $customerBalance['label'] ?? '—' }}</td></tr>
+                <tr><td class="py-1 font-semibold">{{ $customerBalance['amountLabel'] ?? 'Bakiye' }}</td><td class="text-right font-bold text-base">{{ number_format($customerBalance['amount'] ?? 0, 0, ',', '.') }} ₺</td></tr>
+            </table>
         </div>
-    </div>
-    <div class="mb-8">
-        <h3 class="text-base font-semibold text-slate-900 mb-2">Müşteri Bilgileri</h3>
-        <p class="font-bold text-slate-900 text-lg">{{ $customer->name }}</p>
-        <p class="text-sm text-slate-600">{{ $customer->address }}</p>
-        <p class="text-sm text-slate-600">{{ $customer->phone }} {{ $customer->email ? '| ' . $customer->email : '' }}</p>
-        @if($customer->taxNumber)<p class="text-sm text-slate-600">Vergi No: {{ $customer->taxNumber }} @if($customer->taxOffice) / {{ $customer->taxOffice }} @endif</p>@endif
-    </div>
-    <div class="mb-6 p-4 bg-slate-50 rounded-lg">
-        <h3 class="font-semibold text-slate-900 mb-2">Bakiye Özeti</h3>
-        <table class="w-full text-sm">
-            <tr><td class="py-1">Toplam Satış:</td><td class="text-right font-medium">{{ number_format($totalSales ?? 0, 0, ',', '.') }} ₺</td></tr>
-            <tr><td class="py-1">Toplam Ödenen:</td><td class="text-right font-medium text-green-600">{{ number_format($totalPaid ?? 0, 0, ',', '.') }} ₺</td></tr>
-            <tr><td class="py-1 font-bold">Kalan Borç:</td><td class="text-right font-bold text-lg {{ ($totalDebt ?? 0) > 0 ? 'text-red-600' : 'text-slate-600' }}">{{ number_format($totalDebt ?? 0, 0, ',', '.') }} ₺</td></tr>
-        </table>
-    </div>
-    <div class="mb-6">
-        <h3 class="font-semibold text-slate-900 mb-3">Satışlar</h3>
-        <table class="min-w-full divide-y divide-slate-200 text-sm">
-            <thead class="bg-slate-100"><tr><th class="px-4 py-2 text-left font-semibold">No</th><th class="px-4 py-2 text-left font-semibold">Tarih</th><th class="px-4 py-2 text-right font-semibold">Toplam</th><th class="px-4 py-2 text-right font-semibold">Ödenen</th><th class="px-4 py-2 text-right font-semibold">Kalan</th></tr></thead>
-            <tbody class="divide-y divide-slate-200">
-                @foreach($customer->sales as $s)
-                <tr>
-                    <td class="px-4 py-2">{{ $s->saleNumber }}</td>
-                    <td class="px-4 py-2">{{ $s->saleDate?->format('d.m.Y') }}</td>
-                    <td class="px-4 py-2 text-right">{{ number_format($s->grandTotal ?? 0, 0, ',', '.') }} ₺</td>
-                    <td class="px-4 py-2 text-right text-green-600">{{ number_format($s->paidAmount ?? 0, 0, ',', '.') }} ₺</td>
-                    <td class="px-4 py-2 text-right">{{ number_format(($s->grandTotal ?? 0) - ($s->paidAmount ?? 0), 0, ',', '.') }} ₺</td>
-                </tr>
-                @endforeach
-                @if($customer->sales->isEmpty())<tr><td colspan="5" class="px-4 py-6 text-center text-slate-500">Satış yok.</td></tr>@endif
-            </tbody>
-        </table>
-    </div>
-    <div>
-        <h3 class="font-semibold text-slate-900 mb-3">Ödemeler</h3>
-        <table class="min-w-full divide-y divide-slate-200 text-sm">
-            <thead class="bg-slate-100"><tr><th class="px-4 py-2 text-left font-semibold">Tarih</th><th class="px-4 py-2 text-left font-semibold">Tip</th><th class="px-4 py-2 text-right font-semibold">Tutar</th></tr></thead>
-            <tbody class="divide-y divide-slate-200">
-                @foreach($customer->payments as $p)
-                <tr><td class="px-4 py-2">{{ $p->paymentDate?->format('d.m.Y') }}</td><td class="px-4 py-2">{{ ucfirst($p->paymentType ?? '-') }}</td><td class="px-4 py-2 text-right font-medium">{{ number_format($p->amount ?? 0, 0, ',', '.') }} ₺</td></tr>
-                @endforeach
-                @if($customer->payments->isEmpty())<tr><td colspan="3" class="px-4 py-6 text-center text-slate-500">Ödeme yok.</td></tr>@endif
-            </tbody>
-        </table>
+
+        <div class="print-section-lg mb-4">
+            <h3 class="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">Satışlar</h3>
+            <table class="print-table min-w-full border border-neutral-300 text-[11px]">
+                <thead>
+                    <tr>
+                        <th class="px-2 py-2 text-left">No</th>
+                        <th class="px-2 py-2 text-left">Tarih</th>
+                        <th class="px-2 py-2 text-right">Toplam</th>
+                        <th class="px-2 py-2 text-right">Ödenen</th>
+                        <th class="px-2 py-2 text-right">Kalan</th>
+                        <th class="px-2 py-2 text-left">Durum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($customer->sales as $s)
+                    @php $saleStatus = \App\Support\CustomerBalance::saleStatus($s); @endphp
+                    <tr class="border-t border-neutral-200">
+                        <td class="px-2 py-2">{{ $s->saleNumber }}</td>
+                        <td class="px-2 py-2">{{ $s->saleDate?->format('d.m.Y') }}</td>
+                        <td class="px-2 py-2 text-right">{{ number_format($s->grandTotal ?? 0, 0, ',', '.') }} ₺</td>
+                        <td class="px-2 py-2 text-right">{{ number_format($s->paidAmount ?? 0, 0, ',', '.') }} ₺</td>
+                        <td class="px-2 py-2 text-right">{{ number_format(\App\Support\CustomerBalance::saleRemaining($s), 0, ',', '.') }} ₺</td>
+                        <td class="px-2 py-2">{{ $saleStatus['label'] }}</td>
+                    </tr>
+                    @endforeach
+                    @if($customer->sales->isEmpty())<tr><td colspan="6" class="px-2 py-4 text-center text-neutral-500">Satış yok.</td></tr>@endif
+                </tbody>
+            </table>
+        </div>
+
+        <div class="print-section">
+            <h3 class="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">Ödemeler</h3>
+            <table class="print-table min-w-full border border-neutral-300 text-[11px]">
+                <thead>
+                    <tr>
+                        <th class="px-2 py-2 text-left">Tarih</th>
+                        <th class="px-2 py-2 text-left">Tip</th>
+                        <th class="px-2 py-2 text-right">Tutar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($customer->payments as $p)
+                    <tr class="border-t border-neutral-200">
+                        <td class="px-2 py-2">{{ $p->paymentDate?->format('d.m.Y') }}</td>
+                        <td class="px-2 py-2">{{ ucfirst($p->paymentType ?? '-') }}</td>
+                        <td class="px-2 py-2 text-right font-medium">{{ number_format($p->amount ?? 0, 0, ',', '.') }} ₺</td>
+                    </tr>
+                    @endforeach
+                    @if($customer->payments->isEmpty())<tr><td colspan="3" class="px-2 py-4 text-center text-neutral-500">Ödeme yok.</td></tr>@endif
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 @endsection

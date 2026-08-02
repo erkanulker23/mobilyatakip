@@ -1,19 +1,19 @@
 @extends('layouts.app')
-@section('title', 'Tahsilat Makbuzu')
+@include('partials.page-seo', \App\Support\PageSeo::customerPayment($customerPayment))
 @section('content')
 @php
     $makbuzNo = 'TAHS-' . ($customerPayment->paymentDate?->format('Ymd') ?? date('Ymd')) . '-' . strtoupper(substr($customerPayment->id, 0, 8));
-    $pt = ['nakit' => 'Nakit', 'havale' => 'Havale', 'kredi_karti' => 'Kredi Kartı', 'cek' => 'Çek', 'senet' => 'Senet', 'diger' => 'Diğer'];
+    $pt = \App\Support\PaymentType::labels();
 @endphp
 <div class="mb-6">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <nav class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-1" aria-label="Breadcrumb">
+            <nav class="flex items-center gap-2 text-sm text-neutral-500 dark:text-slate-400 mb-1" aria-label="Breadcrumb">
                 <a href="{{ route('customers.show', $customerPayment->customer) }}" class="hover:text-emerald-600 dark:hover:text-emerald-400">Müşteri</a>
                 <span>/</span>
                 <a href="{{ route('customers.show', $customerPayment->customer) }}#tahsilatlar" class="hover:text-emerald-600 dark:hover:text-emerald-400">Tahsilatlar</a>
                 <span>/</span>
-                <span class="text-slate-700 dark:text-slate-300 font-medium">{{ $makbuzNo }}</span>
+                <span class="text-neutral-700 dark:text-slate-300 font-medium">{{ $makbuzNo }}</span>
             </nav>
             <h1 class="page-title">Tahsilat Makbuzu</h1>
             <p class="page-desc">
@@ -29,6 +29,14 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                 Yazdır / PDF
             </a>
+            <form method="POST" action="{{ route('customer-payments.destroy', $customerPayment) }}" class="inline" onsubmit="return confirm('Bu tahsilatı silmek istediğinize emin misiniz? Kasa hareketi ve fatura ödenen tutarı geri alınacaktır.');">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn-delete">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    Sil
+                </button>
+            </form>
             <a href="{{ route('customers.show', $customerPayment->customer) }}#tahsilatlar" class="btn-secondary">Müşteriye Dön</a>
         </div>
     </div>
@@ -84,7 +92,7 @@
         @if(!empty($customerPayment->notes))
         <div class="mt-6 pt-6 border-t border-slate-100 dark:border-slate-700">
             <dt class="form-label">Notlar</dt>
-            <dd class="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{{ $customerPayment->notes }}</dd>
+            <dd class="text-neutral-700 dark:text-slate-300 whitespace-pre-wrap">{{ $customerPayment->notes }}</dd>
         </div>
         @endif
     </div>

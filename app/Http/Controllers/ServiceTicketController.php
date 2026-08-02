@@ -3,14 +3,26 @@
 namespace App\Http\Controllers;
 
 use App\Models\ServiceTicket;
+use App\Models\ServiceTicketDetail;
+use App\Models\ServicePart;
+use App\Models\ShippingCompanyPayment;
 use App\Models\Sale;
+use App\Models\ShippingCompany;
+use App\Models\ShippingCompanyVehicle;
 use App\Models\User;
 use App\Models\Customer;
+use App\Support\ServiceTicketStatus;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class ServiceTicketController extends Controller
 {
+    public function __construct(private AuditService $auditService) {}
+
     public function index(Request $request)
     {
         $q = ServiceTicket::with(['sale', 'customer'])->orderBy('createdAt', 'desc');
@@ -19,6 +31,7 @@ class ServiceTicketController extends Controller
             $q->where(function ($w) use ($s) {
                 $w->where('ticketNumber', 'like', "%{$s}%")
                     ->orWhere('issueType', 'like', "%{$s}%")
+                    ->orWhere('description', 'like', "%{$s}%")
                     ->orWhereHas('customer', fn ($q) => $q->where('name', 'like', "%{$s}%"));
             });
         }
@@ -35,78 +48,147 @@ class ServiceTicketController extends Controller
             $q->whereDate('createdAt', '<=', $request->to);
         }
         $tickets = $q->paginate(20)->withQueryString();
-        $customers = Customer::where('isActive', true)->orderBy('name')->get();
+        $customers = Customer::with(['city', 'district'])->where('isActive', true)->orderBy('name')->get();
+
         return view('service-tickets.index', compact('tickets', 'customers'));
     }
 
     public function show(ServiceTicket $serviceTicket)
     {
-        $serviceTicket->load(['sale', 'customer', 'assignedUser', 'details.user']);
+        $serviceTicket->load(['sale', 'customer.city', 'customer.district', 'assignedUser', 'shippingCompany', 'shippingVehicle', 'details.user']);
+
         return view('service-tickets.show', compact('serviceTicket'));
     }
 
     public function print(ServiceTicket $serviceTicket)
     {
-        $serviceTicket->load(['sale.customer', 'customer', 'assignedUser', 'details.user']);
+        $serviceTicket->load(['sale.customer.city', 'sale.customer.district', 'customer.city', 'customer.district', 'assignedUser', 'shippingCompany', 'shippingVehicle', 'details.user']);
+
         return view('service-tickets.print', compact('serviceTicket'));
     }
 
     public function create()
     {
-        $sales = Sale::with('customer')->orderBy('createdAt', 'desc')->take(100)->get();
         $users = User::where('isActive', true)->orderBy('name')->get();
-        $customers = Customer::where('isActive', true)->orderBy('name')->get();
-        return view('service-tickets.create', compact('sales', 'users', 'customers'));
+        $customers = Customer::with(['city', 'district'])->where('isActive', true)->orderBy('name')->get();
+        $selectedCustomerId = old('customerId', request('customerId'));
+        $selectedSaleId = old('saleId', request('saleId'));
+        $shippingFormData = $this->shippingFormData();
+
+        return view('service-tickets.create', compact('users', 'customers', 'selectedCustomerId', 'selectedSaleId') + $shippingFormData);
     }
 
     public function store(Request $request)
     {
+        $request->merge([
+            'problems' => array_values(array_filter(
+                (array) $request->input('problems', []),
+                fn ($p) => trim((string) $p) !== ''
+            )),
+        ]);
+
         $rules = [
             'saleId' => 'nullable|exists:sales,id',
             'customerId' => 'required|exists:customers,id',
-            'issueType' => 'required|string|max:255',
+            'problems' => 'required|array|min:1',
+            'problems.*' => 'required|string|max:500',
             'description' => 'nullable|string',
+            'dueDate' => 'nullable|date',
             'underWarranty' => 'boolean',
             'assignedUserId' => 'nullable|exists:users,id',
+            'assignedVehiclePlate' => 'nullable|string|max:20',
+            'assignedDriverName' => 'nullable|string|max:100',
+            'assignedDriverPhone' => ['nullable', 'string', 'max:30', 'regex:/^[0-9+][0-9\s\-()]{9,24}$/'],
+            'shippingCompanyId' => 'nullable|exists:shipping_companies,id',
+            'shippingVehicleId' => [
+                'nullable',
+                'exists:shipping_company_vehicles,id',
+                Rule::exists('shipping_company_vehicles', 'id')->where(fn ($q) => $request->filled('shippingCompanyId')
+                    ? $q->where('shippingCompanyId', $request->input('shippingCompanyId'))
+                    : $q),
+            ],
             'images' => 'nullable|array',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ];
-        if (!$request->boolean('underWarranty')) {
+        if (! $request->boolean('underWarranty')) {
             $rules['serviceChargeAmount'] = 'required|numeric|min:0';
         } else {
             $rules['serviceChargeAmount'] = 'nullable|numeric|min:0';
         }
         $validated = $request->validate($rules, [
             'serviceChargeAmount.required' => 'Garanti kapsamında değilse servis ücreti girilmelidir.',
+            'problems.required' => 'En az bir müşteri problemi girilmelidir.',
+            'problems.min' => 'En az bir müşteri problemi girilmelidir.',
+            'assignedDriverPhone.regex' => 'Geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67)',
         ]);
-        if (!empty($validated['saleId'])) {
-            Sale::findOrFail($validated['saleId']);
+
+        if (! empty($validated['saleId'])) {
+            $sale = Sale::findOrFail($validated['saleId']);
+            if ($sale->customerId !== $validated['customerId']) {
+                return back()->withInput()->with('error', 'Seçilen sipariş bu müşteriye ait değil.');
+            }
         }
-        $ticketNumber = 'SSH-' . date('Y') . '-' . str_pad((string) (ServiceTicket::whereYear('createdAt', date('Y'))->count() + 1), 5, '0', STR_PAD_LEFT);
+
+        $reportedProblems = ServiceTicketStatus::normalizeProblems(
+            collect($validated['problems'])->map(fn ($description) => ['description' => $description])->all()
+        );
+        if ($reportedProblems === []) {
+            return back()->withInput()->with('error', 'En az bir müşteri problemi girilmelidir.');
+        }
+
+        $ticketNumber = 'SSH-' . date('Y') . '-' . str_pad(
+            (string) (ServiceTicket::whereYear('createdAt', date('Y'))->count() + 1),
+            5,
+            '0',
+            STR_PAD_LEFT
+        );
 
         $images = [];
         if ($request->hasFile('images')) {
-            $request->validate(['images.*' => 'image|mimes:jpeg,jpg,png,gif,webp|max:5120']);
             foreach ($request->file('images') as $file) {
                 $path = $file->store('service-tickets', 'public');
                 $images[] = '/storage/' . $path;
             }
         }
 
-        ServiceTicket::create([
-            'ticketNumber' => $ticketNumber,
-            'saleId' => $validated['saleId'] ?? null,
-            'customerId' => $validated['customerId'],
-            'status' => 'acildi',
-            'underWarranty' => $request->boolean('underWarranty'),
-            'issueType' => $validated['issueType'],
-            'description' => $validated['description'] ?? null,
-            'assignedUserId' => $validated['assignedUserId'] ?? null,
-            'openedAt' => now(),
-            'images' => $images,
-            'serviceChargeAmount' => $request->boolean('underWarranty') ? null : ($validated['serviceChargeAmount'] ?? 0),
-        ]);
-        return redirect()->route('service-tickets.index')->with('success', 'Servis kaydı oluşturuldu.');
+        $validated = $this->resolveShippingAssignment($validated);
+
+        $ticket = DB::transaction(function () use ($validated, $request, $ticketNumber, $reportedProblems, $images) {
+            $ticket = ServiceTicket::create([
+                'ticketNumber' => $ticketNumber,
+                'saleId' => $validated['saleId'] ?? null,
+                'customerId' => $validated['customerId'],
+                'status' => 'acildi',
+                'underWarranty' => $request->boolean('underWarranty'),
+                'issueType' => $reportedProblems[0]['description'],
+                'description' => $validated['description'] ?? null,
+                'dueDate' => $validated['dueDate'] ?? null,
+                'reportedProblems' => $reportedProblems,
+                'assignedUserId' => $validated['assignedUserId'] ?? null,
+                'assignedVehiclePlate' => $validated['assignedVehiclePlate'] ?? null,
+                'assignedDriverName' => $validated['assignedDriverName'] ?? null,
+                'assignedDriverPhone' => $validated['assignedDriverPhone'] ?? null,
+                'shippingCompanyId' => $validated['shippingCompanyId'] ?? null,
+                'shippingVehicleId' => $validated['shippingVehicleId'] ?? null,
+                'openedAt' => now(),
+                'images' => $images,
+                'serviceChargeAmount' => $request->boolean('underWarranty') ? null : ($validated['serviceChargeAmount'] ?? 0),
+            ]);
+
+            ServiceTicketDetail::create([
+                'ticketId' => $ticket->id,
+                'userId' => auth()->id() ?: null,
+                'action' => 'acildi',
+                'actionDate' => now(),
+                'notes' => count($reportedProblems) . ' problem kaydedildi.',
+            ]);
+
+            return $ticket;
+        });
+
+        $this->auditService->logCreate('service_ticket', $ticket->id, ['ticketNumber' => $ticket->ticketNumber]);
+
+        return redirect()->route('service-tickets.index')->with('success', 'Servis kaydı oluşturuldu: ' . $ticket->ticketNumber);
     }
 
     public function edit(ServiceTicket $serviceTicket)
@@ -114,7 +196,9 @@ class ServiceTicketController extends Controller
         $serviceTicket->load(['sale.customer', 'customer', 'details']);
         $sales = Sale::with('customer')->orderBy('createdAt', 'desc')->take(100)->get();
         $users = User::where('isActive', true)->orderBy('name')->get();
-        return view('service-tickets.edit', compact('serviceTicket', 'sales', 'users'));
+        $shippingFormData = $this->shippingFormData();
+
+        return view('service-tickets.edit', compact('serviceTicket', 'sales', 'users') + $shippingFormData);
     }
 
     public function update(Request $request, ServiceTicket $serviceTicket)
@@ -122,21 +206,255 @@ class ServiceTicketController extends Controller
         $validated = $request->validate([
             'saleId' => 'nullable|exists:sales,id',
             'customerId' => 'required|exists:customers,id',
-            'issueType' => 'required|string|max:255',
+            'problems' => 'required|array|min:1',
+            'problems.*.description' => 'required|string|max:500',
+            'problems.*.status' => 'nullable|in:bekliyor,duzeltildi,duzeltilemedi',
             'description' => 'nullable|string',
+            'dueDate' => 'nullable|date',
             'status' => 'nullable|in:acildi,devam_ediyor,tamamlandi,iptal',
             'underWarranty' => 'nullable|boolean',
             'assignedUserId' => 'nullable|exists:users,id',
             'assignedVehiclePlate' => 'nullable|string|max:20',
             'assignedDriverName' => 'nullable|string|max:100',
-            'assignedDriverPhone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
+            'assignedDriverPhone' => ['nullable', 'string', 'max:30', 'regex:/^[0-9+][0-9\s\-()]{9,24}$/'],
+            'shippingCompanyId' => 'nullable|exists:shipping_companies,id',
+            'shippingVehicleId' => [
+                'nullable',
+                'exists:shipping_company_vehicles,id',
+                Rule::exists('shipping_company_vehicles', 'id')->where(fn ($q) => $request->filled('shippingCompanyId')
+                    ? $q->where('shippingCompanyId', $request->input('shippingCompanyId'))
+                    : $q),
+            ],
             'notes' => 'nullable|string',
             'serviceChargeAmount' => 'nullable|numeric|min:0',
         ], [
             'assignedDriverPhone.regex' => 'Geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67)',
+            'problems.required' => 'En az bir müşteri problemi girilmelidir.',
         ]);
+
+        if (! empty($validated['saleId'])) {
+            $sale = Sale::findOrFail($validated['saleId']);
+            if ($sale->customerId !== $validated['customerId']) {
+                return back()->withInput()->with('error', 'Seçilen sipariş bu müşteriye ait değil.');
+            }
+        }
+
+        $reportedProblems = ServiceTicketStatus::normalizeProblems($validated['problems']);
+        if ($reportedProblems === []) {
+            return back()->withInput()->with('error', 'En az bir müşteri problemi girilmelidir.');
+        }
+
         $validated['underWarranty'] = $request->boolean('underWarranty');
+        $validated['reportedProblems'] = $reportedProblems;
+        $validated['issueType'] = $reportedProblems[0]['description'];
+        unset($validated['problems']);
+        $validated = $this->resolveShippingAssignment($validated);
+
+        if (($validated['status'] ?? $serviceTicket->status) === 'tamamlandi' && ! $serviceTicket->closedAt) {
+            $validated['closedAt'] = now();
+        }
+
+        $oldProblems = ServiceTicketStatus::normalizeProblems($serviceTicket->reportedProblems ?? []);
         $serviceTicket->update($validated);
+
+        $this->logProblemChanges($serviceTicket, $oldProblems, $reportedProblems);
+        $this->auditService->logUpdate('service_ticket', $serviceTicket->id, [], [
+            'ticketNumber' => $serviceTicket->ticketNumber,
+        ]);
+
         return redirect()->route('service-tickets.show', $serviceTicket)->with('success', 'Servis kaydı güncellendi.');
+    }
+
+    public function updateProblemStatus(Request $request, ServiceTicket $serviceTicket)
+    {
+        $validated = $request->validate([
+            'problemIndex' => 'required|integer|min:0',
+            'status' => 'required|in:bekliyor,duzeltildi,duzeltilemedi',
+        ]);
+
+        $problems = ServiceTicketStatus::normalizeProblems($serviceTicket->reportedProblems ?? []);
+        $index = (int) $validated['problemIndex'];
+        if (! array_key_exists($index, $problems)) {
+            return back()->with('error', 'Problem bulunamadı.');
+        }
+
+        $oldStatus = $problems[$index]['status'];
+        $newStatus = $validated['status'];
+        if ($oldStatus === $newStatus) {
+            return back();
+        }
+
+        $problems[$index]['status'] = $newStatus;
+        $ticketStatus = $serviceTicket->status ?? 'acildi';
+        if ($newStatus !== 'bekliyor' && $ticketStatus === 'acildi') {
+            $ticketStatus = 'devam_ediyor';
+        }
+
+        $allFixed = collect($problems)->every(fn ($p) => $p['status'] === 'duzeltildi');
+        $closedAt = $serviceTicket->closedAt;
+        if ($allFixed) {
+            $ticketStatus = 'tamamlandi';
+            $closedAt = $closedAt ?? now();
+        }
+
+        DB::transaction(function () use ($serviceTicket, $problems, $ticketStatus, $closedAt, $index, $newStatus) {
+            $serviceTicket->update([
+                'reportedProblems' => $problems,
+                'status' => $ticketStatus,
+                'closedAt' => $closedAt,
+            ]);
+
+            ServiceTicketDetail::create([
+                'ticketId' => $serviceTicket->id,
+                'userId' => auth()->id() ?: null,
+                'action' => 'problem_durumu',
+                'actionDate' => now(),
+                'notes' => ($index + 1) . '. problem: ' . ServiceTicketStatus::problemLabel($newStatus) . ' — ' . $problems[$index]['description'],
+            ]);
+        });
+
+        $this->auditService->logAction('service_ticket', $serviceTicket->id, 'status', [
+            'ticketNumber' => $serviceTicket->ticketNumber,
+            'status' => $newStatus,
+        ]);
+
+        return back()->with('success', 'Problem durumu güncellendi.');
+    }
+
+    public function updateStatus(Request $request, ServiceTicket $serviceTicket)
+    {
+        $validated = $request->validate([
+            'status' => 'required|in:acildi,devam_ediyor,tamamlandi,iptal',
+        ]);
+
+        $status = $validated['status'];
+        $updates = ['status' => $status];
+
+        if ($status === 'tamamlandi') {
+            $updates['closedAt'] = $serviceTicket->closedAt ?? now();
+        } elseif (in_array($status, ['acildi', 'devam_ediyor'], true)) {
+            $updates['closedAt'] = null;
+        }
+
+        $serviceTicket->update($updates);
+
+        ServiceTicketDetail::create([
+            'ticketId' => $serviceTicket->id,
+            'userId' => auth()->id() ?: null,
+            'action' => 'durum_guncelleme',
+            'actionDate' => now(),
+            'notes' => 'Durum: ' . ServiceTicketStatus::label($status),
+        ]);
+
+        $this->auditService->logAction('service_ticket', $serviceTicket->id, 'status', [
+            'ticketNumber' => $serviceTicket->ticketNumber,
+            'status' => $status,
+        ]);
+
+        return back()->with('success', 'Servis durumu güncellendi.');
+    }
+
+    public function destroy(ServiceTicket $serviceTicket)
+    {
+        $ticketId = $serviceTicket->id;
+        $ticketNumber = $serviceTicket->ticketNumber;
+
+        DB::transaction(function () use ($serviceTicket) {
+            $detailIds = $serviceTicket->details()->pluck('id');
+            if ($detailIds->isNotEmpty()) {
+                ServicePart::whereIn('detailId', $detailIds)->delete();
+                ServiceTicketDetail::whereIn('id', $detailIds)->delete();
+            }
+
+            ShippingCompanyPayment::where('serviceTicketId', $serviceTicket->id)->update(['serviceTicketId' => null]);
+
+            foreach ((array) ($serviceTicket->images ?? []) as $image) {
+                $this->deleteServiceTicketImage($image);
+            }
+
+            $serviceTicket->delete();
+        });
+
+        $this->auditService->logDelete('service_ticket', $ticketId, ['ticketNumber' => $ticketNumber]);
+
+        return redirect()->route('service-tickets.index')->with('success', 'Servis kaydı silindi: ' . $ticketNumber);
+    }
+
+    private function deleteServiceTicketImage(?string $path): void
+    {
+        if (! $path || Str::startsWith($path, 'http')) {
+            return;
+        }
+
+        $relative = ltrim(str_replace('/storage/', '', parse_url($path, PHP_URL_PATH) ?: $path), '/');
+        if ($relative && Storage::disk('public')->exists($relative)) {
+            Storage::disk('public')->delete($relative);
+        }
+    }
+
+    /** @param  array<int, array{description?: string, status?: string}>  $oldProblems */
+    /** @param  array<int, array{description: string, status: string}>  $newProblems */
+    private function logProblemChanges(ServiceTicket $ticket, array $oldProblems, array $newProblems): void
+    {
+        foreach ($newProblems as $i => $problem) {
+            $oldStatus = $oldProblems[$i]['status'] ?? null;
+            if ($oldStatus !== $problem['status']) {
+                ServiceTicketDetail::create([
+                    'ticketId' => $ticket->id,
+                    'userId' => auth()->id() ?: null,
+                    'action' => 'problem_durumu',
+                    'actionDate' => now(),
+                    'notes' => ($i + 1) . '. problem: ' . ServiceTicketStatus::problemLabel($problem['status']) . ' — ' . $problem['description'],
+                ]);
+            }
+        }
+    }
+
+    /** @return array{shippingCompanies: \Illuminate\Support\Collection, vehiclesByCompany: array<string, array<int, array<string, mixed>>>} */
+    private function shippingFormData(): array
+    {
+        $shippingCompanies = ShippingCompany::where('isActive', true)->orderBy('name')->get();
+        $vehiclesByCompany = ShippingCompanyVehicle::whereIn('shippingCompanyId', $shippingCompanies->pluck('id'))
+            ->where('isActive', true)
+            ->orderBy('vehiclePlate')
+            ->get()
+            ->groupBy('shippingCompanyId')
+            ->map(fn ($vehicles) => $vehicles->map(fn (ShippingCompanyVehicle $v) => [
+                'id' => $v->id,
+                'vehiclePlate' => $v->vehiclePlate,
+                'driverName' => $v->driverName,
+                'driverPhone' => $v->driverPhone,
+                'label' => $v->label(),
+            ])->values()->all())
+            ->all();
+
+        return compact('shippingCompanies', 'vehiclesByCompany');
+    }
+
+    /** @param  array<string, mixed>  $validated */
+    private function resolveShippingAssignment(array $validated): array
+    {
+        if (empty($validated['shippingCompanyId'])) {
+            $validated['shippingCompanyId'] = null;
+            $validated['shippingVehicleId'] = null;
+
+            return $validated;
+        }
+
+        if (empty($validated['shippingVehicleId'])) {
+            return $validated;
+        }
+
+        $vehicle = ShippingCompanyVehicle::where('shippingCompanyId', $validated['shippingCompanyId'])
+            ->where('isActive', true)
+            ->find($validated['shippingVehicleId']);
+
+        if ($vehicle) {
+            $validated['assignedVehiclePlate'] = $vehicle->vehiclePlate;
+            $validated['assignedDriverName'] = $vehicle->driverName;
+            $validated['assignedDriverPhone'] = $vehicle->driverPhone;
+        }
+
+        return $validated;
     }
 }

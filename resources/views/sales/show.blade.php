@@ -1,29 +1,55 @@
 @extends('layouts.app')
-@section('title', 'Satış ' . $sale->saleNumber)
+@include('partials.page-seo', \App\Support\PageSeo::sale($sale))
 @section('content')
+<div x-data="{ showCustomerEmail: false, showPaymentModal: @json(session('open_payment_modal') || (old('redirectToSale') && old('redirectToSale') == $sale->id)) }">
 <div class="mb-6">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <div class="flex items-center gap-2 text-slate-500 text-sm mb-1">
-                <a href="{{ route('sales.index') }}" class="hover:text-slate-700">Satışlar</a>
+            <div class="flex items-center gap-2 text-neutral-500 text-sm mb-1">
+                <a href="{{ route('sales.index') }}" class="hover:text-neutral-900">Satışlar</a>
                 <span>/</span>
-                <span class="text-slate-700">{{ $sale->saleNumber }}</span>
+                <span class="text-neutral-700">{{ $sale->saleNumber }}</span>
             </div>
             <h1 class="page-title">{{ $sale->saleNumber }} @if($sale->isCancelled ?? false)<span class="ml-2 text-sm font-normal px-2 py-1 rounded-full bg-red-100 text-red-700">İptal</span>@endif</h1>
-            <p class="text-slate-600 mt-1">
+            <p class="page-desc">
                 Satış faturası @if($sale->customer)· Müşteri: <a href="{{ route('customers.show', $sale->customer) }}" class="font-medium text-emerald-600 hover:text-emerald-700">{{ $sale->customer->name }}</a>@else· Müşteri: —@endif
+                @if(!($sale->isCancelled ?? false))
+                · @include('partials.payment-status-badge', ['sale' => $sale])
+                <span class="text-neutral-500 text-sm">{{ \App\Support\CustomerBalance::saleStatus($sale)['description'] }}</span>
+                @endif
             </p>
         </div>
         <div class="flex flex-wrap items-center gap-3">
+            <a href="{{ route('sales.print', $sale) }}" target="_blank" class="btn-secondary">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                Yazdır
+            </a>
             @if(!($sale->isCancelled ?? false))
-            <a href="{{ route('customer-payments.create') }}?customerId={{ $sale->customerId ?? '' }}&saleId={{ $sale->id ?? '' }}" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Müşteri Ödeme Al</a>
+            <a href="{{ route('sales.shipment', $sale) }}" target="_blank" class="btn-secondary">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                Sevkiyat Gönder Fişi
+            </a>
+            <a href="{{ route('sales.shipment.pdf', $sale) }}" class="btn-secondary">Sevkiyat Fişi PDF</a>
+            @endif
+            <a href="{{ route('sales.pdf', $sale) }}" class="btn-secondary">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                PDF İndir
+            </a>
+            <button type="button" @click="showCustomerEmail = true" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                Müşteriye Mail Gönder
+            </button>
+            @if(!($sale->isCancelled ?? false) && $sale->customerId)
+            <button type="button" @click="showPaymentModal = true" class="btn-primary">Ödeme Al</button>
+            @endif
+            @if(!($sale->isCancelled ?? false))
             <form method="POST" action="{{ route('sales.cancel', $sale) }}" class="inline" onsubmit="return confirm('Bu satışı iptal etmek istediğinize emin misiniz?');">
                 @csrf
                 <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 font-medium">İptal Et</button>
             </form>
             @endif
             @if(!($sale->isCancelled ?? false))
-            <a href="{{ route('sales.efatura.xml', $sale) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">E-Fatura XML İndir</a>
+            <a href="{{ route('sales.efatura.xml', $sale) }}" class="btn-secondary">E-Fatura XML İndir</a>
             <form method="POST" action="{{ route('sales.efatura.send', $sale) }}" class="inline" onsubmit="return confirm('Bu faturayı e-fatura olarak GİB/entegratöre göndermek istediğinize emin misiniz?');">
                 @csrf
                 <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">E-Fatura Gönder</button>
@@ -33,18 +59,31 @@
             <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
                 @if($sale->efaturaStatus === 'accepted' || $sale->efaturaStatus === 'sent') bg-emerald-100 text-emerald-800
                 @elseif($sale->efaturaStatus === 'rejected') bg-red-100 text-red-800
-                @else bg-slate-100 text-slate-700 @endif">
+                @else bg-slate-100 text-neutral-700 @endif">
                 E-Fatura: {{ $sale->efaturaStatus === 'sent' ? 'Gönderildi' : ($sale->efaturaStatus === 'accepted' ? 'Kabul' : ($sale->efaturaStatus === 'rejected' ? 'Red' : $sale->efaturaStatus)) }}
                 @if($sale->efaturaSentAt) ({{ $sale->efaturaSentAt->format('d.m.Y H:i') }})@endif
             </span>
             @endif
             @include('partials.action-buttons', [
+                'edit' => !($sale->isCancelled ?? false) ? route('sales.edit', $sale) : null,
                 'print' => route('sales.print', $sale),
                 'destroy' => route('sales.destroy', $sale),
             ])
         </div>
     </div>
 </div>
+
+@if(session('show_sale_actions'))
+<div class="mb-6 p-4 rounded-xl bg-neutral-50 border border-neutral-200">
+    <p class="text-neutral-900 font-medium mb-3">Sipariş oluşturuldu. Hemen paylaşabilirsiniz:</p>
+    <div class="flex flex-wrap gap-2">
+        <a href="{{ route('sales.print', $sale) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 text-neutral-800 rounded-lg hover:bg-neutral-100 text-sm font-medium">Yazdır</a>
+        <a href="{{ route('sales.shipment', $sale) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 text-neutral-800 rounded-lg hover:bg-neutral-100 text-sm font-medium">Sevkiyat Gönder Fişi</a>
+        <a href="{{ route('sales.pdf', $sale) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 text-neutral-800 rounded-lg hover:bg-neutral-100 text-sm font-medium">PDF İndir</a>
+        <button type="button" @click="showCustomerEmail = true" class="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 text-sm font-medium">Müşteriye Mail Gönder</button>
+    </div>
+</div>
+@endif
 
 @if(!($sale->isCancelled ?? false))
 @php $suppliersWithEmail = $sale->getSuppliersWithEmail(); $showPrompt = session('show_supplier_email_prompt') || (!$sale->hasSupplierEmailSent() && $suppliersWithEmail->isNotEmpty()); @endphp
@@ -60,28 +99,14 @@
 @endif
 @endif
 
-@include('partials.invoice-document', [
-    'documentTitle' => 'SATIŞ FİŞİ',
-    'documentNumber' => $sale->saleNumber,
-    'documentDate' => $sale->saleDate,
-    'partyLabel' => 'Müşteri',
-    'partyName' => $sale->customer?->name ?? '-',
-    'partyAddress' => $sale->customer?->address,
-    'partyPhone' => $sale->customer?->phone,
-    'partyEmail' => $sale->customer?->email,
-    'partyTax' => ($sale->customer?->taxNumber ? $sale->customer->taxNumber . ($sale->customer->taxOffice ? ' / ' . $sale->customer->taxOffice : '') : null),
-    'extraInfo' => $sale->dueDate ? ('<p class="text-sm text-slate-600">Vade: ' . $sale->dueDate->format('d.m.Y') . '</p>') : '',
-    'items' => collect($sale->items ?? [])->map(fn($i) => ['name' => $i->productName ?? $i->product?->name ?? '-', 'unitPrice' => $i->unitPrice ?? 0, 'quantity' => $i->quantity ?? 0, 'kdvRate' => $i->kdvRate ?? 18, 'lineTotal' => $i->lineTotal ?? 0])->toArray(),
-    'showKdv' => true,
-    'subtotal' => $sale->subtotal,
-    'kdvTotal' => $sale->kdvTotal,
-    'grandTotal' => $sale->grandTotal,
-    'paidAmount' => $sale->paidAmount ?? 0,
-    'notes' => $sale->notes,
-])
+@include('partials.invoice-document', \App\Support\SaleDocument::invoiceParams($sale))
+
+<div class="mt-6">
+    @include('partials.drawing-files-display', ['drawingFiles' => $sale->drawingFiles ?? []])
+</div>
 
 @php
-    $pt = ['nakit' => 'Nakit', 'havale' => 'Havale', 'kredi_karti' => 'Kredi Kartı', 'cek' => 'Çek', 'senet' => 'Senet', 'diger' => 'Diğer'];
+    $pt = \App\Support\PaymentType::labels();
     $paymentEntries = collect($sale->payments ?? [])->map(fn($p) => (object)['type' => 'payment', 'sortAt' => $p->paymentDate ? $p->paymentDate->format('Y-m-d') . ' 00:00' : '', 'payment' => $p, 'linked' => true]);
     $unlinkedEntries = collect($unlinkedPayments ?? [])->map(fn($p) => (object)['type' => 'payment', 'sortAt' => $p->paymentDate ? $p->paymentDate->format('Y-m-d') . ' 00:00' : '', 'payment' => $p, 'linked' => false]);
     $activityEntries = collect($sale->activities ?? [])->map(fn($a) => (object)['type' => 'activity', 'sortAt' => $a->createdAt->format('Y-m-d H:i'), 'activity' => $a]);
@@ -99,15 +124,17 @@
                 @else
                 @php $activity = $entry->activity; @endphp
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full
-                    @if($activity->type === 'created') bg-slate-200 text-slate-700
+                    @if($activity->type === 'created') bg-slate-200 text-neutral-700
                     @elseif($activity->type === 'supplier_email_sent') bg-blue-100 text-blue-700
                     @elseif($activity->type === 'supplier_email_read') bg-amber-100 text-amber-700
                     @elseif($activity->type === 'supplier_email_replied') bg-emerald-100 text-emerald-700
+                    @elseif($activity->type === 'customer_email_sent') bg-indigo-100 text-indigo-700
                     @else bg-slate-100 text-slate-600 @endif">
                     @if($activity->type === 'created') 📋
                     @elseif($activity->type === 'supplier_email_sent') ✉️
                     @elseif($activity->type === 'supplier_email_read') 👁️
                     @elseif($activity->type === 'supplier_email_replied') ↩️
+                    @elseif($activity->type === 'customer_email_sent') 📧
                     @else • @endif
                 </span>
                 @endif
@@ -118,7 +145,7 @@
             <div class="flex-1 min-w-0 pt-0.5">
                 @if($entry->type === 'payment')
                 @php $p = $entry->payment; $isLinked = $entry->linked ?? true; @endphp
-                <p class="font-medium text-slate-900">
+                <p class="font-medium text-neutral-900">
                     <a href="{{ $isLinked ? route('customer-payments.show', $p) : route('customer-payments.edit', $p) }}" class="text-emerald-600 hover:text-emerald-700 hover:underline">Tahsilat alındı: {{ number_format($p->amount ?? 0, 0, ',', '.') }} ₺</a>
                     @if($pt[$p->paymentType ?? ''] ?? null)
                     <span class="text-slate-600 font-normal">({{ $pt[$p->paymentType ?? ''] }})</span>
@@ -127,18 +154,18 @@
                     <span class="ml-1 text-amber-600 text-sm font-normal">— Faturaya bağlı değil</span>
                     @endif
                 </p>
-                <p class="text-xs text-slate-500 mt-1">{{ $p->paymentDate?->format('d.m.Y H:i') ?? '—' }}</p>
+                <p class="text-xs text-neutral-500 mt-1">{{ $p->paymentDate?->format('d.m.Y H:i') ?? '—' }}</p>
                 @else
                 @php $activity = $entry->activity; @endphp
-                <p class="font-medium text-slate-900">{{ $activity->description }}</p>
+                <p class="font-medium text-neutral-900">{{ $activity->description }}</p>
                 @if($activity->metadata && isset($activity->metadata['suppliers']))
-                <p class="text-sm text-slate-600 mt-1">
+                <p class="text-sm page-desc">
                     @foreach($activity->metadata['suppliers'] as $s)
                     <span class="inline-block mr-2">{{ $s['name'] }} &lt;{{ $s['email'] }}&gt;</span>
                     @endforeach
                 </p>
                 @endif
-                <p class="text-xs text-slate-500 mt-1">{{ $activity->createdAt->format('d.m.Y H:i') }}</p>
+                <p class="text-xs text-neutral-500 mt-1">{{ $activity->createdAt->format('d.m.Y H:i') }}</p>
                 @if($activity->type === 'supplier_email_sent')
                 <div class="mt-2 flex flex-wrap gap-2">
                     <form method="POST" action="{{ route('sales.activity', $sale) }}" class="inline">
@@ -160,4 +187,39 @@
     </div>
 </div>
 @endif
+
+{{-- Müşteriye mail gönder --}}
+<div x-show="showCustomerEmail" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="customer-email-title">
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showCustomerEmail = false"></div>
+    <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-neutral-200 dark:border-slate-700 overflow-hidden">
+        <div class="px-5 pt-5 pb-1">
+            <h2 id="customer-email-title" class="text-lg font-semibold text-neutral-900">Müşteriye Mail Gönder</h2>
+            <p class="mt-1 text-sm text-neutral-500 dark:text-slate-400">{{ $sale->saleNumber }} numaralı satış fişi e-posta ile gönderilecek.</p>
+        </div>
+        <form method="POST" action="{{ route('sales.send-customer-email', $sale) }}" class="p-5 space-y-4">
+            @csrf
+            <div>
+                <label class="form-label">Alıcı e-posta</label>
+                <input type="email" name="email" value="{{ $sale->customer?->email }}" required class="form-input min-h-[44px]" placeholder="ornek@email.com">
+                @if(!$sale->customer?->email)
+                <p class="mt-1 text-xs text-amber-600">Müşteri kartında e-posta yok, lütfen bir adres girin.</p>
+                @endif
+            </div>
+            <div>
+                <label class="form-label">Ek not (opsiyonel)</label>
+                <textarea name="note" rows="3" class="form-input form-textarea" placeholder="Mailde görünecek kısa bir not..."></textarea>
+            </div>
+            <div class="flex gap-3 justify-end pt-2">
+                <button type="button" @click="showCustomerEmail = false" class="btn-secondary min-h-[44px]">İptal</button>
+                <button type="submit" class="btn-primary min-h-[44px]">Gönder</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- Ödeme al modal --}}
+@if($sale->customerId)
+@include('partials.sale-payment-modal', compact('sale', 'kasalar', 'saleRemaining'))
+@endif
+</div>
 @endsection

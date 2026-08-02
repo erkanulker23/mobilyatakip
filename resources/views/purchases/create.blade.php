@@ -27,10 +27,10 @@
 @endpush
 @section('content')
 <div class="mb-6 md:mb-8">
-    <nav class="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm mb-1">
+    <nav class="flex items-center gap-2 text-neutral-500 dark:text-slate-400 text-sm mb-1">
         <a href="{{ route('purchases.index') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Alışlar</a>
         <span aria-hidden="true">/</span>
-        <span class="text-slate-700 dark:text-slate-300">Yeni Alış</span>
+        <span class="text-neutral-700 dark:text-slate-300">Yeni Alış</span>
     </nav>
     <h1 class="page-title">Yeni Alış</h1>
     <p class="page-desc">Tedarikçiden alış kaydı oluşturun</p>
@@ -42,9 +42,10 @@
         'phone' => $s->phone ?? '', 'email' => $s->email ?? '', 'address' => $s->address ?? '',
         'taxNumber' => $s->taxNumber ?? '', 'taxOffice' => $s->taxOffice ?? ''
     ])->values();
-    $productsPurchaseJson = $products->map(function($p) {
+    $productsPurchaseJson = ($products ?? collect())->map(function($p) {
+        $price = $p->unitPrice !== null && $p->unitPrice !== '' ? (float) $p->unitPrice : 0;
         $img = is_array($p->images ?? null) ? ($p->images[0] ?? null) : ($p->images ?? null);
-        return ['id' => $p->id, 'name' => $p->name . ' (' . number_format($p->unitPrice, 0, ',', '.') . ' ₺)', 'price' => (float)$p->unitPrice, 'kdv' => (float)($p->kdvRate ?? 18), 'image' => $img ? (Str::startsWith($img, 'http') ? $img : url($img)) : null];
+        return ['id' => $p->id, 'name' => $p->name . ' (' . number_format($price, 0, ',', '.') . ' ₺)', 'price' => $price, 'kdv' => (float)($p->kdvRate ?? 18), 'image' => $img ? (Str::startsWith($img, 'http') ? $img : url($img)) : null];
     })->values();
 @endphp
 <div class="w-full max-w-7xl mx-auto px-1" x-data="purchaseCreateForm()" @open-quick-add-product.window="showQuickAddProduct = true">
@@ -67,10 +68,10 @@
                         <div id="supplierInfoBox" class="mt-5 pt-4 border-t border-slate-100 dark:border-slate-700/60 hidden">
                             <p id="supplierName" class="text-base font-semibold text-slate-800 dark:text-slate-100 mb-3">—</p>
                             <div class="space-y-2.5 text-sm">
-                                <div id="supplierPhoneRow" class="flex gap-2"><span class="text-slate-400 dark:text-slate-500 w-20 shrink-0">Telefon</span><span id="supplierPhone" class="text-slate-700 dark:text-slate-200">—</span></div>
-                                <div id="supplierEmailRow" class="flex gap-2"><span class="text-slate-400 dark:text-slate-500 w-20 shrink-0">E-posta</span><span id="supplierEmail" class="text-slate-700 dark:text-slate-200">—</span></div>
-                                <div id="supplierAddressRow" class="flex gap-2"><span class="text-slate-400 dark:text-slate-500 w-20 shrink-0">Adres</span><span id="supplierAddress" class="text-slate-700 dark:text-slate-200">—</span></div>
-                                <div id="supplierTaxRow" class="flex gap-2"><span class="text-slate-400 dark:text-slate-500 w-20 shrink-0">Vergi</span><span id="supplierTax" class="text-slate-700 dark:text-slate-200">—</span></div>
+                                <div id="supplierPhoneRow" class="flex gap-2"><span class="text-slate-400 dark:text-neutral-500 w-20 shrink-0">Telefon</span><span id="supplierPhone" class="text-neutral-700 dark:text-slate-200">—</span></div>
+                                <div id="supplierEmailRow" class="flex gap-2"><span class="text-slate-400 dark:text-neutral-500 w-20 shrink-0">E-posta</span><span id="supplierEmail" class="text-neutral-700 dark:text-slate-200">—</span></div>
+                                <div id="supplierAddressRow" class="flex gap-2"><span class="text-slate-400 dark:text-neutral-500 w-20 shrink-0">Adres</span><span id="supplierAddress" class="text-neutral-700 dark:text-slate-200">—</span></div>
+                                <div id="supplierTaxRow" class="flex gap-2"><span class="text-slate-400 dark:text-neutral-500 w-20 shrink-0">Vergi</span><span id="supplierTax" class="text-neutral-700 dark:text-slate-200">—</span></div>
                             </div>
                         </div>
                     </div>
@@ -82,7 +83,7 @@
                             <option value="{{ $w->id }}" {{ old('warehouseId') == $w->id ? 'selected' : '' }}>{{ $w->name }}</option>
                             @endforeach
                         </select>
-                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Malın gireceği depo</p>
+                        <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400">Malın gireceği depo</p>
                         @error('warehouseId')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
                     </div>
                     <div>
@@ -91,12 +92,12 @@
                             <option value="1" {{ old('kdvIncluded', '1') == '1' ? 'selected' : '' }}>KDV Dahil</option>
                             <option value="0" {{ old('kdvIncluded') === '0' ? 'selected' : '' }}>KDV Hariç</option>
                         </select>
-                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Birim fiyat KDV dahil mi?</p>
+                        <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400">Birim fiyat KDV dahil mi?</p>
                     </div>
                     <div>
                         <label class="form-label">Tedarikçi iskonto %</label>
                         <input type="number" step="0.01" min="0" max="100" name="supplierDiscountRate" value="{{ old('supplierDiscountRate') }}" class="form-input min-h-[44px] md:min-h-[42px]" placeholder="0">
-                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Bu alış için geçerli (opsiyonel)</p>
+                        <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400">Bu alış için geçerli (opsiyonel)</p>
                     </div>
                 </div>
             </div>
@@ -121,7 +122,7 @@
             {{-- Nakliye bilgileri --}}
             <div class="form-create-section px-4 sm:px-6 lg:px-8">
                 <h2 class="form-create-section-title">Nakliye bilgileri</h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">Malı hangi nakliye firması getirdi? Araç plakası, şoför ve iletişim bilgilerini kaydedin. Nakliye ödemelerini firmaya özel takip edebilirsiniz.</p>
+                <p class="text-xs text-neutral-500 dark:text-slate-400 mb-3">Malı hangi nakliye firması getirdi? Araç plakası, şoför ve iletişim bilgilerini kaydedin. Nakliye ödemelerini firmaya özel takip edebilirsiniz.</p>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div class="lg:col-span-2">
                         <label class="form-label">Nakliye firması</label>
@@ -131,7 +132,7 @@
                             <option value="{{ $sc->id }}" {{ old('shippingCompanyId') == $sc->id ? 'selected' : '' }}>{{ $sc->name }}</option>
                             @endforeach
                         </select>
-                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Sisteme tanımlı nakliye firmalarından seçin</p>
+                        <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400">Sisteme tanımlı nakliye firmalarından seçin</p>
                         @error('shippingCompanyId')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
                     </div>
                     <div>
@@ -164,7 +165,7 @@
                 <div class="form-items-section-box">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                         <h2 class="form-create-section-title mb-0">Alış kalemleri</h2>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 sm:max-w-sm">Ürün seçin, liste ve iskontolu fiyat girin.</p>
+                        <p class="text-xs text-neutral-500 dark:text-slate-400 sm:max-w-sm">Ürün seçin, liste ve iskontolu fiyat girin.</p>
                     </div>
                     <template id="purchase-item-template">
                     <div class="item-row purchase-item-card" data-row-idx="__IDX__">
@@ -186,29 +187,29 @@
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                                     </button>
                                 </div>
-                                <div class="xl:col-span-2 xl:border-l xl:border-slate-200 dark:xl:border-slate-600 xl:pl-2">
+                                <div class="xl:col-span-2 xl:border-l xl:border-neutral-200 dark:xl:border-slate-600 xl:pl-2">
                                     <label class="form-label">Liste fiyatı</label>
                                     <input type="text" inputmode="decimal" name="items[__IDX__][listPrice]" class="form-input item-listprice min-h-[44px] md:min-h-[42px] w-full" placeholder="—" title="Örn: 20.000">
                                 </div>
-                                <div class="xl:col-span-2 xl:border-l xl:border-slate-200 dark:xl:border-slate-600 xl:pl-2">
+                                <div class="xl:col-span-2 xl:border-l xl:border-neutral-200 dark:xl:border-slate-600 xl:pl-2">
                                     <label class="form-label">İskontolu fiyat <span class="text-red-500">*</span></label>
                                     <input type="text" inputmode="decimal" name="items[__IDX__][unitPrice]" required class="form-input item-price min-h-[44px] md:min-h-[42px] w-full" placeholder="0" title="Örn: 20.000">
                                 </div>
-                                <div class="xl:col-span-1 xl:border-l xl:border-slate-200 dark:xl:border-slate-600 xl:pl-4">
+                                <div class="xl:col-span-1 xl:border-l xl:border-neutral-200 dark:xl:border-slate-600 xl:pl-4">
                                     <label class="form-label">Adet <span class="text-red-500">*</span></label>
                                     <input type="number" name="items[__IDX__][quantity]" value="1" required min="1" class="form-input item-qty min-h-[44px] md:min-h-[42px] w-full" placeholder="1">
                                 </div>
-                                <div class="xl:col-span-1 xl:border-l xl:border-slate-200 dark:xl:border-slate-600 xl:pl-4">
+                                <div class="xl:col-span-1 xl:border-l xl:border-neutral-200 dark:xl:border-slate-600 xl:pl-4">
                                     <label class="form-label">KDV %</label>
                                     <input type="number" step="0.01" min="0" max="100" name="items[__IDX__][kdvRate]" value="18" class="form-input item-kdv min-h-[44px] md:min-h-[42px] w-full" placeholder="18">
                                 </div>
-                                <div class="xl:col-span-1 xl:border-l xl:border-slate-200 dark:xl:border-slate-600 xl:pl-4">
+                                <div class="xl:col-span-1 xl:border-l xl:border-neutral-200 dark:xl:border-slate-600 xl:pl-4">
                                     <label class="form-label">İskonto oranı %</label>
                                     <input type="number" step="0.01" min="0" max="100" name="items[__IDX__][lineDiscountPercent]" value="" class="form-input item-disc-pct min-h-[44px] md:min-h-[42px] w-full" placeholder="0" title="İskontolu fiyat × adet üzerinden %">
                                 </div>
-                                <div class="xl:col-span-1 xl:border-l xl:border-slate-200 dark:xl:border-slate-600 xl:pl-2 flex items-end gap-1.5 pb-0.5">
+                                <div class="xl:col-span-1 xl:border-l xl:border-neutral-200 dark:xl:border-slate-600 xl:pl-2 flex items-end gap-1.5 pb-0.5">
                                     <button type="button" onclick="removePurchaseRow(this)" class="btn-remove-row w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/60 text-sm touch-manipulation" aria-label="Satır sil" title="Kalem sil">−</button>
-                                    <button type="button" onclick="addPurchaseRow()" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500 text-sm touch-manipulation" aria-label="Satır ekle" title="Kalem ekle">+</button>
+                                    <button type="button" onclick="addPurchaseRow()" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-200 dark:bg-slate-600 text-neutral-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500 text-sm touch-manipulation" aria-label="Satır ekle" title="Kalem ekle">+</button>
                                 </div>
                             </div>
                         </div>
@@ -219,10 +220,10 @@
                         <div class="flex-1 min-w-0"></div>
                         <div id="purchaseTotals" class="purchase-totals-box w-full lg:min-w-[280px] shrink-0">
                             <div class="space-y-1.5 text-sm">
-                                <div class="flex justify-between"><span class="text-slate-600 dark:text-slate-300">Ara Toplam</span> <span id="subtotalBeforeDiscDisplay" class="font-medium text-slate-900 dark:text-white">0 ₺</span></div>
+                                <div class="flex justify-between"><span class="text-slate-600 dark:text-slate-300">Ara Toplam</span> <span id="subtotalBeforeDiscDisplay" class="font-medium text-neutral-900 dark:text-white">0 ₺</span></div>
                                 <div id="purchaseDiscountPctRow" class="flex justify-between hidden"><span class="text-slate-600 dark:text-slate-300">İsk. % Toplam</span> <span id="purchaseDiscountPctDisplay" class="font-medium text-amber-600 dark:text-amber-400">0 ₺</span></div>
                                 <div id="purchaseDiscountAmtRow" class="flex justify-between hidden"><span class="text-slate-600 dark:text-slate-300">İsk. ₺ Toplam</span> <span id="purchaseDiscountAmtDisplay" class="font-medium text-amber-600 dark:text-amber-400">0 ₺</span></div>
-                                <div class="flex justify-between"><span class="text-slate-600 dark:text-slate-300">KDV Toplam</span> <span id="kdvDisplay" class="font-medium text-slate-900 dark:text-white">0 ₺</span></div>
+                                <div class="flex justify-between"><span class="text-slate-600 dark:text-slate-300">KDV Toplam</span> <span id="kdvDisplay" class="font-medium text-neutral-900 dark:text-white">0 ₺</span></div>
                                 <div class="flex justify-between pt-2 border-t border-emerald-200 dark:border-emerald-800"><span class="font-medium text-slate-800 dark:text-slate-200">Genel Toplam</span> <span id="grandTotalDisplay" class="font-semibold text-emerald-700 dark:text-emerald-300 text-lg">0 ₺</span></div>
                             </div>
                         </div>
@@ -243,9 +244,9 @@
     {{-- Hızlı Ürün/Hizmet Ekle Modal --}}
     <div x-show="showQuickAddProduct" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="quick-add-product-title">
         <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showQuickAddProduct = false"></div>
-        <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-neutral-200 dark:border-slate-700 overflow-hidden">
             <div class="px-5 pt-5 pb-1">
-                <h2 id="quick-add-product-title" class="text-lg font-semibold text-slate-900 dark:text-slate-100">Hızlı Ürün / Hizmet Ekle</h2>
+                <h2 id="quick-add-product-title" class="text-lg font-semibold text-neutral-900">Hızlı Ürün / Hizmet Ekle</h2>
             </div>
             <form @submit.prevent="quickAddProduct()" class="p-5 space-y-4">
                 <div>
@@ -254,7 +255,7 @@
                 </div>
                 <div>
                     <label class="form-label">Birim fiyat (₺) <span class="text-red-500">*</span></label>
-                    <input type="number" step="0.01" min="0" x-model="quickProduct.unitPrice" required class="form-input min-h-[44px]" placeholder="0">
+                    <input type="text" inputmode="decimal" data-input="money" x-model="quickProduct.unitPrice" required class="form-input min-h-[44px]" placeholder="0" autocomplete="off">
                 </div>
                 <div>
                     <label class="form-label">KDV %</label>
@@ -271,7 +272,7 @@
 </div>
 <script>
 const suppliersPurchaseData = @json($suppliersJson);
-const productsPurchaseData = @json($productsPurchaseJson);
+const productsPurchaseData = @json($productsPurchaseJson ?? []);
 function purchaseCreateForm() {
     return {
         showQuickAddProduct: false,
@@ -291,7 +292,7 @@ function purchaseCreateForm() {
                     },
                     body: JSON.stringify({
                         name: this.quickProduct.name,
-                        unitPrice: parseFloat(this.quickProduct.unitPrice) || 0,
+                        unitPrice: (window.parseMoney || parseFloat)(this.quickProduct.unitPrice) || 0,
                         kdvRate: parseFloat(this.quickProduct.kdvRate) || 18,
                     })
                 });
@@ -309,14 +310,12 @@ function purchaseCreateForm() {
                         opt.textContent = text;
                         tmplSelect.appendChild(opt);
                     }
-                    (window.purchaseProductSelects || []).forEach(function(ts, i) {
-                        if (ts) {
-                            ts.addOption({ value: String(data.id), text: text });
-                            if (i === (window.quickAddPurchaseProductForRowIndex || 0)) {
-                                ts.setValue(data.id);
-                            }
-                        }
+                    (window.purchaseProductSelects || []).forEach(function(ts) {
+                        if (ts) ts.addOption({ value: String(data.id), text: text });
                     });
+                    const targetRow = resolvePurchaseRowForQuickProduct(window.quickAddPurchaseProductForRowIndex ?? 0);
+                    applyProductToPurchaseRow(targetRow, data, text);
+                    targetRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
                     this.showQuickAddProduct = false;
                     this.quickProduct = { name: '', unitPrice: '', kdvRate: '18' };
                     updateTotals();
@@ -443,6 +442,39 @@ window.openQuickAddPurchaseProduct = function(btn) {
     window.quickAddPurchaseProductForRowIndex = row ? parseInt(row.getAttribute('data-row-idx'), 10) : 0;
     window.dispatchEvent(new CustomEvent('open-quick-add-product'));
 };
+function purchaseRowIsEmpty(row) {
+    if (!row) return true;
+    const tsVal = row.querySelector('.item-product')?.tomselect?.getValue();
+    const price = parseTrNum(row.querySelector('.item-price')?.value || 0);
+    return !tsVal && !(price > 0);
+}
+function resolvePurchaseRowForQuickProduct(rowIndex) {
+    const rows = document.querySelectorAll('#items .item-row');
+    let row = rows[rowIndex] || null;
+    if (!row || !purchaseRowIsEmpty(row)) {
+        row = addPurchaseRow(false);
+    }
+    return row;
+}
+function applyProductToPurchaseRow(rowEl, data, text) {
+    if (!rowEl || !data) return;
+    const id = String(data.id);
+    const price = parseFloat(data.price) || 0;
+    const kdv = parseFloat(data.kdv) ?? 18;
+    const listPriceEl = rowEl.querySelector('.item-listprice');
+    const priceEl = rowEl.querySelector('.item-price');
+    const kdvEl = rowEl.querySelector('.item-kdv');
+    const qtyEl = rowEl.querySelector('.item-qty');
+    if (listPriceEl) listPriceEl.value = fmt(price);
+    if (priceEl) priceEl.value = fmt(price);
+    if (kdvEl) kdvEl.value = kdv;
+    if (qtyEl && (!qtyEl.value || parseInt(qtyEl.value, 10) < 1)) qtyEl.value = '1';
+    const ts = rowEl.querySelector('.item-product')?.tomselect;
+    if (ts) {
+        if (!ts.options[id]) ts.addOption({ value: id, text: text });
+        ts.setValue(id, true);
+    }
+}
 let purchaseIdx = 0;
 function removePurchaseRow(btn) {
     const container = document.getElementById('items');
@@ -472,9 +504,9 @@ function reindexPurchaseRows() {
         window.purchaseProductSelects = arr;
     }
 }
-function addPurchaseRow() {
+function addPurchaseRow(focusNew) {
     const tmpl = document.getElementById('purchase-item-template');
-    if (!tmpl) return;
+    if (!tmpl) return null;
     const c = tmpl.content.cloneNode(true);
     c.querySelectorAll('[name]').forEach(e => { e.name = e.name.replace(/__IDX__/g, purchaseIdx); });
     const row = c.querySelector('.item-row');
@@ -485,17 +517,27 @@ function addPurchaseRow() {
     c.querySelector('.item-kdv').value = '18';
     c.querySelector('.item-disc-pct').value = '';
     document.getElementById('items').appendChild(c);
-    const prodSel = document.getElementById('items').lastElementChild.querySelector('.item-product');
+    const rowEl = document.getElementById('items').lastElementChild;
+    const prodSel = rowEl.querySelector('.item-product');
     initPurchaseProductSelect(prodSel, purchaseIdx);
     purchaseIdx++;
     reindexPurchaseRows();
+    if (focusNew) {
+        const ts = prodSel && prodSel.tomselect;
+        if (ts) ts.focus();
+        rowEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+    return rowEl;
 }
 function initPurchaseProductSelect(sel, rowIdx) {
     if (!sel || typeof TomSelect === 'undefined') return;
     window.purchaseProductSelects = window.purchaseProductSelects || [];
     const row = sel.closest('.item-row');
+    const data = productsPurchaseData || [];
+    const opts = data.map(function(p) { return { value: String(p.id), text: p.name }; });
     const ts = new TomSelect(sel, {
-        maxOptions: 100,
+        options: opts,
+        maxOptions: opts.length || 100,
         placeholder: 'Ürün ara veya seçin...',
         searchField: ['text'],
         dropdownParent: 'body',
@@ -507,27 +549,26 @@ function initPurchaseProductSelect(sel, rowIdx) {
         onDropdownClose: function() { this.dropdown.classList.remove('dropup'); },
         render: {
             item: function(data, escape) {
-                const p = productsPurchaseData.find(x => String(x.id) === String(data.value));
-                const img = p?.image;
+                const p = (productsPurchaseData || []).find(function(x) { return String(x.id) === String(data.value); });
+                const img = p && p.image;
                 const imgHtml = img ? '<img src="' + escape(img) + '" alt="" class="w-8 h-8 object-cover rounded shrink-0 mr-2" onerror="this.style.display=\'none\'">' : '';
                 return '<div class="flex items-center gap-2 min-w-0"><span class="shrink-0">' + imgHtml + '</span><span class="truncate">' + escape(data.text) + '</span></div>';
             },
             option: function(data, escape) {
-                const p = productsPurchaseData.find(x => String(x.id) === String(data.value));
-                const img = p?.image;
+                const p = (productsPurchaseData || []).find(function(x) { return String(x.id) === String(data.value); });
+                const img = p && p.image;
                 const imgHtml = img ? '<img src="' + escape(img) + '" alt="" class="w-8 h-8 object-cover rounded shrink-0 mr-2" onerror="this.style.display=\'none\'">' : '';
                 return '<div class="flex items-center gap-2">' + imgHtml + '<span>' + escape(data.text) + '</span></div>';
             }
         },
         onChange: function(v) {
             if (!v) return;
-            const opt = Array.from(sel.options).find(o => o.value === v);
-            if (opt?.dataset?.price) {
-                const priceNum = parseFloat(opt.dataset.price) || 0;
-                row.querySelector('.item-listprice').value = fmt(priceNum);
-                row.querySelector('.item-price').value = fmt(priceNum);
+            const p = (productsPurchaseData || []).find(function(x) { return String(x.id) === String(v); });
+            if (p && (p.price != null || p.price === 0)) {
+                row.querySelector('.item-listprice').value = fmt(p.price);
+                row.querySelector('.item-price').value = fmt(p.price);
             }
-            if (opt?.dataset?.kdv) row.querySelector('.item-kdv').value = opt.dataset.kdv;
+            if (p && (p.kdv != null || p.kdv === 0)) row.querySelector('.item-kdv').value = p.kdv;
             updateTotals();
         }
     });

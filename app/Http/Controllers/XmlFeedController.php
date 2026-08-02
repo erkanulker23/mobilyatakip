@@ -7,11 +7,15 @@ use App\Models\Product;
 use App\Models\XmlFeed;
 use App\Models\Supplier;
 use App\Services\XmlFeedService;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 
 class XmlFeedController extends Controller
 {
-    public function __construct(private XmlFeedService $xmlFeedService) {}
+    public function __construct(
+        private XmlFeedService $xmlFeedService,
+        private AuditService $auditService,
+    ) {}
 
     public function index()
     {
@@ -37,12 +41,13 @@ class XmlFeedController extends Controller
         $supplierId = $request->filled('supplierId') ? $request->input('supplierId') : null;
         $createSuppliers = $request->boolean('create_suppliers');
 
-        XmlFeed::create([
+        $feed = XmlFeed::create([
             'name' => $validated['name'],
             'url' => $validated['url'],
             'supplierId' => $supplierId,
             'createSuppliers' => $createSuppliers,
         ]);
+        $this->auditService->logCreate('xml_feed', $feed->id, ['name' => $feed->name]);
         return redirect()->route('xml-feeds.index')->with('success', 'XML Feed kaydedildi.');
     }
 
@@ -82,6 +87,10 @@ class XmlFeedController extends Controller
             if (!empty($result['errors'])) {
                 $msg .= ' Hatalar: ' . implode(', ', array_slice($result['errors'], 0, 3));
             }
+            $this->auditService->logAction('xml_feed', $xmlFeed->id, 'sync', [
+                'name' => $xmlFeed->name,
+                'summary' => sprintf('%d eklendi, %d güncellendi', $result['created'], $result['updated'] ?? 0),
+            ]);
             return redirect()->route('xml-feeds.index')->with('success', $msg);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('XML feed sync hatası', ['feed' => $xmlFeed->id, 'exception' => $e->getMessage()]);
@@ -95,6 +104,7 @@ class XmlFeedController extends Controller
         if ($deleteProducts) {
             Product::where('externalSource', $xmlFeed->url)->delete();
         }
+        $this->auditService->logDelete('xml_feed', $xmlFeed->id, ['name' => $xmlFeed->name]);
         $xmlFeed->delete();
         return redirect()->route('xml-feeds.index')->with('success', 'XML Feed silindi.');
     }

@@ -1,18 +1,26 @@
 @extends('layouts.print')
 @section('title', 'Teklif ' . $quote->quoteNumber . ' - Yazdır')
 @section('content')
+@php
+    $quoteIssuedAt = $quote->createdAt;
+    $quoteValidUntil = $quoteIssuedAt?->copy()->addDays(3);
+@endphp
 @include('partials.invoice-document', [
-    'documentTitle' => 'TEKLİF',
+    'documentTitle' => 'TEKLİFTİR',
+    'documentSubtitle' => 'Teklif süresi 3 gündür.',
+    'documentNotice' => '<span class="font-bold uppercase tracking-wider text-neutral-900">Tekliftir.</span> Bu belge fatura değildir. <strong>Teklif süresi 3 gündür.</strong>',
     'documentNumber' => $quote->quoteNumber,
-    'documentDate' => $quote->createdAt,
+    'documentDate' => $quoteIssuedAt,
     'partyLabel' => 'Müşteri',
     'partyName' => $quote->customer?->name ?? '-',
-    'partyAddress' => $quote->customer?->address,
+    'partyAddress' => $quote->customer ? full_address($quote->customer) : null,
     'partyPhone' => $quote->customer?->phone,
     'partyEmail' => $quote->customer?->email,
     'partyTax' => ($quote->customer?->taxNumber ? $quote->customer->taxNumber . ($quote->customer->taxOffice ? ' / ' . $quote->customer->taxOffice : '') : null),
-    'extraInfo' => '<p class="text-sm text-slate-600">Geçerlilik: ' . ($quote->validUntil?->format('d.m.Y') ?? '-') . '</p><p class="text-sm text-slate-600">Personel: ' . e($quote->personnel?->name ?? '-') . '</p><p class="text-sm mt-2"><span class="inline-flex px-2 py-1 text-xs font-medium rounded-full ' . (($quote->status ?? '') === 'taslak' ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800') . '">' . e(ucfirst($quote->status ?? '-')) . '</span></p>',
-    'items' => $quote->items->map(fn($i) => ['name' => $i->product?->name, 'unitPrice' => $i->unitPrice, 'quantity' => $i->quantity, 'kdvRate' => $i->kdvRate, 'lineTotal' => $i->lineTotal])->toArray(),
+    'extraInfo' => '<p class="text-sm text-slate-600">Teklif tarihi: ' . ($quoteIssuedAt?->format('d.m.Y') ?? '-') . '</p>'
+        . '<p class="text-sm font-semibold text-slate-900 mt-1">Son geçerlilik: ' . ($quoteValidUntil?->format('d.m.Y') ?? '-') . '</p>'
+        . '<p class="text-sm text-slate-600 mt-1">Personel: ' . e($quote->personnel?->name ?? '-') . '</p>',
+    'items' => $quote->items->map(fn($i) => ['name' => $i->product?->name, 'description' => $i->description, 'unitPrice' => $i->unitPrice, 'quantity' => $i->quantity, 'kdvRate' => $i->kdvRate, 'lineTotal' => $i->lineTotal])->toArray(),
     'showKdv' => true,
     'subtotal' => $quote->subtotal,
     'kdvTotal' => $quote->kdvTotal,

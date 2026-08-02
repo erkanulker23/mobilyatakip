@@ -2,14 +2,20 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasTurkeyAddress;
+
 class Company extends BaseModel
 {
+    use HasTurkeyAddress;
+
     protected $table = 'companies';
 
     protected $fillable = [
         'name',
         'appName',
         'address',
+        'cityId',
+        'districtId',
         'taxNumber',
         'taxOffice',
         'phone',
@@ -45,4 +51,14 @@ class Company extends BaseModel
         'mailPort' => 'integer',
         'efaturaTestMode' => 'boolean',
     ];
+
+    /** Logo görüntüleme URL'si (storage symlink sorunlarında Laravel üzerinden servis edilir) */
+    public function logoDisplayUrl(): ?string
+    {
+        if (!$this->logoUrl) {
+            return null;
+        }
+
+        return storage_url($this->logoUrl);
+    }
 }

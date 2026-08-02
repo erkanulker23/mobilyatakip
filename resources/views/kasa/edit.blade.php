@@ -2,18 +2,18 @@
 @section('title', 'Düzenle: ' . $kasa->name)
 @section('content')
 <div class="mb-6">
-    <div class="flex items-center gap-2 text-slate-500 text-sm mb-1">
-        <a href="{{ route('kasa.index') }}" class="hover:text-slate-700">Kasa</a>
+    <div class="flex items-center gap-2 text-neutral-500 text-sm mb-1">
+        <a href="{{ route('kasa.index') }}" class="hover:text-neutral-900">Kasa</a>
         <span>/</span>
-        <a href="{{ route('kasa.show', $kasa) }}" class="hover:text-slate-700">{{ $kasa->name }}</a>
+        <a href="{{ route('kasa.show', $kasa) }}" class="hover:text-neutral-900">{{ $kasa->name }}</a>
         <span>/</span>
-        <span class="text-slate-700">Düzenle</span>
+        <span class="text-neutral-700">Düzenle</span>
     </div>
-    <h1 class="text-2xl font-bold text-slate-900">Kasa Düzenle</h1>
-    <p class="text-slate-600 mt-1">{{ $kasa->name }}</p>
+    <h1 class="page-title">Kasa Düzenle</h1>
+    <p class="page-desc">{{ $kasa->name }}</p>
 </div>
 
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 max-w-2xl">
+<div class="card p-6 max-w-2xl">
     <form method="POST" action="{{ route('kasa.update', $kasa) }}" class="space-y-5">
         @csrf @method('PUT')
         <div>
@@ -44,15 +44,15 @@
         </div>
         <div>
             <label class="form-label">Açılış Bakiyesi (₺)</label>
-            <input type="number" step="0.01" name="openingBalance" value="{{ old('openingBalance', $kasa->openingBalance ?? 0) }}" class="form-input">
+            <input type="text" inputmode="decimal" name="openingBalance" value="{{ old('openingBalance', money($kasa->openingBalance ?? 0)) }}" class="form-input money-input" placeholder="0" autocomplete="off">
         </div>
         <div class="flex items-center gap-2">
             <input type="checkbox" name="isActive" value="1" {{ old('isActive', $kasa->isActive ?? true) ? 'checked' : '' }} class="rounded border-slate-300 text-green-600 focus:ring-green-500">
             <label class="form-label mb-0">Aktif</label>
         </div>
         <div class="flex gap-3 pt-2">
-            <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Güncelle</button>
-            <a href="{{ route('kasa.show', $kasa) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium">İptal</a>
+            <button type="submit" class="btn-primary">Güncelle</button>
+            <a href="{{ route('kasa.show', $kasa) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-200 text-neutral-700 rounded-lg hover:bg-slate-300 font-medium">İptal</a>
         </div>
     </form>
 </div>

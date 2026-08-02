@@ -11,6 +11,7 @@ class QuoteItem extends BaseModel
     protected $fillable = [
         'quoteId',
         'productId',
+        'description',
         'unitPrice',
         'quantity',
         'lineDiscountPercent',

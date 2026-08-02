@@ -3,19 +3,19 @@
 @section('content')
 <div class="mb-6 flex items-center justify-between">
     <div>
-        <h1 class="text-2xl font-bold text-slate-900">Gider Düzenle</h1>
-        <p class="text-slate-600 mt-1">{{ $expense->expenseDate?->format('d.m.Y') }} - {{ number_format($expense->amount, 0, ',', '.') }} ₺</p>
+        <h1 class="page-title">Gider Düzenle</h1>
+        <p class="page-desc">{{ $expense->expenseDate?->format('d.m.Y') }} - {{ number_format($expense->amount, 0, ',', '.') }} ₺</p>
     </div>
     <a href="{{ route('expenses.show', $expense) }}" class="px-4 py-2 bg-slate-200 text-slate-800 rounded-lg hover:bg-slate-300 font-medium">İptal</a>
 </div>
 
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 max-w-2xl">
+<div class="card p-6 max-w-2xl">
     <form method="POST" action="{{ route('expenses.update', $expense) }}" class="space-y-5">
         @csrf
         @method('PUT')
         <div>
             <label class="form-label">Tutar *</label>
-            <input type="number" step="0.01" name="amount" required value="{{ old('amount', $expense->amount) }}" class="form-input">
+            <input type="text" inputmode="decimal" name="amount" required value="{{ old('amount', money($expense->amount)) }}" class="form-input money-input" placeholder="0" autocomplete="off">
             @error('amount')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
         <div class="flex items-center gap-4">
@@ -46,7 +46,7 @@
             <div class="flex flex-wrap gap-2 mt-2" id="categoryList">
                 @foreach($categories as $c)
                 <button type="button"
-                    class="category-btn px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all duration-200 {{ old('category', $expense->category) == $c ? 'border-primary-600 bg-primary-50 text-primary-700 ring-2 ring-primary-200' : 'border-slate-200 bg-white text-slate-700 hover:border-primary-400 hover:bg-primary-50/50' }}"
+                    class="category-btn px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all duration-200 {{ old('category', $expense->category) == $c ? 'border-primary-600 bg-primary-50 text-primary-700 ring-2 ring-primary-200' : 'border-neutral-200 bg-white text-neutral-700 hover:border-primary-400 hover:bg-primary-50/50' }}"
                     data-category="{{ $c }}">
                     {{ $c }}
                 </button>
@@ -58,9 +58,9 @@
                 btn.addEventListener('click', function() {
                     document.querySelectorAll('.category-btn').forEach(function(b) {
                         b.classList.remove('border-primary-600', 'bg-primary-50', 'text-primary-700', 'ring-2', 'ring-primary-200');
-                        b.classList.add('border-slate-200', 'bg-white', 'text-slate-700');
+                        b.classList.add('border-neutral-200', 'bg-white', 'text-neutral-700');
                     });
-                    this.classList.remove('border-slate-200', 'bg-white', 'text-slate-700');
+                    this.classList.remove('border-neutral-200', 'bg-white', 'text-neutral-700');
                     this.classList.add('border-primary-600', 'bg-primary-50', 'text-primary-700', 'ring-2', 'ring-primary-200');
                     document.getElementById('categoryInput').value = this.dataset.category;
                 });
@@ -76,8 +76,8 @@
             </select>
         </div>
         <div class="flex gap-3 pt-2">
-            <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium">Güncelle</button>
-            <a href="{{ route('expenses.show', $expense) }}" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium">İptal</a>
+            <button type="submit" class="btn-primary">Güncelle</button>
+            <a href="{{ route('expenses.show', $expense) }}" class="btn-secondary">İptal</a>
         </div>
     </form>
 </div>

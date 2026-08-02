@@ -15,7 +15,9 @@ class SuperAdminSeeder extends Seeder
         $user->name     = 'Süper Admin';
         $user->role     = 'admin';
         $user->isActive = true;
-        $user->password = 'password'; // mutator passwordHash'e bcrypt yazar
+        if (! $user->exists) {
+            $user->password = 'password'; // mutator passwordHash'e bcrypt yazar
+        }
         $user->save();
 
         // passwordHash kolonu varsa ve hâlâ boşsa (mutator tetiklenmediyse) doğrudan yaz

@@ -1,16 +1,16 @@
 @extends('layouts.app')
-@section('title', $product->name)
+@include('partials.page-seo', \App\Support\PageSeo::product($product))
 @section('content')
 <div class="mb-6">
     <div class="flex items-center justify-between">
         <div>
-            <div class="flex items-center gap-2 text-slate-500 text-sm mb-1">
-                <a href="{{ route('products.index') }}" class="hover:text-slate-700">Ürünler</a>
+            <div class="flex items-center gap-2 text-neutral-500 text-sm mb-1">
+                <a href="{{ route('products.index') }}" class="hover:text-neutral-900">Ürünler</a>
                 <span>/</span>
-                <span class="text-slate-700">{{ $product->name }}</span>
+                <span class="text-neutral-700">{{ $product->name }}</span>
             </div>
-            <h1 class="text-2xl font-bold text-slate-900">{{ $product->name }}</h1>
-            <p class="text-slate-600 mt-1">Ürün detayları ve stok bilgisi</p>
+            <h1 class="page-title">{{ $product->name }}</h1>
+            <p class="page-desc">Ürün detayları ve stok bilgisi</p>
         </div>
         @include('partials.action-buttons', [
             'edit' => route('products.edit', $product),
@@ -20,15 +20,22 @@
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div class="lg:col-span-1 space-y-6">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            @php $imgs = is_array($product->images ?? null) ? ($product->images ?? []) : ($product->images ? [$product->images] : []); @endphp
-            @if(count($imgs) > 0)
-            <div class="mb-4">
-                <img src="{{ Str::startsWith($imgs[0], 'http') ? $imgs[0] : asset($imgs[0]) }}" alt="{{ $product->name }}" class="w-full max-h-48 object-contain rounded-lg border border-slate-200">
-                @if(count($imgs) > 1)
-                <div class="flex gap-2 mt-2 overflow-x-auto pb-1">
-                    @foreach(array_slice($imgs, 1, 4) as $img)
-                    <img src="{{ Str::startsWith($img, 'http') ? $img : asset($img) }}" alt="" class="w-16 h-16 object-cover rounded border border-slate-200 shrink-0">
+        <div class="card p-6">
+            @php $imageUrls = \App\Support\ProductImages::urls($product); @endphp
+            @if(count($imageUrls) > 0)
+            <div class="mb-5" x-data="{ active: 0, images: @json($imageUrls) }">
+                <div class="aspect-square rounded-xl border border-neutral-200 dark:border-slate-700 bg-neutral-50 dark:bg-slate-800/50 overflow-hidden">
+                    <img :src="images[active]" :alt="@json($product->name)" class="w-full h-full object-contain p-2">
+                </div>
+                @if(count($imageUrls) > 1)
+                <div class="flex gap-2 mt-3 overflow-x-auto pb-1">
+                    @foreach($imageUrls as $index => $url)
+                    <button type="button"
+                        @click="active = {{ $index }}"
+                        :class="active === {{ $index }} ? 'ring-2 ring-emerald-500 ring-offset-2 dark:ring-offset-slate-900' : 'opacity-70 hover:opacity-100'"
+                        class="shrink-0 rounded-lg overflow-hidden border border-neutral-200 dark:border-slate-700 transition">
+                        <img src="{{ $url }}" alt="" class="w-16 h-16 object-cover">
+                    </button>
                     @endforeach
                 </div>
                 @endif
@@ -36,31 +43,31 @@
             @endif
             <h2 class="text-lg font-semibold text-slate-900 mb-4">Ürün Bilgileri</h2>
             <dl class="space-y-3">
-                <div><dt class="text-sm text-slate-500">SKU</dt><dd class="font-medium font-mono">{{ $product->sku ?: '-' }}</dd></div>
-                <div><dt class="text-sm text-slate-500">Birim Fiyat</dt><dd class="font-medium text-green-700">{{ number_format($product->unitPrice, 0, ',', '.') }} ₺</dd></div>
-                <div><dt class="text-sm text-slate-500">KDV Oranı</dt><dd class="font-medium">%{{ number_format($product->kdvRate ?? 18, 2) }}</dd></div>
-                <div><dt class="text-sm text-slate-500">Tedarikçi</dt><dd class="font-medium">@if($product->supplier)<a href="{{ route('suppliers.show', $product->supplier) }}" class="text-green-600 hover:text-green-700">{{ $product->supplier->name }}</a>@else—@endif</dd></div>
-                <div><dt class="text-sm text-slate-500">Min. Stok</dt><dd class="font-medium">{{ $product->minStockLevel ?? 0 }}</dd></div>
-                <div><dt class="text-sm text-slate-500">Durum</dt><dd><span class="inline-flex px-2 py-1 text-xs font-medium rounded-full {{ $product->isActive ?? true ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600' }}">{{ $product->isActive ?? true ? 'Aktif' : 'Pasif' }}</span></dd></div>
+                <div><dt class="text-sm text-neutral-500">SKU</dt><dd class="font-medium font-mono">{{ $product->sku ?: '-' }}</dd></div>
+                <div><dt class="text-sm text-neutral-500">Birim Fiyat</dt><dd class="font-medium text-green-700">{{ money($product->unitPrice, 2) }} ₺</dd></div>
+                <div><dt class="text-sm text-neutral-500">KDV Oranı</dt><dd class="font-medium">%{{ number_format($product->kdvRate ?? 18, 2) }}</dd></div>
+                <div><dt class="text-sm text-neutral-500">Tedarikçi</dt><dd class="font-medium">@if($product->supplier)<a href="{{ route('suppliers.show', $product->supplier) }}" class="text-green-600 hover:text-green-700">{{ $product->supplier->name }}</a>@else—@endif</dd></div>
+                <div><dt class="text-sm text-neutral-500">Min. Stok</dt><dd class="font-medium">{{ $product->minStockLevel ?? 0 }}</dd></div>
+                <div><dt class="text-sm text-neutral-500">Durum</dt><dd><span class="inline-flex px-2 py-1 text-xs font-medium rounded-full {{ $product->isActive ?? true ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600' }}">{{ $product->isActive ?? true ? 'Aktif' : 'Pasif' }}</span></dd></div>
                 @if($product->description)
-                <div><dt class="text-sm text-slate-500">Açıklama</dt><dd class="text-slate-600">{{ $product->description }}</dd></div>
+                <div><dt class="text-sm text-neutral-500">Açıklama</dt><dd class="text-slate-600">{{ $product->description }}</dd></div>
                 @endif
             </dl>
         </div>
     </div>
     <div class="lg:col-span-2 space-y-6">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-200">
+        <div class="card overflow-hidden">
+            <div class="px-6 py-4 border-b border-neutral-200">
                 <h2 class="text-lg font-semibold text-slate-900">Depo Stokları</h2>
             </div>
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200">
-                    <thead class="bg-slate-50">
+                <table class="min-w-full">
+                    <thead>
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Depo</th>
-                            <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Miktar</th>
-                            <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Rezerve</th>
-                            <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Müsait</th>
+                            <th class="table-th">Depo</th>
+                            <th class="table-th text-right">Miktar</th>
+                            <th class="table-th text-right">Rezerve</th>
+                            <th class="table-th text-right">Müsait</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200">
@@ -72,7 +79,7 @@
                             <td class="px-6 py-4 text-right font-medium text-green-600">{{ ($st->quantity ?? 0) - ($st->reservedQuantity ?? 0) }}</td>
                         </tr>
                         @empty
-                        <tr><td colspan="4" class="px-6 py-8 text-center text-slate-500">Depo stok kaydı yok.</td></tr>
+                        <tr><td colspan="4" class="px-6 py-8 text-center text-neutral-500">Depo stok kaydı yok.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

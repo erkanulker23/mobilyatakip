@@ -2,16 +2,21 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasTurkeyAddress;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Warehouse extends BaseModel
 {
+    use HasTurkeyAddress;
+
     protected $table = 'warehouses';
 
     protected $fillable = [
         'name',
         'code',
         'address',
+        'cityId',
+        'districtId',
         'isActive',
     ];
 

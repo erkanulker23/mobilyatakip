@@ -2,18 +2,18 @@
 @section('title', 'Düzenle: ' . $supplier->name)
 @section('content')
 <div class="mb-6">
-    <div class="flex items-center gap-2 text-slate-500 text-sm mb-1">
-        <a href="{{ route('suppliers.index') }}" class="hover:text-slate-700">Tedarikçiler</a>
+    <div class="flex items-center gap-2 text-neutral-500 text-sm mb-1">
+        <a href="{{ route('suppliers.index') }}" class="hover:text-neutral-900">Tedarikçiler</a>
         <span>/</span>
-        <a href="{{ route('suppliers.show', $supplier) }}" class="hover:text-slate-700">{{ $supplier->name }}</a>
+        <a href="{{ route('suppliers.show', $supplier) }}" class="hover:text-neutral-900">{{ $supplier->name }}</a>
         <span>/</span>
-        <span class="text-slate-700">Düzenle</span>
+        <span class="text-neutral-700">Düzenle</span>
     </div>
-    <h1 class="text-2xl font-bold text-slate-900">Tedarikçi Düzenle</h1>
-    <p class="text-slate-600 mt-1">{{ $supplier->name }}</p>
+    <h1 class="page-title">Tedarikçi Düzenle</h1>
+    <p class="page-desc">{{ $supplier->name }}</p>
 </div>
 
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 max-w-2xl">
+<div class="card p-6 max-w-2xl">
     <form method="POST" action="{{ route('suppliers.update', $supplier) }}" class="space-y-5">
         @csrf @method('PUT')
         <div>
@@ -38,11 +38,12 @@
                 @error('phone')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
         </div>
-        <div>
-            <label class="form-label">Adres</label>
-            <textarea name="address" class="form-input form-textarea">{{ old('address', $supplier->address) }}</textarea>
-            @error('address')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-        </div>
+        @php($addressIds = \App\Support\AddressFormat::fieldIds($supplier))
+        @include('partials.address-fields', [
+            'address' => old('address', $supplier->address),
+            'cityId' => $addressIds['cityId'],
+            'districtId' => $addressIds['districtId'],
+        ])
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
                 <label class="form-label">Vergi No</label>
@@ -55,13 +56,19 @@
                 @error('taxOffice')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
         </div>
+        <div>
+            <label class="form-label">Marj (%)</label>
+            <input type="number" step="0.01" min="0" max="100" name="marginPercent" value="{{ old('marginPercent', $supplier->marginPercent) }}" class="form-input" placeholder="Örn: 60">
+            <p class="mt-1 text-xs text-neutral-500">Ürün satış fiyatı hesaplamasında kullanılır: Net Alış × 100 ÷ Marj</p>
+            @error('marginPercent')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+        </div>
         <div class="flex items-center gap-2">
             <input type="checkbox" name="isActive" value="1" {{ old('isActive', $supplier->isActive) ? 'checked' : '' }} class="rounded border-slate-300 text-green-600 focus:ring-green-500">
             <label class="form-label mb-0">Aktif</label>
         </div>
         <div class="flex gap-3 pt-2">
-            <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Güncelle</button>
-            <a href="{{ route('suppliers.show', $supplier) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium">İptal</a>
+            <button type="submit" class="btn-primary">Güncelle</button>
+            <a href="{{ route('suppliers.show', $supplier) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-200 text-neutral-700 rounded-lg hover:bg-slate-300 font-medium">İptal</a>
         </div>
     </form>
 </div>

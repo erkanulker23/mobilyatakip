@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Stock;
 use App\Models\StockMovement;
+use App\Models\Warehouse;
 
 class StockService
 {
@@ -32,6 +33,16 @@ class StockService
             ->orderByRaw('(quantity - COALESCE(reservedQuantity, 0)) DESC')
             ->first();
         return $stock?->warehouseId;
+    }
+
+    /** Ürün için stok hareketi yapılacak depo döner; yeterli stok yoksa bile depo seçer (negatif stok için) */
+    public function getWarehouseForProduct(string $productId): ?string
+    {
+        $existing = Stock::where('productId', $productId)->first();
+        if ($existing) {
+            return $existing->warehouseId;
+        }
+        return Warehouse::where('isActive', true)->orderBy('name')->value('id');
     }
 
     public function getByWarehouse(string $warehouseId)
@@ -67,10 +78,7 @@ class StockService
         $r = (int) $stock->reservedQuantity;
         $available = $q - $r;
 
-        if (in_array($type, ['cikis', 'transfer']) && $quantity > $available) {
-            throw new \RuntimeException('Yetersiz stok');
-        }
-
+        // Negatif stoka izin veriliyor; tedarikçiden alım yapıldığında stok güncellenir
         $delta = match ($type) {
             'giris' => $quantity,
             'düzeltme' => 0,

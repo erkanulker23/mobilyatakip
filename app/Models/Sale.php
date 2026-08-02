@@ -13,6 +13,7 @@ class Sale extends BaseModel
     protected $fillable = [
         'saleNumber',
         'customerId',
+        'personnelId',
         'kdvIncluded',
         'quoteId',
         'saleDate',
@@ -22,6 +23,7 @@ class Sale extends BaseModel
         'grandTotal',
         'paidAmount',
         'notes',
+        'drawingFiles',
         'isCancelled',
         'efaturaUuid',
         'efaturaStatus',
@@ -40,11 +42,17 @@ class Sale extends BaseModel
         'grandTotal' => 'decimal:2',
         'paidAmount' => 'decimal:2',
         'isCancelled' => 'boolean',
+        'drawingFiles' => 'array',
     ];
 
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'customerId');
+    }
+
+    public function personnel(): BelongsTo
+    {
+        return $this->belongsTo(Personnel::class, 'personnelId');
     }
 
     public function quote(): BelongsTo

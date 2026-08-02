@@ -1,77 +1,104 @@
 @extends('layouts.print')
-@section('title', 'Servis Formu - ' . $serviceTicket->ticketNumber)
+@section('title', 'SSH Sevkiyat Formu - ' . $serviceTicket->ticketNumber)
 @section('content')
-@php $company = \App\Models\Company::first(); @endphp
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden print:shadow-none print:border-0">
-    <div class="p-6 md:p-8 lg:p-10">
-        <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-6 mb-8 pb-6 border-b-2 border-slate-200">
-            <div class="flex-1">
-                @if($company?->logoUrl)
-                <img src="{{ asset($company->logoUrl) }}" alt="Logo" class="h-14 mb-3 object-contain">
-                @endif
-                <h1 class="text-xl font-bold text-slate-900">{{ $company?->name ?? 'Firma Adı' }}</h1>
-                @if($company?->address)<p class="text-sm text-slate-600 mt-1">{{ $company->address }}</p>@endif
-                @if($company?->phone)<p class="text-sm text-slate-600">{{ $company->phone }}</p>@endif
-            </div>
-            <div class="md:text-right">
-                <h2 class="text-lg font-semibold text-slate-800">SERVİS FORMU</h2>
-                <p class="text-2xl font-bold text-green-600 mt-1">{{ $serviceTicket->ticketNumber }}</p>
-                <p class="text-sm text-slate-600 mt-2">{{ $serviceTicket->openedAt?->format('d.m.Y H:i') ?? '-' }}</p>
-            </div>
-        </div>
+@php
+    use App\Support\ServiceTicketStatus;
+    $problems = ServiceTicketStatus::normalizeProblems($serviceTicket->reportedProblems ?? []);
+    if ($problems === [] && $serviceTicket->issueType) {
+        $problems = [['description' => $serviceTicket->issueType, 'status' => 'bekliyor']];
+    }
+@endphp
+<div class="print-document print-document--fit print-document--compact bg-white overflow-hidden print:shadow-none print:border-0">
+    <div class="print-doc-inner p-4 md:p-8">
+        @include('partials.print-brand-header', [
+            'documentTitle' => 'SSH Servis / Sevkiyat Formu',
+            'documentNumber' => $serviceTicket->ticketNumber,
+            'documentDate' => $serviceTicket->openedAt,
+            'documentSubtitle' => ServiceTicketStatus::label($serviceTicket->status),
+        ])
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div>
-                <h3 class="text-xs font-semibold text-slate-500 uppercase mb-2">Müşteri</h3>
-                <p class="font-semibold text-slate-900">{{ $serviceTicket->customer?->name ?? '-' }}</p>
-                @if($serviceTicket->customer?->phone)<p class="text-sm text-slate-600 mt-1">{{ $serviceTicket->customer->phone }}</p>@endif
-                @if($serviceTicket->customer?->email)<p class="text-sm text-slate-600">{{ $serviceTicket->customer->email }}</p>@endif
-                @if($serviceTicket->customer?->address)<p class="text-sm text-slate-600">{{ $serviceTicket->customer->address }}</p>@endif
-            </div>
-            <div>
-                <h3 class="text-xs font-semibold text-slate-500 uppercase mb-2">Servis Bilgileri</h3>
-                <p class="text-sm text-slate-600">Satış: <span class="font-medium">{{ $serviceTicket->sale?->saleNumber ?? '-' }}</span></p>
-                <p class="text-sm text-slate-600 mt-1">Sorun Tipi: <span class="font-medium">{{ $serviceTicket->issueType ?? '-' }}</span></p>
-                <p class="text-sm text-slate-600 mt-1">Durum: <span class="font-medium">{{ ucfirst(str_replace('_', ' ', $serviceTicket->status ?? 'acildi')) }}</span></p>
-                <p class="text-sm text-slate-600 mt-1">Garanti: <span class="font-medium">{{ $serviceTicket->underWarranty ? 'Evet' : 'Hayır' }}</span></p>
-                <p class="text-sm text-slate-600 mt-1">Teknisyen: <span class="font-medium">{{ $serviceTicket->assignedUser?->name ?? '-' }}</span></p>
-                @if($serviceTicket->serviceChargeAmount)
-                <p class="text-sm font-bold text-green-600 mt-2">Servis Ücreti: {{ number_format($serviceTicket->serviceChargeAmount, 0, ',', '.') }} ₺</p>
+        <p class="print-info-banner print-section text-[11px] text-neutral-700 p-3 mb-4">
+            Bu belge sevkiyat / servis ekibine verilir. Müşteri adresindeki problemler giderilir; sonuç işaretlenir ve imza alınır.
+        </p>
+
+        <div class="print-section-lg grid grid-cols-2 gap-4 mb-4">
+            <div class="p-3 border-2 border-neutral-900 bg-neutral-50">
+                <h3 class="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">Müşteri / Servis Adresi</h3>
+                <p class="font-bold text-sm text-neutral-900">{{ $serviceTicket->customer?->name ?? '—' }}</p>
+                @if($serviceTicket->customer?->full_address)
+                <p class="text-[11px] text-neutral-700 mt-1 whitespace-pre-wrap leading-snug">{{ $serviceTicket->customer->full_address }}</p>
+                @else
+                <p class="text-[11px] text-amber-800 mt-1">Adres tanımlı değil.</p>
                 @endif
+                @if($serviceTicket->customer?->phone)<p class="text-[11px] text-neutral-600 mt-2">Tel: {{ $serviceTicket->customer->phone }}</p>@endif
+                @if($serviceTicket->customer?->phone2 ?? null)<p class="text-[11px] text-neutral-600">Tel 2: {{ $serviceTicket->customer->phone2 }}</p>@endif
+            </div>
+            <div class="p-3 border border-neutral-300">
+                <h3 class="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">Sevkiyat Ekibi</h3>
+                <dl class="space-y-1.5 text-[11px]">
+                    <div class="flex justify-between gap-2"><dt class="text-neutral-500">Nakliye Firması</dt><dd class="font-medium text-neutral-900 text-right">{{ $serviceTicket->shippingCompany?->name ?? '—' }}</dd></div>
+                    <div class="flex justify-between gap-2"><dt class="text-neutral-500">Sürücü</dt><dd class="font-semibold text-neutral-900 text-right">{{ $serviceTicket->assignedDriverName ?: '—' }}</dd></div>
+                    <div class="flex justify-between gap-2"><dt class="text-neutral-500">Telefon</dt><dd class="font-medium text-neutral-900 text-right">{{ $serviceTicket->assignedDriverPhone ?: '—' }}</dd></div>
+                    <div class="flex justify-between gap-2"><dt class="text-neutral-500">Plaka</dt><dd class="font-medium text-neutral-900 text-right">{{ $serviceTicket->assignedVehiclePlate ?: '—' }}</dd></div>
+                    <div class="flex justify-between gap-2"><dt class="text-neutral-500">Satış No</dt><dd class="font-medium text-neutral-900 text-right">{{ $serviceTicket->sale?->saleNumber ?? '—' }}</dd></div>
+                    <div class="flex justify-between gap-2"><dt class="text-neutral-500">Teknisyen</dt><dd class="font-medium text-neutral-900 text-right">{{ $serviceTicket->assignedUser?->name ?? '—' }}</dd></div>
+                </dl>
             </div>
         </div>
 
         @if($serviceTicket->description)
-        <div class="mb-6">
-            <h3 class="text-xs font-semibold text-slate-500 uppercase mb-2">Açıklama</h3>
-            <p class="text-slate-700 whitespace-pre-wrap">{{ $serviceTicket->description }}</p>
+        <div class="print-section mb-4 p-3 border border-neutral-200">
+            <h3 class="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-1">Genel Açıklama</h3>
+            <p class="text-[11px] text-neutral-800 whitespace-pre-wrap leading-relaxed">{{ $serviceTicket->description }}</p>
         </div>
         @endif
 
-        <div class="mb-6">
-            <h3 class="text-xs font-semibold text-slate-500 uppercase mb-3">İşlem Geçmişi (Timeline)</h3>
-            <div class="space-y-4">
-                @forelse($serviceTicket->details->sortBy('actionDate') as $d)
-                <div class="flex gap-4 p-4 bg-slate-50 rounded-lg border-l-4 border-green-500">
-                    <div class="flex-shrink-0 text-sm text-slate-600">{{ $d->actionDate?->format('d.m.Y H:i') ?? '-' }}</div>
-                    <div>
-                        <p class="font-medium text-slate-900">{{ ucfirst($d->action ?? '-') }}</p>
-                        <p class="text-sm text-slate-600">{{ $d->user?->name ?? '-' }}</p>
-                        @if($d->notes)<p class="text-sm text-slate-700 mt-1">{{ $d->notes }}</p>@endif
-                    </div>
-                </div>
-                @empty
-                <p class="text-slate-500 text-sm py-4">Henüz işlem kaydı yok.</p>
-                @endforelse
-            </div>
+        <div class="print-section-lg mb-4">
+            <h3 class="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">Müşteri Problemleri</h3>
+            <table class="print-table min-w-full border border-neutral-300 text-[11px]">
+                <thead>
+                    <tr>
+                        <th class="px-2 py-2 text-left w-8">#</th>
+                        <th class="px-2 py-2 text-left">Problem Açıklaması</th>
+                        <th class="px-2 py-2 text-center w-16">Bekliyor</th>
+                        <th class="px-2 py-2 text-center w-20">Düzeltildi</th>
+                        <th class="px-2 py-2 text-center w-24">Düzeltilemedi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($problems as $index => $problem)
+                    @php $pStatus = $problem['status'] ?? 'bekliyor'; @endphp
+                    <tr class="border-t border-neutral-200">
+                        <td class="px-2 py-2 align-top font-medium">{{ $index + 1 }}</td>
+                        <td class="px-2 py-2 align-top">{{ $problem['description'] }}</td>
+                        <td class="px-2 py-2 text-center align-top">{!! $pStatus === 'bekliyor' ? '■' : '□' !!}</td>
+                        <td class="px-2 py-2 text-center align-top">{!! $pStatus === 'duzeltildi' ? '■' : '□' !!}</td>
+                        <td class="px-2 py-2 text-center align-top">{!! $pStatus === 'duzeltilemedi' ? '■' : '□' !!}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
 
         @if($serviceTicket->notes)
-        <div class="pt-6 border-t border-slate-200">
-            <h3 class="text-xs font-semibold text-slate-500 uppercase mb-2">Notlar</h3>
-            <p class="text-slate-600 whitespace-pre-wrap">{{ $serviceTicket->notes }}</p>
+        <div class="print-section mb-4 p-3 border border-neutral-200">
+            <h3 class="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-1">Notlar</h3>
+            <p class="text-[11px] text-neutral-700 whitespace-pre-wrap">{{ $serviceTicket->notes }}</p>
         </div>
         @endif
+
+        <div class="print-signatures print-section-lg grid grid-cols-2 gap-8 mt-6">
+            <div>
+                <p class="text-[10px] uppercase tracking-wider text-neutral-500 mb-10">Servis / Sevkiyat Görevlisi</p>
+                <div class="sig-line">Ad Soyad / İmza / Tarih</div>
+            </div>
+            <div>
+                <p class="text-[10px] uppercase tracking-wider text-neutral-500 mb-10">Müşteri Onayı</p>
+                <div class="sig-line">Ad Soyad / İmza / Tarih</div>
+            </div>
+        </div>
+
+        <p class="text-[9px] text-neutral-400 mt-6 text-center tracking-wide">{{ $serviceTicket->ticketNumber }} · {{ now()->format('d.m.Y H:i') }} · {{ \App\Models\Company::first()?->name }}</p>
     </div>
 </div>
 @endsection

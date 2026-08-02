@@ -2,10 +2,10 @@
 @section('title', 'Yeni Nakliye Firması')
 @section('content')
 <div class="mb-6">
-    <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm mb-1">
+    <div class="flex items-center gap-2 text-neutral-500 dark:text-slate-400 text-sm mb-1">
         <a href="{{ route('shipping-companies.index') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400">Nakliye Firmaları</a>
         <span>/</span>
-        <span class="text-slate-700 dark:text-slate-300">Yeni Nakliye Firması</span>
+        <span class="text-neutral-700 dark:text-slate-300">Yeni Nakliye Firması</span>
     </div>
     <h1 class="page-title">Yeni Nakliye Firması</h1>
     <p class="page-desc">Nakliye firması bilgilerini girin</p>
@@ -31,11 +31,11 @@
                 @error('email')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
             </div>
         </div>
-        <div>
-            <label class="form-label">Adres</label>
-            <textarea name="address" class="form-input form-textarea" placeholder="Açık adres">{{ old('address') }}</textarea>
-            @error('address')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
-        </div>
+        @include('partials.address-fields', [
+            'address' => old('address'),
+            'cityId' => old('cityId'),
+            'districtId' => old('districtId'),
+        ])
         <div class="flex gap-3 pt-2">
             <button type="submit" class="btn-primary">Kaydet</button>
             <a href="{{ route('shipping-companies.index') }}" class="btn-secondary">İptal</a>

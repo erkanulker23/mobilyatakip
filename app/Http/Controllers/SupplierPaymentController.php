@@ -7,6 +7,7 @@ use App\Models\KasaHareket;
 use App\Models\Purchase;
 use App\Models\Supplier;
 use App\Models\SupplierPayment;
+use App\Support\PaymentType;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -72,7 +73,7 @@ class SupplierPaymentController extends Controller
             'purchaseId' => 'nullable|exists:purchases,id',
             'amount' => 'required|numeric|min:0.01',
             'paymentDate' => 'required|date',
-            'paymentType' => 'nullable|in:nakit,havale,kredi_karti,cek,senet,diger',
+            'paymentType' => \App\Support\PaymentType::validationRule(),
             'kasaId' => 'nullable|exists:kasa,id',
             'reference' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
@@ -99,15 +100,7 @@ class SupplierPaymentController extends Controller
             if (!empty($validated['kasaId'])) {
                 $supplier = Supplier::find($validated['supplierId']);
                 $purchase = $validated['purchaseId'] ? Purchase::find($validated['purchaseId']) : null;
-                $paymentTypeLabel = match ($validated['paymentType'] ?? '') {
-                    'nakit' => 'Nakit',
-                    'havale' => 'Havale',
-                    'kredi_karti' => 'Kredi Kartı',
-                    'cek' => 'Çek',
-                    'senet' => 'Senet',
-                    'diger' => 'Diğer',
-                    default => '',
-                };
+                $paymentTypeLabel = PaymentType::labels()[$validated['paymentType'] ?? ''] ?? '';
                 $desc = 'Tedarikçi ödemesi - ' . ($supplier?->name ?? 'Tedarikçi');
                 if ($paymentTypeLabel) {
                     $desc .= ' (' . $paymentTypeLabel . ')';
@@ -140,7 +133,7 @@ class SupplierPaymentController extends Controller
             'purchaseId' => 'nullable|exists:purchases,id',
             'amount' => 'required|numeric|min:0.01',
             'paymentDate' => 'required|date',
-            'paymentType' => 'nullable|in:nakit,havale,kredi_karti,cek,senet,diger',
+            'paymentType' => \App\Support\PaymentType::validationRule(),
             'kasaId' => 'nullable|exists:kasa,id',
             'reference' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
@@ -186,15 +179,7 @@ class SupplierPaymentController extends Controller
             if (!empty($newKasaId)) {
                 $supplier = $supplierPayment->supplier;
                 $purchase = $newPurchaseId ? Purchase::find($newPurchaseId) : null;
-                $paymentTypeLabel = match ($validated['paymentType'] ?? '') {
-                    'nakit' => 'Nakit',
-                    'havale' => 'Havale',
-                    'kredi_karti' => 'Kredi Kartı',
-                    'cek' => 'Çek',
-                    'senet' => 'Senet',
-                    'diger' => 'Diğer',
-                    default => '',
-                };
+                $paymentTypeLabel = PaymentType::labels()[$validated['paymentType'] ?? ''] ?? '';
                 $desc = 'Tedarikçi ödemesi - ' . ($supplier?->name ?? 'Tedarikçi');
                 if ($paymentTypeLabel) {
                     $desc .= ' (' . $paymentTypeLabel . ')';

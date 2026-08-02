@@ -148,6 +148,11 @@ class ExpenseController extends Controller
             ]);
         }
 
+        $this->auditService->logUpdate('expense', $expense->id, [], [
+            'amount' => $validated['amount'],
+            'description' => $validated['description'],
+        ]);
+
         return redirect()->route('expenses.show', $expense)->with('success', 'Gider güncellendi.');
     }
 

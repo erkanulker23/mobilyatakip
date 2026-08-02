@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', $supplier->name)
+@include('partials.page-seo', \App\Support\PageSeo::supplier($supplier))
 @section('content')
 @php
     $totalPurchases = $supplier->purchases->where('isCancelled', false)->sum('grandTotal');
@@ -9,13 +9,13 @@
 
 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
     <div>
-        <nav class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-1" aria-label="Breadcrumb">
+        <nav class="flex items-center gap-2 text-sm text-neutral-500 dark:text-slate-400 mb-1" aria-label="Breadcrumb">
             <a href="{{ route('suppliers.index') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400">Tedarikçiler</a>
             <span>/</span>
-            <span class="text-slate-700 dark:text-slate-300 font-medium">{{ $supplier->name }}</span>
+            <span class="text-neutral-700 dark:text-slate-300 font-medium">{{ $supplier->name }}</span>
         </nav>
         <h1 class="page-title">{{ $supplier->name }}</h1>
-        <p class="page-desc">@if($supplier->code)<span class="font-mono text-slate-500 dark:text-slate-400">{{ $supplier->code }}</span> · @endif Tedarikçi detayları ve bakiye özeti</p>
+        <p class="page-desc">@if($supplier->code)<span class="font-mono text-neutral-500 dark:text-slate-400">{{ $supplier->code }}</span> · @endif Tedarikçi detayları ve bakiye özeti</p>
     </div>
     <div class="flex flex-wrap items-center gap-2">
         @include('partials.action-buttons', ['edit' => route('suppliers.edit', $supplier), 'print' => route('suppliers.print', $supplier)])
@@ -31,7 +31,7 @@
     <div class="card p-5">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Toplam Alış</p>
+                <p class="text-xs font-medium text-neutral-500 dark:text-slate-400 uppercase tracking-wider">Toplam Alış</p>
                 <p class="text-xl font-semibold text-slate-900 dark:text-white mt-1 tracking-tight">{{ number_format($totalPurchases ?? 0, 0, ',', '.') }} ₺</p>
             </div>
             <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-700">
@@ -42,7 +42,7 @@
     <div class="card p-5">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Toplam Ödenen</p>
+                <p class="text-xs font-medium text-neutral-500 dark:text-slate-400 uppercase tracking-wider">Toplam Ödenen</p>
                 <p class="text-xl font-semibold text-emerald-600 dark:text-emerald-400 mt-1 tracking-tight">{{ number_format($totalPayments ?? 0, 0, ',', '.') }} ₺</p>
             </div>
             <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/30">
@@ -53,12 +53,13 @@
     <div class="card p-5">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Bakiye</p>
+                <p class="text-xs font-medium text-neutral-500 dark:text-slate-400 uppercase tracking-wider">Bakiye</p>
                 <p class="text-xl font-semibold mt-1 tracking-tight {{ ($balance ?? 0) > 0 ? 'text-red-600 dark:text-red-400' : (($balance ?? 0) < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white') }}">{{ number_format($balance ?? 0, 0, ',', '.') }} ₺</p>
-                @if(($balance ?? 0) != 0)<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ ($balance ?? 0) > 0 ? 'Tedarikçiye borç' : 'Tedarikçiden alacak' }}</p>@endif
+                @if(($balance ?? 0) != 0)<p class="text-xs text-neutral-500 dark:text-slate-400 mt-0.5">{{ ($balance ?? 0) > 0 ? 'Tedarikçiye borç' : 'Tedarikçiden alacak' }}</p>@endif
+                <p class="text-xs text-slate-400 dark:text-neutral-500 mt-1">Bakiye = Toplam Alış − Toplam Ödenen. Ödeme yaptıysanız «Tedarikçi Ödeme Yap» ile ekleyin.</p>
             </div>
             <div class="p-3 rounded-xl {{ ($balance ?? 0) > 0 ? 'bg-red-50 dark:bg-red-900/20' : (($balance ?? 0) < 0 ? 'bg-emerald-50 dark:bg-emerald-900/30' : 'bg-slate-100 dark:bg-slate-700') }}">
-                <svg class="w-6 h-6 {{ ($balance ?? 0) > 0 ? 'text-red-600 dark:text-red-400' : (($balance ?? 0) < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400') }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75m15.75 0h.75.75v-.75c0-.414-.336-.75-.75-.75h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"></path></svg>
+                <svg class="w-6 h-6 {{ ($balance ?? 0) > 0 ? 'text-red-600 dark:text-red-400' : (($balance ?? 0) < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-500 dark:text-slate-400') }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75m15.75 0h.75.75v-.75c0-.414-.336-.75-.75-.75h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"></path></svg>
             </div>
         </div>
     </div>
@@ -71,21 +72,21 @@
                 <dl class="space-y-3 text-sm">
                     <div><dt class="form-label">E-posta</dt><dd class="font-medium text-slate-800 dark:text-slate-200">{{ $supplier->email ?: '—' }}</dd></div>
                     <div><dt class="form-label">Telefon</dt><dd class="font-medium text-slate-800 dark:text-slate-200">{{ $supplier->phone ?: '—' }}</dd></div>
-                    <div><dt class="form-label">Adres</dt><dd class="font-medium text-slate-800 dark:text-slate-200">{{ $supplier->address ?: '—' }}</dd></div>
+                    <div><dt class="form-label">Adres</dt><dd class="font-medium text-slate-800 dark:text-slate-200 whitespace-pre-wrap">{{ $supplier->full_address ?: '—' }}</dd></div>
                     <div><dt class="form-label">Vergi No</dt><dd class="font-medium text-slate-800 dark:text-slate-200">{{ $supplier->taxNumber ?: '—' }}</dd></div>
                     <div><dt class="form-label">Vergi Dairesi</dt><dd class="font-medium text-slate-800 dark:text-slate-200">{{ $supplier->taxOffice ?: '—' }}</dd></div>
-                    <div><dt class="form-label">Durum</dt><dd><span class="inline-flex px-2.5 py-1 text-xs font-medium rounded-full {{ $supplier->isActive ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400' }}">{{ $supplier->isActive ? 'Aktif' : 'Pasif' }}</span></dd></div>
+                    <div><dt class="form-label">Durum</dt><dd><span class="inline-flex px-2.5 py-1 text-xs font-medium rounded-full {{ $supplier->isActive ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300' : 'bg-slate-100 dark:bg-slate-700 text-neutral-500' }}">{{ $supplier->isActive ? 'Aktif' : 'Pasif' }}</span></dd></div>
                 </dl>
             </div>
         </div>
         <div class="card overflow-hidden">
             <div class="card-header flex items-center justify-between">
                 <span>Tedarikçinin Ürünleri</span>
-                <span class="text-xs font-normal text-slate-500 dark:text-slate-400">{{ $supplier->products->count() }} ürün</span>
+                <span class="text-xs font-normal text-neutral-500 dark:text-slate-400">{{ $supplier->products->count() }} ürün</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full">
-                    <thead><tr class="border-b border-slate-100 dark:border-slate-700"><th class="table-th">Ürün</th><th class="table-th">SKU</th><th class="table-th text-right">Fiyat</th><th class="table-th text-right">İşlem</th></tr></thead>
+                    <thead><tr class="border-b border-neutral-100 dark:border-slate-700"><th class="table-th">Ürün</th><th class="table-th">SKU</th><th class="table-th text-right">Fiyat</th><th class="table-th text-right">İşlem</th></tr></thead>
                     <tbody>
                         @forelse($supplier->products as $p)
                         <tr class="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
@@ -95,7 +96,7 @@
                             <td class="table-td text-right">@include('partials.action-buttons', ['show' => route('products.show', $p), 'edit' => route('products.edit', $p)])</td>
                         </tr>
                         @empty
-                        <tr><td colspan="4" class="table-td text-center text-slate-500 dark:text-slate-400 py-8">Bu tedarikçiye ait ürün yok.</td></tr>
+                        <tr><td colspan="4" class="table-td text-center text-neutral-500 dark:text-slate-400 py-8">Bu tedarikçiye ait ürün yok.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -104,11 +105,11 @@
         <div class="card overflow-hidden">
             <div class="card-header flex items-center justify-between">
                 <span>Alışlar</span>
-                <span class="text-xs font-normal text-slate-500 dark:text-slate-400">{{ $supplier->purchases->count() }} alış</span>
+                <span class="text-xs font-normal text-neutral-500 dark:text-slate-400">{{ $supplier->purchases->count() }} alış</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full">
-                    <thead><tr class="border-b border-slate-100 dark:border-slate-700"><th class="table-th">No</th><th class="table-th">Tarih</th><th class="table-th text-right">Tutar</th><th class="table-th text-right">İşlem</th></tr></thead>
+                    <thead><tr class="border-b border-neutral-100 dark:border-slate-700"><th class="table-th">No</th><th class="table-th">Tarih</th><th class="table-th text-right">Tutar</th><th class="table-th text-right">İşlem</th></tr></thead>
                     <tbody>
                         @forelse($supplier->purchases->where('isCancelled', false)->take(10) as $p)
                         <tr class="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
@@ -118,7 +119,7 @@
                             <td class="table-td text-right">@include('partials.action-buttons', ['show' => route('purchases.show', $p), 'edit' => route('purchases.edit', $p), 'print' => route('purchases.print', $p)])</td>
                         </tr>
                         @empty
-                        <tr><td colspan="4" class="table-td text-center text-slate-500 dark:text-slate-400 py-8">Henüz alış yok.</td></tr>
+                        <tr><td colspan="4" class="table-td text-center text-neutral-500 dark:text-slate-400 py-8">Henüz alış yok.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -127,13 +128,13 @@
         <div class="card overflow-hidden">
             <div class="card-header flex items-center justify-between">
                 <span>Yapılan Ödemeler</span>
-                <span class="text-xs font-normal text-slate-500 dark:text-slate-400">{{ $supplier->payments->count() }} ödeme</span>
+                <span class="text-xs font-normal text-neutral-500 dark:text-slate-400">{{ $supplier->payments->count() }} ödeme</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full">
-                    <thead><tr class="border-b border-slate-100 dark:border-slate-700"><th class="table-th">Tarih</th><th class="table-th text-right">Tutar</th><th class="table-th">Tip</th><th class="table-th">İlgili Fatura</th><th class="table-th text-right w-40">İşlem</th></tr></thead>
+                    <thead><tr class="border-b border-neutral-100 dark:border-slate-700"><th class="table-th">Tarih</th><th class="table-th text-right">Tutar</th><th class="table-th">Tip</th><th class="table-th">İlgili Fatura</th><th class="table-th text-right w-40">İşlem</th></tr></thead>
                     <tbody>
-                        @php $pt = ['nakit'=>'Nakit','havale'=>'Havale','kredi_karti'=>'Kredi Kartı','cek'=>'Çek','senet'=>'Senet','diger'=>'Diğer']; @endphp
+                        @php $pt = \App\Support\PaymentType::labels(); @endphp
                         @forelse($supplier->payments->sortByDesc('paymentDate') as $pm)
                         <tr class="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
                             <td class="table-td">{{ $pm->paymentDate?->format('d.m.Y') }}</td>
@@ -143,7 +144,7 @@
                             <td class="table-td text-right">@include('partials.action-buttons', ['show' => route('supplier-payments.show', $pm), 'edit' => route('supplier-payments.edit', $pm)])</td>
                         </tr>
                         @empty
-                        <tr><td colspan="5" class="table-td text-center text-slate-500 dark:text-slate-400 py-8">Henüz ödeme yok.</td></tr>
+                        <tr><td colspan="5" class="table-td text-center text-neutral-500 dark:text-slate-400 py-8">Henüz ödeme yok.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

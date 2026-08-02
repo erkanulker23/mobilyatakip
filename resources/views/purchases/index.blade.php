@@ -3,17 +3,18 @@
 @section('content')
 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
     <div>
-        <h1 class="text-2xl font-bold text-slate-900">Alışlar</h1>
-        <p class="text-slate-600 mt-1">Alış faturaları ve tedarikçi borç takibi</p>
+        <h1 class="page-title">Alışlar</h1>
+        <p class="page-desc">Alış faturaları ve tedarikçi borç takibi</p>
     </div>
-    <a href="{{ route('purchases.create') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
+    <a href="{{ route('purchases.create') }}" class="btn-primary">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
         Yeni Alış
     </a>
 </div>
 
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
-    <form method="GET" class="flex flex-wrap gap-4 items-end">
+<div class="card overflow-hidden" x-data="purchasesBulk" data-purchase-ids='{{ json_encode($purchaseIds ?? []) }}'>
+    <div class="p-4 border-b border-neutral-100">
+        <form method="GET" class="flex flex-wrap gap-4 items-end">
         <div class="min-w-[180px] flex-1">
             <label class="form-label">Ara (fatura no, tedarikçi)</label>
             <input type="text" name="search" placeholder="Ara..." value="{{ request('search') }}" class="form-input">
@@ -36,14 +37,12 @@
             <input type="date" name="to" value="{{ request('to') }}" class="form-input">
         </div>
         <div class="flex gap-2">
-            <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Filtrele</button>
-            <a href="{{ route('purchases.index') }}" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium">Temizle</a>
+            <button type="submit" class="btn-primary">Filtrele</button>
+            <a href="{{ route('purchases.index') }}" class="btn-secondary">Temizle</a>
         </div>
-    </form>
-</div>
-
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" x-data="purchasesBulk" data-purchase-ids='{{ json_encode($purchaseIds ?? []) }}'>
-    <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between gap-4 flex-wrap" x-show="selected.length > 0">
+        </form>
+    </div>
+    <div class="px-5 py-3 border-b border-neutral-100 flex items-center justify-between gap-4 flex-wrap" x-show="selected.length > 0">
         <span class="text-sm text-slate-600" x-text="selected.length + ' alış seçildi'"></span>
         <button type="button" @click="showBulkDeleteModal = true" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium text-sm">
             Seçilenleri sil
@@ -54,32 +53,32 @@
         <div id="purchases-bulk-form-ids"></div>
     </form>
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-200">
-            <thead class="bg-slate-50">
+        <table class="min-w-full">
+            <thead>
                 <tr>
                     <th class="px-4 py-3 text-left w-12">
                         <input type="checkbox" class="rounded border-slate-300 text-green-600 focus:ring-green-500"
                                @change="toggleAll($event.target.checked)" :checked="selected.length === items.length && items.length > 0">
                     </th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">No</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Tedarikçi</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Tarih</th>
-                    <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Toplam</th>
-                    <th class="px-6 py-3 text-center text-xs font-semibold text-slate-600 uppercase w-48">İşlem</th>
+                    <th class="table-th">No</th>
+                    <th class="table-th">Tedarikçi</th>
+                    <th class="table-th">Tarih</th>
+                    <th class="table-th text-right">Toplam</th>
+                    <th class="table-th text-center w-48">İşlem</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-200">
                 @forelse($purchases as $p)
                 <tr class="hover:bg-slate-50 {{ ($p->isCancelled ?? false) ? 'opacity-60 bg-slate-50' : '' }}">
-                    <td class="px-4 py-4">
+                    <td class="table-td">
                         <input type="checkbox" name="ids[]" value="{{ $p->id }}" class="purchase-row-check rounded border-slate-300 text-green-600 focus:ring-green-500"
                                @change="toggleRow('{{ $p->id }}', $event.target.checked)">
                     </td>
-                    <td class="px-6 py-4 font-medium text-slate-900">{{ $p->purchaseNumber }} @if($p->isCancelled ?? false)<span class="ml-1 text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700">İptal</span>@endif</td>
-                    <td class="px-6 py-4 text-slate-600">{{ $p->supplier?->name ?? '-' }}</td>
-                    <td class="px-6 py-4 text-slate-600">{{ $p->purchaseDate?->format('d.m.Y') ?? '-' }}</td>
-                    <td class="px-6 py-4 text-right font-medium">{{ number_format($p->grandTotal ?? 0, 0, ',', '.') }} ₺</td>
-                    <td class="px-6 py-4">
+                    <td class="table-td font-medium text-neutral-900">{{ $p->purchaseNumber }} @if($p->isCancelled ?? false)<span class="ml-1 text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700">İptal</span>@endif</td>
+                    <td class="table-td text-slate-600">{{ $p->supplier?->name ?? '-' }}</td>
+                    <td class="table-td text-slate-600">{{ $p->purchaseDate?->format('d.m.Y') ?? '-' }}</td>
+                    <td class="table-td text-right font-medium">{{ number_format($p->grandTotal ?? 0, 0, ',', '.') }} ₺</td>
+                    <td class="table-td">
                         <div class="flex items-center justify-end gap-1">
                             <a href="{{ route('purchases.show', $p) }}" aria-label="Görüntüle" title="Görüntüle" class="p-2 rounded-xl hover:bg-emerald-50 transition-colors">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
@@ -104,11 +103,11 @@
                                 </button>
                                 <div x-show="deleteOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
                                     <div x-show="deleteOpen" x-transition class="fixed inset-0 bg-black/50" @click="deleteOpen = false"></div>
-                                    <div x-show="deleteOpen" x-transition class="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6 border border-slate-200">
+                                    <div x-show="deleteOpen" x-transition class="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6 border border-neutral-200">
                                         <h2 class="text-base font-semibold text-slate-900">Alışı sil</h2>
-                                        <p class="mt-2 text-sm text-slate-500">Bu alış kalıcı olarak silinecek. Emin misiniz?</p>
+                                        <p class="mt-2 text-sm text-neutral-500">Bu alış kalıcı olarak silinecek. Emin misiniz?</p>
                                         <div class="mt-6 flex gap-3 justify-end">
-                                            <button type="button" @click="deleteOpen = false" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-medium">İptal</button>
+                                            <button type="button" @click="deleteOpen = false" class="px-4 py-2 bg-slate-200 text-neutral-700 rounded-lg font-medium">İptal</button>
                                             <form method="POST" action="{{ route('purchases.destroy', $p) }}" class="inline">
                                                 @csrf
                                                 @method('DELETE')
@@ -122,20 +121,20 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="6" class="px-6 py-12 text-center text-slate-500">Kayıt bulunamadı.</td></tr>
+                <tr><td colspan="6" class="px-6 py-12 text-center text-neutral-500">Kayıt bulunamadı.</td></tr>
                 @endforelse
             </tbody>
         </table>
     </div>
-    <div class="px-6 py-3 border-t border-slate-200">{{ $purchases->links() }}</div>
+    <div class="px-6 py-3 border-t border-neutral-200">{{ $purchases->links() }}</div>
 
     <div x-show="showBulkDeleteModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
         <div x-show="showBulkDeleteModal" x-transition class="fixed inset-0 bg-black/50" @click="showBulkDeleteModal = false"></div>
-        <div x-show="showBulkDeleteModal" x-transition class="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6 border border-slate-200">
+        <div x-show="showBulkDeleteModal" x-transition class="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6 border border-neutral-200">
             <h2 class="text-base font-semibold text-slate-900">Toplu alış silme</h2>
-            <p class="mt-2 text-sm text-slate-500">Seçili <span x-text="selected.length"></span> alış silinecek. Emin misiniz?</p>
+            <p class="mt-2 text-sm text-neutral-500">Seçili <span x-text="selected.length"></span> alış silinecek. Emin misiniz?</p>
             <div class="mt-6 flex gap-3 justify-end">
-                <button type="button" @click="showBulkDeleteModal = false" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-medium">İptal</button>
+                <button type="button" @click="showBulkDeleteModal = false" class="px-4 py-2 bg-slate-200 text-neutral-700 rounded-lg font-medium">İptal</button>
                 <button type="button" @click="submitBulkDelete()" class="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700">Sil</button>
             </div>
         </div>

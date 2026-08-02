@@ -1,16 +1,16 @@
 @extends('layouts.app')
-@section('title', 'Teklif ' . $quote->quoteNumber)
+@include('partials.page-seo', \App\Support\PageSeo::quote($quote))
 @section('content')
 <div class="mb-6">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <div class="flex items-center gap-2 text-slate-500 text-sm mb-1">
-                <a href="{{ route('quotes.index') }}" class="hover:text-slate-700">Teklifler</a>
+            <div class="flex items-center gap-2 text-neutral-500 text-sm mb-1">
+                <a href="{{ route('quotes.index') }}" class="hover:text-neutral-900">Teklifler</a>
                 <span>/</span>
-                <span class="text-slate-700">{{ $quote->quoteNumber }}</span>
+                <span class="text-neutral-700">{{ $quote->quoteNumber }}</span>
             </div>
-            <h1 class="text-2xl font-bold text-slate-900">{{ $quote->quoteNumber }}</h1>
-            <p class="text-slate-600 mt-1">Teklif detayları @if($quote->customer)· Müşteri: <a href="{{ route('customers.show', $quote->customer) }}" class="font-medium text-green-600 hover:text-green-700">{{ $quote->customer->name }}</a>@else· Müşteri: —@endif</p>
+            <h1 class="page-title">{{ $quote->quoteNumber }}</h1>
+            <p class="page-desc">Teklif detayları @if($quote->customer)· Müşteri: <a href="{{ route('customers.show', $quote->customer) }}" class="font-medium text-green-600 hover:text-green-700">{{ $quote->customer->name }}</a>@else· Müşteri: —@endif</p>
         </div>
         @if(session('error'))
         <div class="w-full p-4 rounded-lg bg-red-50 border border-red-200 text-red-700">{{ session('error') }}</div>
@@ -23,7 +23,7 @@
             @if(!$quote->convertedSaleId && ($quote->status ?? '') == 'taslak')
             <form method="POST" action="{{ route('quotes.convert', $quote) }}" class="inline-flex" onsubmit="return confirm('Bu teklifi satışa dönüştürmek istediğinize emin misiniz?');">
                 @csrf
-                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Satışa Dönüştür</button>
+                <button type="submit" class="btn-primary">Satışa Dönüştür</button>
             </form>
             @endif
             @if($quote->convertedSaleId)
@@ -49,7 +49,7 @@
     'partyEmail' => $quote->customer?->email,
     'partyTax' => ($quote->customer?->taxNumber ? $quote->customer->taxNumber . ($quote->customer->taxOffice ? ' / ' . $quote->customer->taxOffice : '') : null),
     'extraInfo' => '<p class="text-sm text-slate-600">Geçerlilik: ' . ($quote->validUntil?->format('d.m.Y') ?? '-') . '</p><p class="text-sm text-slate-600">Personel: ' . e($quote->personnel?->name ?? '-') . '</p><p class="text-sm mt-2"><span class="inline-flex px-2 py-1 text-xs font-medium rounded-full ' . (($quote->status ?? '') === 'taslak' ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800') . '">' . e(ucfirst($quote->status ?? '-')) . '</span></p>',
-    'items' => $quote->items->map(fn($i) => ['name' => $i->product?->name, 'unitPrice' => $i->unitPrice, 'quantity' => $i->quantity, 'kdvRate' => $i->kdvRate, 'lineTotal' => $i->lineTotal])->toArray(),
+    'items' => $quote->items->map(fn($i) => ['name' => $i->product?->name, 'description' => $i->description, 'unitPrice' => $i->unitPrice, 'quantity' => $i->quantity, 'kdvRate' => $i->kdvRate, 'lineTotal' => $i->lineTotal])->toArray(),
     'showKdv' => true,
     'subtotal' => $quote->subtotal,
     'kdvTotal' => $quote->kdvTotal,
@@ -57,4 +57,8 @@
     'grandTotal' => $quote->grandTotal,
     'notes' => $quote->notes,
 ])
+
+<div class="mt-6">
+    @include('partials.drawing-files-display', ['drawingFiles' => $quote->drawingFiles ?? []])
+</div>
 @endsection

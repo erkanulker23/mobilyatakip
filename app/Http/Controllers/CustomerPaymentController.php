@@ -14,8 +14,12 @@ use Illuminate\Support\Facades\DB;
 class CustomerPaymentController extends Controller
 {
     public function __construct(private AuditService $auditService) {}
-    public function create()
+    public function create(Request $request)
     {
+        if ($request->boolean('list')) {
+            return $this->index($request);
+        }
+
         $customers = Customer::where('isActive', true)->orderBy('name')->get();
         $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
         $customerId = request('customerId', old('customerId'));
@@ -23,7 +27,10 @@ class CustomerPaymentController extends Controller
         $totalDebt = null;
         $totalSalesSum = null;
         $totalPaidSum = null;
+        $selectedCustomer = null;
+        $recentPayments = collect();
         if ($customerId) {
+            $selectedCustomer = Customer::find($customerId);
             $openSales = Sale::with('customer')
                 ->where('customerId', $customerId)
                 ->where('isCancelled', false)
@@ -42,39 +49,140 @@ class CustomerPaymentController extends Controller
             $totalSalesSum = (float) Sale::where('customerId', $customerId)->where('isCancelled', false)->sum('grandTotal');
             $totalPaidSum = (float) CustomerPayment::where('customerId', $customerId)->sum('amount');
             $totalDebt = $totalSalesSum - $totalPaidSum;
+            $recentPayments = CustomerPayment::with(['sale', 'kasa'])
+                ->where('customerId', $customerId)
+                ->orderByDesc('paymentDate')
+                ->orderByDesc('createdAt')
+                ->take(5)
+                ->get();
         }
-        return view('customer-payments.create', compact('customers', 'kasalar', 'customerId', 'openSales', 'totalDebt', 'totalSalesSum', 'totalPaidSum'));
+        return view('customer-payments.create', compact(
+            'customers',
+            'kasalar',
+            'customerId',
+            'openSales',
+            'totalDebt',
+            'totalSalesSum',
+            'totalPaidSum',
+            'selectedCustomer',
+            'recentPayments'
+        ));
+    }
+
+    public function index(Request $request)
+    {
+        $query = CustomerPayment::query()
+            ->with(['customer', 'kasa', 'sale'])
+            ->orderByDesc('paymentDate')
+            ->orderByDesc('createdAt');
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($w) use ($s) {
+                $w->where('reference', 'like', "%{$s}%")
+                    ->orWhere('notes', 'like', "%{$s}%")
+                    ->orWhereHas('customer', fn ($q) => $q->where('name', 'like', "%{$s}%"))
+                    ->orWhereHas('sale', fn ($q) => $q->where('saleNumber', 'like', "%{$s}%"));
+            });
+        }
+        if ($request->filled('customerId')) {
+            $query->where('customerId', $request->customerId);
+        }
+        if ($request->filled('paymentType')) {
+            $query->where('paymentType', $request->paymentType);
+        }
+        if ($request->filled('kasaId')) {
+            $query->where('kasaId', $request->kasaId);
+        }
+        if ($request->filled('from')) {
+            $query->where('paymentDate', '>=', $request->from);
+        }
+        if ($request->filled('to')) {
+            $query->where('paymentDate', '<=', $request->to);
+        }
+
+        $totalAmount = (float) (clone $query)->sum('amount');
+        $payments = $query->paginate(20)->withQueryString();
+
+        $todayTotal = (float) CustomerPayment::query()
+            ->whereDate('paymentDate', today())
+            ->sum('amount');
+        $monthTotal = (float) CustomerPayment::query()
+            ->whereYear('paymentDate', now()->year)
+            ->whereMonth('paymentDate', now()->month)
+            ->sum('amount');
+
+        $customers = Customer::where('isActive', true)->orderBy('name')->get();
+        $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
+
+        return view('customer-payments.index', compact(
+            'payments',
+            'totalAmount',
+            'todayTotal',
+            'monthTotal',
+            'customers',
+            'kasalar'
+        ));
     }
 
     public function store(Request $request)
     {
+        if ($request->filled('amount')) {
+            $request->merge(['amount' => money_parse($request->input('amount'))]);
+        }
+
         $validated = $request->validate([
             'customerId' => 'required|exists:customers,id',
             'saleId' => 'nullable|exists:sales,id',
             'amount' => 'required|numeric|min:0.01',
             'paymentDate' => 'required|date',
-            'paymentType' => 'nullable|in:nakit,havale,kredi_karti,cek,senet,diger',
+            'paymentType' => \App\Support\PaymentType::validationRule(),
             'kasaId' => 'nullable|exists:kasa,id',
             'reference' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
+            'redirectToSale' => 'nullable|exists:sales,id',
         ]);
         $validated['paymentType'] = $validated['paymentType'] ?? 'nakit';
+        $redirectToSale = $validated['redirectToSale'] ?? null;
+        unset($validated['redirectToSale']);
+
+        $redirectBackToSale = function () use ($redirectToSale) {
+            if (!$redirectToSale) {
+                return null;
+            }
+            return redirect()->route('sales.show', $redirectToSale)
+                ->withInput()
+                ->with('open_payment_modal', true);
+        };
 
         // Nakit, havale ve kredi kartı tahsilatları kasaya işlendiği için kasa zorunlu
         $paymentTypesThatRequireKasa = ['nakit', 'havale', 'kredi_karti'];
         $kasaRequired = in_array($validated['paymentType'], $paymentTypesThatRequireKasa);
         if ($kasaRequired && empty($validated['kasaId'])) {
+            $response = $redirectBackToSale();
+            if ($response) {
+                return $response->with('error', 'Nakit, havale ve kredi kartı tahsilatları için kasa seçimi zorunludur.');
+            }
             return back()->withInput()->with('error', 'Nakit, havale ve kredi kartı tahsilatları için kasa seçimi zorunludur.');
         }
 
         if (!empty($validated['saleId'])) {
             $sale = Sale::findOrFail($validated['saleId']);
             if ($sale->customerId !== $validated['customerId']) {
+                $response = $redirectBackToSale();
+                if ($response) {
+                    return $response->with('error', 'Seçilen fatura bu müşteriye ait değil.');
+                }
                 return back()->withInput()->with('error', 'Seçilen fatura bu müşteriye ait değil.');
             }
             $remaining = (float) $sale->grandTotal - (float) ($sale->paidAmount ?? 0);
             if ($validated['amount'] > $remaining) {
-                return back()->withInput()->with('error', 'Tutar fatura kalanından fazla olamaz. Kalan: ' . number_format($remaining, 2, ',', '.') . ' ₺');
+                $msg = 'Tutar fatura kalanından fazla olamaz. Kalan: ' . number_format($remaining, 2, ',', '.') . ' ₺';
+                $response = $redirectBackToSale();
+                if ($response) {
+                    return $response->with('error', $msg);
+                }
+                return back()->withInput()->with('error', $msg);
             }
         }
 
@@ -118,6 +226,10 @@ class CustomerPaymentController extends Controller
             }
         });
 
+        if ($redirectToSale) {
+            return redirect()->route('sales.show', $redirectToSale)->with('success', 'Tahsilat kaydedildi.');
+        }
+
         return redirect()->route('customer-payments.create', ['customerId' => $validated['customerId']])->with('success', 'Tahsilat kaydedildi.');
     }
 
@@ -150,7 +262,7 @@ class CustomerPaymentController extends Controller
             'saleId' => 'nullable|exists:sales,id',
             'amount' => 'required|numeric|min:0.01',
             'paymentDate' => 'required|date',
-            'paymentType' => 'nullable|in:nakit,havale,kredi_karti,cek,senet,diger',
+            'paymentType' => \App\Support\PaymentType::validationRule(),
             'kasaId' => 'nullable|exists:kasa,id',
             'reference' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
@@ -233,6 +345,31 @@ class CustomerPaymentController extends Controller
         });
 
         return redirect()->route('customer-payments.show', $customerPayment)->with('success', 'Tahsilat güncellendi.');
+    }
+
+    public function destroy(CustomerPayment $customerPayment)
+    {
+        $customerId = $customerPayment->customerId;
+
+        DB::transaction(function () use ($customerPayment) {
+            if ($customerPayment->saleId) {
+                Sale::where('id', $customerPayment->saleId)->decrement('paidAmount', (float) $customerPayment->amount);
+            }
+
+            $hareket = KasaHareket::where('refType', 'customer_payment')->where('refId', $customerPayment->id)->first();
+            if ($hareket) {
+                $hareket->delete();
+            }
+
+            $this->auditService->logDelete('customer_payment', $customerPayment->id, [
+                'amount' => (float) $customerPayment->amount,
+                'customerId' => $customerPayment->customerId,
+            ]);
+
+            $customerPayment->delete();
+        });
+
+        return redirect()->route('customers.show', $customerId)->withFragment('tahsilatlar')->with('success', 'Tahsilat kaydı silindi.');
     }
 
     public function print(CustomerPayment $customerPayment)

@@ -9,6 +9,8 @@ class ServiceTicketDetail extends BaseModel
 {
     protected $table = 'service_ticket_details';
 
+    public const UPDATED_AT = null;
+
     protected $fillable = [
         'ticketId',
         'userId',

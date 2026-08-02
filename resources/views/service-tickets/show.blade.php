@@ -1,66 +1,91 @@
 @extends('layouts.app')
-@section('title', 'Servis ' . $serviceTicket->ticketNumber)
+@include('partials.page-seo', \App\Support\PageSeo::serviceTicket($serviceTicket))
 @section('content')
 @php
+    use App\Support\ServiceTicketStatus;
     $status = $serviceTicket->status ?? 'acildi';
-    $statusClass = $status === 'tamamlandi' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300' : ($status === 'devam_ediyor' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300' : ($status === 'iptal' ? 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400' : 'bg-sky-100 dark:bg-sky-900/40 text-sky-800 dark:text-sky-300'));
+    $statusClass = $status === 'tamamlandi' ? 'badge-green' : ($status === 'devam_ediyor' ? 'badge-amber' : ($status === 'iptal' ? 'badge-dark' : 'badge-blue'));
+    $problems = ServiceTicketStatus::normalizeProblems($serviceTicket->reportedProblems ?? []);
+    if ($problems === [] && $serviceTicket->issueType) {
+        $problems = [['description' => $serviceTicket->issueType, 'status' => 'bekliyor']];
+    }
 @endphp
 
 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
     <div>
-        <nav class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-1" aria-label="Breadcrumb">
-            <a href="{{ route('service-tickets.index') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400">Servis Talepleri</a>
+        <nav class="flex items-center gap-2 text-sm text-neutral-500 mb-1" aria-label="Breadcrumb">
+            <a href="{{ route('service-tickets.index') }}" class="hover:text-neutral-900">Servis Kayıtları</a>
             <span>/</span>
-            <span class="text-slate-700 dark:text-slate-300 font-medium">{{ $serviceTicket->ticketNumber }}</span>
+            <span class="text-neutral-700 font-medium">{{ $serviceTicket->ticketNumber }}</span>
         </nav>
         <div class="flex items-center gap-3 flex-wrap">
             <h1 class="page-title mb-0">{{ $serviceTicket->ticketNumber }}</h1>
-            <span class="inline-flex px-2.5 py-1 text-xs font-medium rounded-full {{ $statusClass }}">{{ ucfirst(str_replace('_', ' ', $status)) }}</span>
+            <span class="badge {{ $statusClass }}">{{ ServiceTicketStatus::label($status) }}</span>
         </div>
-        <p class="page-desc">{{ $serviceTicket->issueType ?? 'Servis kaydı' }}</p>
+        <p class="page-desc">{{ ServiceTicketStatus::problemSummary($problems) }}</p>
     </div>
     <div class="flex flex-wrap items-center gap-2">
+        <a href="{{ route('service-tickets.print', $serviceTicket) }}" target="_blank" rel="noopener" class="btn-print">Sevkiyat Formu Yazdır</a>
         <a href="{{ route('service-tickets.edit', $serviceTicket) }}" class="btn-edit">Düzenle</a>
-        <a href="{{ route('service-tickets.print', $serviceTicket) }}" target="_blank" rel="noopener" class="btn-print">Yazdır</a>
         @if($serviceTicket->saleId && $serviceTicket->sale)
         <a href="{{ route('sales.show', $serviceTicket->sale) }}" class="btn-secondary">Satış Detayı</a>
         @endif
     </div>
 </div>
 
-<div class="space-y-6">
+@if(session('success'))
+<div class="mb-4 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">{{ session('success') }}</div>
+@endif
+@if(session('error'))
+<div class="mb-4 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">{{ session('error') }}</div>
+@endif
+
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+    <div class="xl:col-span-2 space-y-5">
         <div class="card overflow-hidden">
-            <div class="card-header">Servis Bilgileri</div>
-            <div class="p-5">
-                <dl class="space-y-3 text-sm">
-                    @if($serviceTicket->sale)
-                    <div><dt class="form-label">Satış</dt><dd class="font-medium"><a href="{{ route('sales.show', $serviceTicket->sale) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">{{ $serviceTicket->sale->saleNumber ?? '—' }}</a></dd></div>
-                    @endif
-                    @if($serviceTicket->customer)
-                    <div><dt class="form-label">Müşteri</dt><dd class="font-medium"><a href="{{ route('customers.show', $serviceTicket->customer) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">{{ $serviceTicket->customer->name ?? '—' }}</a></dd></div>
-                    <div><dt class="form-label">Telefon</dt><dd class="text-slate-800 dark:text-slate-200">{{ $serviceTicket->customer->phone ?: '—' }}</dd></div>
-                    <div><dt class="form-label">Adres</dt><dd class="text-slate-800 dark:text-slate-200">{{ $serviceTicket->customer->address ?: '—' }}</dd></div>
-                    @endif
-                    <div><dt class="form-label">Sorun Tipi</dt><dd class="font-medium text-slate-800 dark:text-slate-200">{{ $serviceTicket->issueType ?? '—' }}</dd></div>
-                    <div><dt class="form-label">Garanti</dt><dd class="text-slate-800 dark:text-slate-200">{{ $serviceTicket->underWarranty ? 'Evet' : 'Hayır' }}</dd></div>
-                    <div><dt class="form-label">Teknisyen</dt><dd class="text-slate-800 dark:text-slate-200">{{ $serviceTicket->assignedUser?->name ?? '—' }}</dd></div>
-                    @if($serviceTicket->assignedVehiclePlate)<div><dt class="form-label">Araç</dt><dd class="text-slate-800 dark:text-slate-200">{{ $serviceTicket->assignedVehiclePlate }}</dd></div>@endif
-                    @if($serviceTicket->serviceChargeAmount)
-                    <div><dt class="form-label">Servis Ücreti</dt><dd class="font-semibold text-emerald-600 dark:text-emerald-400">{{ number_format($serviceTicket->serviceChargeAmount, 0, ',', '.') }} ₺</dd></div>
-                    @endif
-                    <div><dt class="form-label">Açılış</dt><dd class="text-slate-800 dark:text-slate-200">{{ $serviceTicket->openedAt?->format('d.m.Y H:i') ?? '—' }}</dd></div>
-                    @if($serviceTicket->closedAt)<div><dt class="form-label">Kapanış</dt><dd class="text-slate-800 dark:text-slate-200">{{ $serviceTicket->closedAt->format('d.m.Y H:i') }}</dd></div>@endif
-                </dl>
+            <div class="card-header">Müşteri Problemleri</div>
+            <div class="divide-y divide-neutral-100">
+                @foreach($problems as $index => $problem)
+                @php
+                    $pStatus = $problem['status'] ?? 'bekliyor';
+                    $pClass = $pStatus === 'duzeltildi' ? 'badge-green' : ($pStatus === 'duzeltilemedi' ? 'badge-red' : 'badge-amber');
+                @endphp
+                <div class="p-5">
+                    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-xs font-semibold text-neutral-400">#{{ $index + 1 }}</span>
+                                <span class="badge {{ $pClass }}">{{ ServiceTicketStatus::problemLabel($pStatus) }}</span>
+                            </div>
+                            <p class="font-medium text-neutral-900">{{ $problem['description'] }}</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2 shrink-0">
+                            @foreach(ServiceTicketStatus::PROBLEM_STATUSES as $value => $label)
+                            @if($value !== $pStatus)
+                            <form method="POST" action="{{ route('service-tickets.problem-status', $serviceTicket) }}">
+                                @csrf
+                                <input type="hidden" name="problemIndex" value="{{ $index }}">
+                                <input type="hidden" name="status" value="{{ $value }}">
+                                <button type="submit" class="text-xs px-3 py-1.5 rounded-lg border border-neutral-200 hover:bg-neutral-50">{{ $label }}</button>
+                            </form>
+                            @endif
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+                @endforeach
             </div>
         </div>
+
         @if($serviceTicket->description)
         <div class="card overflow-hidden">
-            <div class="card-header">Açıklama</div>
+            <div class="card-header">Genel Açıklama</div>
             <div class="p-5">
-                <p class="text-slate-600 dark:text-slate-400 whitespace-pre-wrap">{{ $serviceTicket->description }}</p>
+                <p class="text-neutral-600 whitespace-pre-wrap">{{ $serviceTicket->description }}</p>
             </div>
         </div>
         @endif
+
         @php $ticketImages = is_array($serviceTicket->images ?? null) ? $serviceTicket->images : []; @endphp
         @if(count($ticketImages) > 0)
         <div class="card overflow-hidden">
@@ -68,40 +93,86 @@
             <div class="p-5">
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     @foreach($ticketImages as $img)
-                    <a href="{{ asset($img) }}" target="_blank" rel="noopener" class="block rounded-xl overflow-hidden border border-slate-200 dark:border-slate-600 hover:border-emerald-500 transition-colors aspect-square">
-                        <img src="{{ asset($img) }}" alt="Servis" class="w-full h-full object-cover">
+                    <a href="{{ storage_url($img) }}" target="_blank" rel="noopener" class="block rounded-xl overflow-hidden border border-neutral-200 hover:border-neutral-400 transition-colors aspect-square">
+                        <img src="{{ storage_url($img) }}" alt="Servis" class="w-full h-full object-cover">
                     </a>
                     @endforeach
                 </div>
             </div>
         </div>
         @endif
+
+        <div class="card overflow-hidden">
+            <div class="card-header">İşlem Geçmişi</div>
+            <div class="p-5 space-y-4">
+                @forelse($serviceTicket->details->sortByDesc('actionDate') as $i => $d)
+                <div class="flex gap-4 pb-4 {{ !$loop->last ? 'border-b border-neutral-100' : '' }}">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-semibold shrink-0 bg-neutral-100 text-neutral-600">{{ $loop->iteration }}</div>
+                    <div class="min-w-0 flex-1">
+                        <p class="font-medium text-neutral-900">{{ ServiceTicketStatus::detailActionLabel($d->action) }}</p>
+                        <p class="text-xs text-neutral-500 mt-0.5">{{ $d->actionDate?->format('d.m.Y H:i') ?? '—' }} · {{ $d->user?->name ?? '—' }}</p>
+                        @if($d->notes)<p class="text-sm text-neutral-600 mt-2 whitespace-pre-wrap">{{ $d->notes }}</p>@endif
+                    </div>
+                </div>
+                @empty
+                <p class="text-neutral-500 text-sm">Henüz işlem kaydı yok.</p>
+                @endforelse
+            </div>
+        </div>
+    </div>
+
+    <div class="space-y-5">
+        <div class="card overflow-hidden">
+            <div class="card-header">Servis Bilgileri</div>
+            <div class="p-5">
+                <dl class="space-y-3 text-sm">
+                    @if($serviceTicket->customer)
+                    <div><dt class="form-label">Müşteri</dt><dd class="font-medium"><a href="{{ route('customers.show', $serviceTicket->customer) }}" class="hover:underline">{{ $serviceTicket->customer->name }}</a></dd></div>
+                    <div><dt class="form-label">Telefon</dt><dd>{{ $serviceTicket->customer->phone ?: '—' }}</dd></div>
+                    <div><dt class="form-label">Adres</dt><dd class="whitespace-pre-wrap">{{ $serviceTicket->customer->full_address ?: '—' }}</dd></div>
+                    @endif
+                    @if($serviceTicket->sale)
+                    <div><dt class="form-label">Satış</dt><dd class="font-medium"><a href="{{ route('sales.show', $serviceTicket->sale) }}" class="hover:underline">{{ $serviceTicket->sale->saleNumber }}</a></dd></div>
+                    @endif
+                    <div><dt class="form-label">Garanti</dt><dd>{{ $serviceTicket->underWarranty ? 'Evet' : 'Hayır' }}</dd></div>
+                    <div><dt class="form-label">Teknisyen</dt><dd>{{ $serviceTicket->assignedUser?->name ?? '—' }}</dd></div>
+                    @if($serviceTicket->serviceChargeAmount)
+                    <div><dt class="form-label">Servis Ücreti</dt><dd class="font-semibold">₺{{ number_format($serviceTicket->serviceChargeAmount, 0, ',', '.') }}</dd></div>
+                    @endif
+                    <div><dt class="form-label">Açılış</dt><dd>{{ $serviceTicket->openedAt?->format('d.m.Y H:i') ?? '—' }}</dd></div>
+                    @if($serviceTicket->dueDate)
+                    @php
+                        $sshDaysLeft = (int) now()->startOfDay()->diffInDays($serviceTicket->dueDate, false);
+                        $sshTerminClass = $sshDaysLeft < 0 ? 'text-red-600 font-medium' : ($sshDaysLeft <= 3 ? 'text-amber-600 font-medium' : 'text-neutral-900');
+                    @endphp
+                    <div><dt class="form-label">Termin</dt><dd class="{{ $sshTerminClass }}">{{ $serviceTicket->dueDate->format('d.m.Y') }}@if(!in_array($status, ['tamamlandi', 'iptal'], true)) · @if($sshDaysLeft < 0){{ abs($sshDaysLeft) }} gün gecikti@elseif($sshDaysLeft === 0)bugün@else{{ $sshDaysLeft }} gün kaldı@endif @endif</dd></div>
+                    @endif
+                    @if($serviceTicket->closedAt)<div><dt class="form-label">Kapanış</dt><dd>{{ $serviceTicket->closedAt->format('d.m.Y H:i') }}</dd></div>@endif
+                </dl>
+            </div>
+        </div>
+
+        <div class="card overflow-hidden">
+            <div class="card-header">Sevkiyatçı</div>
+            <div class="p-5">
+                <dl class="space-y-3 text-sm">
+                    <div><dt class="form-label">Nakliye Firması</dt><dd>{{ $serviceTicket->shippingCompany?->name ?: '—' }}</dd></div>
+                    <div><dt class="form-label">Sürücü</dt><dd>{{ $serviceTicket->assignedDriverName ?: '—' }}</dd></div>
+                    <div><dt class="form-label">Telefon</dt><dd>{{ $serviceTicket->assignedDriverPhone ?: '—' }}</dd></div>
+                    <div><dt class="form-label">Araç Plakası</dt><dd>{{ $serviceTicket->assignedVehiclePlate ?: '—' }}</dd></div>
+                </dl>
+                <a href="{{ route('service-tickets.print', $serviceTicket) }}" target="_blank" class="btn-print w-full justify-center mt-4">Sevkiyat Formu Yazdır</a>
+            </div>
+        </div>
+
         @if($serviceTicket->notes)
         <div class="card overflow-hidden">
             <div class="card-header">Notlar</div>
             <div class="p-5">
-                <p class="text-slate-600 dark:text-slate-400 whitespace-pre-wrap">{{ $serviceTicket->notes }}</p>
+                <p class="text-sm text-neutral-600 whitespace-pre-wrap">{{ $serviceTicket->notes }}</p>
             </div>
         </div>
         @endif
-        <div class="card overflow-hidden">
-            <div class="card-header">İşlem Geçmişi</div>
-            <div class="p-5">
-                <div class="space-y-4">
-                    @forelse($serviceTicket->details->sortBy('actionDate') as $i => $d)
-                    <div class="flex gap-4 pb-4 {{ !$loop->last ? 'border-b border-slate-100 dark:border-slate-700' : '' }}">
-                        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-semibold shrink-0 {{ $i === 0 ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400' }}">{{ $i + 1 }}</div>
-                        <div class="min-w-0 flex-1">
-                            <p class="font-medium text-slate-900 dark:text-white">{{ ucfirst($d->action ?? '—') }}</p>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ $d->actionDate?->format('d.m.Y H:i') ?? '—' }} · {{ $d->user?->name ?? '—' }}</p>
-                            @if($d->notes)<p class="text-sm text-slate-600 dark:text-slate-400 mt-2 whitespace-pre-wrap">{{ $d->notes }}</p>@endif
-                        </div>
-                    </div>
-                    @empty
-                    <p class="text-slate-500 dark:text-slate-400 text-sm">Henüz işlem kaydı yok.</p>
-                    @endforelse
-                </div>
-            </div>
-        </div>
+    </div>
 </div>
 @endsection

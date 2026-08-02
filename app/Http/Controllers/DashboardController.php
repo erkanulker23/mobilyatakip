@@ -2,24 +2,116 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\Sale;
 use App\Models\Quote;
 use App\Models\Purchase;
+use App\Models\ServiceTicket;
 use App\Services\StockService;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
+    private const TERMIN_WINDOW_DAYS = 14;
+
     public function __construct(private StockService $stockService) {}
 
     public function index()
     {
         $stats = [
-            'salesCount' => Sale::count(),
+            'salesCount' => Sale::where('isCancelled', false)->count(),
             'quotesCount' => Quote::count(),
             'purchasesCount' => Purchase::count(),
             'lowStockCount' => $this->stockService->getLowStock()->count(),
         ];
-        $recentSales = Sale::with('customer')->orderBy('createdAt', 'desc')->take(5)->get();
-        return view('dashboard.index', compact('stats', 'recentSales'));
+
+        $last3Days = collect(range(2, 0))->map(function ($daysAgo) {
+            $date = Carbon::today()->subDays($daysAgo);
+            return [
+                'label' => $date->locale('tr')->isoFormat('ddd'),
+                'count' => Sale::where('isCancelled', false)
+                    ->whereDate('saleDate', $date)
+                    ->count(),
+            ];
+        });
+
+        $monthStart = Carbon::now()->startOfMonth();
+        $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
+        $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
+
+        $monthlySales = (float) Sale::where('isCancelled', false)
+            ->where('saleDate', '>=', $monthStart)
+            ->sum('grandTotal');
+
+        $lastMonthSales = (float) Sale::where('isCancelled', false)
+            ->whereBetween('saleDate', [$lastMonthStart, $lastMonthEnd])
+            ->sum('grandTotal');
+
+        $monthlyChange = $lastMonthSales > 0
+            ? round((($monthlySales - $lastMonthSales) / $lastMonthSales) * 100, 1)
+            : ($monthlySales > 0 ? 100 : 0);
+
+        $avgOrderValue = $stats['salesCount'] > 0
+            ? (float) Sale::where('isCancelled', false)->avg('grandTotal')
+            : 0;
+
+        $totalCustomers = Customer::where('isActive', true)->count();
+
+        $recentSales = Sale::with('customer')
+            ->where('isCancelled', false)
+            ->orderBy('createdAt', 'desc')
+            ->take(5)
+            ->get();
+
+        $terminHorizon = Carbon::today()->addDays(self::TERMIN_WINDOW_DAYS);
+
+        $upcomingSales = Sale::with('customer')
+            ->where('isCancelled', false)
+            ->whereNotNull('dueDate')
+            ->whereDate('dueDate', '<=', $terminHorizon)
+            ->orderBy('dueDate')
+            ->take(8)
+            ->get();
+
+        $upcomingServiceTickets = ServiceTicket::with(['customer', 'sale'])
+            ->whereNotIn('status', ['tamamlandi', 'iptal'])
+            ->whereNotNull('dueDate')
+            ->whereDate('dueDate', '<=', $terminHorizon)
+            ->orderBy('dueDate')
+            ->take(8)
+            ->get();
+
+        $topPersonnel = Sale::query()
+            ->join('personnel', 'sales.personnelId', '=', 'personnel.id')
+            ->where('sales.isCancelled', false)
+            ->whereNotNull('sales.personnelId')
+            ->where('personnel.isActive', true)
+            ->where('sales.saleDate', '>=', $monthStart)
+            ->select(
+                'personnel.id',
+                'personnel.name',
+                'personnel.title',
+                'personnel.photoUrl',
+            )
+            ->selectRaw('COUNT(*) as sales_count')
+            ->selectRaw('COALESCE(SUM(sales.grandTotal), 0) as sales_total')
+            ->groupBy('personnel.id', 'personnel.name', 'personnel.title', 'personnel.photoUrl')
+            ->orderByDesc('sales_count')
+            ->orderByDesc('sales_total')
+            ->take(5)
+            ->get();
+
+        return view('dashboard.index', compact(
+            'stats',
+            'last3Days',
+            'monthlySales',
+            'monthlyChange',
+            'avgOrderValue',
+            'totalCustomers',
+            'recentSales',
+            'upcomingSales',
+            'upcomingServiceTickets',
+            'topPersonnel',
+        ));
     }
 }

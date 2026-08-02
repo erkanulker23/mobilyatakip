@@ -2,31 +2,31 @@
 @section('title', 'XML Ürün Çekme')
 @section('content')
 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-    <h1 class="text-2xl font-bold text-slate-900">XML Ürün Çekme</h1>
-    <a href="{{ route('xml-feeds.create') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
+    <h1 class="page-title">XML Ürün Çekme</h1>
+    <a href="{{ route('xml-feeds.create') }}" class="btn-primary">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
         Yeni Feed Ekle
     </a>
 </div>
 
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+<div class="card overflow-hidden">
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-200">
-            <thead class="bg-slate-50">
+        <table class="min-w-full">
+            <thead>
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Ad</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">URL</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Tedarikçi</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">İşlemler</th>
+                    <th class="table-th">Ad</th>
+                    <th class="table-th">URL</th>
+                    <th class="table-th">Tedarikçi</th>
+                    <th class="table-th">İşlemler</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-200">
                 @forelse($feeds as $feed)
                 <tr class="hover:bg-slate-50">
-                    <td class="px-6 py-4 font-medium text-slate-900">{{ $feed->name }}</td>
-                    <td class="px-6 py-4 text-sm text-slate-600 max-w-xs truncate" title="{{ $feed->url }}">{{ $feed->url }}</td>
-                    <td class="px-6 py-4 text-sm text-slate-600">{{ $feed->supplier?->name ?? '-' }}</td>
-                    <td class="px-6 py-4 flex gap-2">
+                    <td class="table-td font-medium text-neutral-900">{{ $feed->name }}</td>
+                    <td class="table-td text-sm text-slate-600 max-w-xs truncate" title="{{ $feed->url }}">{{ $feed->url }}</td>
+                    <td class="table-td text-sm text-slate-600">{{ $feed->supplier?->name ?? '-' }}</td>
+                    <td class="table-td flex gap-2">
                         @if($feed->supplierId)
                         <form method="POST" action="{{ route('xml-feeds.sync', $feed) }}" class="inline">
                             @csrf
@@ -51,7 +51,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="4" class="px-6 py-12 text-center text-slate-500">Henüz XML feed eklenmemiş. "Yeni Feed Ekle" ile başlayın.</td>
+                    <td colspan="4" class="px-6 py-12 text-center text-neutral-500">Henüz XML feed eklenmemiş. "Yeni Feed Ekle" ile başlayın.</td>
                 </tr>
                 @endforelse
             </tbody>

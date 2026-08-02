@@ -2,12 +2,12 @@
 @section('title', 'Düzenle: ' . $shippingCompany->name)
 @section('content')
 <div class="mb-6">
-    <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm mb-1">
+    <div class="flex items-center gap-2 text-neutral-500 dark:text-slate-400 text-sm mb-1">
         <a href="{{ route('shipping-companies.index') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400">Nakliye Firmaları</a>
         <span>/</span>
         <a href="{{ route('shipping-companies.show', $shippingCompany) }}" class="hover:text-emerald-600 dark:hover:text-emerald-400">{{ $shippingCompany->name }}</a>
         <span>/</span>
-        <span class="text-slate-700 dark:text-slate-300">Düzenle</span>
+        <span class="text-neutral-700 dark:text-slate-300">Düzenle</span>
     </div>
     <h1 class="page-title">Nakliye Firması Düzenle</h1>
     <p class="page-desc">{{ $shippingCompany->name }}</p>
@@ -33,11 +33,12 @@
                 @error('email')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
             </div>
         </div>
-        <div>
-            <label class="form-label">Adres</label>
-            <textarea name="address" class="form-input form-textarea">{{ old('address', $shippingCompany->address) }}</textarea>
-            @error('address')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
-        </div>
+        @php($addressIds = \App\Support\AddressFormat::fieldIds($shippingCompany))
+        @include('partials.address-fields', [
+            'address' => old('address', $shippingCompany->address),
+            'cityId' => $addressIds['cityId'],
+            'districtId' => $addressIds['districtId'],
+        ])
         <div class="flex items-center gap-2">
             <input type="checkbox" name="isActive" value="1" {{ old('isActive', $shippingCompany->isActive) ? 'checked' : '' }} class="rounded border-slate-300 text-green-600 focus:ring-green-500">
             <label class="form-label mb-0">Aktif</label>

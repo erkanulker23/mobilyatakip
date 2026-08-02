@@ -17,11 +17,15 @@ class ServiceTicket extends BaseModel
         'underWarranty',
         'issueType',
         'description',
+        'reportedProblems',
         'assignedUserId',
         'assignedVehiclePlate',
         'assignedDriverName',
         'assignedDriverPhone',
+        'shippingCompanyId',
+        'shippingVehicleId',
         'openedAt',
+        'dueDate',
         'closedAt',
         'notes',
         'serviceChargeAmount',
@@ -31,9 +35,11 @@ class ServiceTicket extends BaseModel
     protected $casts = [
         'underWarranty' => 'boolean',
         'openedAt' => 'datetime',
+        'dueDate' => 'date',
         'closedAt' => 'datetime',
         'serviceChargeAmount' => 'decimal:2',
         'images' => 'array',
+        'reportedProblems' => 'array',
     ];
 
     public function sale(): BelongsTo
@@ -49,6 +55,16 @@ class ServiceTicket extends BaseModel
     public function assignedUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assignedUserId');
+    }
+
+    public function shippingCompany(): BelongsTo
+    {
+        return $this->belongsTo(ShippingCompany::class, 'shippingCompanyId');
+    }
+
+    public function shippingVehicle(): BelongsTo
+    {
+        return $this->belongsTo(ShippingCompanyVehicle::class, 'shippingVehicleId');
     }
 
     public function details(): HasMany

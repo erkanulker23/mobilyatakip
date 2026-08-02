@@ -2,27 +2,27 @@
 @section('title', 'Tahsilat Düzenle')
 @section('content')
 <div class="mb-6">
-    <div class="flex items-center gap-2 text-slate-500 text-sm mb-1">
+    <div class="flex items-center gap-2 text-neutral-500 text-sm mb-1">
         <a href="{{ route('customers.show', $customerPayment->customer) }}" class="hover:text-emerald-600 dark:hover:text-emerald-400">Müşteri</a>
         <span>/</span>
         <a href="{{ route('customer-payments.show', $customerPayment) }}" class="hover:text-emerald-600 dark:hover:text-emerald-400">Tahsilat</a>
         <span>/</span>
-        <span class="text-slate-700 dark:text-slate-300">Düzenle</span>
+        <span class="text-neutral-700 dark:text-slate-300">Düzenle</span>
     </div>
-    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Tahsilat Düzenle</h1>
-    <p class="text-slate-600 dark:text-slate-400 mt-1">{{ $customerPayment->customer?->name ?? 'Müşteri' }} · {{ number_format($customerPayment->amount ?? 0, 0, ',', '.') }} ₺</p>
+    <h1 class="page-title">Tahsilat Düzenle</h1>
+    <p class="page-desc">{{ $customerPayment->customer?->name ?? 'Müşteri' }} · {{ number_format($customerPayment->amount ?? 0, 0, ',', '.') }} ₺</p>
 </div>
 
 @if(session('error'))
 <div class="mb-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300">{{ session('error') }}</div>
 @endif
-<div class="bg-white dark:bg-slate-800 p-6 max-w-2xl rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+<div class="bg-white dark:bg-slate-800 p-6 max-w-2xl rounded-xl shadow-sm border border-neutral-200 dark:border-slate-700">
     <form method="POST" action="{{ route('customer-payments.update', $customerPayment) }}" class="space-y-5">
         @csrf
         @method('PUT')
         <div>
             <label class="form-label">Müşteri</label>
-            <p class="font-medium text-slate-900 dark:text-white">{{ $customerPayment->customer?->name ?? '—' }}</p>
+            <p class="font-medium text-neutral-900 dark:text-white">{{ $customerPayment->customer?->name ?? '—' }}</p>
             <input type="hidden" name="customerId" value="{{ $customerPayment->customerId }}">
         </div>
         @if($openSales->isNotEmpty())
@@ -40,7 +40,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
                 <label class="form-label">Tutar (₺) *</label>
-                <input type="number" step="0.01" min="0.01" name="amount" required value="{{ old('amount', $customerPayment->amount) }}" class="form-input" placeholder="0.00">
+                <input type="text" inputmode="decimal" name="amount" required value="{{ old('amount', money($customerPayment->amount)) }}" class="form-input money-input" placeholder="0" autocomplete="off">
                 @error('amount')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
             <div>
@@ -53,12 +53,9 @@
             <div>
                 <label class="form-label">Ödeme Tipi</label>
                 <select name="paymentType" class="form-select" id="editPaymentType">
-                    <option value="nakit" {{ old('paymentType', $customerPayment->paymentType) == 'nakit' ? 'selected' : '' }}>Nakit</option>
-                    <option value="havale" {{ old('paymentType', $customerPayment->paymentType) == 'havale' ? 'selected' : '' }}>Havale</option>
-                    <option value="kredi_karti" {{ old('paymentType', $customerPayment->paymentType) == 'kredi_karti' ? 'selected' : '' }}>Kredi Kartı</option>
-                    <option value="cek" {{ old('paymentType', $customerPayment->paymentType) == 'cek' ? 'selected' : '' }}>Çek</option>
-                    <option value="senet" {{ old('paymentType', $customerPayment->paymentType) == 'senet' ? 'selected' : '' }}>Senet</option>
-                    <option value="diger" {{ old('paymentType', $customerPayment->paymentType) == 'diger' ? 'selected' : '' }}>Diğer</option>
+                    @foreach(\App\Support\PaymentType::SELECTABLE as $value => $label)
+                    <option value="{{ $value }}" {{ old('paymentType', $customerPayment->paymentType) == $value ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
                 </select>
             </div>
             <div>
@@ -69,7 +66,7 @@
                     <option value="{{ $k->id }}" {{ old('kasaId', $customerPayment->kasaId) == $k->id ? 'selected' : '' }}>{{ $k->name }}</option>
                     @endforeach
                 </select>
-                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400" id="editKasaHint">Nakit ve kredi kartı tahsilatları kasaya giriş olarak yansır.</p>
+                <p class="mt-1 text-sm text-neutral-500 dark:text-slate-400" id="editKasaHint">Nakit ve kredi kartı tahsilatları kasaya giriş olarak yansır.</p>
             </div>
         </div>
         <div>
@@ -81,7 +78,7 @@
             <textarea name="notes" rows="2" class="form-input">{{ old('notes', $customerPayment->notes) }}</textarea>
         </div>
         <div class="flex gap-3 pt-2">
-            <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Kaydet</button>
+            <button type="submit" class="btn-primary">Kaydet</button>
             <a href="{{ route('customer-payments.show', $customerPayment) }}" class="btn-secondary">İptal</a>
         </div>
     </form>

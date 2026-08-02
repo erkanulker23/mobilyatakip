@@ -3,17 +3,25 @@
 @section('content')
 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
     <div>
-        <h1 class="text-2xl font-bold text-slate-900">Servis Kayıtları (SSH)</h1>
-        <p class="text-slate-600 mt-1">Servis ve garanti takibi</p>
+        <h1 class="page-title">Servis Kayıtları (SSH)</h1>
+        <p class="page-desc">Servis ve garanti takibi</p>
     </div>
-    <a href="{{ route('service-tickets.create') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors">
+    <a href="{{ route('service-tickets.create') }}" class="btn-primary">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
         Yeni Servis Kaydı
     </a>
 </div>
 
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
-    <form method="GET" class="flex flex-wrap gap-4 items-end">
+@if(session('success'))
+<div class="mb-4 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">{{ session('success') }}</div>
+@endif
+@if(session('error'))
+<div class="mb-4 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">{{ session('error') }}</div>
+@endif
+
+<div class="card overflow-hidden">
+    <div class="p-4 border-b border-neutral-100">
+        <form method="GET" class="flex flex-wrap gap-4 items-end">
         <div class="min-w-[180px] flex-1">
             <label class="form-label">Ara (no, müşteri, sorun)</label>
             <input type="text" name="search" placeholder="Ara..." value="{{ request('search') }}" class="form-input">
@@ -46,52 +54,71 @@
             <input type="date" name="to" value="{{ request('to') }}" class="form-input">
         </div>
         <div class="flex gap-2">
-            <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Filtrele</button>
-            <a href="{{ route('service-tickets.index') }}" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium">Temizle</a>
+            <button type="submit" class="btn-primary">Filtrele</button>
+            <a href="{{ route('service-tickets.index') }}" class="btn-secondary">Temizle</a>
         </div>
     </form>
-</div>
-
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    </div>
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-200">
-            <thead class="bg-slate-50">
+        <table class="min-w-full">
+            <thead>
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">No</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Satış</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Müşteri</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Sorun</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Durum</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Tarih</th>
-                    <th class="px-6 py-3 text-center text-xs font-semibold text-slate-600 uppercase w-40">İşlem</th>
+                    <th class="table-th">No</th>
+                    <th class="table-th">Satış</th>
+                    <th class="table-th">Müşteri</th>
+                    <th class="table-th">Problemler</th>
+                    <th class="table-th">Sevkiyatçı</th>
+                    <th class="table-th">Durum</th>
+                    <th class="table-th">Tarih</th>
+                    <th class="table-th text-center w-40">İşlem</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-200">
                 @forelse($tickets as $t)
+                @php
+                    $problems = \App\Support\ServiceTicketStatus::normalizeProblems($t->reportedProblems ?? []);
+                    if ($problems === [] && $t->issueType) {
+                        $problems = [['description' => $t->issueType, 'status' => 'bekliyor']];
+                    }
+                    $status = $t->status ?? 'acildi';
+                    $statusClass = $status === 'tamamlandi' ? 'badge-green' : ($status === 'devam_ediyor' ? 'badge-amber' : ($status === 'iptal' ? 'badge-dark' : 'badge-blue'));
+                @endphp
                 <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="px-6 py-4 font-medium text-slate-900">{{ $t->ticketNumber }}</td>
-                    <td class="px-6 py-4 text-slate-600">{{ $t->sale?->saleNumber ?? '-' }}</td>
-                    <td class="px-6 py-4 text-slate-600">{{ $t->customer?->name ?? '-' }}</td>
-                    <td class="px-6 py-4 text-slate-600">{{ Str::limit($t->issueType, 30) }}</td>
-                    <td class="px-6 py-4">
-                        @php $status = $t->status ?? 'acildi'; @endphp
-                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full {{ $status === 'tamamlandi' ? 'bg-green-100 text-green-800' : ($status === 'devam_ediyor' ? 'bg-amber-100 text-amber-800' : ($status === 'iptal' ? 'bg-slate-100 text-slate-600' : 'bg-blue-100 text-blue-800')) }}">{{ ucfirst(str_replace('_', ' ', $status)) }}</span>
+                    <td class="table-td"><a href="{{ route('service-tickets.show', $t) }}" class="font-medium text-neutral-900 hover:underline">{{ $t->ticketNumber }}</a></td>
+                    <td class="table-td text-slate-600">{{ $t->sale?->saleNumber ?? '—' }}</td>
+                    <td class="table-td text-slate-600">{{ $t->customer?->name ?? '—' }}</td>
+                    <td class="table-td text-slate-600">
+                        <span class="block">{{ Str::limit($problems[0]['description'] ?? '—', 28) }}</span>
+                        <span class="text-xs text-neutral-500">{{ \App\Support\ServiceTicketStatus::problemSummary($problems) }}</span>
                     </td>
-                    <td class="px-6 py-4 text-slate-600">{{ $t->createdAt?->format('d.m.Y') ?? '-' }}</td>
-                    <td class="px-6 py-4">
+                    <td class="table-td text-slate-600">{{ $t->assignedDriverName ?: '—' }}</td>
+                    <td class="table-td">
+                        <form method="POST" action="{{ route('service-tickets.update-status', $t) }}" class="inline">
+                            @csrf
+                            @method('PATCH')
+                            <select name="status" class="form-select text-xs py-1.5 px-2 min-w-[8.5rem] max-w-[10rem]" onchange="this.form.submit()">
+                                @foreach(\App\Support\ServiceTicketStatus::STATUSES as $value => $label)
+                                <option value="{{ $value }}" {{ $status === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </form>
+                    </td>
+                    <td class="table-td text-slate-600">{{ $t->createdAt?->format('d.m.Y') ?? '—' }}</td>
+                    <td class="table-td">
                         @include('partials.action-buttons', [
                             'show' => route('service-tickets.show', $t),
                             'edit' => route('service-tickets.edit', $t),
                             'print' => route('service-tickets.print', $t),
+                            'destroy' => route('service-tickets.destroy', $t),
                         ])
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="7" class="px-6 py-12 text-center text-slate-500">Kayıt bulunamadı.</td></tr>
+                <tr><td colspan="8" class="px-6 py-12 text-center text-neutral-500">Kayıt bulunamadı.</td></tr>
                 @endforelse
             </tbody>
         </table>
     </div>
-    <div class="px-6 py-3 border-t border-slate-200">{{ $tickets->links() }}</div>
+    <div class="px-6 py-3 border-t border-neutral-200">{{ $tickets->links() }}</div>
 </div>
 @endsection

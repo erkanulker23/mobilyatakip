@@ -12,6 +12,7 @@ class SaleItem extends BaseModel
         'saleId',
         'productId',
         'productName',
+        'description',
         'unitPrice',
         'quantity',
         'kdvRate',

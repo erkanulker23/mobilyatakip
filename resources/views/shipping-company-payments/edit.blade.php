@@ -1,13 +1,17 @@
 @extends('layouts.app')
 @section('title', 'Nakliye Ödemesi Düzenle')
+@push('head')
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+@endpush
 @section('content')
 <div class="mb-6">
-    <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm mb-1">
-        <a href="{{ route('shipping-companies.show', $shippingCompanyPayment->shippingCompany) }}" class="hover:text-emerald-600 dark:hover:text-emerald-400">Nakliye Firması</a>
+    <div class="flex items-center gap-2 text-neutral-500 text-sm mb-1">
+        <a href="{{ route('shipping-companies.show', $shippingCompanyPayment->shippingCompany) }}" class="hover:text-neutral-900 dark:hover:text-neutral-100">Nakliye Firması</a>
         <span>/</span>
-        <a href="{{ route('shipping-company-payments.show', $shippingCompanyPayment) }}" class="hover:text-emerald-600 dark:hover:text-emerald-400">Ödeme</a>
+        <a href="{{ route('shipping-company-payments.show', $shippingCompanyPayment) }}" class="hover:text-neutral-900 dark:hover:text-neutral-100">Ödeme</a>
         <span>/</span>
-        <span class="text-slate-700 dark:text-slate-300">Düzenle</span>
+        <span class="text-neutral-700 dark:text-neutral-300">Düzenle</span>
     </div>
     <h1 class="page-title">Nakliye Ödemesi Düzenle</h1>
     <p class="page-desc">{{ $shippingCompanyPayment->shippingCompany?->name ?? 'Nakliye' }} · {{ number_format($shippingCompanyPayment->amount ?? 0, 0, ',', '.') }} ₺</p>
@@ -22,25 +26,24 @@
         @csrf @method('PUT')
         <div>
             <label class="form-label">Nakliye Firması</label>
-            <p class="font-medium text-slate-900 dark:text-white">{{ $shippingCompanyPayment->shippingCompany?->name ?? '—' }}</p>
+            <p class="font-medium text-neutral-900 dark:text-neutral-100">{{ $shippingCompanyPayment->shippingCompany?->name ?? '—' }}</p>
         </div>
-        @if($purchasesWithShipping->isNotEmpty())
-        <div>
-            <label class="form-label">İlgili Alış (ne için ödendi)</label>
-            <select name="purchaseId" class="form-select min-h-[44px]">
-                <option value="">Alışa bağlama</option>
-                @foreach($purchasesWithShipping as $p)
-                <option value="{{ $p->id }}" {{ old('purchaseId', $shippingCompanyPayment->purchaseId) == $p->id ? 'selected' : '' }}>
-                    {{ $p->purchaseNumber }} — {{ $p->supplier?->name }} ({{ $p->purchaseDate?->format('d.m.Y') }})
-                </option>
-                @endforeach
-            </select>
-        </div>
-        @endif
+
+        @include('partials.shipping-payment-link-fields', [
+            'purchasesWithShipping' => $purchasesWithShipping,
+            'sales' => $sales,
+            'serviceTickets' => $serviceTickets,
+            'linkType' => $linkType,
+            'selectedPurchaseId' => $shippingCompanyPayment->purchaseId,
+            'selectedSaleId' => $shippingCompanyPayment->saleId,
+            'selectedServiceTicketId' => $shippingCompanyPayment->serviceTicketId,
+            'selectedPaymentFor' => $shippingCompanyPayment->paymentFor,
+        ])
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
                 <label class="form-label">Tutar (₺) <span class="text-red-500">*</span></label>
-                <input type="number" step="0.01" min="0.01" name="amount" required value="{{ old('amount', $shippingCompanyPayment->amount) }}" class="form-input min-h-[44px]">
+                <input type="text" inputmode="decimal" name="amount" required value="{{ old('amount', money($shippingCompanyPayment->amount)) }}" class="form-input min-h-[44px] money-input" placeholder="0" autocomplete="off">
                 @error('amount')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
             </div>
             <div>
@@ -53,12 +56,9 @@
             <div>
                 <label class="form-label">Ödeme Tipi</label>
                 <select name="paymentType" class="form-select min-h-[44px]">
-                    <option value="nakit" {{ old('paymentType', $shippingCompanyPayment->paymentType) == 'nakit' ? 'selected' : '' }}>Nakit</option>
-                    <option value="havale" {{ old('paymentType', $shippingCompanyPayment->paymentType) == 'havale' ? 'selected' : '' }}>Havale</option>
-                    <option value="kredi_karti" {{ old('paymentType', $shippingCompanyPayment->paymentType) == 'kredi_karti' ? 'selected' : '' }}>Kredi Kartı</option>
-                    <option value="cek" {{ old('paymentType', $shippingCompanyPayment->paymentType) == 'cek' ? 'selected' : '' }}>Çek</option>
-                    <option value="senet" {{ old('paymentType', $shippingCompanyPayment->paymentType) == 'senet' ? 'selected' : '' }}>Senet</option>
-                    <option value="diger" {{ old('paymentType', $shippingCompanyPayment->paymentType) == 'diger' ? 'selected' : '' }}>Diğer</option>
+                    @foreach(\App\Support\PaymentType::SELECTABLE as $value => $label)
+                    <option value="{{ $value }}" {{ old('paymentType', $shippingCompanyPayment->paymentType) == $value ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
                 </select>
             </div>
             <div>
@@ -72,8 +72,8 @@
             </div>
         </div>
         <div>
-            <label class="form-label">Referans / Açıklama</label>
-            <input type="text" name="reference" value="{{ old('reference', $shippingCompanyPayment->reference) }}" class="form-input min-h-[44px]">
+            <label class="form-label">Ödeme referansı</label>
+            <input type="text" name="reference" value="{{ old('reference', $shippingCompanyPayment->reference) }}" class="form-input min-h-[44px]" placeholder="Havale dekont no, çek no vb.">
         </div>
         <div>
             <label class="form-label">Notlar</label>

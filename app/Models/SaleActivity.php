@@ -12,6 +12,7 @@ class SaleActivity extends BaseModel
     const TYPE_SUPPLIER_EMAIL_SENT = 'supplier_email_sent';
     const TYPE_SUPPLIER_EMAIL_READ = 'supplier_email_read';
     const TYPE_SUPPLIER_EMAIL_REPLIED = 'supplier_email_replied';
+    const TYPE_CUSTOMER_EMAIL_SENT = 'customer_email_sent';
 
     protected $fillable = [
         'saleId',

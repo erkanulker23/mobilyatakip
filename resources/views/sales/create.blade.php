@@ -3,181 +3,331 @@
 @push('head')
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
 <style>
-.form-create-section { padding: 1rem 0; border-bottom: 1px solid #e2e8f0; }
-.form-create-section:last-of-type { border-bottom: 0; }
-.dark .form-create-section { border-color: #334155; }
-.form-create-section-title { font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.75rem; }
-.dark .form-create-section-title { color: #94a3b8; }
-.items-scroll-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
-.sale-item-card { background: #fff; border-radius: 0.5rem; padding: 0.75rem 1rem; border: 1px solid #e2e8f0; margin-bottom: 0.75rem; min-width: 0; }
-@media (max-width: 1199px) { .sale-item-card { min-width: 520px; } }
-.dark .sale-item-card { background: #334155; border-color: #475569; }
-.sale-item-card .form-label { margin-bottom: 0.25rem; white-space: nowrap; font-size: 0.75rem; }
-.sale-item-card .form-input, .sale-item-card .form-select { min-width: 0; padding: 0.5rem 0.625rem; min-height: 38px !important; }
-.sale-totals-box { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border-radius: 0.75rem; padding: 0.75rem 1rem; border: 1px solid #a7f3d0; }
-.dark .sale-totals-box { background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(5,150,105,0.2) 100%); border-color: #047857; }
-.form-actions-sticky { padding: 1rem 0; margin: 0 -1.5rem -1.5rem; padding-left: 1.5rem; padding-right: 1.5rem; background: #fff; border-top: 1px solid #f1f5f9; }
-.dark .form-actions-sticky { background: #1e293b; border-color: #334155; }
-@media (min-width: 768px) { .form-actions-sticky { margin: 0; padding: 0; border: 0; background: transparent; } }
-@media (max-width: 767px) { .form-actions-sticky { margin-left: -1rem; margin-right: -1rem; padding-left: 1rem; padding-right: 1rem; margin-bottom: -1rem; padding-bottom: 1rem; padding-bottom: max(1rem, env(safe-area-inset-bottom)); } }
+.sale-form-section { background: #fff; border: 1px solid #f0f0f0; border-radius: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); overflow: hidden; }
+.dark .sale-form-section { background: #171717; border-color: #262626; }
+.sale-form-section-head { padding: 1rem 1.25rem; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.dark .sale-form-section-head { border-color: #262626; }
+.sale-form-section-title { font-size: 0.9375rem; font-weight: 600; color: #171717; }
+.dark .sale-form-section-title { color: #f5f5f5; }
+.sale-form-section-body { padding: 1.25rem; }
+.sale-items-table-head { display: none; }
+@media (min-width: 1024px) {
+    .sale-items-table-head { display: grid; grid-template-columns: 2rem 1fr 7rem 5rem 5rem 7rem 2.5rem; gap: 0.75rem; padding: 0 0.25rem 0.5rem; font-size: 0.6875rem; font-weight: 600; color: #a3a3a3; text-transform: uppercase; letter-spacing: .06em; }
+}
+.sale-item-row { border: 1px solid #e5e5e5; border-radius: 0.75rem; padding: 1rem; background: #fafafa; transition: border-color .15s, box-shadow .15s; }
+.sale-item-row:focus-within { border-color: #a3a3a3; box-shadow: 0 0 0 3px rgba(0,0,0,.04); background: #fff; }
+.dark .sale-item-row { background: #262626; border-color: #404040; }
+.dark .sale-item-row:focus-within { background: #171717; border-color: #525252; }
+.sale-item-row .form-label { margin-bottom: 0.25rem; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: .04em; color: #737373; }
+.sale-item-row .form-input, .sale-item-row .form-select { min-height: 40px; padding: 0.5rem 0.625rem; font-size: 0.875rem; }
+.row-no { flex-shrink: 0; width: 1.75rem; height: 1.75rem; display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px; background: #171717; color: #fff; font-size: 0.75rem; font-weight: 600; }
+.dark .row-no { background: #404040; }
+.item-line-total { font-variant-numeric: tabular-nums; font-weight: 600; color: #171717; font-size: 0.9375rem; }
+.dark .item-line-total { color: #f5f5f5; }
+.icon-btn { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 2.25rem; height: 2.25rem; border-radius: 0.5rem; border: 1px solid #e5e5e5; background: #fff; color: #525252; transition: background .15s, border-color .15s, color .15s; }
+.icon-btn:hover { background: #f5f5f5; color: #171717; }
+.icon-btn-danger { border-color: #fecaca; color: #dc2626; background: #fff; }
+.icon-btn-danger:hover { background: #fef2f2; }
+.add-row-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.875rem; border: 1.5px dashed #d4d4d4; border-radius: 0.75rem; color: #525252; font-size: 0.875rem; font-weight: 500; background: transparent; transition: background .15s, border-color .15s, color .15s; }
+.add-row-btn:hover { border-color: #171717; color: #171717; background: #fafafa; }
+.sale-summary-panel { background: #171717; color: #fff; border-radius: 1rem; padding: 1.25rem; }
+.sale-summary-row { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.875rem; padding: 0.375rem 0; color: #d4d4d4; }
+.sale-summary-row strong { color: #fff; font-weight: 600; font-variant-numeric: tabular-nums; }
+.sale-summary-total { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #404040; display: flex; justify-content: space-between; align-items: baseline; }
+.sale-summary-total span:last-child { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.sale-meta-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+@media (min-width: 640px) { .sale-meta-grid { grid-template-columns: 1fr 1fr; } }
+.customer-info-panel { margin-top: 1rem; padding: 1rem; border-radius: 0.75rem; background: #fafafa; border: 1px solid #e5e5e5; }
+.dark .customer-info-panel { background: #262626; border-color: #404040; }
+.customer-info-panel dt { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: .04em; color: #a3a3a3; }
+.customer-info-panel dd { font-size: 0.875rem; color: #171717; margin-top: 0.125rem; }
+.dark .customer-info-panel dd { color: #f5f5f5; }
+.kbd { display: inline-block; padding: 0.05rem 0.35rem; border-radius: 0.25rem; border: 1px solid #e5e5e5; background: #fafafa; font-size: 0.6875rem; font-family: ui-monospace, monospace; color: #737373; }
 .ts-wrapper .ts-control .item { display: flex; align-items: center; gap: 0.5rem; }
 .ts-wrapper .ts-control .item img { flex-shrink: 0; }
 .ts-dropdown.dropup { bottom: 100%; top: auto !important; margin-top: 0; margin-bottom: 4px; }
 </style>
 @endpush
 @section('content')
-<div class="mb-6 md:mb-8">
-    <nav class="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm mb-1">
-        <a href="{{ route('sales.index') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Satışlar</a>
+<div class="mb-6">
+    <nav class="flex items-center gap-2 text-neutral-500 text-sm mb-1">
+        <a href="{{ route('sales.index') }}" class="hover:text-neutral-900 transition-colors">Satışlar</a>
         <span aria-hidden="true">/</span>
-        <span class="text-slate-700 dark:text-slate-300">Yeni Satış</span>
+        <span class="text-neutral-700">Yeni Satış</span>
     </nav>
-    <h1 class="page-title">Yeni Satış</h1>
-    <p class="page-desc">Doğrudan satış faturası oluşturun</p>
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+            <h1 class="page-title">Yeni Satış</h1>
+            <p class="page-desc">Kurumsal satış faturası oluşturun</p>
+        </div>
+        <a href="{{ route('sales.index') }}" class="btn-secondary text-sm self-start">← Satış listesi</a>
+    </div>
 </div>
 
-<div class="w-full max-w-6xl mx-auto px-1" x-data="salesCreateForm()" @open-quick-add-product.window="showQuickAddProduct = true">
-    <form method="POST" action="{{ route('sales.store') }}" id="saleForm" @submit="submitting = true">
+<div class="max-w-7xl" x-data="salesCreateForm()" @open-quick-add-product.window="showQuickAddProduct = true">
+    <form method="POST" action="{{ route('sales.store') }}" id="saleForm" enctype="multipart/form-data" @submit="submitting = true">
         @csrf
+        @if(request('returnTo') === 'service-tickets/create')
+        <input type="hidden" name="returnTo" value="service-tickets/create">
+        @endif
         @if(session('error'))
-        <div class="mb-4 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm">{{ session('error') }}</div>
+        <div class="mb-4 p-4 rounded-xl bg-red-50 text-red-700 text-sm border border-red-100">{{ session('error') }}</div>
+        @endif
+        @if(request('returnTo') === 'service-tickets/create')
+        <div class="mb-4 p-4 rounded-xl bg-blue-50 text-blue-800 text-sm border border-blue-100">
+            Sipariş kaydedildikten sonra servis kaydı formuna geri döneceksiniz.
+            <a href="{{ route('service-tickets.create', ['customerId' => request('customerId')]) }}" class="underline ml-1">Servis kaydına dön</a>
+        </div>
         @endif
 
-        <div class="card overflow-hidden">
-            {{-- Genel bilgiler --}}
-            <div class="form-create-section px-4 sm:px-6 lg:px-8 pt-6">
-                <h2 class="form-create-section-title">Genel bilgiler</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div class="sm:col-span-2">
-                        <label class="form-label">Müşteri <span class="text-red-500">*</span></label>
-                        <div class="flex gap-2">
-                            <select name="customerId" required class="form-select min-h-[44px] md:min-h-[42px]" id="customerSelect" placeholder="Müşteri ara veya seçin...">
-                                <option value="">Seçiniz</option>
-                                @foreach($customers as $c)
-                                <option value="{{ $c->id }}" {{ old('customerId') == $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
-                                @endforeach
-                            </select>
-                            <button type="button" @click="showQuickAddCustomer = true" class="shrink-0 w-11 h-11 md:w-10 md:h-10 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors touch-manipulation" title="Hızlı müşteri ekle" aria-label="Hızlı müşteri ekle">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                            </button>
-                        </div>
-                        @error('customerId')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
-                        <div id="customerInfoBox" class="mt-5 pt-4 border-t border-slate-100 dark:border-slate-700/60 hidden">
-                            <p id="customerName" class="text-base font-semibold text-slate-800 dark:text-slate-100 mb-3">—</p>
-                            <div class="space-y-2.5 text-sm">
-                                <div id="customerPhoneRow" class="flex gap-2"><span class="text-slate-400 dark:text-slate-500 w-20 shrink-0">Telefon</span><span id="customerPhone" class="text-slate-700 dark:text-slate-200">—</span></div>
-                                <div id="customerEmailRow" class="flex gap-2"><span class="text-slate-400 dark:text-slate-500 w-20 shrink-0">E-posta</span><span id="customerEmail" class="text-slate-700 dark:text-slate-200">—</span></div>
-                                <div id="customerAddressRow" class="flex gap-2"><span class="text-slate-400 dark:text-slate-500 w-20 shrink-0">Adres</span><span id="customerAddress" class="text-slate-700 dark:text-slate-200">—</span></div>
-                                <div id="customerTaxRow" class="flex gap-2"><span class="text-slate-400 dark:text-slate-500 w-20 shrink-0">Vergi</span><span id="customerTax" class="text-slate-700 dark:text-slate-200">—</span></div>
-                            </div>
-                        </div>
+        <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
+            <div class="space-y-5 min-w-0">
+                {{-- Müşteri & meta --}}
+                <div class="sale-form-section">
+                    <div class="sale-form-section-head">
+                        <h2 class="sale-form-section-title">Müşteri & Satış Bilgileri</h2>
                     </div>
-                </div>
-            </div>
-
-            {{-- Tarih --}}
-            <div class="form-create-section px-4 sm:px-6 lg:px-8">
-                <h2 class="form-create-section-title">Tarih</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="form-label">Satış Tarihi <span class="text-red-500">*</span></label>
-                        <input type="date" name="saleDate" required value="{{ old('saleDate', date('Y-m-d')) }}" class="form-input min-h-[44px] md:min-h-[42px]">
-                        @error('saleDate')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
-                    </div>
-                </div>
-            </div>
-
-            {{-- Kalemler --}}
-            <div class="form-create-section px-4 sm:px-6 lg:px-8 pb-6">
-                <div class="form-items-section-box">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-                        <h2 class="form-create-section-title mb-0">Satış kalemleri</h2>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 sm:max-w-sm">Ürün veya hizmet seçin veya yazarak ekleyin.</p>
-                    </div>
-                    <template id="item-template">
-                    <div class="item-row sale-item-card" data-row-idx="__IDX__">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2 lg:gap-2 xl:gap-3 lg:items-end">
-                            <div class="sm:col-span-2 lg:col-span-3 flex gap-1.5">
-                                <div class="flex-1 min-w-0 item-product-wrap">
-                                    <label class="form-label">Ürün / Hizmet <span class="text-red-500">*</span></label>
-                                    <select class="form-select item-product" data-placeholder="Ara veya yaz (örn. montaj)...">
-                                        <option value="">— Manuel gir —</option>
-                                        @foreach($products as $p)
-                                        @php $img = is_array($p->images ?? null) ? ($p->images[0] ?? null) : ($p->images ?? null); @endphp
-                                        <option value="{{ $p->id }}" data-price="{{ $p->unitPrice }}" data-kdv="{{ $p->kdvRate ?? 18 }}" data-image="{{ $img ? (Str::startsWith($img, 'http') ? $img : url($img)) : '' }}">{{ $p->name }} ({{ number_format($p->unitPrice, 0, ',', '.') }} ₺)</option>
+                    <div class="sale-form-section-body">
+                        <div class="sale-meta-grid">
+                            <div class="sm:col-span-2">
+                                <label class="form-label">Müşteri <span class="text-red-500">*</span></label>
+                                <div class="flex gap-2">
+                                    <select name="customerId" required class="form-select min-h-[44px] flex-1" id="customerSelect" placeholder="Müşteri ara veya seçin...">
+                                        <option value="">Seçiniz</option>
+                                        @foreach($customers as $c)
+                                        <option value="{{ $c->id }}" {{ old('customerId', request('customerId')) == $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
                                         @endforeach
                                     </select>
-                                    <input type="hidden" class="item-product-id" name="items[__IDX__][productId]" value="">
-                                    <input type="hidden" class="item-product-name" name="items[__IDX__][productName]" value="">
+                                    <button type="button" @click="showQuickAddCustomer = true" class="icon-btn shrink-0 w-11 h-11 touch-manipulation" title="Hızlı müşteri ekle" aria-label="Hızlı müşteri ekle">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                    </button>
                                 </div>
-                                <button type="button" onclick="window.openQuickAddProduct && window.openQuickAddProduct(this)" class="shrink-0 self-end flex items-center justify-center w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 touch-manipulation" title="Ürün/hizmet hızlı ekle" aria-label="Hızlı ekle">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                @error('customerId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                            </div>
+                            <div>
+                                <label class="form-label">Satış Tarihi <span class="text-red-500">*</span></label>
+                                <input type="date" name="saleDate" required value="{{ old('saleDate', date('Y-m-d')) }}" class="form-input min-h-[44px]">
+                                @error('saleDate')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                            </div>
+                            <div>
+                                <label class="form-label">Tahmini Teslim Tarihi</label>
+                                <input type="date" name="dueDate" value="{{ old('dueDate') }}" class="form-input min-h-[44px]">
+                                @error('dueDate')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                            </div>
+                            <div>
+                                <label class="form-label">Satışı Yapan Personel</label>
+                                <select name="personnelId" class="form-select min-h-[44px]">
+                                    <option value="">Seçiniz</option>
+                                    @foreach($personnel as $p)
+                                    <option value="{{ $p->id }}" {{ old('personnelId') == $p->id ? 'selected' : '' }}>{{ $p->name }}{{ $p->title ? ' — ' . $p->title : '' }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div id="customerInfoBox" class="customer-info-panel hidden">
+                            <div class="flex items-start justify-between gap-3 mb-3">
+                                <p id="customerName" class="text-sm font-semibold text-neutral-900">—</p>
+                                <a href="#" id="customerEditLink" target="_blank" class="text-xs text-neutral-500 hover:text-neutral-900 shrink-0">Müşteri kartı →</a>
+                            </div>
+                            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div id="customerPhoneRow"><dt>Telefon</dt><dd id="customerPhone">—</dd></div>
+                                <div id="customerEmailRow"><dt>E-posta</dt><dd id="customerEmail" class="truncate">—</dd></div>
+                                <div id="customerAddressRow" class="sm:col-span-2"><dt>Adres</dt><dd id="customerAddress">—</dd></div>
+                                <div id="customerTaxRow"><dt>Vergi</dt><dd id="customerTax">—</dd></div>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Kalemler --}}
+                <div class="sale-form-section">
+                    <div class="sale-form-section-head">
+                        <div class="flex items-center gap-2">
+                            <h2 class="sale-form-section-title">Satış Kalemleri</h2>
+                            <span id="itemCountBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600 text-xs font-semibold">0</span>
+                        </div>
+                        <p class="text-xs text-neutral-400 hidden sm:block"><span class="kbd">Enter</span> sonraki · <span class="kbd">⌘</span>+<span class="kbd">Enter</span> kaydet</p>
+                    </div>
+                    <div class="sale-form-section-body">
+                        <div class="sale-items-table-head">
+                            <span>#</span><span>Ürün / Hizmet</span><span>Fiyat</span><span>Adet</span><span>KDV</span><span>Toplam</span><span></span>
+                        </div>
+                    <template id="item-template">
+                    <div class="item-row sale-item-row mb-3" data-row-idx="__IDX__">
+                        <div class="flex flex-wrap items-start gap-2 mb-2">
+                            <span class="row-no" aria-hidden="true">1</span>
+                            <div class="item-product-wrap flex-1 min-w-0">
+                                <label class="form-label lg:sr-only">Ürün / Hizmet <span class="text-red-500">*</span></label>
+                                <select class="form-select item-product" data-placeholder="Ara veya yaz...">
+                                    <option value="">— Manuel gir —</option>
+                                    @foreach($products as $p)
+                                    @php $img = is_array($p->images ?? null) ? ($p->images[0] ?? null) : ($p->images ?? null); @endphp
+                                    <option value="{{ $p->id }}" data-price="{{ $p->unitPrice }}" data-kdv="{{ $p->kdvRate ?? 10 }}" data-image="{{ $img ? (Str::startsWith($img, 'http') ? $img : url($img)) : '' }}">{{ $p->name }} ({{ number_format($p->unitPrice, 0, ',', '.') }} ₺)</option>
+                                    @endforeach
+                                </select>
+                                <input type="hidden" class="item-product-id" name="items[__IDX__][productId]" value="">
+                                <input type="hidden" class="item-product-name" name="items[__IDX__][productName]" value="">
+                            </div>
+                            <div class="flex items-center gap-1 shrink-0">
+                                <button type="button" onclick="window.openQuickAddProduct && window.openQuickAddProduct(this)" class="icon-btn touch-manipulation" title="Yeni ürün" aria-label="Yeni ürün">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                </button>
+                                <button type="button" onclick="duplicateSaleRow(this)" class="icon-btn touch-manipulation" title="Çoğalt" aria-label="Çoğalt">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                </button>
+                                <button type="button" onclick="removeSaleRow(this)" class="btn-remove-row icon-btn icon-btn-danger touch-manipulation" aria-label="Sil" title="Sil">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 </button>
                             </div>
-                            <div class="lg:col-span-2">
-                                <label class="form-label">Fiyat <span class="text-red-500">*</span></label>
-                                <input type="text" inputmode="decimal" name="items[__IDX__][unitPrice]" required class="form-input item-price min-h-[44px] md:min-h-[42px]" placeholder="0" data-raw="" title="Örn: 20.000">
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <div>
+                                <label class="form-label">Fiyat ₺</label>
+                                <input type="text" inputmode="decimal" name="items[__IDX__][unitPrice]" required class="form-input item-price" placeholder="20.000" data-raw="">
                             </div>
-                            <div class="lg:col-span-1">
-                                <label class="form-label">Adet <span class="text-red-500">*</span></label>
-                                <input type="number" name="items[__IDX__][quantity]" value="1" required min="1" class="form-input item-qty min-h-[44px] md:min-h-[42px]" placeholder="1">
+                            <div>
+                                <label class="form-label">Adet</label>
+                                <input type="number" name="items[__IDX__][quantity]" value="1" required min="1" class="form-input item-qty">
                             </div>
-                            <div class="lg:col-span-1">
-                                <label class="form-label">İsk. %</label>
-                                <input type="number" step="0.01" min="0" max="100" name="items[__IDX__][lineDiscountPercent]" value="" class="form-input item-disc-pct min-h-[44px] md:min-h-[42px]" placeholder="0" title="İskonto yüzdesi (opsiyonel)">
-                            </div>
-                            <div class="lg:col-span-2 border-l border-slate-200 dark:border-slate-600 pl-2 lg:pl-3">
-                                <label class="form-label">İsk. ₺</label>
-                                <input type="number" step="0.01" min="0" name="items[__IDX__][lineDiscountAmount]" value="" class="form-input item-disc-amt min-h-[44px] md:min-h-[42px]" placeholder="0" title="İskonto tutarı ₺ (opsiyonel)">
-                            </div>
-                            <div class="lg:col-span-1">
+                            <div>
                                 <label class="form-label">KDV %</label>
-                                <input type="number" step="0.01" min="0" max="100" name="items[__IDX__][kdvRate]" value="18" class="form-input item-kdv min-h-[44px] md:min-h-[42px]" placeholder="18">
+                                <input type="number" step="0.01" min="0" max="100" name="items[__IDX__][kdvRate]" value="10" class="form-input item-kdv">
                             </div>
-                            <div class="sm:col-span-2 lg:col-span-2 flex items-end gap-1.5">
-                                <button type="button" onclick="removeSaleRow(this)" class="btn-remove-row w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/60 text-sm touch-manipulation" aria-label="Satır sil" title="Kalem sil">−</button>
-                                <button type="button" onclick="addRow()" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500 text-sm touch-manipulation" aria-label="Satır ekle" title="Kalem ekle">+</button>
+                            <div class="flex flex-col justify-end text-right">
+                                <span class="form-label mb-0">Toplam</span>
+                                <span class="item-line-total">0 ₺</span>
                             </div>
+                        </div>
+                        <div class="mt-2">
+                            <label class="form-label">Açıklama</label>
+                            <textarea name="items[__IDX__][description]" rows="2" class="form-input form-textarea item-desc w-full text-sm" placeholder="Renk, ölçü, kumaş vb."></textarea>
                         </div>
                     </div>
                     </template>
-                    <div id="items" class="space-y-3 items-scroll-wrapper"></div>
-                    <div class="mt-6 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-                        <div class="max-w-xs">
-                            <label class="form-label">KDV</label>
-                            <select name="kdvIncluded" class="form-select min-h-[44px] md:min-h-[42px]">
-                                <option value="1" {{ old('kdvIncluded', '1') == '1' ? 'selected' : '' }}>KDV Dahil</option>
-                                <option value="0" {{ old('kdvIncluded') === '0' ? 'selected' : '' }}>KDV Hariç</option>
-                            </select>
-                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Birim fiyat KDV dahil mi?</p>
-                        </div>
-                        <div id="saleTotals" class="sale-totals-box w-full lg:w-64 shrink-0">
-                            <div class="space-y-1.5 text-sm">
-                                <div class="flex justify-between"><span class="text-slate-600 dark:text-slate-300">Ara Toplam</span> <span id="subtotalBeforeDiscDisplay" class="font-medium text-slate-900 dark:text-white">0 ₺</span></div>
-                                <div id="saleDiscountPctRow" class="flex justify-between hidden"><span class="text-slate-600 dark:text-slate-300">İsk. % Toplam</span> <span id="saleDiscountPctDisplay" class="font-medium text-amber-600 dark:text-amber-400">0 ₺</span></div>
-                                <div id="saleDiscountAmtRow" class="flex justify-between hidden"><span class="text-slate-600 dark:text-slate-300">İsk. ₺ Toplam</span> <span id="saleDiscountAmtDisplay" class="font-medium text-amber-600 dark:text-amber-400">0 ₺</span></div>
-                                <div class="flex justify-between"><span class="text-slate-600 dark:text-slate-300">KDV Toplam</span> <span id="kdvDisplay" class="font-medium text-slate-900 dark:text-white">0 ₺</span></div>
-                                <div class="flex justify-between pt-2 border-t border-emerald-200 dark:border-emerald-800"><span class="font-medium text-slate-800 dark:text-slate-200">Genel Toplam</span> <span id="grandTotalDisplay" class="font-semibold text-emerald-700 dark:text-emerald-300 text-lg">0 ₺</span></div>
+                    <div id="items" class="space-y-0"></div>
+                    <button type="button" onclick="addRow(true)" class="add-row-btn mt-3 touch-manipulation">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Kalem Ekle
+                    </button>
+                    </div>
+                </div>
+
+                {{-- Kapora --}}
+                <div class="sale-form-section">
+                    <div class="sale-form-section-head"><h2 class="sale-form-section-title">Kapora (Opsiyonel)</h2></div>
+                    <div class="sale-form-section-body">
+                        <div class="sale-meta-grid">
+                            <div>
+                                <label class="form-label">Kapora Tutarı (₺)</label>
+                                <input type="text" inputmode="decimal" name="depositAmount" id="depositAmount" value="{{ old('depositAmount') ? money(old('depositAmount')) : '' }}" class="form-input min-h-[44px] money-input" placeholder="0" autocomplete="off">
+                                @error('depositAmount')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                            </div>
+                            <div>
+                                <label class="form-label">Ödeme Tipi</label>
+                                <select name="depositPaymentType" id="depositPaymentType" class="form-select min-h-[44px]">
+                                    @foreach(\App\Support\PaymentType::SELECTABLE as $value => $label)
+                                    <option value="{{ $value }}" {{ old('depositPaymentType', 'nakit') == $value ? 'selected' : '' }}>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="form-label">Kasa <span class="text-amber-600" id="depositKasaRequiredHint">*</span></label>
+                                <select name="depositKasaId" id="depositKasaId" class="form-select min-h-[44px]">
+                                    <option value="">Seçiniz</option>
+                                    @foreach($kasalar as $k)
+                                    <option value="{{ $k->id }}" {{ old('depositKasaId') == $k->id ? 'selected' : '' }}>{{ $k->name }}</option>
+                                    @endforeach
+                                </select>
+                                <p class="mt-1 text-xs text-neutral-500">Nakit, havale ve kredi kartı kapora ödemeleri kasaya giriş olarak yansır.</p>
+                                @error('depositKasaId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                             </div>
                         </div>
                     </div>
                 </div>
+
+                @include('partials.drawing-files-fields', ['drawingFiles' => []])
+
+                {{-- Notlar --}}
+                <div class="sale-form-section">
+                    <div class="sale-form-section-head"><h2 class="sale-form-section-title">Notlar</h2></div>
+                    <div class="sale-form-section-body">
+                        <textarea name="notes" rows="3" class="form-input form-textarea" placeholder="Satışa özel notlar (opsiyonel)...">{{ old('notes') }}</textarea>
+                    </div>
+                </div>
             </div>
 
-            {{-- Notlar --}}
-            <div class="form-create-section px-4 sm:px-6 lg:px-8">
-                <label class="form-label">Notlar</label>
-                <textarea name="notes" rows="2" class="form-input form-textarea" placeholder="Opsiyonel not...">{{ old('notes') }}</textarea>
-            </div>
+            {{-- Sağ panel: özet --}}
+            <div class="space-y-5 xl:sticky xl:top-24">
+                <div class="sale-form-section">
+                    <div class="sale-form-section-head"><h2 class="sale-form-section-title">Fiyatlandırma</h2></div>
+                    <div class="sale-form-section-body space-y-4">
+                        <div>
+                            <label class="form-label">KDV</label>
+                            <select name="kdvIncluded" class="form-select min-h-[44px]">
+                                <option value="1" {{ old('kdvIncluded', '1') == '1' ? 'selected' : '' }}>KDV Dahil</option>
+                                <option value="0" {{ old('kdvIncluded') === '0' ? 'selected' : '' }}>KDV Hariç</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Genel İndirim %</label>
+                            <input type="number" step="0.01" min="0" max="100" name="saleDiscountPercent" id="saleDiscountPercent" value="{{ old('saleDiscountPercent', '0') }}" class="form-input min-h-[44px]" placeholder="0">
+                        </div>
+                    </div>
+                </div>
 
-            {{-- Aksiyonlar --}}
-            <div class="form-actions-sticky px-4 sm:px-6 lg:px-8 pt-5 pb-6 md:pb-6">
-                <div class="flex flex-col-reverse sm:flex-row gap-3 sm:gap-2">
-                    <a href="{{ route('sales.index') }}" class="btn-secondary justify-center min-h-[44px] md:min-h-[42px] order-2 sm:order-1">İptal</a>
-                    <button type="submit" :disabled="submitting" class="btn-primary justify-center min-h-[44px] md:min-h-[42px] disabled:opacity-70 disabled:cursor-not-allowed order-1 sm:order-2 flex-1 sm:flex-initial">
-                        <span x-show="submitting" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin shrink-0" aria-hidden="true"></span>
-                        <span x-text="submitting ? 'Oluşturuluyor...' : 'Satış Oluştur'">Satış Oluştur</span>
-                    </button>
+                <div class="sale-summary-panel" id="saleTotals">
+                    <p class="text-xs uppercase tracking-wider text-neutral-400 mb-3">Sipariş Özeti</p>
+                    <div class="sale-summary-row"><span>Ara Toplam</span><strong id="subtotalBeforeDiscDisplay">0 ₺</strong></div>
+                    <div class="sale-summary-row"><span>KDV Toplam</span><strong id="kdvDisplay">0 ₺</strong></div>
+                    <div id="saleDiscountGeneralRow" class="sale-summary-row hidden"><span>İndirim</span><strong id="saleDiscountGeneralDisplay" class="text-amber-300">0 ₺</strong></div>
+                    <div class="sale-summary-total">
+                        <span>Genel Toplam</span>
+                        <span id="grandTotalCalculated">0 ₺</span>
+                    </div>
+                    <div id="depositSummaryRow" class="sale-summary-row hidden mt-2">
+                        <span class="text-emerald-300">Kapora</span>
+                        <strong id="depositSummaryDisplay" class="text-emerald-300">0 ₺</strong>
+                    </div>
+                    <div id="remainingSummaryRow" class="sale-summary-row hidden">
+                        <span>Kalan Tahsilat</span>
+                        <strong id="remainingSummaryDisplay" class="text-amber-300">0 ₺</strong>
+                    </div>
+                    <p id="depositOverTotalWarning" class="hidden mt-2 text-xs text-red-400">Kapora, genel toplamdan büyük olamaz.</p>
+                    <div class="mt-4 pt-4 border-t border-neutral-700">
+                        <label for="grandTotalOverride" class="text-xs text-neutral-400 block mb-1">Hedef toplam (indirim otomatik)</label>
+                        <div class="flex items-center gap-2">
+                            <input type="text" inputmode="decimal" id="grandTotalOverride" name="grandTotalOverride" class="flex-1 text-right font-semibold bg-neutral-800 border border-neutral-600 rounded-lg px-3 py-2 text-sm text-white tabular-nums focus:outline-none focus:ring-2 focus:ring-neutral-500" placeholder="—">
+                            <span class="text-neutral-400 text-sm">₺</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sale-form-section">
+                    <div class="sale-form-section-head"><h2 class="sale-form-section-title">Sipariş Gönderimi</h2></div>
+                    <div class="sale-form-section-body space-y-3">
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <input type="checkbox" name="sendCustomerEmail" value="1" {{ old('sendCustomerEmail') ? 'checked' : '' }} class="mt-1 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500">
+                            <span>
+                                <span class="text-sm font-medium text-neutral-900 block">Oluşturulduktan sonra müşteriye e-posta gönder</span>
+                                <span class="text-xs text-neutral-500">Müşteri kartında e-posta tanımlı olmalıdır.</span>
+                            </span>
+                        </label>
+                        <div>
+                            <label class="form-label">E-posta notu (opsiyonel)</label>
+                            <textarea name="customerEmailNote" rows="2" class="form-input form-textarea text-sm" placeholder="Müşteriye iletilecek kısa mesaj...">{{ old('customerEmailNote') }}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sale-form-section">
+                    <div class="sale-form-section-body space-y-3">
+                        <button type="submit" :disabled="submitting" class="btn-primary w-full justify-center min-h-[48px] disabled:opacity-70 disabled:cursor-not-allowed">
+                            <span x-show="submitting" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin shrink-0" aria-hidden="true"></span>
+                            <span x-text="submitting ? 'Oluşturuluyor...' : 'Satış Oluştur'">Satış Oluştur</span>
+                        </button>
+                        <a href="{{ route('sales.index') }}" class="btn-secondary w-full justify-center min-h-[44px]">İptal</a>
+                        <p class="text-center text-xs text-neutral-400">Mobil özet: <strong id="stickyTotal" class="text-neutral-700">0 ₺</strong> <span id="stickyRemainingWrap" class="hidden"> · Kalan <strong id="stickyRemaining" class="text-neutral-700">0 ₺</strong></span></p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -186,9 +336,9 @@
     {{-- Hızlı Ürün/Hizmet Ekle Modal --}}
     <div x-show="showQuickAddProduct" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="quick-add-product-title">
         <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showQuickAddProduct = false"></div>
-        <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-neutral-200 dark:border-slate-700 overflow-hidden">
             <div class="px-5 pt-5 pb-1">
-                <h2 id="quick-add-product-title" class="text-lg font-semibold text-slate-900 dark:text-slate-100">Hızlı Ürün / Hizmet Ekle</h2>
+                <h2 id="quick-add-product-title" class="text-lg font-semibold text-neutral-900">Hızlı Ürün / Hizmet Ekle</h2>
             </div>
             <form @submit.prevent="quickAddProduct()" class="p-5 space-y-4">
                 <div>
@@ -197,11 +347,11 @@
                 </div>
                 <div>
                     <label class="form-label">Birim fiyat (₺) <span class="text-red-500">*</span></label>
-                    <input type="number" step="0.01" min="0" x-model="quickProduct.unitPrice" required class="form-input min-h-[44px]" placeholder="0">
+                    <input type="text" inputmode="decimal" data-input="money" x-model="quickProduct.unitPrice" required class="form-input min-h-[44px]" placeholder="0" autocomplete="off">
                 </div>
                 <div>
                     <label class="form-label">KDV %</label>
-                    <input type="number" step="0.01" min="0" max="100" x-model="quickProduct.kdvRate" class="form-input min-h-[44px]" placeholder="18">
+                    <input type="number" step="0.01" min="0" max="100" x-model="quickProduct.kdvRate" class="form-input min-h-[44px]" placeholder="10">
                 </div>
                 <p x-show="quickAddProductError" x-text="quickAddProductError" class="text-sm text-red-600 dark:text-red-400"></p>
                 <div class="flex gap-3 justify-end pt-2">
@@ -215,9 +365,9 @@
     {{-- Hızlı Müşteri Ekle Modal --}}
     <div x-show="showQuickAddCustomer" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="quick-add-title">
         <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showQuickAddCustomer = false"></div>
-        <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-neutral-200 dark:border-slate-700 overflow-hidden">
             <div class="px-5 pt-5 pb-1">
-                <h2 id="quick-add-title" class="text-lg font-semibold text-slate-900 dark:text-slate-100">Hızlı Müşteri Ekle</h2>
+                <h2 id="quick-add-title" class="text-lg font-semibold text-neutral-900">Hızlı Müşteri Ekle</h2>
             </div>
             <form @submit.prevent="quickAddCustomer()" class="p-5 space-y-4">
                 <div>
@@ -233,8 +383,7 @@
                     <input type="email" x-model="quickCustomer.email" class="form-input min-h-[44px]" placeholder="ornek@email.com">
                 </div>
                 <div>
-                    <label class="form-label">Adres</label>
-                    <textarea x-model="quickCustomer.address" rows="2" class="form-input form-textarea"></textarea>
+                    @include('partials.address-fields-alpine')
                 </div>
                 <p x-show="quickAddError" x-text="quickAddError" class="text-sm text-red-600 dark:text-red-400"></p>
                 <div class="flex gap-3 justify-end pt-2">
@@ -249,25 +398,26 @@
 @php
     $customersJson = $customers->map(fn($c) => [
         'id' => $c->id, 'name' => $c->name,
-        'phone' => $c->phone ?? '', 'email' => $c->email ?? '', 'address' => $c->address ?? '',
+        'phone' => $c->phone ?? '', 'email' => $c->email ?? '', 'address' => $c->full_address,
+        'cityId' => $c->cityId, 'districtId' => $c->districtId,
         'taxNumber' => $c->taxNumber ?? '', 'taxOffice' => $c->taxOffice ?? '', 'identityNumber' => $c->identityNumber ?? ''
     ])->values();
     $productsJson = $products->map(function($p) {
         $img = is_array($p->images ?? null) ? ($p->images[0] ?? null) : ($p->images ?? null);
-        return ['id' => $p->id, 'name' => $p->name . ' (' . number_format($p->unitPrice, 0, ',', '.') . ' ₺)', 'price' => (float)$p->unitPrice, 'kdv' => (float)($p->kdvRate ?? 18), 'image' => $img ? (Str::startsWith($img, 'http') ? $img : url($img)) : null];
+        return ['id' => $p->id, 'name' => $p->name . ' (' . number_format($p->unitPrice, 0, ',', '.') . ' ₺)', 'price' => (float)$p->unitPrice, 'kdv' => (float)($p->kdvRate ?? 10), 'image' => $img ? (Str::startsWith($img, 'http') ? $img : url($img)) : null];
     })->values();
 @endphp
 const customers = @json($customersJson);
 const productsData = @json($productsJson);
 function salesCreateForm() {
     return {
-        customerId: '{{ old("customerId") }}',
+        customerId: '{{ old("customerId", request("customerId")) }}',
         showQuickAddCustomer: false,
-        quickCustomer: { name: '', phone: '', email: '', address: '' },
+        quickCustomer: { name: '', phone: '', email: '', address: '', cityId: '', districtId: '' },
         quickAddLoading: false,
         quickAddError: '',
         showQuickAddProduct: false,
-        quickProduct: { name: '', unitPrice: '', kdvRate: '18' },
+        quickProduct: { name: '', unitPrice: '', kdvRate: '10' },
         quickAddProductLoading: false,
         quickAddProductError: '',
         submitting: false,
@@ -284,8 +434,8 @@ function salesCreateForm() {
                     },
                     body: JSON.stringify({
                         name: this.quickProduct.name,
-                        unitPrice: parseFloat(this.quickProduct.unitPrice) || 0,
-                        kdvRate: parseFloat(this.quickProduct.kdvRate) || 18,
+                        unitPrice: (window.parseMoney || parseFloat)(this.quickProduct.unitPrice) || 0,
+                        kdvRate: parseFloat(this.quickProduct.kdvRate) || 10,
                     })
                 });
                 const data = await res.json();
@@ -302,16 +452,14 @@ function salesCreateForm() {
                         opt.textContent = text;
                         tmplSelect.appendChild(opt);
                     }
-                    (window.salesProductSelects || []).forEach(function(ts, i) {
-                        if (ts) {
-                            ts.addOption({ value: String(data.id), text: text });
-                            if (i === (window.quickAddProductForRowIndex || 0)) {
-                                ts.setValue(data.id);
-                            }
-                        }
+                    (window.salesProductSelects || []).forEach(function(ts) {
+                        if (ts) ts.addOption({ value: String(data.id), text: text });
                     });
+                    const targetRow = resolveSaleRowForQuickProduct(window.quickAddProductForRowIndex ?? 0);
+                    applyProductToSaleRow(targetRow, data, text);
+                    targetRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
                     this.showQuickAddProduct = false;
-                    this.quickProduct = { name: '', unitPrice: '', kdvRate: '18' };
+                    this.quickProduct = { name: '', unitPrice: '', kdvRate: '10' };
                     updateSaleTotals();
                 } else {
                     this.quickAddProductError = data.message || 'Hata oluştu';
@@ -336,14 +484,14 @@ function salesCreateForm() {
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    customers.push({ id: data.id, name: data.name, phone: data.phone || '', email: data.email || '', address: data.address || '', taxNumber: data.taxNumber || '', taxOffice: data.taxOffice || '', identityNumber: '' });
+                    customers.push({ id: data.id, name: data.name, phone: data.phone || '', email: data.email || '', address: data.address || '', cityId: data.cityId || '', districtId: data.districtId || '', taxNumber: data.taxNumber || '', taxOffice: data.taxOffice || '', identityNumber: '' });
                     if (window.customerTomSelect) {
                         window.customerTomSelect.addOption({ value: data.id, text: data.name });
                         window.customerTomSelect.setValue(data.id);
                     }
                     this.customerId = data.id;
                     this.showQuickAddCustomer = false;
-                    this.quickCustomer = { name: '', phone: '', email: '', address: '' };
+                    this.quickCustomer = { name: '', phone: '', email: '', address: '', cityId: '', districtId: '' };
                 } else {
                     this.quickAddError = data.message || 'Hata oluştu';
                 }
@@ -369,13 +517,16 @@ function removeSaleRow(btn) {
 }
 function reindexSaleRows() {
     const container = document.getElementById('items');
+    const total = container.querySelectorAll('.item-row').length;
     container.querySelectorAll('.item-row').forEach((row, i) => {
         row.setAttribute('data-row-idx', String(i));
         row.querySelectorAll('[name]').forEach(el => {
             if (el.name) el.name = el.name.replace(/items\[\d+\]/, 'items[' + i + ']');
         });
+        const no = row.querySelector('.row-no');
+        if (no) no.textContent = String(i + 1);
         const removeBtn = row.querySelector('.btn-remove-row');
-        if (removeBtn) removeBtn.style.visibility = container.querySelectorAll('.item-row').length <= 1 ? 'hidden' : '';
+        if (removeBtn) removeBtn.style.visibility = total <= 1 ? 'hidden' : '';
     });
     if (window.salesProductSelects) {
         const arr = [];
@@ -383,9 +534,9 @@ function reindexSaleRows() {
         window.salesProductSelects = arr;
     }
 }
-function addRow() {
+function addRow(focusNew) {
     const tmpl = document.getElementById('item-template');
-    if (!tmpl) return;
+    if (!tmpl) return null;
     const c = tmpl.content.cloneNode(true);
     c.querySelectorAll('[name]').forEach(e => {
         e.name = e.name.replace(/__IDX__/g, idx);
@@ -394,21 +545,96 @@ function addRow() {
     if (row) row.setAttribute('data-row-idx', String(idx));
     c.querySelector('.item-price').value = '';
     c.querySelector('.item-qty').value = '1';
-    c.querySelector('.item-kdv').value = '18';
-    c.querySelector('.item-disc-pct').value = '';
-    c.querySelector('.item-disc-amt').value = '';
+    c.querySelector('.item-kdv').value = '10';
+    const descEl = c.querySelector('.item-desc');
+    if (descEl) descEl.value = '';
     document.getElementById('items').appendChild(c);
     const rowEl = document.getElementById('items').lastElementChild;
     const sel = rowEl.querySelector('.item-product');
     initProductSelect(sel, idx);
     idx++;
     reindexSaleRows();
+    updateSaleTotals();
+    if (focusNew) {
+        const ts = sel && sel.tomselect;
+        if (ts) { ts.focus(); }
+        rowEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+    return rowEl;
+}
+function duplicateSaleRow(btn) {
+    const src = btn.closest('.item-row');
+    if (!src) return;
+    const newRow = addRow(false);
+    if (!newRow) return;
+    ['.item-price', '.item-qty', '.item-kdv', '.item-desc'].forEach(function(cls) {
+        const from = src.querySelector(cls), to = newRow.querySelector(cls);
+        if (from && to) {
+            to.value = from.value;
+            if (from.hasAttribute('data-raw')) to.setAttribute('data-raw', from.getAttribute('data-raw'));
+        }
+    });
+    const srcTs = src.querySelector('.item-product')?.tomselect;
+    const newTs = newRow.querySelector('.item-product')?.tomselect;
+    const val = srcTs && srcTs.getValue();
+    if (newTs && val) {
+        newTs.setValue(val, true);
+        newRow.querySelector('.item-product-id').value = src.querySelector('.item-product-id').value;
+        newRow.querySelector('.item-product-name').value = src.querySelector('.item-product-name').value;
+        // setValue silent olduğu için fiyat/kdv kopyalanan değerlerde kalır
+        ['.item-price', '.item-kdv'].forEach(function(cls) {
+            const from = src.querySelector(cls), to = newRow.querySelector(cls);
+            if (from && to) to.value = from.value;
+        });
+    }
+    updateSaleTotals();
+    newRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 window.openQuickAddProduct = function(btn) {
     const row = btn && btn.closest ? btn.closest('.item-row') : null;
     window.quickAddProductForRowIndex = row ? parseInt(row.getAttribute('data-row-idx'), 10) : 0;
     window.dispatchEvent(new CustomEvent('open-quick-add-product'));
 };
+function saleRowIsEmpty(row) {
+    if (!row) return true;
+    const productId = row.querySelector('.item-product-id')?.value;
+    const productName = row.querySelector('.item-product-name')?.value;
+    const tsVal = row.querySelector('.item-product')?.tomselect?.getValue();
+    const price = parseTrNum(row.querySelector('.item-price')?.value ?? row.querySelector('.item-price')?.getAttribute('data-raw') ?? 0);
+    return !productId && !productName && !tsVal && !(price > 0);
+}
+function resolveSaleRowForQuickProduct(rowIndex) {
+    const rows = document.querySelectorAll('#items .item-row');
+    let row = rows[rowIndex] || null;
+    if (!row || !saleRowIsEmpty(row)) {
+        row = addRow(false);
+    }
+    return row;
+}
+function applyProductToSaleRow(rowEl, data, text) {
+    if (!rowEl || !data) return;
+    const id = String(data.id);
+    const price = parseFloat(data.price) || 0;
+    const kdv = parseFloat(data.kdv) ?? 10;
+    const idInput = rowEl.querySelector('.item-product-id');
+    const nameInput = rowEl.querySelector('.item-product-name');
+    const priceEl = rowEl.querySelector('.item-price');
+    const kdvEl = rowEl.querySelector('.item-kdv');
+    const qtyEl = rowEl.querySelector('.item-qty');
+    if (idInput) idInput.value = id;
+    if (nameInput) nameInput.value = '';
+    if (priceEl) {
+        priceEl.value = fmt(price);
+        priceEl.setAttribute('data-raw', String(price));
+    }
+    if (kdvEl) kdvEl.value = kdv;
+    if (qtyEl && (!qtyEl.value || parseInt(qtyEl.value, 10) < 1)) qtyEl.value = '1';
+    const ts = rowEl.querySelector('.item-product')?.tomselect;
+    if (ts) {
+        if (!ts.options[id]) ts.addOption({ value: id, text: text });
+        ts.setValue(id, true);
+    }
+}
 function initProductSelect(sel, rowIdx) {
     if (!sel || typeof TomSelect === 'undefined') return;
     window.salesProductSelects = window.salesProductSelects || [];
@@ -449,7 +675,7 @@ function initProductSelect(sel, rowIdx) {
                 const priceNum = parseFloat(opt.dataset.price) || 0;
                 row.querySelector('.item-price').value = fmt(priceNum);
                 row.querySelector('.item-price').setAttribute('data-raw', String(priceNum));
-                row.querySelector('.item-kdv').value = opt.dataset.kdv || 18;
+                row.querySelector('.item-kdv').value = opt.dataset.kdv || 10;
             }
             const product = productsData.find(p => p.id === value);
             if (product) {
@@ -492,62 +718,144 @@ function updateSaleTotals() {
     const subtotalEl = document.getElementById('subtotalBeforeDiscDisplay');
     if (!subtotalEl) return;
     const kdvIncl = document.querySelector('select[name="kdvIncluded"]')?.value === '1';
-    let subtotalBeforeDisc = 0, totalDiscountPct = 0, totalDiscountAmt = 0, subtotal = 0, kdvTotal = 0;
+    const saleDiscPctInp = document.getElementById('saleDiscountPercent');
+    const grandTotalOverrideInp = document.getElementById('grandTotalOverride');
+    const grandTotalCalculatedEl = document.getElementById('grandTotalCalculated');
+    let subtotalBeforeDisc = 0, subtotal = 0, kdvTotal = 0, validRows = 0;
+    document.querySelectorAll('.item-row').forEach(row => {
+        const priceEl = row.querySelector('.item-price');
+        const lineTotalEl = row.querySelector('.item-line-total');
+        const price = parseTrNum(priceEl?.value ?? priceEl?.getAttribute('data-raw') ?? 0);
+        const qty = parseInt(row.querySelector('.item-qty')?.value || 1, 10);
+        const kdv = parseFloat(row.querySelector('.item-kdv')?.value || 10, 10);
+        if (price <= 0 || qty <= 0) {
+            if (lineTotalEl) lineTotalEl.textContent = '0 ₺';
+            return;
+        }
+        validRows++;
+        const lineTotal = kdvIncl ? price * qty / (1 + kdv / 100) : price * qty;
+        const lineKdv = lineTotal * (kdv / 100);
+        if (lineTotalEl) lineTotalEl.textContent = fmt(lineTotal + lineKdv) + ' ₺';
+        subtotalBeforeDisc += lineTotal;
+        subtotal += lineTotal;
+        kdvTotal += lineKdv;
+    });
+    const calculatedBeforeSaleDisc = subtotal + kdvTotal;
+    const saleDiscPct = parseFloat(saleDiscPctInp?.value || 0, 10);
+    const grandTotalFromDisc = Math.round(calculatedBeforeSaleDisc * (1 - saleDiscPct / 100) * 100) / 100;
+    document.getElementById('subtotalBeforeDiscDisplay').textContent = fmt(subtotalBeforeDisc) + ' ₺';
+    document.getElementById('kdvDisplay').textContent = fmt(kdvTotal) + ' ₺';
+    const genRow = document.getElementById('saleDiscountGeneralRow');
+    const genDisp = document.getElementById('saleDiscountGeneralDisplay');
+    if (genRow && genDisp) {
+        const genDiscValue = calculatedBeforeSaleDisc - grandTotalFromDisc;
+        genRow.classList.toggle('hidden', !(saleDiscPct > 0 && genDiscValue > 0));
+        genDisp.textContent = '-' + fmt(genDiscValue) + ' ₺';
+    }
+    if (grandTotalCalculatedEl) grandTotalCalculatedEl.textContent = fmt(grandTotalFromDisc) + ' ₺';
+    const override = parseTrNum(grandTotalOverrideInp?.value);
+    const finalGrand = !isNaN(override) && override > 0 ? override : grandTotalFromDisc;
+    const deposit = parseTrNum(document.getElementById('depositAmount')?.value) || 0;
+    const remaining = Math.round((finalGrand - deposit) * 100) / 100;
+    const depositRow = document.getElementById('depositSummaryRow');
+    const depositDisp = document.getElementById('depositSummaryDisplay');
+    const remainingRow = document.getElementById('remainingSummaryRow');
+    const remainingDisp = document.getElementById('remainingSummaryDisplay');
+    const depositWarn = document.getElementById('depositOverTotalWarning');
+    if (depositRow && depositDisp) {
+        depositRow.classList.toggle('hidden', !(deposit > 0));
+        depositDisp.textContent = fmt(deposit) + ' ₺';
+    }
+    if (remainingRow && remainingDisp) {
+        remainingRow.classList.toggle('hidden', !(deposit > 0));
+        remainingDisp.textContent = fmt(Math.max(0, remaining)) + ' ₺';
+        remainingDisp.classList.toggle('text-amber-300', remaining > 0);
+        remainingDisp.classList.toggle('text-emerald-300', remaining <= 0);
+    }
+    if (depositWarn) {
+        depositWarn.classList.toggle('hidden', !(deposit > 0 && deposit > finalGrand));
+    }
+    const badge = document.getElementById('itemCountBadge');
+    if (badge) badge.textContent = String(validRows);
+    const sticky = document.getElementById('stickyTotal');
+    const stickyRemainingWrap = document.getElementById('stickyRemainingWrap');
+    const stickyRemaining = document.getElementById('stickyRemaining');
+    if (sticky) {
+        sticky.textContent = fmt(finalGrand) + ' ₺';
+    }
+    if (stickyRemainingWrap && stickyRemaining) {
+        stickyRemainingWrap.classList.toggle('hidden', !(deposit > 0));
+        stickyRemaining.textContent = fmt(Math.max(0, remaining)) + ' ₺';
+    }
+}
+function onGrandTotalOverrideInput() {
+    const overrideInp = document.getElementById('grandTotalOverride');
+    const saleDiscInp = document.getElementById('saleDiscountPercent');
+    if (!overrideInp || !saleDiscInp) return;
+    const override = parseTrNum(overrideInp.value) || 0;
+    let subtotal = 0, kdvTotal = 0;
     document.querySelectorAll('.item-row').forEach(row => {
         const priceEl = row.querySelector('.item-price');
         const price = parseTrNum(priceEl?.value ?? priceEl?.getAttribute('data-raw') ?? 0);
         const qty = parseInt(row.querySelector('.item-qty')?.value || 1, 10);
-        const kdv = parseFloat(row.querySelector('.item-kdv')?.value || 18, 10);
-        const discPct = parseFloat(row.querySelector('.item-disc-pct')?.value || 0, 10);
-        const discAmt = parseFloat(row.querySelector('.item-disc-amt')?.value || 0, 10);
+        const kdv = parseFloat(row.querySelector('.item-kdv')?.value || 10, 10);
         if (price <= 0 || qty <= 0) return;
-        let lineBeforeDisc;
-        if (kdvIncl) {
-            lineBeforeDisc = price * qty / (1 + kdv / 100);
-        } else {
-            lineBeforeDisc = price * qty;
-        }
-        const lineDiscPct = lineBeforeDisc * (discPct / 100);
-        const lineDiscAmt = discAmt;
-        const lineDisc = lineDiscPct + lineDiscAmt;
-        let lineTotal = lineBeforeDisc - lineDisc;
-        lineTotal = Math.max(0, lineTotal);
-        const lineKdv = lineTotal * (kdv / 100);
-        subtotalBeforeDisc += lineBeforeDisc;
-        totalDiscountPct += lineDiscPct;
-        totalDiscountAmt += lineDiscAmt;
+        const lineTotal = document.querySelector('select[name="kdvIncluded"]')?.value === '1'
+            ? price * qty / (1 + kdv / 100) : price * qty;
         subtotal += lineTotal;
-        kdvTotal += lineKdv;
+        kdvTotal += lineTotal * (kdv / 100);
     });
-    document.getElementById('subtotalBeforeDiscDisplay').textContent = fmt(subtotalBeforeDisc) + ' ₺';
-    const discPctRow = document.getElementById('saleDiscountPctRow');
-    const discPctDisp = document.getElementById('saleDiscountPctDisplay');
-    const discAmtRow = document.getElementById('saleDiscountAmtRow');
-    const discAmtDisp = document.getElementById('saleDiscountAmtDisplay');
-    if (discPctRow && discPctDisp) {
-        discPctRow.classList.toggle('hidden', totalDiscountPct <= 0);
-        discPctDisp.textContent = '-' + fmt(totalDiscountPct) + ' ₺';
+    const calculated = subtotal + kdvTotal;
+    if (override > 0 && calculated > 0) {
+        const pct = Math.max(0, Math.min(100, (1 - override / calculated) * 100));
+        saleDiscInp.value = Math.round(pct * 100) / 100;
     }
-    if (discAmtRow && discAmtDisp) {
-        discAmtRow.classList.toggle('hidden', totalDiscountAmt <= 0);
-        discAmtDisp.textContent = '-' + fmt(totalDiscountAmt) + ' ₺';
-    }
-    document.getElementById('kdvDisplay').textContent = fmt(kdvTotal) + ' ₺';
-    document.getElementById('grandTotalDisplay').textContent = fmt(subtotal + kdvTotal) + ' ₺';
+    updateSaleTotals();
 }
 document.getElementById('saleForm')?.addEventListener('input', function(e) {
     if (e.target.classList.contains('item-price')) formatPriceInput(e.target);
+    if (e.target.id === 'grandTotalOverride') { onGrandTotalOverrideInput(); return; }
     updateSaleTotals();
 });
 document.getElementById('saleForm')?.addEventListener('change', function(e) {
     if (e.target.classList.contains('item-price')) formatPriceInput(e.target);
+    if (e.target.id === 'grandTotalOverride') { onGrandTotalOverrideInput(); return; }
     updateSaleTotals();
+});
+document.getElementById('saleForm')?.addEventListener('keydown', function(e) {
+    if (e.key !== 'Enter') return;
+    const form = this;
+    if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        if (form.reportValidity()) form.requestSubmit();
+        return;
+    }
+    const t = e.target;
+    if (!t || t.tagName === 'TEXTAREA' || t.tagName === 'BUTTON') return;
+    const row = t.closest && t.closest('.item-row');
+    if (!row) return;
+    e.preventDefault();
+    const rows = Array.from(document.querySelectorAll('.item-row'));
+    const isLast = rows[rows.length - 1] === row;
+    const hasPrice = parseTrNum(row.querySelector('.item-price')?.value) > 0;
+    if (isLast) {
+        if (hasPrice) addRow(true);
+        return;
+    }
+    const next = rows[rows.indexOf(row) + 1];
+    const ts = next?.querySelector('.item-product')?.tomselect;
+    if (ts) ts.focus(); else next?.querySelector('.item-price')?.focus();
 });
 document.getElementById('saleForm')?.addEventListener('submit', function() {
     document.querySelectorAll('.item-price').forEach(function(inp) {
         const v = parseTrNum(inp.value);
         inp.value = isNaN(v) || v < 0 ? '' : String(v);
     });
+    const overrideInp = document.getElementById('grandTotalOverride');
+    if (overrideInp && overrideInp.value) {
+        const v = parseTrNum(overrideInp.value);
+        overrideInp.value = isNaN(v) || v < 0 ? '' : String(v);
+    }
 });
 document.addEventListener('DOMContentLoaded', function() {
     if (typeof TomSelect === 'undefined') {
@@ -575,6 +883,11 @@ function updateCustomerInfo(customerId) {
     }
     box.classList.remove('hidden');
     document.getElementById('customerName').textContent = c.name || '—';
+    const link = document.getElementById('customerEditLink');
+    if (link) {
+        link.href = '{{ url("customers") }}/' + encodeURIComponent(c.id);
+        link.classList.remove('hidden');
+    }
     const setRow = (id, val) => {
         const row = document.getElementById(id + 'Row');
         const el = document.getElementById(id);
@@ -589,7 +902,30 @@ function updateCustomerInfo(customerId) {
     const taxParts = [c.identityNumber, c.taxNumber, c.taxOffice].filter(Boolean);
     setRow('customerTax', taxParts.length ? taxParts.join(' · ') : null);
 }
+function updateDepositKasaRequired() {
+    const pt = document.getElementById('depositPaymentType');
+    const kasa = document.getElementById('depositKasaId');
+    const hint = document.getElementById('depositKasaRequiredHint');
+    const amount = (window.parseMoney || parseFloat)(document.getElementById('depositAmount')?.value || '0') || 0;
+    if (!pt || !kasa || !hint) return;
+    const needsKasa = amount > 0 && ['nakit', 'havale', 'kredi_karti'].includes(pt.value);
+    hint.style.display = needsKasa ? 'inline' : 'none';
+    kasa.required = needsKasa;
+}
 function initSalesForm() {
+    const depositPt = document.getElementById('depositPaymentType');
+    const depositAmount = document.getElementById('depositAmount');
+    if (depositPt) {
+        depositPt.addEventListener('change', updateDepositKasaRequired);
+    }
+    if (depositAmount) {
+        depositAmount.addEventListener('input', function() {
+            updateDepositKasaRequired();
+            updateSaleTotals();
+        });
+        depositAmount.addEventListener('change', updateSaleTotals);
+    }
+    updateDepositKasaRequired();
     const customerSel = document.getElementById('customerSelect');
     if (customerSel) {
         window.customerTomSelect = new TomSelect(customerSel, {

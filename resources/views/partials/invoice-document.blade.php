@@ -1,30 +1,25 @@
 @php $company = \App\Models\Company::first(); @endphp
-<div class="card overflow-hidden print:shadow-none print:border-0" id="invoice-document" role="document" aria-label="Fatura belgesi">
-    <div class="p-6 md:p-8 lg:p-10">
-        <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-6 mb-8 pb-6 border-b border-slate-100">
-            <div class="flex-1">
-                @if($company?->logoUrl)
-                <img src="{{ asset($company->logoUrl) }}" alt="Logo" class="h-14 mb-3 object-contain">
-                @endif
-                <h1 class="text-xl font-bold text-slate-900">{{ $company?->name ?? 'Firma Adı' }}</h1>
-                @if($company?->address)<p class="text-sm text-slate-600 mt-1">{{ $company->address }}</p>@endif
-                @if($company?->phone)<p class="text-sm text-slate-600">{{ $company->phone }}</p>@endif
-                @if($company?->email)<p class="text-sm text-slate-600">{{ $company->email }}</p>@endif
-                @if($company?->taxNumber)<p class="text-sm text-slate-600">Vergi No: {{ $company->taxNumber }} @if($company->taxOffice) / {{ $company->taxOffice }} @endif</p>@endif
-            </div>
-            <div class="md:text-right">
-                <h2 class="text-lg font-semibold text-slate-800">{{ $documentTitle }}</h2>
-                <p class="text-2xl font-bold text-emerald-600 mt-1">{{ $documentNumber }}</p>
-                @if(isset($documentDate) && $documentDate)<p class="text-sm text-slate-600 mt-2">{{ $documentDate->format('d.m.Y') }}</p>@endif
-            </div>
+<div class="print-document print-document--fit card overflow-hidden print:shadow-none print:border-0" id="invoice-document" role="document" aria-label="Fatura belgesi">
+    <div class="print-doc-inner p-4 md:p-6 lg:p-8">
+        @include('partials.print-brand-header', [
+            'documentTitle' => $documentTitle,
+            'documentNumber' => $documentNumber,
+            'documentDate' => $documentDate ?? null,
+            'documentSubtitle' => $documentSubtitle ?? null,
+        ])
+
+        @if(!empty($documentNotice))
+        <div class="print-info-banner print-section text-sm text-neutral-800 p-3 mb-4">
+            {!! $documentNotice !!}
         </div>
+        @endif
 
         {{-- Alıcı / Satıcı Bilgisi --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="print-section-lg grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-                <h3 class="text-xs font-semibold text-slate-500 uppercase mb-2">{{ $partyLabel ?? 'Alıcı' }}</h3>
+                <h3 class="text-xs font-semibold text-neutral-500 uppercase mb-2">{{ $partyLabel ?? 'Alıcı' }}</h3>
                 <p class="font-semibold text-slate-900">{{ $partyName ?? '-' }}</p>
-                @if(isset($partyAddress) && $partyAddress)<p class="text-sm text-slate-600 mt-1">{{ $partyAddress }}</p>@endif
+                @if(isset($partyAddress) && $partyAddress)<p class="text-sm page-desc">{{ $partyAddress }}</p>@endif
                 @if(isset($partyPhone) && $partyPhone)<p class="text-sm text-slate-600">{{ $partyPhone }}</p>@endif
                 @if(isset($partyEmail) && $partyEmail)<p class="text-sm text-slate-600">{{ $partyEmail }}</p>@endif
                 @if(isset($partyTax) && $partyTax)<p class="text-sm text-slate-600">Vergi: {{ $partyTax }}</p>@endif
@@ -37,8 +32,8 @@
         </div>
 
         {{-- Kalemler Tablosu --}}
-        <div class="overflow-x-auto -mx-2">
-            <table class="min-w-full divide-y divide-slate-200">
+        <div class="print-section-lg overflow-x-auto -mx-2">
+            <table class="print-table min-w-full">
                 <thead class="bg-slate-100">
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">#</th>
@@ -60,7 +55,12 @@
                     @foreach($items as $i => $item)
                     <tr class="hover:bg-slate-50">
                         <td class="px-4 py-3 text-sm text-slate-600">{{ $i + 1 }}</td>
-                        <td class="px-4 py-3 font-medium text-slate-900">{{ $item['name'] ?? '-' }}</td>
+                        <td class="px-4 py-3 font-medium text-neutral-900">
+                            {{ $item['name'] ?? '-' }}
+                            @if(!empty($item['description']))
+                                <span class="block text-xs text-neutral-500 dark:text-slate-400 mt-0.5">{{ $item['description'] }}</span>
+                            @endif
+                        </td>
                         @if(isset($showListPrice) && $showListPrice)
                         <td class="px-4 py-3 text-right text-slate-600">{{ isset($item['listPrice']) && $item['listPrice'] !== null ? number_format($item['listPrice'], 0, ',', '.') . ' ₺' : '—' }}</td>
                         <td class="px-4 py-3 text-right text-slate-600">{{ number_format($item['unitPrice'] ?? 0, 0, ',', '.') }} ₺</td>
@@ -71,7 +71,7 @@
                         @if(isset($showKdv) && $showKdv)
                         <td class="px-4 py-3 text-right text-slate-600">%{{ number_format($item['kdvRate'] ?? 0, 0) }}</td>
                         @endif
-                        <td class="px-4 py-3 text-right font-medium text-slate-900">{{ number_format($item['lineTotal'] ?? 0, 0, ',', '.') }} ₺</td>
+                        <td class="px-4 py-3 text-right font-medium text-neutral-900">{{ number_format($item['lineTotal'] ?? 0, 0, ',', '.') }} ₺</td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -79,7 +79,7 @@
         </div>
 
         {{-- Toplamlar --}}
-        <div class="mt-6 flex flex-col items-end">
+        <div class="print-section mt-4 flex flex-col items-end">
             @if(isset($subtotal))
             <div class="flex justify-end gap-8 text-sm">
                 <span class="text-slate-600">Ara Toplam:</span>
@@ -98,25 +98,32 @@
                 <span class="font-medium w-32 text-right text-red-600">-{{ number_format($discount ?? 0, 0, ',', '.') }} ₺</span>
             </div>
             @endif
-            <div class="flex justify-end gap-8 text-base font-bold mt-3 pt-3 border-t-2 border-slate-200">
+            <div class="flex justify-end gap-8 text-base font-bold mt-3 pt-3 border-t-2 border-neutral-200">
                 <span class="text-slate-900">Genel Toplam:</span>
                 <span class="text-emerald-600 w-32 text-right">{{ number_format($grandTotal ?? 0, 0, ',', '.') }} ₺</span>
             </div>
             @if(isset($paidAmount) && ($paidAmount ?? 0) > 0)
             <div class="flex justify-end gap-8 text-sm mt-2">
-                <span class="text-emerald-600">Ödenen:</span>
+                <span class="text-emerald-600">{{ $paidAmountLabel ?? 'Kapora / Ödenen' }}:</span>
                 <span class="font-medium w-32 text-right text-emerald-600">{{ number_format($paidAmount ?? 0, 0, ',', '.') }} ₺</span>
             </div>
             <div class="flex justify-end gap-8 text-sm mt-1">
                 <span class="text-slate-600">Kalan:</span>
-                <span class="font-medium w-32 text-right {{ (($grandTotal ?? 0) - ($paidAmount ?? 0)) > 0 ? 'text-red-600 dark:text-red-400' : ((($grandTotal ?? 0) - ($paidAmount ?? 0)) < 0 ? 'amount-negative' : 'text-slate-600 dark:text-slate-400') }}">{{ number_format(($grandTotal ?? 0) - ($paidAmount ?? 0), 0, ',', '.') }} ₺</span>
+                <span class="font-medium w-32 text-right {{ (($grandTotal ?? 0) - ($paidAmount ?? 0)) > 0 ? 'text-red-600 dark:text-red-400' : ((($grandTotal ?? 0) - ($paidAmount ?? 0)) < 0 ? 'amount-negative' : 'text-neutral-500') }}">{{ number_format(($grandTotal ?? 0) - ($paidAmount ?? 0), 0, ',', '.') }} ₺</span>
+            </div>
+            @endif
+            @if(isset($grandTotal))
+            @php $docPaymentStatus = $paymentStatus ?? \App\Support\CustomerBalance::statusFromTotals((float) $grandTotal, (float) ($paidAmount ?? 0)); @endphp
+            <div class="flex justify-end gap-8 text-sm mt-2 items-center">
+                <span class="text-slate-600">Durum:</span>
+                <span class="w-32 text-right">@include('partials.payment-status-badge', ['status' => $docPaymentStatus])</span>
             </div>
             @endif
         </div>
 
         @if(isset($notes) && $notes)
-        <div class="mt-8 pt-6 border-t border-slate-200">
-            <h3 class="text-xs font-semibold text-slate-500 uppercase mb-2">Notlar</h3>
+        <div class="print-section pt-4 mt-4 border-t border-neutral-200">
+            <h3 class="text-xs font-semibold text-neutral-500 uppercase mb-2">Notlar</h3>
             <p class="text-sm text-slate-600 whitespace-pre-wrap">{{ $notes }}</p>
         </div>
         @endif

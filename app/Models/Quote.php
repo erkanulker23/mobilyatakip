@@ -11,6 +11,8 @@ class Quote extends BaseModel
 
     protected static function booted(): void
     {
+        parent::booted();
+
         static::deleting(function (Quote $quote) {
             $quote->sales()->update(['quoteId' => null]);
         });
@@ -29,6 +31,7 @@ class Quote extends BaseModel
         'grandTotal',
         'validUntil',
         'notes',
+        'drawingFiles',
         'isCancelled',
         'convertedSaleId',
         'personnelId',
@@ -45,6 +48,7 @@ class Quote extends BaseModel
         'validUntil' => 'date',
         'revision' => 'integer',
         'isCancelled' => 'boolean',
+        'drawingFiles' => 'array',
     ];
 
     public function customer(): BelongsTo

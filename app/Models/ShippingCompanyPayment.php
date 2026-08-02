@@ -17,6 +17,9 @@ class ShippingCompanyPayment extends BaseModel
         'reference',
         'notes',
         'purchaseId',
+        'saleId',
+        'serviceTicketId',
+        'paymentFor',
     ];
 
     protected $casts = [
@@ -37,5 +40,15 @@ class ShippingCompanyPayment extends BaseModel
     public function purchase(): BelongsTo
     {
         return $this->belongsTo(Purchase::class, 'purchaseId');
+    }
+
+    public function sale(): BelongsTo
+    {
+        return $this->belongsTo(Sale::class, 'saleId');
+    }
+
+    public function serviceTicket(): BelongsTo
+    {
+        return $this->belongsTo(ServiceTicket::class, 'serviceTicketId');
     }
 }

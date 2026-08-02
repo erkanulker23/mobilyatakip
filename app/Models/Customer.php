@@ -2,15 +2,19 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasTurkeyAddress;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 
 class Customer extends BaseModel
 {
+    use HasTurkeyAddress;
     protected $table = 'customers';
 
     protected static function booted(): void
     {
+        parent::booted();
+
         static::deleting(function (Customer $customer) {
             $id = $customer->getKey();
             $quoteIds = DB::table('quotes')->where('customerId', $id)->pluck('id');
@@ -24,7 +28,15 @@ class Customer extends BaseModel
             if ($saleIds->isNotEmpty()) {
                 DB::table('sale_activities')->whereIn('saleId', $saleIds)->delete();
                 DB::table('sale_items')->whereIn('saleId', $saleIds)->delete();
-                DB::table('service_tickets')->whereIn('saleId', $saleIds)->update(['saleId' => null]);
+                $ticketIds = DB::table('service_tickets')->whereIn('saleId', $saleIds)->pluck('id');
+                if ($ticketIds->isNotEmpty()) {
+                    $detailIds = DB::table('service_ticket_details')->whereIn('ticketId', $ticketIds)->pluck('id');
+                    if ($detailIds->isNotEmpty()) {
+                        DB::table('service_parts')->whereIn('detailId', $detailIds)->delete();
+                    }
+                    DB::table('service_ticket_details')->whereIn('ticketId', $ticketIds)->delete();
+                }
+                DB::table('service_tickets')->whereIn('saleId', $saleIds)->delete();
                 DB::table('sales')->where('customerId', $id)->delete();
             }
             DB::table('service_tickets')->where('customerId', $id)->update(['customerId' => null]);
@@ -35,7 +47,10 @@ class Customer extends BaseModel
         'name',
         'email',
         'phone',
+        'phone2',
         'address',
+        'cityId',
+        'districtId',
         'taxNumber',
         'taxOffice',
         'identityNumber',

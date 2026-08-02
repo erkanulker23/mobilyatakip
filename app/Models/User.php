@@ -13,6 +13,14 @@ class User extends Authenticatable
 
     protected $table = 'users';
 
+    public $incrementing = false;
+
+    protected $keyType = 'string';
+
+    const CREATED_AT = 'createdAt';
+
+    const UPDATED_AT = 'updatedAt';
+
     protected $fillable = [
         'email',
         'name',

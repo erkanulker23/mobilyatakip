@@ -6,11 +6,15 @@ use App\Models\Warehouse;
 use App\Models\Supplier;
 use App\Models\Stock;
 use App\Services\StockService;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 
 class StockController extends Controller
 {
-    public function __construct(private StockService $stockService) {}
+    public function __construct(
+        private StockService $stockService,
+        private AuditService $auditService,
+    ) {}
 
     public function index(Request $request)
     {
@@ -48,7 +52,12 @@ class StockController extends Controller
             'quantity' => 'required|integer|min:0',
             'reservedQuantity' => 'required|integer|min:0',
         ]);
+        $oldData = ['quantity' => $stock->quantity];
         $stock->update($validated);
+        $this->auditService->logUpdate('stock', $stock->id, $oldData, [
+            'quantity' => $stock->quantity,
+            'name' => $stock->product?->name,
+        ]);
         return redirect()->route('stock.index', ['warehouse_id' => $stock->warehouseId])->with('success', 'Stok güncellendi.');
     }
 

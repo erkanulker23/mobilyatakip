@@ -5,19 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\CustomerPayment;
 use App\Models\Kasa;
 use App\Models\SupplierPayment;
+use App\Services\AuditService;
+use App\Services\KasaService;
+use App\Support\PaymentType;
 use Illuminate\Http\Request;
 
 class KasaController extends Controller
 {
-    /** Ödeme tipi değerleri (filtre ve etiket için) */
-    private const PAYMENT_TYPES = [
-        'nakit' => 'Nakit',
-        'havale' => 'Havale',
-        'kredi_karti' => 'Kredi Kartı',
-        'cek' => 'Çek',
-        'senet' => 'Senet',
-        'diger' => 'Diğer',
-    ];
+    public function __construct(
+        private AuditService $auditService,
+        private KasaService $kasaService,
+    ) {}
+
     public function index(Request $request)
     {
         $q = Kasa::query()->withSum('hareketler', 'amount')->orderBy('name');
@@ -34,15 +33,18 @@ class KasaController extends Controller
             $q->where('type', $request->type);
         }
         $kasalar = $q->paginate(20)->withQueryString();
+
         return view('kasa.index', compact('kasalar'));
     }
 
     public function show(Request $request, Kasa $kasa)
     {
-        $hareketlerToplam = (float) $kasa->hareketler()->sum('amount');
-        $guncelBakiye = (float) ($kasa->openingBalance ?? 0) + $hareketlerToplam;
+        $summary = $this->kasaService->summary($kasa);
+        $guncelBakiye = $summary['current'];
+        $hareketlerToplam = $summary['netMovements'];
 
         $q = $kasa->hareketler()
+            ->with(['fromKasa', 'toKasa'])
             ->orderBy('movementDate', 'desc')
             ->orderBy('createdAt', 'desc');
 
@@ -52,17 +54,14 @@ class KasaController extends Controller
         if ($request->filled('date_to')) {
             $q->whereDate('movementDate', '<=', $request->date_to);
         }
-        if ($request->filled('payment_type')) {
-            $pt = $request->payment_type;
-            $q->where(function ($w) use ($pt) {
-                $w->where(function ($w2) use ($pt) {
-                    $w2->where('refType', 'customer_payment')
-                        ->whereIn('refId', CustomerPayment::query()->select('id')->where('paymentType', $pt));
-                })->orWhere(function ($w2) use ($pt) {
-                    $w2->where('refType', 'supplier_payment')
-                        ->whereIn('refId', SupplierPayment::query()->select('id')->where('paymentType', $pt));
-                });
-            });
+        if ($request->filled('movement')) {
+            match ($request->movement) {
+                'tahsilat' => $q->where('refType', 'customer_payment'),
+                'odeme' => $q->where('refType', 'supplier_payment'),
+                'gider' => $q->where('refType', 'expense'),
+                'virman' => $q->where('refType', 'kasa_transfer'),
+                default => null,
+            };
         }
         if ($request->filled('cari')) {
             $cari = $request->cari;
@@ -79,14 +78,68 @@ class KasaController extends Controller
 
         $hareketler = $q->paginate(20)->withQueryString();
 
-        $customerPaymentIds = $hareketler->where('refType', 'customer_payment')->pluck('refId')->unique()->filter()->map(fn ($id) => is_numeric($id) ? (int) $id : $id)->values()->all();
-        $supplierPaymentIds = $hareketler->where('refType', 'supplier_payment')->pluck('refId')->unique()->filter()->map(fn ($id) => is_numeric($id) ? (int) $id : $id)->values()->all();
+        $customerPaymentIds = $hareketler->where('refType', 'customer_payment')->pluck('refId')->unique()->filter()->values()->all();
+        $supplierPaymentIds = $hareketler->where('refType', 'supplier_payment')->pluck('refId')->unique()->filter()->values()->all();
         $customerPayments = CustomerPayment::with('customer')->whereIn('id', $customerPaymentIds)->get()->keyBy('id');
         $supplierPayments = SupplierPayment::with('supplier')->whereIn('id', $supplierPaymentIds)->get()->keyBy('id');
 
-        return view('kasa.show', compact('kasa', 'hareketler', 'guncelBakiye', 'hareketlerToplam', 'customerPayments', 'supplierPayments') + [
-            'paymentTypes' => self::PAYMENT_TYPES,
+        $otherKasalar = Kasa::query()
+            ->where('isActive', true)
+            ->where('id', '!=', $kasa->id)
+            ->orderBy('name')
+            ->get(['id', 'name', 'type', 'bankName']);
+
+        return view('kasa.show', compact(
+            'kasa',
+            'hareketler',
+            'guncelBakiye',
+            'hareketlerToplam',
+            'summary',
+            'customerPayments',
+            'supplierPayments',
+            'otherKasalar',
+        ) + [
+            'paymentTypes' => PaymentType::labels(),
         ]);
+    }
+
+    public function transfer(Request $request, Kasa $kasa)
+    {
+        $validated = $request->validate([
+            'toKasaId' => 'required|exists:kasa,id|different:' . $kasa->id,
+            'amount' => 'required|numeric|min:0.01',
+            'movementDate' => 'required|date',
+            'description' => 'nullable|string|max:500',
+        ]);
+
+        $toKasa = Kasa::findOrFail($validated['toKasaId']);
+        if (! ($toKasa->isActive ?? true)) {
+            return back()->withInput()->with('error', 'Hedef kasa aktif değil.');
+        }
+
+        try {
+            $transferId = $this->kasaService->transfer(
+                $kasa,
+                $toKasa,
+                (float) $validated['amount'],
+                $validated['movementDate'],
+                $validated['description'] ?? null,
+                auth()->id() ?: null,
+            );
+        } catch (\InvalidArgumentException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
+        $this->auditService->logAction('kasa', $kasa->id, 'transfer', [
+            'amount' => (float) $validated['amount'],
+            'toKasaId' => $toKasa->id,
+            'toKasaName' => $toKasa->name,
+            'transferId' => $transferId,
+        ]);
+
+        return redirect()
+            ->route('kasa.show', $kasa)
+            ->with('success', number_format((float) $validated['amount'], 0, ',', '.') . ' ₺ ' . $toKasa->name . ' kasasına virman edildi.');
     }
 
     public function create()
@@ -108,7 +161,9 @@ class KasaController extends Controller
         $validated['type'] = $validated['type'] ?? 'kasa';
         $validated['openingBalance'] = $validated['openingBalance'] ?? 0;
         $validated['currency'] = $validated['currency'] ?? 'TRY';
-        Kasa::create($validated);
+        $kasa = Kasa::create($validated);
+        $this->auditService->logCreate('kasa', $kasa->id, ['name' => $kasa->name]);
+
         return redirect()->route('kasa.index')->with('success', 'Kasa kaydedildi.');
     }
 
@@ -132,7 +187,28 @@ class KasaController extends Controller
         $validated['type'] = $validated['type'] ?? 'kasa';
         $validated['openingBalance'] = $validated['openingBalance'] ?? 0;
         $validated['isActive'] = $request->boolean('isActive');
+        $oldData = ['name' => $kasa->name];
         $kasa->update($validated);
+        $this->auditService->logUpdate('kasa', $kasa->id, $oldData, ['name' => $kasa->name]);
+
         return redirect()->route('kasa.index')->with('success', 'Kasa güncellendi.');
+    }
+
+    public function destroy(Kasa $kasa)
+    {
+        if ($kasa->hareketler()->exists()) {
+            return back()->with('error', 'Hareket kaydı olan kasa silinemez.');
+        }
+        if ($kasa->customerPayments()->exists() || $kasa->supplierPayments()->exists()) {
+            return back()->with('error', 'Ödeme kaydı bağlı kasa silinemez.');
+        }
+        if (\App\Models\Expense::where('kasaId', $kasa->id)->exists()) {
+            return back()->with('error', 'Gider kaydı bağlı kasa silinemez.');
+        }
+
+        $this->auditService->logDelete('kasa', $kasa->id, ['name' => $kasa->name]);
+        $kasa->delete();
+
+        return redirect()->route('kasa.index')->with('success', 'Kasa silindi.');
     }
 }

@@ -1,16 +1,16 @@
 @extends('layouts.app')
-@section('title', 'Nakliye Ödemesi')
+@include('partials.page-seo', \App\Support\PageSeo::shippingCompanyPayment($shippingCompanyPayment))
 @section('content')
 @php
-    $pt = ['nakit' => 'Nakit', 'havale' => 'Havale', 'kredi_karti' => 'Kredi Kartı', 'cek' => 'Çek', 'senet' => 'Senet', 'diger' => 'Diğer'];
+    $pt = \App\Support\PaymentType::labels();
 @endphp
 <div class="mb-6">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <nav class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-1" aria-label="Breadcrumb">
+            <nav class="flex items-center gap-2 text-sm text-neutral-500 dark:text-slate-400 mb-1" aria-label="Breadcrumb">
                 <a href="{{ route('shipping-companies.show', $shippingCompanyPayment->shippingCompany) }}" class="hover:text-emerald-600 dark:hover:text-emerald-400">Nakliye Firması</a>
                 <span>/</span>
-                <span class="text-slate-700 dark:text-slate-300 font-medium">Ödeme · {{ number_format($shippingCompanyPayment->amount ?? 0, 0, ',', '.') }} ₺</span>
+                <span class="text-neutral-700 dark:text-slate-300 font-medium">Ödeme · {{ number_format($shippingCompanyPayment->amount ?? 0, 0, ',', '.') }} ₺</span>
             </nav>
             <h1 class="page-title">Nakliye Ödemesi</h1>
             <p class="page-desc">
@@ -62,11 +62,35 @@
             @endif
             @if($shippingCompanyPayment->purchase)
             <div>
-                <dt class="form-label">İlgili Alış (ne için ödendi)</dt>
+                <dt class="form-label">İlgili alış</dt>
                 <dd class="font-medium">
                     <a href="{{ route('purchases.show', $shippingCompanyPayment->purchase) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">{{ $shippingCompanyPayment->purchase->purchaseNumber ?? '—' }}</a>
-                    <span class="text-slate-500 text-sm">({{ $shippingCompanyPayment->purchase->supplier?->name ?? '' }})</span>
+                    <span class="text-neutral-500 text-sm">({{ $shippingCompanyPayment->purchase->supplier?->name ?? '' }})</span>
                 </dd>
+            </div>
+            @endif
+            @if($shippingCompanyPayment->sale)
+            <div>
+                <dt class="form-label">İlgili satış</dt>
+                <dd class="font-medium">
+                    <a href="{{ route('sales.show', $shippingCompanyPayment->sale) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">{{ $shippingCompanyPayment->sale->saleNumber ?? '—' }}</a>
+                    <span class="text-neutral-500 text-sm">({{ $shippingCompanyPayment->sale->customer?->name ?? '' }})</span>
+                </dd>
+            </div>
+            @endif
+            @if($shippingCompanyPayment->serviceTicket)
+            <div>
+                <dt class="form-label">İlgili SSH</dt>
+                <dd class="font-medium">
+                    <a href="{{ route('service-tickets.show', $shippingCompanyPayment->serviceTicket) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">{{ $shippingCompanyPayment->serviceTicket->ticketNumber ?? '—' }}</a>
+                    <span class="text-neutral-500 text-sm">({{ $shippingCompanyPayment->serviceTicket->customer?->name ?? '' }})</span>
+                </dd>
+            </div>
+            @endif
+            @if(!empty($shippingCompanyPayment->paymentFor))
+            <div>
+                <dt class="form-label">Manuel açıklama</dt>
+                <dd class="font-medium text-neutral-800 dark:text-neutral-200">{{ $shippingCompanyPayment->paymentFor }}</dd>
             </div>
             @endif
             @if(!empty($shippingCompanyPayment->reference))
@@ -79,7 +103,7 @@
         @if(!empty($shippingCompanyPayment->notes))
         <div class="mt-6 pt-6 border-t border-slate-100 dark:border-slate-700">
             <dt class="form-label">Notlar</dt>
-            <dd class="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{{ $shippingCompanyPayment->notes }}</dd>
+            <dd class="text-neutral-700 dark:text-slate-300 whitespace-pre-wrap">{{ $shippingCompanyPayment->notes }}</dd>
         </div>
         @endif
     </div>

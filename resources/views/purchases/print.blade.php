@@ -7,7 +7,7 @@
     'documentDate' => $purchase->purchaseDate,
     'partyLabel' => 'Tedarikçi',
     'partyName' => $purchase->supplier?->name ?? '-',
-    'partyAddress' => $purchase->supplier?->address,
+    'partyAddress' => $purchase->supplier ? full_address($purchase->supplier) : null,
     'partyPhone' => $purchase->supplier?->phone,
     'partyEmail' => $purchase->supplier?->email,
     'partyTax' => ($purchase->supplier?->taxNumber ? $purchase->supplier->taxNumber . ($purchase->supplier->taxOffice ? ' / ' . $purchase->supplier->taxOffice : '') : null),

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\SuppliersExport;
+use App\Http\Controllers\Concerns\ValidatesTurkeyAddress;
 use App\Imports\SuppliersImport;
 use App\Models\Product;
 use App\Models\Purchase;
@@ -13,6 +14,7 @@ use App\Models\Stock;
 use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\SupplierPayment;
+use App\Services\AuditService;
 use App\Rules\TurkishTaxId;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +23,10 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class SupplierController extends Controller
 {
+    use ValidatesTurkeyAddress;
+
+    public function __construct(private AuditService $auditService) {}
+
     public function index(Request $request)
     {
         $q = Supplier::query()->orderBy('name');
@@ -70,28 +76,29 @@ class SupplierController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validated = $this->validateWithTurkeyAddress($request, [
             'code' => 'nullable|string|max:50',
             'name' => 'required|string|max:255',
             'email' => 'nullable|email',
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
-            'address' => 'nullable|string',
             'taxNumber' => ['nullable', 'string', 'max:50', new TurkishTaxId('vkn')],
             'taxOffice' => 'nullable|string|max:255',
+            'marginPercent' => 'nullable|numeric|min:0|max:100',
         ], ['phone.regex' => 'Geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67)']);
-        Supplier::create($validated);
+        $supplier = Supplier::create($validated);
+        $this->auditService->logCreate('supplier', $supplier->id, ['name' => $supplier->name]);
         return redirect()->route('suppliers.index')->with('success', 'Tedarikçi kaydedildi.');
     }
 
     public function show(Supplier $supplier)
     {
-        $supplier->load(['purchases.items.product', 'products', 'payments.purchase']);
+        $supplier->load(['purchases.items.product', 'products', 'payments.purchase', 'city', 'district']);
         return view('suppliers.show', compact('supplier'));
     }
 
     public function print(Supplier $supplier)
     {
-        $supplier->load(['purchases.items.product', 'payments']);
+        $supplier->load(['purchases.items.product', 'payments', 'city', 'district']);
         return view('suppliers.print', compact('supplier'));
     }
 
@@ -102,18 +109,20 @@ class SupplierController extends Controller
 
     public function update(Request $request, Supplier $supplier)
     {
-        $validated = $request->validate([
+        $validated = $this->validateWithTurkeyAddress($request, [
             'code' => 'nullable|string|max:50',
             'name' => 'required|string|max:255',
             'email' => 'nullable|email',
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
-            'address' => 'nullable|string',
             'taxNumber' => ['nullable', 'string', 'max:50', new TurkishTaxId('vkn')],
             'taxOffice' => 'nullable|string|max:255',
+            'marginPercent' => 'nullable|numeric|min:0|max:100',
             'isActive' => 'nullable|boolean',
         ], ['phone.regex' => 'Geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67)']);
         $validated['isActive'] = $request->boolean('isActive');
+        $oldData = ['name' => $supplier->name];
         $supplier->update($validated);
+        $this->auditService->logUpdate('supplier', $supplier->id, $oldData, ['name' => $supplier->name]);
         return redirect()->route('suppliers.index')->with('success', 'Tedarikçi güncellendi.');
     }
 
@@ -125,6 +134,7 @@ class SupplierController extends Controller
             $supplier->products()->update(['supplierId' => null]);
         }
         $this->detachSupplierDependents($supplier);
+        $this->auditService->logDelete('supplier', $supplier->id, ['name' => $supplier->name]);
         $supplier->delete();
         return redirect()->route('suppliers.index')->with('success', 'Tedarikçi silindi.');
     }

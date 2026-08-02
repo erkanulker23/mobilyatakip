@@ -19,11 +19,18 @@ composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
 # 3. Veritabanı migration (ilk deploy veya şema güncellemeleri)
 php artisan migrate --force
 
-# 3b. Süper admin kullanıcı (yoksa oluşturur; her deploy'da güvenle çalıştırılabilir)
+# 3b. Süper admin kullanıcı (yoksa oluşturur; mevcut şifreyi değiştirmez)
 php artisan db:seed --force
 
+# 3c. İl/ilçe verisi (API erişilemezse deploy durmaz)
+php artisan turkey-locations:sync || echo "Turkiye konum senkronu atlandı."
+
 # 4. Frontend (Vite) build — CSS/JS asset'leri
-npm ci --no-audit --prefer-offline --no-progress
+if [ -f package-lock.json ]; then
+  npm ci --no-audit --prefer-offline --no-progress
+else
+  npm install --no-audit --no-progress
+fi
 npm run build
 
 # 5. Laravel cache'leri (production performansı)

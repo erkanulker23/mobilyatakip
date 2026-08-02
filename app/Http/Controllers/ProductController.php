@@ -9,10 +9,16 @@ use App\Models\ServicePart;
 use App\Models\Stock;
 use App\Models\StockMovement;
 use App\Models\Supplier;
+use App\Services\AuditService;
+use App\Support\ProductImages;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
+    public function __construct(private AuditService $auditService) {}
+
     public function index(Request $request)
     {
         $q = Product::query()->with('supplier')->orderBy('name');
@@ -59,12 +65,13 @@ class ProductController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json(['message' => collect($e->errors())->flatten()->first()], 422);
         }
-        $validated['kdvRate'] = $validated['kdvRate'] ?? 18;
+        $validated['kdvRate'] = $validated['kdvRate'] ?? 10;
         $product = Product::create([
             'name' => $validated['name'],
             'unitPrice' => (float) $validated['unitPrice'],
             'kdvRate' => (float) $validated['kdvRate'],
         ]);
+        $this->auditService->logCreate('product', $product->id, ['name' => $product->name]);
         return response()->json([
             'id' => $product->id,
             'name' => $product->name,
@@ -75,6 +82,7 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
+        $this->normalizeMoneyRequest($request);
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'sku' => 'nullable|string|max:100',
@@ -84,9 +92,17 @@ class ProductController extends Controller
             'supplierId' => 'nullable|exists:suppliers,id',
             'minStockLevel' => 'nullable|integer|min:0',
             'description' => 'nullable|string',
+            'images' => 'nullable|array',
+            'images.*' => 'image|mimes:jpeg,jpg,png,gif,webp|max:5120',
         ]);
-        $validated['kdvRate'] = $validated['kdvRate'] ?? 18;
-        Product::create($validated);
+        $validated['kdvRate'] = $validated['kdvRate'] ?? 10;
+        unset($validated['images']);
+        $validated['images'] = $this->storeUploadedImages($request);
+        if ($request->hasFile('images') && $validated['images'] === []) {
+            return back()->withInput()->with('error', 'Resim yüklenemedi. Dosya en az 32×32 piksel ve 1 KB olmalıdır.');
+        }
+        $product = Product::create($validated);
+        $this->auditService->logCreate('product', $product->id, ['name' => $product->name]);
         return redirect()->route('products.index')->with('success', 'Ürün kaydedildi.');
     }
 
@@ -104,6 +120,7 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
+        $this->normalizeMoneyRequest($request);
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'sku' => 'nullable|string|max:100',
@@ -114,14 +131,35 @@ class ProductController extends Controller
             'minStockLevel' => 'nullable|integer|min:0',
             'description' => 'nullable|string',
             'isActive' => 'nullable|boolean',
+            'images' => 'nullable|array',
+            'images.*' => 'image|mimes:jpeg,jpg,png,gif,webp|max:5120',
+            'remove_images' => 'nullable|array',
+            'remove_images.*' => 'string',
         ]);
         $validated['isActive'] = $request->boolean('isActive');
+        unset($validated['images'], $validated['remove_images']);
+        if ($request->hasFile('images')) {
+            $files = $request->file('images');
+            if (! is_array($files)) {
+                $files = [$files];
+            }
+            $hasFiles = count(array_filter($files, fn ($file) => $file && $file->isValid())) > 0;
+            $newUploads = $this->storeUploadedImages($request);
+            if ($hasFiles && $newUploads === []) {
+                return back()->withInput()->with('error', 'Resim yüklenemedi. Dosya en az 32×32 piksel ve 1 KB olmalıdır.');
+            }
+        }
+        $validated['images'] = $this->syncProductImages($product, $request);
+        $oldData = ['name' => $product->name];
         $product->update($validated);
-        return redirect()->route('products.index')->with('success', 'Ürün güncellendi.');
+        $this->auditService->logUpdate('product', $product->id, $oldData, ['name' => $product->name]);
+
+        return redirect()->route('products.show', $product)->with('success', 'Ürün güncellendi.');
     }
 
     public function destroy(Product $product)
     {
+        $this->auditService->logDelete('product', $product->id, ['name' => $product->name]);
         $this->deleteProductsAndDependents([$product->id]);
         return redirect()->route('products.index')->with('success', 'Ürün silindi.');
     }
@@ -172,11 +210,94 @@ class ProductController extends Controller
             return;
         }
 
+        foreach (Product::whereIn('id', $productIds)->get() as $product) {
+            foreach ($this->productImages($product) as $image) {
+                $this->deleteLocalProductImage($image);
+            }
+        }
+
         QuoteItem::whereIn('productId', $productIds)->delete();
         PurchaseItem::whereIn('productId', $productIds)->delete();
         ServicePart::whereIn('productId', $productIds)->delete();
         StockMovement::whereIn('productId', $productIds)->delete();
         Stock::whereIn('productId', $productIds)->delete();
         Product::whereIn('id', $productIds)->delete();
+    }
+
+    /** @return string[] */
+    private function productImages(Product $product): array
+    {
+        return ProductImages::paths($product);
+    }
+
+    /** @return string[] */
+    private function storeUploadedImages(Request $request, string $field = 'images'): array
+    {
+        $files = $request->file($field);
+        if (! $files) {
+            return [];
+        }
+        if (! is_array($files)) {
+            $files = [$files];
+        }
+
+        $paths = [];
+        foreach ($files as $file) {
+            if (! $file || ! ProductImages::isValidUpload($file)) {
+                continue;
+            }
+            $paths[] = '/storage/' . $file->store('products/' . date('Y-m-d'), 'public');
+        }
+
+        return $paths;
+    }
+
+    /** @return string[] */
+    private function syncProductImages(Product $product, Request $request): array
+    {
+        $images = ProductImages::pruneInvalidPaths($this->productImages($product));
+        $removedPaths = array_diff($this->productImages($product), $images);
+        foreach ($removedPaths as $path) {
+            $this->deleteLocalProductImage($path);
+        }
+
+        $remove = $request->input('remove_images', []);
+
+        if (is_array($remove) && $remove !== []) {
+            $images = array_values(array_filter($images, function ($image) use ($remove) {
+                if (in_array($image, $remove, true)) {
+                    $this->deleteLocalProductImage($image);
+                    return false;
+                }
+
+                return true;
+            }));
+        }
+
+        return array_values(array_merge($images, $this->storeUploadedImages($request)));
+    }
+
+    private function deleteLocalProductImage(?string $path): void
+    {
+        if (!$path || Str::startsWith($path, 'http')) {
+            return;
+        }
+
+        $relative = ltrim(str_replace('/storage/', '', parse_url($path, PHP_URL_PATH) ?? ''), '/');
+        if ($relative && Storage::disk('public')->exists($relative)) {
+            Storage::disk('public')->delete($relative);
+        }
+    }
+
+    private function normalizeMoneyRequest(Request $request): void
+    {
+        if ($request->has('unitPrice')) {
+            $request->merge(['unitPrice' => money_parse($request->input('unitPrice'))]);
+        }
+        if ($request->filled('netPurchasePrice')) {
+            $request->merge(['netPurchasePrice' => money_parse($request->input('netPurchasePrice'))]);
+        } elseif ($request->has('netPurchasePrice') && $request->input('netPurchasePrice') === '') {
+            $request->merge(['netPurchasePrice' => null]);
+        }
     }
 }

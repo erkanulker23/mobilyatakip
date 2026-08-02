@@ -14,6 +14,7 @@ class Personnel extends BaseModel
         'phone',
         'category',
         'title',
+        'photoUrl',
         'vehiclePlate',
         'driverInfo',
         'isActive',

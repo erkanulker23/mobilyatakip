@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ValidatesTurkeyAddress;
 use App\Models\Company;
+use App\Services\AuditService;
 use App\Rules\TurkishTaxId;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -10,6 +12,10 @@ use Illuminate\Support\Facades\Schema;
 
 class SettingsController extends Controller
 {
+    use ValidatesTurkeyAddress;
+
+    public function __construct(private AuditService $auditService) {}
+
     public function index()
     {
         $company = Company::first();
@@ -18,10 +24,9 @@ class SettingsController extends Controller
 
     public function update(Request $request)
     {
-        $validated = $request->validate([
+        $validated = $this->validateWithTurkeyAddress($request, [
             'name' => 'nullable|string|max:255',
             'appName' => 'nullable|string|max:100',
-            'address' => 'nullable|string',
             'taxNumber' => ['nullable', 'string', 'max:50', new TurkishTaxId('vkn')],
             'taxOffice' => 'nullable|string|max:255',
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
@@ -89,6 +94,8 @@ class SettingsController extends Controller
             $company->update(['logoUrl' => '/storage/' . $path]);
         }
 
+        $this->auditService->logUpdate('company', $company->id, [], ['name' => $company->name ?? $company->appName]);
+
         return redirect()->route('settings.index')->with('success', 'Ayarlar kaydedildi.');
     }
 
@@ -102,6 +109,7 @@ class SettingsController extends Controller
             }
             $company->update(['logoUrl' => null]);
         }
+        $this->auditService->logAction('company', $company?->id, 'delete', ['name' => 'Logo']);
         return redirect()->route('settings.index')->with('success', 'Logo silindi.');
     }
 }

@@ -46,4 +46,9 @@ class AuditService
     {
         $this->log($entity, $entityId, 'cancel', null, ['isCancelled' => true]);
     }
+
+    public function logAction(string $entity, ?string $entityId, string $action, array $data = []): void
+    {
+        $this->log($entity, $entityId, $action, null, $data);
+    }
 }

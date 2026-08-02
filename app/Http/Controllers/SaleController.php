@@ -3,16 +3,24 @@
 namespace App\Http\Controllers;
 
 use App\Mail\SaleNotificationToSupplier;
+use App\Mail\SaleToCustomer;
+use App\Models\Personnel;
 use App\Models\Sale;
 use App\Models\SaleActivity;
 use App\Models\Quote;
 use App\Models\Customer;
 use App\Models\CustomerPayment;
+use App\Models\Kasa;
+use App\Models\KasaHareket;
 use App\Models\Product;
 use App\Models\StockMovement;
 use App\Services\AuditService;
+use App\Services\MailConfigService;
 use App\Services\SaleService;
 use App\Services\StockService;
+use App\Support\SaleDocument;
+use App\Support\DrawingFiles;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -27,52 +35,128 @@ class SaleController extends Controller
 
     public function create()
     {
-        $customers = Customer::where('isActive', true)->orderBy('name')->get();
+        $customers = Customer::with(['city', 'district'])->where('isActive', true)->orderBy('name')->get();
         $products = Product::where('isActive', true)->orderBy('name')->get();
-        return view('sales.create', compact('customers', 'products'));
+        $personnel = Personnel::where('isActive', true)->orderBy('name')->get();
+        $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
+        return view('sales.create', compact('customers', 'products', 'personnel', 'kasalar'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'customerId' => 'required|exists:customers,id',
+            'personnelId' => 'nullable|exists:personnel,id',
             'saleDate' => 'required|date',
             'dueDate' => 'nullable|date',
             'kdvIncluded' => 'nullable|boolean',
             'notes' => 'nullable|string',
+            'saleDiscountPercent' => 'nullable|numeric|min:0|max:100',
+            'grandTotalOverride' => 'nullable|numeric|min:0',
+            'depositAmount' => 'nullable|numeric|min:0',
+            'depositPaymentType' => \App\Support\PaymentType::validationRule(),
+            'depositKasaId' => 'nullable|exists:kasa,id',
+            'sendCustomerEmail' => 'nullable|boolean',
+            'customerEmailNote' => 'nullable|string|max:1000',
+            'returnTo' => 'nullable|string|in:service-tickets/create',
             'items' => 'required|array|min:1',
             'items.*.productId' => 'nullable|string',
             'items.*.productName' => 'nullable|string|max:255',
+            'items.*.description' => 'nullable|string|max:1000',
             'items.*.unitPrice' => 'required|numeric|min:0',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.kdvRate' => 'nullable|numeric|min:0|max:100',
             'items.*.lineDiscountPercent' => 'nullable|numeric|min:0|max:100',
             'items.*.lineDiscountAmount' => 'nullable|numeric|min:0',
-        ]);
+        ] + DrawingFiles::validationRules());
         $items = collect($validated['items'])->map(function ($item) {
             $product = !empty($item['productId']) ? \App\Models\Product::find($item['productId']) : null;
             if ($product) {
-                return ['productId' => $product->id, 'productName' => null, 'unitPrice' => $item['unitPrice'], 'quantity' => $item['quantity'], 'kdvRate' => $item['kdvRate'] ?? 18, 'lineDiscountPercent' => $item['lineDiscountPercent'] ?? null, 'lineDiscountAmount' => $item['lineDiscountAmount'] ?? null];
+                return ['productId' => $product->id, 'productName' => null, 'description' => isset($item['description']) ? trim((string) $item['description']) : null, 'unitPrice' => $item['unitPrice'], 'quantity' => $item['quantity'], 'kdvRate' => $item['kdvRate'] ?? 10, 'lineDiscountPercent' => $item['lineDiscountPercent'] ?? null, 'lineDiscountAmount' => $item['lineDiscountAmount'] ?? null];
             }
             $name = trim($item['productName'] ?? '') ?: trim($item['productId'] ?? '');
-            return ['productId' => null, 'productName' => $name, 'unitPrice' => $item['unitPrice'], 'quantity' => $item['quantity'], 'kdvRate' => $item['kdvRate'] ?? 18, 'lineDiscountPercent' => $item['lineDiscountPercent'] ?? null, 'lineDiscountAmount' => $item['lineDiscountAmount'] ?? null];
+            return ['productId' => null, 'productName' => $name, 'description' => isset($item['description']) ? trim((string) $item['description']) : null, 'unitPrice' => $item['unitPrice'], 'quantity' => $item['quantity'], 'kdvRate' => $item['kdvRate'] ?? 10, 'lineDiscountPercent' => $item['lineDiscountPercent'] ?? null, 'lineDiscountAmount' => $item['lineDiscountAmount'] ?? null];
         })->filter(fn($i) => !empty($i['productId']) || !empty($i['productName']))->values()->all();
         if (empty($items)) {
             return redirect()->back()->withInput()->with('error', 'En az bir geçerli kalem girin (ürün seçin veya manuel ürün adı yazın).');
         }
+
+        $depositAmount = (float) ($validated['depositAmount'] ?? 0);
+        $depositPaymentType = $validated['depositPaymentType'] ?? 'nakit';
+        $depositKasaRequired = in_array($depositPaymentType, ['nakit', 'havale', 'kredi_karti'], true);
+        if ($depositAmount > 0 && $depositKasaRequired && empty($validated['depositKasaId'])) {
+            return redirect()->back()->withInput()->with('error', 'Kapora için nakit, havale veya kredi kartı seçildiyse kasa zorunludur.');
+        }
+
         try {
             $sale = $this->saleService->createDirect([
                 'customerId' => $validated['customerId'],
+                'personnelId' => $validated['personnelId'] ?? null,
                 'saleDate' => $validated['saleDate'],
                 'dueDate' => $validated['dueDate'] ?? null,
                 'kdvIncluded' => $request->boolean('kdvIncluded'),
                 'notes' => $validated['notes'] ?? null,
+                'saleDiscountPercent' => (float) ($validated['saleDiscountPercent'] ?? 0),
+                'grandTotalOverride' => isset($validated['grandTotalOverride']) && $validated['grandTotalOverride'] > 0 ? (float) $validated['grandTotalOverride'] : null,
                 'items' => $items,
             ]);
+
+            $drawingFiles = DrawingFiles::storeUploads($request, 'drawings/sales');
+            if ($drawingFiles !== []) {
+                $sale->update(['drawingFiles' => $drawingFiles]);
+            }
+
+            if ($depositAmount > 0) {
+                if ($depositAmount > (float) $sale->grandTotal) {
+                    return redirect()->route('sales.show', $sale)
+                        ->with('success', 'Satış oluşturuldu.')
+                        ->with('error', 'Kapora kaydedilemedi: tutar genel toplamdan fazla.')
+                        ->with('show_supplier_email_prompt', true)
+                        ->with('show_sale_actions', true);
+                }
+                $this->recordSaleDeposit($sale, $depositAmount, $depositPaymentType, $validated['depositKasaId'] ?? null, $validated['saleDate']);
+                $sale->refresh();
+            }
+
             $this->auditService->logCreate('sale', $sale->id, ['saleNumber' => $sale->saleNumber, 'grandTotal' => $sale->grandTotal]);
+
+            $emailSent = false;
+            if ($request->boolean('sendCustomerEmail')) {
+                $emailSent = $this->sendCustomerEmailForSale($sale, $validated['customerEmailNote'] ?? null);
+            }
+
+            $message = 'Satış oluşturuldu.';
+            if ($depositAmount > 0) {
+                $message .= ' Kapora: ' . number_format($depositAmount, 0, ',', '.') . ' ₺ kaydedildi.';
+            }
+            if ($emailSent) {
+                $message .= ' Müşteriye e-posta gönderildi.';
+            } elseif ($request->boolean('sendCustomerEmail')) {
+                if ($request->input('returnTo') === 'service-tickets/create') {
+                    return redirect()->route('service-tickets.create', [
+                        'customerId' => $sale->customerId,
+                        'saleId' => $sale->id,
+                    ])->with('success', $message . ' Servis kaydını tamamlayabilirsiniz.')
+                      ->with('error', 'Satış kaydedildi ancak müşteriye e-posta gönderilemedi.');
+                }
+                return redirect()->route('sales.show', $sale)
+                    ->with('success', $message)
+                    ->with('error', 'Satış kaydedildi ancak müşteriye e-posta gönderilemedi. Müşteri e-posta adresini kontrol edin.')
+                    ->with('show_supplier_email_prompt', true)
+                    ->with('show_sale_actions', true);
+            }
+
+            if ($request->input('returnTo') === 'service-tickets/create') {
+                return redirect()->route('service-tickets.create', [
+                    'customerId' => $sale->customerId,
+                    'saleId' => $sale->id,
+                ])->with('success', 'Sipariş oluşturuldu. Servis kaydını tamamlayabilirsiniz.');
+            }
+
             return redirect()->route('sales.show', $sale)
-                ->with('success', 'Satış oluşturuldu.')
-                ->with('show_supplier_email_prompt', true);
+                ->with('success', $message)
+                ->with('show_supplier_email_prompt', true)
+                ->with('show_sale_actions', true);
         } catch (\RuntimeException $e) {
             return redirect()->back()->withInput()->with('error', $e->getMessage());
         }
@@ -135,6 +219,94 @@ class SaleController extends Controller
         return redirect()->route('sales.index')->with('success', $count . ' satış silindi.');
     }
 
+    public function edit(Sale $sale)
+    {
+        if ($sale->isCancelled) {
+            return redirect()->route('sales.show', $sale)->with('error', 'İptal edilmiş satış düzenlenemez.');
+        }
+        $sale = $this->saleService->find($sale->id);
+        if (!$sale) {
+            abort(404);
+        }
+        $customers = Customer::with(['city', 'district'])->where('isActive', true)->orderBy('name')->get();
+        $products = Product::where('isActive', true)->orderBy('name')->get();
+        $personnel = Personnel::where('isActive', true)->orderBy('name')->get();
+        return view('sales.edit', compact('sale', 'customers', 'products', 'personnel'));
+    }
+
+    public function update(Request $request, Sale $sale)
+    {
+        if ($sale->isCancelled) {
+            return redirect()->route('sales.show', $sale)->with('error', 'İptal edilmiş satış güncellenemez.');
+        }
+        $validated = $request->validate([
+            'customerId' => 'required|exists:customers,id',
+            'personnelId' => 'nullable|exists:personnel,id',
+            'saleDate' => 'required|date',
+            'dueDate' => 'nullable|date',
+            'kdvIncluded' => 'nullable|boolean',
+            'notes' => 'nullable|string',
+            'saleDiscountPercent' => 'nullable|numeric|min:0|max:100',
+            'grandTotalOverride' => 'nullable|numeric|min:0',
+            'items' => 'required|array|min:1',
+            'items.*.id' => 'nullable|string|exists:sale_items,id',
+            'items.*.productId' => 'nullable|string',
+            'items.*.productName' => 'nullable|string|max:255',
+            'items.*.description' => 'nullable|string|max:1000',
+            'items.*.unitPrice' => 'required|numeric|min:0',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.kdvRate' => 'nullable|numeric|min:0|max:100',
+            'items.*.lineDiscountPercent' => 'nullable|numeric|min:0|max:100',
+            'items.*.lineDiscountAmount' => 'nullable|numeric|min:0',
+        ] + DrawingFiles::validationRules());
+        $items = collect($validated['items'])->map(function ($item) {
+            $product = !empty($item['productId']) ? \App\Models\Product::find($item['productId']) : null;
+            $name = $product ? null : (trim($item['productName'] ?? '') ?: trim($item['productId'] ?? ''));
+            return [
+                'id' => $item['id'] ?? null,
+                'productId' => $product ? $product->id : null,
+                'productName' => $name,
+                'description' => isset($item['description']) ? trim((string) $item['description']) : null,
+                'unitPrice' => (float) $item['unitPrice'],
+                'quantity' => (int) $item['quantity'],
+                'kdvRate' => (float) ($item['kdvRate'] ?? 18),
+                'lineDiscountPercent' => (float) ($item['lineDiscountPercent'] ?? 0),
+                'lineDiscountAmount' => (float) ($item['lineDiscountAmount'] ?? 0),
+            ];
+        })->filter(fn ($i) => !empty($i['productId']) || !empty($i['productName']) || ($i['id'] ?? null))->values()->all();
+        if (empty($items)) {
+            return redirect()->back()->withInput()->with('error', 'En az bir geçerli kalem girin.');
+        }
+        try {
+            $sale = $this->saleService->find($sale->id);
+            if (!$sale) {
+                abort(404);
+            }
+            $sale->update([
+                'customerId' => $validated['customerId'],
+                'personnelId' => $validated['personnelId'] ?? null,
+                'saleDate' => $validated['saleDate'],
+                'dueDate' => $validated['dueDate'] ?? null,
+                'kdvIncluded' => $request->boolean('kdvIncluded'),
+                'notes' => $validated['notes'] ?? null,
+                'drawingFiles' => DrawingFiles::syncFromRequest(
+                    $request,
+                    DrawingFiles::entries($sale->drawingFiles),
+                    'drawings/sales'
+                ),
+            ]);
+            $this->saleService->updateSaleItems($sale, $items, [
+                'saleDiscountPercent' => (float) ($validated['saleDiscountPercent'] ?? 0),
+                'grandTotalOverride' => isset($validated['grandTotalOverride']) && $validated['grandTotalOverride'] > 0
+                    ? (float) $validated['grandTotalOverride'] : null,
+            ]);
+            $this->auditService->logUpdate('sale', $sale->id, [], ['saleNumber' => $sale->saleNumber]);
+            return redirect()->route('sales.show', $sale)->with('success', 'Satış güncellendi.');
+        } catch (\Throwable $e) {
+            return redirect()->back()->withInput()->with('error', $e->getMessage());
+        }
+    }
+
     public function show(Sale $sale)
     {
         $sale = $this->saleService->find($sale->id);
@@ -150,7 +322,9 @@ class SaleController extends Controller
                 ->orderBy('paymentDate', 'desc')
                 ->get();
         }
-        return view('sales.show', compact('sale', 'unlinkedPayments'));
+        $saleRemaining = max(0, (float) $sale->grandTotal - (float) ($sale->paidAmount ?? 0));
+        $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
+        return view('sales.show', compact('sale', 'unlinkedPayments', 'saleRemaining', 'kasalar'));
     }
 
     public function print(Sale $sale)
@@ -159,7 +333,48 @@ class SaleController extends Controller
         if (!$sale) {
             abort(404);
         }
-        return view('sales.print', compact('sale'));
+        return view('sales.print', array_merge(compact('sale'), SaleDocument::invoiceParams($sale)));
+    }
+
+    public function shipment(Sale $sale)
+    {
+        $sale = $this->saleService->find($sale->id);
+        if (!$sale) {
+            abort(404);
+        }
+        if ($sale->isCancelled ?? false) {
+            abort(404);
+        }
+        return view('sales.shipment', compact('sale'));
+    }
+
+    public function shipmentPdf(Sale $sale)
+    {
+        $sale = $this->saleService->find($sale->id);
+        if (!$sale) {
+            abort(404);
+        }
+        if ($sale->isCancelled ?? false) {
+            abort(404);
+        }
+        $filename = 'sevkiyat-' . preg_replace('/[^a-zA-Z0-9\-]/', '-', $sale->saleNumber) . '.pdf';
+        $pdf = Pdf::loadView('sales.shipment-pdf', compact('sale'))
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->download($filename);
+    }
+
+    public function pdf(Sale $sale)
+    {
+        $sale = $this->saleService->find($sale->id);
+        if (!$sale) {
+            abort(404);
+        }
+        $filename = 'siparis-' . preg_replace('/[^a-zA-Z0-9\-]/', '-', $sale->saleNumber) . '.pdf';
+        $pdf = Pdf::loadView('sales.pdf', array_merge(compact('sale'), SaleDocument::invoiceParams($sale)))
+            ->setPaper('a4');
+
+        return $pdf->download($filename);
     }
 
     public function destroy(Sale $sale)
@@ -229,6 +444,7 @@ class SaleController extends Controller
             return redirect()->route('sales.show', $sale)
                 ->with('error', 'Bu satışta e-posta adresi tanımlı tedarikçi bulunamadı.');
         }
+        app(\App\Services\MailConfigService::class)->apply();
         $sent = [];
         foreach ($suppliers as $supplier) {
             try {
@@ -248,6 +464,29 @@ class SaleController extends Controller
         ]);
         return redirect()->route('sales.show', $sale)
             ->with('success', count($sent) . ' tedarikçiye sipariş maili gönderildi.');
+    }
+
+    public function sendCustomerEmail(Request $request, Sale $sale)
+    {
+        $validated = $request->validate([
+            'email' => 'nullable|email',
+            'note' => 'nullable|string|max:1000',
+        ]);
+        $sale = $this->saleService->find($sale->id);
+        if (!$sale) {
+            abort(404);
+        }
+        $to = $validated['email'] ?? $sale->customer?->email;
+        if (!$to) {
+            return redirect()->route('sales.show', $sale)
+                ->with('error', 'Müşterinin e-posta adresi yok. Müşteri kartına e-posta ekleyin veya gönderim sırasında bir adres girin.');
+        }
+        if (!$this->sendCustomerEmailForSale($sale, $validated['note'] ?? null, $to)) {
+            return redirect()->route('sales.show', $sale)
+                ->with('error', 'E-posta gönderilemedi. SMTP ayarlarını kontrol edin.');
+        }
+        return redirect()->route('sales.show', $sale)
+            ->with('success', $to . ' adresine sipariş gönderildi.');
     }
 
     public function addActivity(Request $request, Sale $sale)
@@ -272,5 +511,74 @@ class SaleController extends Controller
         ]);
         return redirect()->route('sales.show', $sale)
             ->with('success', 'Zaman çizelgesi güncellendi.');
+    }
+
+    private function recordSaleDeposit(Sale $sale, float $amount, string $paymentType, ?string $kasaId, string $paymentDate): void
+    {
+        DB::transaction(function () use ($sale, $amount, $paymentType, $kasaId, $paymentDate) {
+            $payment = CustomerPayment::create([
+                'customerId' => $sale->customerId,
+                'saleId' => $sale->id,
+                'amount' => $amount,
+                'paymentDate' => $paymentDate,
+                'paymentType' => $paymentType,
+                'kasaId' => $kasaId,
+                'notes' => 'Satış oluşturulurken alınan kapora',
+            ]);
+            $sale->increment('paidAmount', $amount);
+            $this->auditService->logCreate('customer_payment', $payment->id, [
+                'amount' => $amount,
+                'customerId' => $sale->customerId,
+                'saleId' => $sale->id,
+            ]);
+
+            if ($kasaId && in_array($paymentType, ['nakit', 'havale', 'kredi_karti'], true)) {
+                $paymentTypeLabel = match ($paymentType) {
+                    'nakit' => 'Nakit',
+                    'havale' => 'Havale',
+                    'kredi_karti' => 'Kredi Kartı',
+                    default => '',
+                };
+                $desc = 'Kapora - ' . ($sale->customer?->name ?? 'Müşteri');
+                if ($paymentTypeLabel) {
+                    $desc .= ' (' . $paymentTypeLabel . ')';
+                }
+                $desc .= ' - Sipariş: ' . $sale->saleNumber;
+
+                KasaHareket::create([
+                    'kasaId' => $kasaId,
+                    'type' => 'giris',
+                    'amount' => $amount,
+                    'movementDate' => $paymentDate,
+                    'description' => $desc,
+                    'createdBy' => auth()->id() ?: null,
+                    'refType' => 'customer_payment',
+                    'refId' => $payment->id,
+                ]);
+            }
+        });
+    }
+
+    private function sendCustomerEmailForSale(Sale $sale, ?string $note = null, ?string $to = null): bool
+    {
+        $to = $to ?: $sale->customer?->email;
+        if (!$to) {
+            return false;
+        }
+        app(MailConfigService::class)->apply();
+        try {
+            Mail::to($to)->send(new SaleToCustomer($sale->fresh(['customer', 'personnel', 'items.product']), $note));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Müşteri e-posta gönderim hatası', ['sale' => $sale->id, 'exception' => $e->getMessage()]);
+            return false;
+        }
+        SaleActivity::create([
+            'saleId' => $sale->id,
+            'type' => SaleActivity::TYPE_CUSTOMER_EMAIL_SENT,
+            'description' => 'Müşteriye sipariş maili gönderildi',
+            'metadata' => ['email' => $to],
+        ]);
+
+        return true;
     }
 }

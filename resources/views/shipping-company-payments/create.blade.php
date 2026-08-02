@@ -2,16 +2,17 @@
 @section('title', 'Nakliye Ödemesi Yap')
 @push('head')
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 @endpush
 @section('content')
 <div class="mb-6">
-    <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm mb-1">
-        <a href="{{ route('shipping-companies.index') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400">Nakliye Firmaları</a>
+    <div class="flex items-center gap-2 text-neutral-500 text-sm mb-1">
+        <a href="{{ route('shipping-companies.index') }}" class="hover:text-neutral-900 dark:hover:text-neutral-100">Nakliye Firmaları</a>
         <span>/</span>
-        <span class="text-slate-700 dark:text-slate-300">Nakliye Ödemesi Yap</span>
+        <span class="text-neutral-700 dark:text-neutral-300">Nakliye Ödemesi Yap</span>
     </div>
     <h1 class="page-title">Nakliye Ödemesi Yap</h1>
-    <p class="page-desc">Nakliye firmasına ödeme kaydı oluşturun</p>
+    <p class="page-desc">Nakliye firmasına ödeme kaydı oluşturun — alış, satış, SSH veya manuel açıklama ile ilişkilendirebilirsiniz</p>
 </div>
 
 @if(session('error'))
@@ -32,27 +33,23 @@
             @error('shippingCompanyId')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
         </div>
         @if($totalPaid !== null)
-        <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
-            <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Bu firmaya toplam ödenen</p>
+        <div class="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700">
+            <p class="text-xs font-medium text-neutral-500 uppercase tracking-wider">Bu firmaya toplam ödenen</p>
             <p class="text-lg font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">{{ number_format($totalPaid, 0, ',', '.') }} ₺</p>
         </div>
         @endif
-        <div>
-            <label class="form-label">Alış faturası (opsiyonel) — ne için ödendi?</label>
-            <select name="purchaseId" class="form-select min-h-[44px]">
-                <option value="">— Genel ödeme —</option>
-                @foreach($purchasesWithShipping as $p)
-                <option value="{{ $p->id }}" {{ old('purchaseId') == $p->id ? 'selected' : '' }}>
-                    {{ $p->purchaseNumber }} — {{ $p->supplier?->name }} ({{ $p->purchaseDate?->format('d.m.Y') }})
-                </option>
-                @endforeach
-            </select>
-            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Bu ödemenin hangi alış nakliyesi için yapıldığını seçebilirsiniz</p>
-        </div>
+
+        @include('partials.shipping-payment-link-fields', [
+            'purchasesWithShipping' => $purchasesWithShipping,
+            'sales' => $sales,
+            'serviceTickets' => $serviceTickets,
+            'linkType' => $linkType,
+        ])
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
                 <label class="form-label">Tutar (₺) <span class="text-red-500">*</span></label>
-                <input type="number" step="0.01" min="0.01" name="amount" required value="{{ old('amount') }}" class="form-input min-h-[44px]" placeholder="0.00">
+                <input type="text" inputmode="decimal" name="amount" required value="{{ old('amount') }}" class="form-input min-h-[44px] money-input" placeholder="0" autocomplete="off">
                 @error('amount')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
             </div>
             <div>
@@ -65,12 +62,9 @@
             <div>
                 <label class="form-label">Ödeme Tipi</label>
                 <select name="paymentType" class="form-select min-h-[44px]">
-                    <option value="nakit" {{ old('paymentType', 'nakit') == 'nakit' ? 'selected' : '' }}>Nakit</option>
-                    <option value="havale" {{ old('paymentType') == 'havale' ? 'selected' : '' }}>Havale</option>
-                    <option value="kredi_karti" {{ old('paymentType') == 'kredi_karti' ? 'selected' : '' }}>Kredi Kartı</option>
-                    <option value="cek" {{ old('paymentType') == 'cek' ? 'selected' : '' }}>Çek</option>
-                    <option value="senet" {{ old('paymentType') == 'senet' ? 'selected' : '' }}>Senet</option>
-                    <option value="diger" {{ old('paymentType') == 'diger' ? 'selected' : '' }}>Diğer</option>
+                    @foreach(\App\Support\PaymentType::SELECTABLE as $value => $label)
+                    <option value="{{ $value }}" {{ old('paymentType', 'nakit') == $value ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
                 </select>
             </div>
             <div>
@@ -84,7 +78,7 @@
             </div>
         </div>
         <div>
-            <label class="form-label">Referans / Açıklama</label>
+            <label class="form-label">Ödeme referansı</label>
             <input type="text" name="reference" value="{{ old('reference') }}" class="form-input min-h-[44px]" placeholder="Havale dekont no, çek no vb.">
         </div>
         <div>
@@ -99,14 +93,6 @@
 </div>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    if (typeof TomSelect === 'undefined') {
-        const s = document.createElement('script');
-        s.src = 'https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js';
-        s.onload = initShippingSelect;
-        document.head.appendChild(s);
-    } else initShippingSelect();
-});
-function initShippingSelect() {
     const sel = document.getElementById('shippingCompanySelect');
     if (!sel || typeof TomSelect === 'undefined') return;
     const createUrl = sel.getAttribute('data-create-url') || window.location.pathname;
@@ -123,6 +109,6 @@ function initShippingSelect() {
             }
         }
     });
-}
+});
 </script>
 @endsection

@@ -1,50 +1,57 @@
 # Mobilya Takip Sistemi
 
-Laravel + Blade tabanlı mobilya takip uygulaması. Stok, teklif, satış, alış, cari hesap, kasa ve SSH modüllerini içerir.
+Laravel + Blade tabanlı mobilya takip uygulaması. Stok, teklif, satış, alış, cari hesap, kasa, SSH ve raporlama modüllerini içerir.
 
 ## Gereksinimler
 
 - PHP 8.2+
 - Composer
-- MySQL (mevcut mobilyatakip veritabanı)
+- Node.js 18+ (Vite build için)
+- MySQL 8+
 
-## Kurulum
-
-1. Bağımlılıkları yükle: `composer install`
-2. `.env.example` dosyasını `.env` olarak kopyala
-3. `.env` içinde veritabanı bilgilerini düzenle (mobilyatakip)
-4. Uygulama anahtarı oluştur: `php artisan key:generate`
-
-**Not:** Migration çalıştırılmaz. Mevcut MySQL veritabanı kullanılır.
-
-**XML Feed kullanımı için:** `scripts/add-xml-feed-schema.sql` dosyasını veritabanında çalıştırın (xml_feeds tablosu ve products tablosuna externalId, externalSource kolonları eklenir).
-
-## Çalıştırma
+## Yerel kurulum
 
 ```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+# .env içinde DB_* değerlerini düzenleyin
+php artisan migrate
+php artisan db:seed
+npm install
+npm run build
 php artisan serve
 ```
 
-Tarayıcıda: http://localhost:8000
+Tarayıcı: http://localhost:8000
+
+İlk giriş (seed sonrası): `erkanulker0@gmail.com` / `password` — canlıda mutlaka değiştirin.
+
+## Laravel Forge ile yayına alma
+
+Canlı sunucu kurulumu için **[DEPLOYMENT.md](DEPLOYMENT.md)** dosyasını izleyin.
+
+Forge **Deploy Script** alanına:
+
+```bash
+bash forge-deploy.sh
+```
+
+yazmanız yeterlidir. Script sırasıyla `git pull`, `composer install --no-dev`, migration, seed, Vite build, cache ve `storage:link` işlemlerini yapar.
 
 ## Modüller
 
 - **Auth:** Session tabanlı giriş
-- **Müşteriler / Tedarikçiler:** CRUD
-- **Ürünler / Depolar:** CRUD
-- **Stok:** Depo bazlı stok listesi, kritik stok uyarısı
-- **Teklifler:** Oluşturma, satışa dönüştürme
-- **Satışlar:** Tekliften satış, stok düşümü
-- **Alışlar:** Tedarikçiden alış kaydı
-- **Ödeme Al:** Müşteri tahsilatı
-- **Kasa:** Kasa/banka hesapları
-- **SSH:** Servis kayıtları (satış sonrası hizmet)
-- **Personel:** Personel tanımları
-- **XML Ürün Çekme:** XML feed URL ile tedarikçi ürünlerini otomatik import
-- **Ayarlar:** Firma bilgileri, SMS (NTGSM), PayTR, E-posta ayarları
+- **Müşteriler / Tedarikçiler:** CRUD, cari hesap, Excel import/export
+- **Ürünler / Depolar / Stok:** CRUD, kritik stok, XML feed
+- **Teklifler / Satışlar / Alışlar:** PDF, çizim dosyaları, sevkiyat fişi
+- **Ödeme Al / Ödeme Yap:** Tahsilat ve tedarikçi ödemeleri, kasa hareketleri
+- **SSH:** Servis kayıtları, nakliye firması ve araç filosu
+- **Kasa / Giderler / Raporlar**
+- **Ayarlar:** Firma bilgileri, SMS, e-posta, PayTR
 
 ## Mimari
 
 - **Controller:** Validation, Service çağrısı, View/Redirect
-- **Service:** İş mantığı (stok düşümü, cari hesap vb.)
-- **Model:** Eloquent (migration yok, mevcut tablolar)
+- **Service:** İş mantığı (stok, satış, kasa vb.)
+- **Model:** Eloquent + migration'lar
