@@ -62,30 +62,94 @@
         </dl>
     </div>
 
-    <div class="card p-5 space-y-3 md:col-span-1 lg:col-span-2">
-        <h2 class="text-sm font-semibold text-neutral-900 dark:text-white">Sipariş Özeti</h2>
-        <dl class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-sm">
-            <div class="rounded-lg bg-neutral-50 dark:bg-slate-800/60 p-3">
-                <dt class="text-neutral-500 text-xs">Toplam sipariş</dt>
-                <dd class="mt-1 text-lg font-semibold tabular-nums">{{ $salesStats->count }}</dd>
+    @php
+        $collectedTotal = max(0, (float) ($salesStats->total ?? 0) - (float) ($salesStats->totalReceivable ?? 0));
+        $collectionRate = ($salesStats->total ?? 0) > 0
+            ? min(100, round(($collectedTotal / $salesStats->total) * 100))
+            : 0;
+    @endphp
+    <div class="card overflow-hidden md:col-span-1 lg:col-span-2">
+        <div class="px-5 py-4 border-b border-neutral-100 dark:border-slate-700 bg-neutral-50/60 dark:bg-slate-800/30 flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h2 class="text-sm font-semibold text-neutral-900 dark:text-white">Sipariş Özeti</h2>
+                <p class="text-xs text-neutral-500 dark:text-slate-400 mt-0.5">İptal edilmeyen siparişler</p>
             </div>
-            <div class="rounded-lg bg-neutral-50 dark:bg-slate-800/60 p-3">
-                <dt class="text-neutral-500 text-xs">Aktif sipariş</dt>
-                <dd class="mt-1 text-lg font-semibold tabular-nums">{{ $salesStats->activeCount }}</dd>
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-white dark:bg-slate-900 border border-neutral-200 dark:border-slate-700 px-3 py-1 text-xs font-medium text-neutral-700 dark:text-slate-300">
+                <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                Bu ay {{ $salesStats->monthCount }} sipariş
+            </span>
+        </div>
+        <div class="p-5 space-y-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                <div class="rounded-xl border border-neutral-200/80 dark:border-slate-700 bg-white dark:bg-slate-900/40 p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="text-[11px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-slate-400">Toplam Sipariş</p>
+                            <p class="mt-2 text-2xl font-bold tabular-nums text-neutral-900 dark:text-white">{{ $salesStats->count }}</p>
+                        </div>
+                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-100 dark:bg-slate-800 text-neutral-600 dark:text-slate-300">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        </span>
+                    </div>
+                    <p class="mt-2 text-xs text-neutral-500 dark:text-slate-400">{{ $salesStats->activeCount }} aktif</p>
+                </div>
+
+                <div class="rounded-xl border border-emerald-200/80 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/20 p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="text-[11px] font-semibold uppercase tracking-wider text-emerald-700/80 dark:text-emerald-300/80">Toplam Ciro</p>
+                            <p class="mt-2 text-2xl font-bold tabular-nums text-emerald-700 dark:text-emerald-300">₺{{ number_format($salesStats->total, 0, ',', '.') }}</p>
+                        </div>
+                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                        </span>
+                    </div>
+                    <p class="mt-2 text-xs text-emerald-700/70 dark:text-emerald-400/70">Tahsil edilen ₺{{ number_format($collectedTotal, 0, ',', '.') }}</p>
+                </div>
+
+                <div class="rounded-xl border border-red-200/80 dark:border-red-900/40 bg-red-50/50 dark:bg-red-950/20 p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="text-[11px] font-semibold uppercase tracking-wider text-red-700/80 dark:text-red-300/80">Alınacak Ödeme</p>
+                            <p class="mt-2 text-2xl font-bold tabular-nums text-red-700 dark:text-red-300">₺{{ number_format($salesStats->totalReceivable ?? 0, 0, ',', '.') }}</p>
+                        </div>
+                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </span>
+                    </div>
+                    <p class="mt-2 text-xs text-red-700/70 dark:text-red-400/70">Bekleyen tahsilat</p>
+                </div>
+
+                <div class="rounded-xl border border-neutral-200/80 dark:border-slate-700 bg-white dark:bg-slate-900/40 p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="text-[11px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-slate-400">Tahsilat Oranı</p>
+                            <p class="mt-2 text-2xl font-bold tabular-nums text-neutral-900 dark:text-white">%{{ $collectionRate }}</p>
+                        </div>
+                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </span>
+                    </div>
+                    <p class="mt-2 text-xs text-neutral-500 dark:text-slate-400">Ciroya göre</p>
+                </div>
             </div>
-            <div class="rounded-lg bg-neutral-50 dark:bg-slate-800/60 p-3">
-                <dt class="text-neutral-500 text-xs">Toplam ciro</dt>
-                <dd class="mt-1 text-lg font-semibold tabular-nums">₺{{ number_format($salesStats->total, 0, ',', '.') }}</dd>
+
+            @if(($salesStats->total ?? 0) > 0)
+            <div class="rounded-xl border border-neutral-200/80 dark:border-slate-700 bg-neutral-50/50 dark:bg-slate-800/30 p-4">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-slate-400">Tahsilat Durumu</p>
+                    <p class="text-xs text-neutral-600 dark:text-slate-300 tabular-nums">
+                        <span class="font-semibold text-emerald-600 dark:text-emerald-400">₺{{ number_format($collectedTotal, 0, ',', '.') }}</span>
+                        <span class="text-neutral-400 mx-1">/</span>
+                        <span>₺{{ number_format($salesStats->total, 0, ',', '.') }}</span>
+                    </p>
+                </div>
+                <div class="h-2.5 rounded-full bg-neutral-200 dark:bg-slate-700 overflow-hidden">
+                    <div class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all" style="width: {{ $collectionRate }}%"></div>
+                </div>
             </div>
-            <div class="rounded-lg bg-red-50 dark:bg-red-950/30 p-3 border border-red-100 dark:border-red-900/40">
-                <dt class="text-red-700 dark:text-red-300 text-xs">Alınması gereken ödeme</dt>
-                <dd class="mt-1 text-lg font-semibold tabular-nums text-red-700 dark:text-red-300">₺{{ number_format($salesStats->totalReceivable ?? 0, 0, ',', '.') }}</dd>
-            </div>
-            <div class="rounded-lg bg-neutral-50 dark:bg-slate-800/60 p-3">
-                <dt class="text-neutral-500 text-xs">Bu ay</dt>
-                <dd class="mt-1 font-semibold tabular-nums">{{ $salesStats->monthCount }} sipariş</dd>
-            </div>
-        </dl>
+            @endif
+        </div>
     </div>
 </div>
 

@@ -236,9 +236,18 @@ function dashboardTasks() {
     const apiIndex = @json(route('api.user-tasks.index'));
     const apiStore = @json(route('api.user-tasks.store'));
     const apiUpdateBase = @json(url('/api/user-tasks'));
-    const today = @json(now()->format('Y-m-d'));
     const currentUserId = @json($currentUserId);
     const isTaskAdmin = @json($isTaskAdmin);
+
+    function localDateStr(date) {
+        const d = date || new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return y + '-' + m + '-' + day;
+    }
+
+    const today = localDateStr();
 
     return {
         tasks: [],
@@ -305,10 +314,7 @@ function dashboardTasks() {
         },
 
         formatDateLocal(d) {
-            const y = d.getFullYear();
-            const m = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return y + '-' + m + '-' + day;
+            return localDateStr(d);
         },
 
         formatTaskDate(dateStr) {
