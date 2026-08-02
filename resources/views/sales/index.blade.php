@@ -42,6 +42,7 @@
                     <option value="">Tümü</option>
                     <option value="delivered" {{ request('deliveryStatus') === 'delivered' ? 'selected' : '' }}>Teslim edildi</option>
                     <option value="pending" {{ request('deliveryStatus') === 'pending' ? 'selected' : '' }}>Teslim bekliyor</option>
+                    <option value="ssh" {{ request('deliveryStatus') === 'ssh' ? 'selected' : '' }}>SSH var</option>
                 </select>
             </div>
             <div class="min-w-[130px]">

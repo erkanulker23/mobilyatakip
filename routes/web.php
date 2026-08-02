@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
 Route::get('/assets/js/{file}', function (string $file) {
-    $allowed = ['turkey-address.js', 'money.js', 'form-inputs.js'];
+    $allowed = ['turkey-address.js', 'money.js', 'form-inputs.js', 'payment-kasa.js', 'image-upload-compress.js'];
     if (! in_array($file, $allowed, true)) {
         abort(404);
     }
@@ -77,6 +77,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/turkey/cities', [\App\Http\Controllers\TurkeyLocationController::class, 'cities'])->name('api.turkey.cities');
     Route::get('/api/turkey/districts', [\App\Http\Controllers\TurkeyLocationController::class, 'districts'])->name('api.turkey.districts');
     Route::post('/api/products/quick-store', [ProductController::class, 'quickStore'])->name('api.products.quick-store');
+    Route::get('/api/products/search', [ProductController::class, 'searchForSelect'])->name('api.products.search');
+    Route::get('/api/user-tasks', [\App\Http\Controllers\UserTaskController::class, 'index'])->name('api.user-tasks.index');
+    Route::post('/api/user-tasks', [\App\Http\Controllers\UserTaskController::class, 'store'])->name('api.user-tasks.store');
+    Route::patch('/api/user-tasks/{userTask}', [\App\Http\Controllers\UserTaskController::class, 'update'])->name('api.user-tasks.update');
+    Route::delete('/api/user-tasks/{userTask}', [\App\Http\Controllers\UserTaskController::class, 'destroy'])->name('api.user-tasks.destroy');
     Route::get('/customers/{customer}/print', [CustomerController::class, 'print'])->name('customers.print');
     Route::get('/customers/excel/export', [CustomerController::class, 'exportExcel'])->name('customers.excel.export');
     Route::post('/customers/excel/import', [CustomerController::class, 'importExcel'])->name('customers.excel.import');

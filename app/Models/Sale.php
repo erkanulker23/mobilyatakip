@@ -19,6 +19,7 @@ class Sale extends BaseModel
         'saleDate',
         'dueDate',
         'deliveredAt',
+        'orderStatus',
         'needsFinalMeasurement',
         'subtotal',
         'kdvTotal',

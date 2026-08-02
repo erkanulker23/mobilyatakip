@@ -15,8 +15,9 @@
                 Satış faturası @if($sale->customer)· Müşteri: <a href="{{ route('customers.show', $sale->customer) }}" class="font-medium text-emerald-600 hover:text-emerald-700">{{ $sale->customer->name }}</a>@else· Müşteri: —@endif
                 @if(!($sale->isCancelled ?? false))
                 · @include('partials.payment-status-badge', ['sale' => $sale])
-                @if(\App\Support\SaleDelivery::isDelivered($sale))
+                @if(\App\Support\SaleDelivery::currentStatus($sale) !== \App\Support\SaleDelivery::PENDING)
                 · @include('partials.delivery-status-badge', ['sale' => $sale])
+                @if(\App\Support\SaleDelivery::isDelivered($sale))
                 <span class="text-neutral-500 text-sm">({{ $sale->deliveredAt->format('d.m.Y') }})</span>
                 @endif
                 <span class="text-neutral-500 text-sm">{{ \App\Support\CustomerBalance::saleStatus($sale)['description'] }}</span>
@@ -215,13 +216,31 @@
                     <span class="font-medium text-neutral-900 dark:text-neutral-100">{{ $sale->deliveredAt->format('d.m.Y H:i') }}</span>
                 </div>
                 @endif
+                @if($sale->serviceTickets->isNotEmpty())
+                <div class="flex items-start justify-between gap-3">
+                    <span class="text-neutral-500 shrink-0">SSH kayıtları</span>
+                    <div class="text-right space-y-1">
+                        @foreach($sale->serviceTickets as $ticket)
+                        <div>
+                            <a href="{{ route('service-tickets.show', $ticket) }}" class="font-medium text-emerald-600 hover:text-emerald-700">{{ $ticket->ticketNumber }}</a>
+                            <span class="text-neutral-500">· {{ \App\Support\ServiceTicketStatus::label($ticket->status) }}</span>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
             </div>
             <div>
-                <label class="form-label">Teslim durumu</label>
+                <label class="form-label">Sipariş durumu</label>
+                @php($currentOrderStatus = \App\Support\SaleDelivery::currentStatus($sale))
                 <select name="deliveryStatus" class="form-select min-h-[44px]">
-                    <option value="pending" {{ !\App\Support\SaleDelivery::isDelivered($sale) ? 'selected' : '' }}>Teslim bekliyor</option>
-                    <option value="delivered" {{ \App\Support\SaleDelivery::isDelivered($sale) ? 'selected' : '' }}>Teslim edildi</option>
+                    <option value="pending" {{ $currentOrderStatus === \App\Support\SaleDelivery::PENDING ? 'selected' : '' }}>Teslim bekliyor</option>
+                    <option value="delivered" {{ $currentOrderStatus === \App\Support\SaleDelivery::DELIVERED ? 'selected' : '' }}>Teslim edildi</option>
+                    <option value="ssh" {{ $currentOrderStatus === \App\Support\SaleDelivery::SSH ? 'selected' : '' }}>SSH var</option>
                 </select>
+                @if($sale->serviceTickets->isEmpty())
+                <p class="mt-2 text-xs text-neutral-500">SSH kaydı oluşturmak için <a href="{{ route('service-tickets.create', ['saleId' => $sale->id, 'customerId' => $sale->customerId]) }}" class="text-emerald-600 hover:text-emerald-700">yeni servis kaydı</a> açabilirsiniz.</p>
+                @endif
             </div>
             <div class="flex gap-3 justify-end pt-2">
                 <button type="button" @click="showStatusModal = false" class="btn-secondary min-h-[44px]">İptal</button>

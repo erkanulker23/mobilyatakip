@@ -44,8 +44,8 @@
                 @error('amount')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
             <div>
-                <label class="form-label">Tarih *</label>
-                <input type="date" name="paymentDate" required value="{{ old('paymentDate', $customerPayment->paymentDate?->format('Y-m-d')) }}" class="form-input">
+                <label class="form-label">Tahsilat Tarihi *</label>
+                <input type="date" name="paymentDate" required value="{{ old('paymentDate', $customerPayment->paymentDate?->format('Y-m-d')) }}" class="form-input" max="{{ date('Y-m-d') }}">
                 @error('paymentDate')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
         </div>

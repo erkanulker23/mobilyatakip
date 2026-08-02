@@ -11,6 +11,7 @@ use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Services\AuditService;
 use App\Support\ProductImages;
+use App\Support\ProductSelect;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -72,11 +73,42 @@ class ProductController extends Controller
             'kdvRate' => (float) $validated['kdvRate'],
         ]);
         $this->auditService->logCreate('product', $product->id, ['name' => $product->name]);
+
+        return response()->json(ProductSelect::payload($product));
+    }
+
+    public function searchForSelect(Request $request)
+    {
+        $limit = min(50, max(5, (int) $request->input('limit', 30)));
+        $ids = array_values(array_filter((array) $request->input('ids', [])));
+
+        $query = Product::query()
+            ->with('supplier:id,name')
+            ->where('isActive', true);
+
+        if ($ids !== []) {
+            $query->whereIn('id', $ids)->orderBy('name');
+        } else {
+            $search = trim((string) $request->input('q', ''));
+            if ($search !== '') {
+                $terms = array_values(array_filter(preg_split('/\s+/u', $search) ?: []));
+                foreach ($terms as $term) {
+                    $like = '%' . addcslashes($term, '%_\\') . '%';
+                    $query->where(function ($w) use ($like) {
+                        $w->where('name', 'like', $like)
+                            ->orWhere('sku', 'like', $like)
+                            ->orWhere('description', 'like', $like)
+                            ->orWhereHas('supplier', fn ($supplierQuery) => $supplierQuery->where('name', 'like', $like));
+                    });
+                }
+            }
+            $query->orderBy('name');
+        }
+
+        $products = $query->limit($limit)->get();
+
         return response()->json([
-            'id' => $product->id,
-            'name' => $product->name,
-            'price' => (float) $product->unitPrice,
-            'kdv' => (float) $product->kdvRate,
+            'products' => $products->map(fn (Product $product) => ProductSelect::payload($product))->values(),
         ]);
     }
 

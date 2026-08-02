@@ -31,6 +31,11 @@ class Personnel extends BaseModel
         return $this->hasMany(Quote::class, 'personnelId');
     }
 
+    public function sales(): HasMany
+    {
+        return $this->hasMany(Sale::class, 'personnelId');
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'userId');

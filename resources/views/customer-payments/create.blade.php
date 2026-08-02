@@ -49,6 +49,17 @@
         <div class="card p-6">
             <form method="POST" action="{{ route('customer-payments.store') }}" class="space-y-5" id="paymentForm">
                 @csrf
+                @if($selectedCustomer)
+                <input type="hidden" name="customerId" value="{{ $selectedCustomer->id }}">
+                <div class="p-4 rounded-xl bg-neutral-50 dark:bg-slate-800/60 border border-neutral-100 dark:border-slate-700">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-neutral-500">Müşteri</p>
+                    <a href="{{ route('customers.show', $selectedCustomer) }}" class="mt-1 block text-lg font-semibold text-neutral-900 dark:text-white hover:text-emerald-600">{{ $selectedCustomer->name }}</a>
+                    @if($selectedCustomer->phone)
+                    <p class="mt-1 text-sm text-neutral-500">{{ $selectedCustomer->phone }}@if($selectedCustomer->phone2) / {{ $selectedCustomer->phone2 }}@endif</p>
+                    @endif
+                    <a href="{{ route('customer-payments.create') }}" class="mt-2 inline-flex text-xs font-medium text-emerald-600 hover:text-emerald-700">Başka müşteri seç</a>
+                </div>
+                @else
                 <div>
                     <label class="form-label">Müşteri *</label>
                     <select name="customerId" required class="form-select" id="customerSelect" placeholder="Müşteri ara (ad, telefon)...">
@@ -68,6 +79,14 @@
                     </select>
                     <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400">Ad veya telefon yazarak hızlı arama yapabilirsiniz.</p>
                     @error('customerId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+                @endif
+
+                <div>
+                    <label class="form-label" for="paymentDateInput">Tahsilat Tarihi *</label>
+                    <input type="date" name="paymentDate" id="paymentDateInput" required value="{{ old('paymentDate', date('Y-m-d')) }}" class="form-input max-w-xs" max="{{ date('Y-m-d') }}">
+                    <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400">Paranın alındığı günü seçin (geçmiş tarih girilebilir).</p>
+                    @error('paymentDate')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
 
                 <div>
@@ -96,14 +115,6 @@
                         @error('amount')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                     </div>
                     <div>
-                        <label class="form-label">Tarih *</label>
-                        <input type="date" name="paymentDate" required value="{{ old('paymentDate', date('Y-m-d')) }}" class="form-input">
-                        @error('paymentDate')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div>
                         <label class="form-label">Ödeme Tipi</label>
                         <select name="paymentType" class="form-select" id="paymentTypeSelect">
                             @foreach(\App\Support\PaymentType::SELECTABLE as $value => $label)
@@ -111,13 +122,14 @@
                             @endforeach
                         </select>
                     </div>
-                    <div>
-                        @include('partials.payment-kasa-field', [
-                            'kasalar' => $kasalar,
-                            'paymentTypeId' => 'paymentTypeSelect',
-                            'amountId' => 'amountInput',
-                        ])
-                    </div>
+                </div>
+
+                <div>
+                    @include('partials.payment-kasa-field', [
+                        'kasalar' => $kasalar,
+                        'paymentTypeId' => 'paymentTypeSelect',
+                        'amountId' => 'amountInput',
+                    ])
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -355,6 +367,10 @@ function initPaymentPage() {
 
     if (saleSelect?.value && selectedSaleRemaining() > 0 && !document.getElementById('amountInput')?.value) {
         fillRemainingAmount();
+    }
+
+    if (initialCustomerId) {
+        document.getElementById('paymentDateInput')?.focus();
     }
 }
 </script>

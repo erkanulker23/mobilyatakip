@@ -1,10 +1,28 @@
 @extends('layouts.app')
 @section('title', 'Dashboard')
 @section('content')
+<div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800/60 p-4 sm:p-5">
+    <div class="flex gap-3 sm:gap-4">
+        <div class="shrink-0 mt-0.5">
+            <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </span>
+        </div>
+        <div class="min-w-0">
+            <p class="text-sm font-semibold text-amber-900 dark:text-amber-200">Bu proje <span class="whitespace-nowrap">02.08.2026</span> tarihinde işleme alınmıştır.</p>
+            <p class="mt-1.5 text-sm text-amber-800/90 dark:text-amber-300/90 leading-relaxed">
+                Bu tarihten önceki siparişlerde dikkatli olun; satış fişlerinde gerekli düzenlemeleri yapın. Kasa defterleri bu dönem için doğru olmayabilir.
+            </p>
+        </div>
+    </div>
+</div>
+
 <div class="mb-8">
     <h1 class="page-title">Dashboard</h1>
     <p class="page-desc">İstatistiklerinize genel bakış</p>
 </div>
+
+@include('partials.dashboard-tasks')
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-8">
     {{-- Son 3 Gün --}}

@@ -205,7 +205,7 @@ class SaleService
 
     public function find(int|string $id): ?Sale
     {
-        return Sale::with(['customer', 'personnel', 'quote', 'items.product.supplier', 'activities', 'payments'])->find($id);
+        return Sale::with(['customer', 'personnel', 'quote', 'items.product.supplier', 'activities', 'payments', 'serviceTickets'])->find($id);
     }
 
     /**

@@ -29,8 +29,9 @@
                     </div>
                 @endif
                 <div class="flex-1 min-w-[200px]">
-                    <input type="file" name="photo" accept="image/*" class="form-input py-2">
-                    <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400">PNG, JPG, WEBP · en fazla 2MB</p>
+                    <input type="file" name="photo" id="profilePhoto" accept="image/*" class="form-input py-2" data-compress-image data-max-bytes="921600">
+                    <p id="profilePhotoHint" class="mt-1 text-xs text-neutral-500 dark:text-slate-400"></p>
+                    <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400">PNG, JPG, WEBP · en fazla 2MB. Büyük fotoğraflar otomatik küçültülür.</p>
                     @if($user->photoUrl)
                     <button type="submit" form="deletePhotoForm" class="mt-2 inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 dark:bg-red-950/40 rounded-lg hover:bg-red-100 dark:hover:bg-red-950/60">
                         Resmi sil

@@ -179,12 +179,8 @@
                             <span class="row-no" aria-hidden="true">1</span>
                             <div class="item-product-wrap flex-1 min-w-0">
                                 <label class="form-label lg:sr-only">Ürün / Hizmet <span class="text-red-500">*</span></label>
-                                <select class="form-select item-product" data-placeholder="Ara veya yaz...">
-                                    <option value="">— Manuel gir —</option>
-                                    @foreach($products as $p)
-                                    @php $img = is_array($p->images ?? null) ? ($p->images[0] ?? null) : ($p->images ?? null); @endphp
-                                    <option value="{{ $p->id }}" data-price="{{ $p->unitPrice }}" data-kdv="{{ $p->kdvRate ?? 10 }}" data-image="{{ $img ? (Str::startsWith($img, 'http') ? $img : url($img)) : '' }}">{{ $p->name }} ({{ number_format($p->unitPrice, 0, ',', '.') }} ₺)</option>
-                                    @endforeach
+                                <select class="form-select item-product" data-placeholder="Ürün ara...">
+                                    <option value=""></option>
                                 </select>
                                 <input type="hidden" class="item-product-id" name="items[__IDX__][productId]" value="">
                                 <input type="hidden" class="item-product-name" name="items[__IDX__][productName]" value="">
@@ -441,6 +437,8 @@
         </div>
     </div>
 </div>
+<script>window.SALE_PRODUCT_SEARCH_URL = @json(route('api.products.search'));</script>
+<script src="{{ asset('js/sale-product-select.js') }}"></script>
 <script>
 @php
     $customersJson = $customers->map(fn($c) => [
@@ -449,10 +447,7 @@
         'cityId' => $c->cityId, 'districtId' => $c->districtId,
         'taxNumber' => $c->taxNumber ?? '', 'taxOffice' => $c->taxOffice ?? '', 'identityNumber' => $c->identityNumber ?? ''
     ])->values();
-    $productsJson = $products->map(function($p) {
-        $img = is_array($p->images ?? null) ? ($p->images[0] ?? null) : ($p->images ?? null);
-        return ['id' => $p->id, 'name' => $p->name . ' (' . number_format($p->unitPrice, 0, ',', '.') . ' ₺)', 'price' => (float)$p->unitPrice, 'kdv' => (float)($p->kdvRate ?? 10), 'image' => $img ? (Str::startsWith($img, 'http') ? $img : url($img)) : null];
-    })->values();
+    $productsJson = ($initialProducts ?? collect())->map(fn ($p) => \App\Support\ProductSelect::payload($p))->values();
     $oldSaleItems = collect(old('items', []))->values()->all();
 @endphp
 const customers = @json($customersJson);
@@ -489,23 +484,9 @@ function salesCreateForm() {
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    const text = data.name + ' (' + fmt(data.price) + ' ₺)';
-                    productsData.push({ id: String(data.id), name: text, price: data.price, kdv: data.kdv, image: data.image || null });
-                    const tmplSelect = document.getElementById('item-template')?.content?.querySelector('.item-product');
-                    if (tmplSelect) {
-                        const opt = document.createElement('option');
-                        opt.value = data.id;
-                        opt.setAttribute('data-price', data.price);
-                        opt.setAttribute('data-kdv', data.kdv);
-                        if (data.image) opt.setAttribute('data-image', data.image);
-                        opt.textContent = text;
-                        tmplSelect.appendChild(opt);
-                    }
-                    (window.salesProductSelects || []).forEach(function(ts) {
-                        if (ts) ts.addOption({ value: String(data.id), text: text });
-                    });
+                    const product = window.registerSaleProduct(data);
                     const targetRow = resolveSaleRowForQuickProduct(window.quickAddProductForRowIndex ?? 0);
-                    applyProductToSaleRow(targetRow, data, text);
+                    applyProductToSaleRow(targetRow, product);
                     targetRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
                     this.showQuickAddProduct = false;
                     this.quickProduct = { name: '', unitPrice: '', kdvRate: '10' };
@@ -598,7 +579,7 @@ function addRow(focusNew) {
     document.getElementById('items').appendChild(c);
     const rowEl = document.getElementById('items').lastElementChild;
     const sel = rowEl.querySelector('.item-product');
-    initProductSelect(sel, idx);
+    initSaleProductSelect(sel, idx);
     if (window.ItemDescriptionLines) ItemDescriptionLines.initRow(rowEl, null);
     idx++;
     reindexSaleRows();
@@ -635,12 +616,14 @@ function restoreSaleRow(item) {
     const ts = rowEl.querySelector('.item-product')?.tomselect;
 
     if (productId) {
-        const product = productsData.find(p => String(p.id) === productId);
-        const text = product ? product.name : (productName || productId);
+        let product = window.getSaleProduct(productId);
+        if (!product) {
+            product = window.registerSaleProduct({ id: productId, name: productName || productId, price: parseTrNum(item.unitPrice), kdv: item.kdvRate ?? 10 });
+        }
         if (idInput) idInput.value = productId;
         if (nameInput) nameInput.value = '';
         if (ts) {
-            if (!ts.options[productId]) ts.addOption({ value: productId, text: text });
+            if (!ts.options[productId]) ts.addOption(product);
             ts.setValue(productId, true);
         }
     } else if (productName) {
@@ -677,6 +660,8 @@ function duplicateSaleRow(btn) {
     const newTs = newRow.querySelector('.item-product')?.tomselect;
     const val = srcTs && srcTs.getValue();
     if (newTs && val) {
+        const product = window.getSaleProduct ? window.getSaleProduct(val) : null;
+        if (product && !newTs.options[val]) newTs.addOption(product);
         newTs.setValue(val, true);
         newRow.querySelector('.item-product-id').value = src.querySelector('.item-product-id').value;
         newRow.querySelector('.item-product-name').value = src.querySelector('.item-product-name').value;
@@ -710,11 +695,10 @@ function resolveSaleRowForQuickProduct(rowIndex) {
     }
     return row;
 }
-function applyProductToSaleRow(rowEl, data, text) {
+function applyProductToSaleRow(rowEl, data) {
     if (!rowEl || !data) return;
-    const id = String(data.id);
-    const price = parseFloat(data.price) || 0;
-    const kdv = parseFloat(data.kdv) ?? 10;
+    const product = window.registerSaleProduct(data);
+    const id = String(product.id);
     const idInput = rowEl.querySelector('.item-product-id');
     const nameInput = rowEl.querySelector('.item-product-name');
     const priceEl = rowEl.querySelector('.item-price');
@@ -723,84 +707,16 @@ function applyProductToSaleRow(rowEl, data, text) {
     if (idInput) idInput.value = id;
     if (nameInput) nameInput.value = '';
     if (priceEl) {
-        priceEl.value = fmt(price);
-        priceEl.setAttribute('data-raw', String(price));
+        priceEl.value = fmt(product.price);
+        priceEl.setAttribute('data-raw', String(product.price));
     }
-    if (kdvEl) kdvEl.value = kdv;
+    if (kdvEl) kdvEl.value = product.kdv ?? 10;
     if (qtyEl && (!qtyEl.value || parseInt(qtyEl.value, 10) < 1)) qtyEl.value = '1';
     const ts = rowEl.querySelector('.item-product')?.tomselect;
     if (ts) {
-        if (!ts.options[id]) ts.addOption({ value: id, text: text });
+        if (!ts.options[id]) ts.addOption(product);
         ts.setValue(id, true);
     }
-}
-function initProductSelect(sel, rowIdx) {
-    if (!sel || typeof TomSelect === 'undefined') return;
-    window.salesProductSelects = window.salesProductSelects || [];
-    const idInput = sel.closest('.item-row').querySelector('.item-product-id');
-    const nameInput = sel.closest('.item-row').querySelector('.item-product-name');
-    const ts = new TomSelect(sel, {
-        create: true,
-        createOnBlur: true,
-        maxOptions: 100,
-        placeholder: 'Ara veya yaz (örn. montaj hizmeti)...',
-        searchField: ['text'],
-        dropdownParent: 'body',
-        onDropdownOpen: function() {
-            const rect = this.control.getBoundingClientRect();
-            const viewportH = window.innerHeight || document.documentElement.clientHeight;
-            if (rect.bottom > viewportH - 220) { this.dropdown.classList.add('dropup'); }
-        },
-        onDropdownClose: function() { this.dropdown.classList.remove('dropup'); },
-        render: {
-            option_create: (data, escape) => '<div class="create">+ "' + escape(data.input) + '" olarak ekle</div>',
-            item: function(data, escape) {
-                const p = productsData.find(x => String(x.id) === String(data.value));
-                const img = p?.image;
-                const imgHtml = img ? '<img src="' + escape(img) + '" alt="" class="w-8 h-8 object-cover rounded shrink-0 mr-2" onerror="this.style.display=\'none\'">' : '';
-                return '<div class="flex items-center gap-2 min-w-0"><span class="shrink-0">' + imgHtml + '</span><span class="truncate">' + escape(data.text) + '</span></div>';
-            },
-            option: function(data, escape) {
-                const p = productsData.find(x => String(x.id) === String(data.value));
-                const img = p?.image;
-                const imgHtml = img ? '<img src="' + escape(img) + '" alt="" class="w-8 h-8 object-cover rounded shrink-0 mr-2" onerror="this.style.display=\'none\'">' : '';
-                return '<div class="flex items-center gap-2">' + imgHtml + '<span>' + escape(data.text) + '</span></div>';
-            }
-        },
-        onItemAdd: function(value) {
-            const row = sel.closest('.item-row');
-            const opt = Array.from(sel.options).find(o => o.value === value);
-            if (opt && opt.dataset.price) {
-                const priceNum = parseFloat(opt.dataset.price) || 0;
-                row.querySelector('.item-price').value = fmt(priceNum);
-                row.querySelector('.item-price').setAttribute('data-raw', String(priceNum));
-                row.querySelector('.item-kdv').value = opt.dataset.kdv || 10;
-            }
-            const product = productsData.find(p => p.id === value);
-            if (product) {
-                idInput.value = value;
-                nameInput.value = '';
-            } else {
-                idInput.value = '';
-                nameInput.value = value;
-            }
-        },
-        onClear: function() {
-            idInput.value = '';
-            nameInput.value = '';
-        }
-    });
-    ts.on('change', function(v) {
-        if (v && v !== '') {
-            const product = productsData.find(p => p.id === v || p.id === String(v));
-            idInput.value = product ? v : '';
-            nameInput.value = product ? '' : v;
-        } else {
-            idInput.value = '';
-            nameInput.value = '';
-        }
-    });
-    window.salesProductSelects[rowIdx] = ts;
 }
 function fmt(n) { return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n || 0); }
 function parseTrNum(s) {
@@ -1041,6 +957,7 @@ function updateCustomerInfo(customerId) {
     setRow('customerTax', taxParts.length ? taxParts.join(' · ') : null);
 }
 function initSalesForm() {
+    if (window.seedSaleProducts) window.seedSaleProducts(productsData);
     document.querySelectorAll('input[name="initialPaymentMode"]').forEach(function(radio) {
         radio.addEventListener('change', updateInitialPaymentMode);
     });

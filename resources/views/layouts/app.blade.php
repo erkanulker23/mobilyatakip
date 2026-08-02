@@ -69,6 +69,7 @@
     <script defer src="{{ route('assets.js', ['file' => 'payment-kasa.js']) }}?v={{ @filemtime(public_path('js/payment-kasa.js')) ?: 1 }}"></script>
     <script defer src="{{ route('assets.js', ['file' => 'turkey-address.js']) }}?v={{ @filemtime(public_path('js/turkey-address.js')) ?: 1 }}"></script>
     <script defer src="{{ route('assets.js', ['file' => 'form-inputs.js']) }}?v={{ @filemtime(public_path('js/form-inputs.js')) ?: 1 }}"></script>
+    <script defer src="{{ route('assets.js', ['file' => 'image-upload-compress.js']) }}?v={{ @filemtime(public_path('js/image-upload-compress.js')) ?: 1 }}"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -236,6 +237,10 @@
         .dark .ts-dropdown .option { color: #d4d4d4; }
         .dark .ts-dropdown .option.active, .dark .ts-dropdown .option:hover { background: #262626; color: #f5f5f5; }
         .dark .ts-wrapper.multi .ts-control > div { background: #404040; color: #f5f5f5; border-color: #525252; }
+        .ts-dropdown.sale-product-dropdown { min-width: min(440px, calc(100vw - 2rem)); max-width: 560px; }
+        .ts-dropdown.sale-product-dropdown .option { padding: 8px 12px; border-bottom: 1px solid rgba(0,0,0,.04); }
+        .ts-dropdown.sale-product-dropdown .option:last-child { border-bottom: 0; }
+        .dark .ts-dropdown.sale-product-dropdown .option { border-bottom-color: rgba(255,255,255,.06); }
         @media (max-width: 1023px) { main { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); } }
         @media print { .no-print { display: none !important; } aside { display: none !important; } }
     </style>
@@ -321,8 +326,11 @@
                                 <div class="flex items-start gap-3">
                                     <span class="shrink-0 mt-1.5 w-2 h-2 rounded-full {{ $dotClasses }}"></span>
                                     <div class="min-w-0 flex-1">
-                                        <p class="text-sm text-neutral-800 dark:text-neutral-200 leading-snug">{{ $activity['message'] }}</p>
-                                        <p class="mt-1 text-xs text-neutral-500 dark:text-neutral-400">{{ $activity['user'] }} · {{ $activity['timeAgo'] }}</p>
+                                        <p class="text-sm text-neutral-800 dark:text-neutral-200 leading-snug">
+                                            <span class="font-semibold text-neutral-900 dark:text-white">{{ $activity['user'] }}</span>
+                                            <span> {{ $activity['text'] ?? $activity['message'] }}</span>
+                                        </p>
+                                        <p class="mt-1 text-xs text-neutral-500 dark:text-neutral-400">{{ $activity['timeAgo'] }}</p>
                                     </div>
                                 </div>
                             @if($activity['url'])
@@ -386,7 +394,12 @@
                 <p class="px-3 pt-5 pb-1 text-[10px] font-medium text-neutral-400 uppercase tracking-widest">Raporlar</p>
                 <a href="{{ route('reports.index') }}" class="nav-link flex items-center gap-3 px-3 py-2 text-sm {{ request()->routeIs('reports.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>Raporlar</a>
                 <p class="px-3 pt-5 pb-1 text-[10px] font-medium text-neutral-400 uppercase tracking-widest">Sistem</p>
+                @php $linkedPersonnel = auth()->user()?->personnel; @endphp
+                @if($linkedPersonnel && !auth()->user()?->isAdmin())
+                <a href="{{ route('personnel.show', $linkedPersonnel) }}" class="nav-link flex items-center gap-3 px-3 py-2 text-sm {{ request()->routeIs('personnel.show') && request()->route('personnel')?->id === $linkedPersonnel->id ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>Siparişlerim</a>
+                @else
                 <a href="{{ route('personnel.index') }}" class="nav-link flex items-center gap-3 px-3 py-2 text-sm {{ request()->routeIs('personnel.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>Personel</a>
+                @endif
                 @auth
                 @if(auth()->user()?->isAdmin())
                 <a href="{{ route('settings.index') }}" class="nav-link flex items-center gap-3 px-3 py-2 text-sm {{ request()->routeIs('settings.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>Ayarlar</a>

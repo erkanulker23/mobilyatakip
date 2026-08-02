@@ -17,6 +17,16 @@ class PersonnelController extends Controller
 
     public function index(Request $request)
     {
+        $user = $request->user();
+        if ($user && ! $user->isAdmin()) {
+            $linked = $user->personnel;
+            if ($linked) {
+                return redirect()->route('personnel.show', $linked);
+            }
+
+            abort(403, 'Personel kaydınız bulunamadı.');
+        }
+
         $q = Personnel::query()->with('user')->orderBy('name');
         if ($request->filled('search')) {
             $s = $request->search;
@@ -38,6 +48,10 @@ class PersonnelController extends Controller
 
     public function create()
     {
+        if (! auth()->user()?->isAdmin()) {
+            abort(403);
+        }
+
         $personnel = new Personnel;
 
         return view('personnel.create', compact('personnel'));
@@ -45,6 +59,10 @@ class PersonnelController extends Controller
 
     public function store(Request $request)
     {
+        if (! auth()->user()?->isAdmin()) {
+            abort(403);
+        }
+
         $canAccess = $request->boolean('canAccessSystem');
         $rules = [
             'name' => 'required|string|max:255',
@@ -86,13 +104,31 @@ class PersonnelController extends Controller
 
     public function show(Personnel $personnel)
     {
-        $personnel->load(['quotes', 'user']);
+        $this->authorizeView($personnel);
 
-        return view('personnel.show', compact('personnel'));
+        $personnel->load('user');
+
+        $salesQuery = $personnel->sales()->with('customer')->orderByDesc('saleDate')->orderByDesc('createdAt');
+
+        $salesStats = (object) [
+            'count' => (clone $salesQuery)->count(),
+            'activeCount' => (clone $salesQuery)->where('isCancelled', false)->count(),
+            'total' => (float) (clone $salesQuery)->where('isCancelled', false)->sum('grandTotal'),
+            'monthCount' => (clone $salesQuery)->where('isCancelled', false)->whereMonth('saleDate', now()->month)->whereYear('saleDate', now()->year)->count(),
+        ];
+
+        $sales = $salesQuery->paginate(20)->withQueryString();
+
+        $quotes = $personnel->quotes()->with('customer')->orderByDesc('createdAt')->limit(10)->get();
+
+        $viewingOwnProfile = auth()->user()?->personnel?->id === $personnel->id;
+
+        return view('personnel.show', compact('personnel', 'sales', 'quotes', 'salesStats', 'viewingOwnProfile'));
     }
 
     public function edit(Personnel $personnel)
     {
+        $this->authorizeManage($personnel);
         $personnel->load('user');
 
         return view('personnel.edit', compact('personnel'));
@@ -100,6 +136,8 @@ class PersonnelController extends Controller
 
     public function update(Request $request, Personnel $personnel)
     {
+        $this->authorizeManage($personnel);
+
         $canAccess = $request->boolean('canAccessSystem');
         $rules = [
             'name' => 'required|string|max:255',
@@ -148,10 +186,22 @@ class PersonnelController extends Controller
 
     public function deletePhoto(Personnel $personnel)
     {
+        $this->authorizeManage($personnel);
         $this->removePhotoFile($personnel);
         $personnel->update(['photoUrl' => null]);
 
         return redirect()->route('personnel.edit', $personnel)->with('success', 'Personel resmi silindi.');
+    }
+
+    public function destroy(Personnel $personnel)
+    {
+        $this->authorizeManage($personnel);
+        $this->accessService->disableAccess($personnel);
+        $this->removePhotoFile($personnel);
+        $this->auditService->logDelete('personnel', $personnel->id, ['name' => $personnel->name]);
+        $personnel->delete();
+
+        return redirect()->route('personnel.index')->with('success', 'Personel silindi.');
     }
 
     private function removePhotoFile(Personnel $personnel): void
@@ -165,13 +215,28 @@ class PersonnelController extends Controller
         }
     }
 
-    public function destroy(Personnel $personnel)
+    private function authorizeView(Personnel $personnel): void
     {
-        $this->accessService->disableAccess($personnel);
-        $this->removePhotoFile($personnel);
-        $this->auditService->logDelete('personnel', $personnel->id, ['name' => $personnel->name]);
-        $personnel->delete();
+        $user = auth()->user();
+        if (! $user) {
+            abort(403);
+        }
 
-        return redirect()->route('personnel.index')->with('success', 'Personel silindi.');
+        if ($user->isAdmin()) {
+            return;
+        }
+
+        if ($user->personnel?->id === $personnel->id) {
+            return;
+        }
+
+        abort(403, 'Bu personel kaydını görüntüleme yetkiniz yok.');
+    }
+
+    private function authorizeManage(Personnel $personnel): void
+    {
+        if (! auth()->user()?->isAdmin()) {
+            abort(403, 'Personel düzenleme yetkisi yalnızca yöneticidedir.');
+        }
     }
 }

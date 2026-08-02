@@ -16,8 +16,8 @@
         @csrf
         <div>
             <label class="form-label">Personel Resmi</label>
-            <input type="file" name="photo" accept="image/*" class="form-input py-2">
-            <p class="mt-1 text-xs text-neutral-500">PNG, JPG, WEBP · max 2MB (opsiyonel)</p>
+            <input type="file" name="photo" accept="image/*" class="form-input py-2" data-compress-image data-max-bytes="921600">
+            <p class="mt-1 text-xs text-neutral-500">PNG, JPG, WEBP · max 2MB (büyük dosyalar otomatik küçültülür)</p>
             @error('photo')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
         <div>

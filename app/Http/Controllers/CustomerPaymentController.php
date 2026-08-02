@@ -135,7 +135,7 @@ class CustomerPaymentController extends Controller
             'customerId' => 'required|exists:customers,id',
             'saleId' => 'nullable|exists:sales,id',
             'amount' => 'required|numeric|min:0.01',
-            'paymentDate' => 'required|date',
+            'paymentDate' => 'required|date|before_or_equal:today',
             'paymentType' => \App\Support\PaymentType::validationRule(),
             'kasaId' => 'nullable|exists:kasa,id',
             'reference' => 'nullable|string|max:255',
@@ -266,7 +266,7 @@ class CustomerPaymentController extends Controller
         $validated = $request->validate([
             'saleId' => 'nullable|exists:sales,id',
             'amount' => 'required|numeric|min:0.01',
-            'paymentDate' => 'required|date',
+            'paymentDate' => 'required|date|before_or_equal:today',
             'paymentType' => \App\Support\PaymentType::validationRule(),
             'kasaId' => 'nullable|exists:kasa,id',
             'reference' => 'nullable|string|max:255',

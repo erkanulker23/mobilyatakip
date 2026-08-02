@@ -30,15 +30,15 @@ class ActivityMessage
     ];
 
     private const ACTIONS = [
-        'create' => 'oluşturuldu',
-        'update' => 'güncellendi',
-        'delete' => 'silindi',
-        'cancel' => 'iptal edildi',
-        'convert' => 'siparişe dönüştürüldü',
-        'email' => 'e-posta gönderildi',
-        'sync' => 'senkronize edildi',
-        'status' => 'durum güncellendi',
-        'transfer' => 'virman yapıldı',
+        'create' => 'oluşturdu',
+        'update' => 'güncelledi',
+        'delete' => 'sildi',
+        'cancel' => 'iptal etti',
+        'convert' => 'siparişe dönüştürdü',
+        'email' => 'e-posta gönderdi',
+        'sync' => 'senkronize etti',
+        'status' => 'durumu güncelledi',
+        'transfer' => 'virman yaptı',
     ];
 
     private const ROUTES = [
@@ -64,22 +64,26 @@ class ActivityMessage
 
     public static function from(AuditLog $log): array
     {
-        $data = $log->newValue ?? $log->oldValue ?? [];
+        $rawData = $log->newValue ?? $log->oldValue ?? [];
+        $userName = $log->user?->name ?? ($rawData['_actorName'] ?? null);
+        $data = collect($rawData)->except('_actorName')->all();
         $entityLabel = self::ENTITIES[$log->entity] ?? ucfirst(str_replace('_', ' ', $log->entity));
         $detail = self::detail($log->entity, $data);
-        $message = self::buildMessage($log, $entityLabel, $detail, $data);
+        $text = self::buildActionText($log, $entityLabel, $detail, $data);
+        $displayUser = $userName ?: 'Sistem';
 
         return [
-            'message' => $message,
+            'message' => "{$displayUser} {$text}",
+            'text' => $text,
+            'user' => $displayUser,
             'url' => self::url($log),
             'tone' => self::tone($log->action),
-            'user' => $log->user?->name ?? 'Sistem',
             'time' => $log->createdAt,
             'timeAgo' => self::timeAgo($log->createdAt),
         ];
     }
 
-    private static function buildMessage(AuditLog $log, string $entityLabel, string $detail, array $data): string
+    private static function buildActionText(AuditLog $log, string $entityLabel, string $detail, array $data): string
     {
         $action = $log->action;
 
@@ -87,40 +91,49 @@ class ActivityMessage
             $statusLabel = $log->entity === 'service_ticket'
                 ? ServiceTicketStatus::label($data['status'])
                 : ($data['statusLabel'] ?? $data['status']);
+            $target = trim("{$entityLabel} {$detail}");
 
-            return trim("{$entityLabel} {$detail} durumu güncellendi: {$statusLabel}");
+            return trim("{$target} durumunu güncelledi: {$statusLabel}");
         }
 
         if ($action === 'convert') {
             $saleNo = $data['saleNumber'] ?? '';
+            $quote = trim("teklif {$detail}");
 
-            return trim("Teklif {$detail} siparişe dönüştürüldü" . ($saleNo ? " ({$saleNo})" : ''));
+            return trim("{$quote} kaydını siparişe dönüştürdü" . ($saleNo ? " ({$saleNo})" : ''));
         }
 
         if ($action === 'email') {
-            return trim("{$entityLabel} {$detail} e-posta ile gönderildi");
+            $target = trim("{$entityLabel} {$detail}");
+
+            return trim("{$target} için e-posta gönderdi");
         }
 
         if ($action === 'transfer' && ! empty($data['toKasaName'])) {
-            $amount = ! empty($data['amount']) ? ' (' . Money::format($data['amount']) . ' ₺ → ' . $data['toKasaName'] . ')' : ' → ' . $data['toKasaName'];
+            $target = trim("{$entityLabel} {$detail}");
+            $amount = ! empty($data['amount'])
+                ? ' (' . Money::format($data['amount']) . ' ₺ → ' . $data['toKasaName'] . ')'
+                : ' (→ ' . $data['toKasaName'] . ')';
 
-            return trim("{$entityLabel} {$detail} virman yapıldı{$amount}");
+            return trim("{$target} için virman yaptı{$amount}");
         }
 
         if ($action === 'sync') {
+            $target = trim("{$entityLabel} {$detail}");
             $extra = $data['summary'] ?? null;
 
-            return trim("{$entityLabel} {$detail} senkronize edildi" . ($extra ? " — {$extra}" : ''));
+            return trim("{$target} kaydını senkronize etti" . ($extra ? " — {$extra}" : ''));
         }
 
         $actionLabel = self::ACTIONS[$action] ?? $action;
         $suffix = self::suffix($log->entity, $data);
+        $target = trim("{$entityLabel} {$detail}");
 
-        if ($detail !== '') {
-            return trim("{$entityLabel} {$detail} {$actionLabel}{$suffix}");
+        if ($target !== '') {
+            return trim("{$target} kaydını {$actionLabel}{$suffix}");
         }
 
-        return trim("{$entityLabel} {$actionLabel}{$suffix}");
+        return trim("{$entityLabel} kaydını {$actionLabel}{$suffix}");
     }
 
     private static function detail(string $entity, array $data): string

@@ -37,10 +37,10 @@ class SaleController extends Controller
     public function create()
     {
         $customers = Customer::with(['city', 'district'])->where('isActive', true)->orderBy('name')->get();
-        $products = Product::where('isActive', true)->orderBy('name')->get();
         $personnel = Personnel::where('isActive', true)->orderBy('name')->get();
         $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
-        return view('sales.create', compact('customers', 'products', 'personnel', 'kasalar'));
+        $initialProducts = collect();
+        return view('sales.create', compact('customers', 'initialProducts', 'personnel', 'kasalar'));
     }
 
     public function store(Request $request)
@@ -224,6 +224,9 @@ class SaleController extends Controller
         if ($request->filled('customerId')) {
             $q->where('customerId', $request->customerId);
         }
+        if ($request->filled('personnelId')) {
+            $q->where('personnelId', $request->personnelId);
+        }
         if ($request->filled('from')) {
             $q->whereDate('saleDate', '>=', $request->from);
         }
@@ -234,10 +237,13 @@ class SaleController extends Controller
             $q->where('needsFinalMeasurement', $request->needsFinalMeasurement === '1');
         }
         if ($request->filled('deliveryStatus')) {
+            $q->where('isCancelled', false);
             if ($request->deliveryStatus === 'delivered') {
-                $q->whereNotNull('deliveredAt')->where('isCancelled', false);
+                $q->where('orderStatus', 'delivered');
             } elseif ($request->deliveryStatus === 'pending') {
-                $q->whereNull('deliveredAt')->where('isCancelled', false);
+                $q->where('orderStatus', 'pending');
+            } elseif ($request->deliveryStatus === 'ssh') {
+                $q->where('orderStatus', 'ssh');
             }
         }
         $sales = $q->paginate(20)->withQueryString();
@@ -288,9 +294,12 @@ class SaleController extends Controller
             abort(404);
         }
         $customers = Customer::with(['city', 'district'])->where('isActive', true)->orderBy('name')->get();
-        $products = Product::where('isActive', true)->orderBy('name')->get();
         $personnel = Personnel::where('isActive', true)->orderBy('name')->get();
-        return view('sales.edit', compact('sale', 'customers', 'products', 'personnel'));
+        $productIds = $sale->items->pluck('productId')->filter()->unique()->values();
+        $initialProducts = $productIds->isEmpty()
+            ? collect()
+            : Product::with('supplier:id,name')->whereIn('id', $productIds)->get();
+        return view('sales.edit', compact('sale', 'customers', 'initialProducts', 'personnel'));
     }
 
     public function update(Request $request, Sale $sale)
@@ -441,18 +450,24 @@ class SaleController extends Controller
         }
 
         $validated = $request->validate([
-            'deliveryStatus' => 'required|in:pending,delivered',
+            'deliveryStatus' => 'required|in:pending,delivered,ssh',
         ]);
 
-        if ($validated['deliveryStatus'] === 'delivered') {
-            if (!$sale->deliveredAt) {
-                $sale->update(['deliveredAt' => now()]);
-            }
+        $status = $validated['deliveryStatus'];
+        if ($status === 'delivered') {
+            $sale->update([
+                'orderStatus' => 'delivered',
+                'deliveredAt' => $sale->deliveredAt ?? now(),
+            ]);
             $message = 'Sipariş teslim edildi olarak işaretlendi.';
+        } elseif ($status === 'ssh') {
+            $sale->update(['orderStatus' => 'ssh']);
+            $message = 'Sipariş SSH var olarak işaretlendi.';
         } else {
-            if ($sale->deliveredAt) {
-                $sale->update(['deliveredAt' => null]);
-            }
+            $sale->update([
+                'orderStatus' => 'pending',
+                'deliveredAt' => null,
+            ]);
             $message = 'Sipariş teslim bekliyor olarak güncellendi.';
         }
 
@@ -532,7 +547,10 @@ class SaleController extends Controller
         if ($sale->deliveredAt) {
             return redirect()->route('sales.show', $sale)->with('info', 'Bu satış zaten teslim edildi olarak işaretli.');
         }
-        $sale->update(['deliveredAt' => now()]);
+        $sale->update([
+            'orderStatus' => 'delivered',
+            'deliveredAt' => now(),
+        ]);
         return redirect()->route('sales.show', $sale)->with('success', 'Satış teslim edildi olarak işaretlendi.');
     }
 
@@ -541,7 +559,10 @@ class SaleController extends Controller
         if (!$sale->deliveredAt) {
             return redirect()->route('sales.show', $sale)->with('info', 'Bu satış teslim edildi olarak işaretli değil.');
         }
-        $sale->update(['deliveredAt' => null]);
+        $sale->update([
+            'orderStatus' => 'pending',
+            'deliveredAt' => null,
+        ]);
         return redirect()->route('sales.show', $sale)->with('success', 'Teslim işareti kaldırıldı.');
     }
 

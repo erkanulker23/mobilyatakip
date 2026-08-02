@@ -63,13 +63,19 @@
                 <p class="mt-1">
                     @include('partials.payment-status-badge', ['status' => ['key' => $customerBalance['key'], 'label' => $customerBalance['label']]])
                 </p>
-                <p class="text-xl font-semibold mt-2 tracking-tight {{ $customerBalance['key'] === 'borclu' ? 'text-red-600 dark:text-red-400' : ($customerBalance['key'] === 'alacakli' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-900 dark:text-white') }}">
+                <p class="text-xl font-semibold mt-2 tracking-tight {{ $customerBalance['key'] === 'borclu' ? 'text-red-600 dark:text-red-400' : ($customerBalance['key'] === 'siparis_yok' ? 'text-neutral-400 dark:text-slate-500' : 'text-emerald-600 dark:text-emerald-400') }}">
+                    @if($customerBalance['key'] === 'borclu')
                     {{ number_format($customerBalance['amount'], 0, ',', '.') }} ₺
+                    @elseif($customerBalance['key'] === 'siparis_yok')
+                    —
+                    @else
+                    Borcu yok
+                    @endif
                 </p>
-                <p class="text-xs text-neutral-500 dark:text-slate-400 mt-1">{{ $customerBalance['amountLabel'] ?? 'Bakiye' }}</p>
+                <p class="text-xs text-neutral-500 dark:text-slate-400 mt-1">{{ $customerBalance['amountLabel'] ?? 'Durum' }}</p>
             </div>
-            <div class="p-3 rounded-xl {{ $customerBalance['key'] === 'borclu' ? 'bg-red-50 dark:bg-red-900/20' : ($customerBalance['key'] === 'alacakli' ? 'bg-blue-50 dark:bg-blue-900/30' : 'bg-slate-100 dark:bg-slate-700') }}">
-                <svg class="w-6 h-6 {{ $customerBalance['key'] === 'borclu' ? 'text-red-600 dark:text-red-400' : ($customerBalance['key'] === 'alacakli' ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-500 dark:text-slate-400') }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75m15.75 0h.75.75v-.75c0-.414-.336-.75-.75-.75h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"></path></svg>
+            <div class="p-3 rounded-xl {{ $customerBalance['key'] === 'borclu' ? 'bg-red-50 dark:bg-red-900/20' : ($customerBalance['key'] === 'borcu_yok' ? 'bg-emerald-50 dark:bg-emerald-900/30' : 'bg-slate-100 dark:bg-slate-700') }}">
+                <svg class="w-6 h-6 {{ $customerBalance['key'] === 'borclu' ? 'text-red-600 dark:text-red-400' : ($customerBalance['key'] === 'borcu_yok' ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-500 dark:text-slate-400') }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75m15.75 0h.75.75v-.75c0-.414-.336-.75-.75-.75h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"></path></svg>
             </div>
         </div>
     </div>

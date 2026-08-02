@@ -50,3 +50,7 @@ fi
 php artisan queue:restart || true
 
 echo "Deploy tamamlandı: $(date -Iseconds)"
+echo ""
+echo "Not: Profil fotoğrafı 413 hatası alırsanız Forge Nginx yapılandırmasına şunu ekleyin:"
+echo "  client_max_body_size 20M;"
+echo "  (deploy/nginx-upload-limits.conf dosyasına bakın)"

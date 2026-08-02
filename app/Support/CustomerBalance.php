@@ -73,24 +73,12 @@ class CustomerBalance
             ];
         }
 
-        if ($balance < -0.005) {
-            $credit = abs($balance);
-
-            return [
-                'key' => 'alacakli',
-                'label' => 'Alacaklı',
-                'amount' => $credit,
-                'amountLabel' => 'Alacak tutarı',
-                'description' => 'Müşteri alacaklı — fazla tahsilat: ' . number_format($credit, 0, ',', '.') . ' ₺',
-            ];
-        }
-
         return [
-            'key' => 'dengede',
-            'label' => 'Dengede',
+            'key' => 'borcu_yok',
+            'label' => 'Borcu yoktur',
             'amount' => 0,
-            'amountLabel' => 'Bakiye',
-            'description' => 'Borç / alacak yok',
+            'amountLabel' => 'Kalan borç',
+            'description' => 'Açık borç bulunmuyor',
         ];
     }
 
@@ -108,7 +96,7 @@ class CustomerBalance
             'borclu' => 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
             'alacakli' => 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
             'siparis_yok' => 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400',
-            'odendi', 'dengede' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+            'borcu_yok', 'odendi', 'dengede' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
             default => 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
         };
     }

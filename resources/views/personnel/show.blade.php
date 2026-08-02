@@ -5,18 +5,28 @@
     <div class="flex items-center justify-between flex-wrap gap-4">
         <div>
             <div class="flex items-center gap-2 text-neutral-500 text-sm mb-1">
-                <a href="{{ route('personnel.index') }}" class="hover:text-neutral-900">Personel</a>
+                @if(auth()->user()?->isAdmin())
+                <a href="{{ route('personnel.index') }}" class="hover:text-neutral-900 dark:hover:text-white">Personel</a>
                 <span>/</span>
-                <span class="text-neutral-700">{{ $personnel->name }}</span>
+                @endif
+                <span class="text-neutral-700 dark:text-neutral-300">{{ $personnel->name }}</span>
             </div>
-            <h1 class="page-title">{{ $personnel->name }}</h1>
-            <p class="page-desc">{{ $personnel->title ?? 'Personel detayları' }}</p>
+            <h1 class="page-title">{{ $viewingOwnProfile ? 'Siparişlerim' : $personnel->name }}</h1>
+            <p class="page-desc">
+                @if($viewingOwnProfile)
+                Size atanmış tüm siparişler
+                @else
+                {{ $personnel->title ?? 'Personel detayları' }} · {{ $salesStats->count }} sipariş
+                @endif
+            </p>
         </div>
+        @if(auth()->user()?->isAdmin())
         <a href="{{ route('personnel.edit', $personnel) }}" class="btn-edit">Düzenle</a>
+        @endif
     </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
     <div class="lg:col-span-1 space-y-6">
         <div class="card p-6">
             <div class="flex justify-center mb-4">
@@ -28,15 +38,15 @@
                     </div>
                 @endif
             </div>
-            <h2 class="text-lg font-semibold text-neutral-900 mb-4">İletişim Bilgileri</h2>
-            <dl class="space-y-3">
-                <div><dt class="text-sm text-neutral-500">E-posta</dt><dd class="font-medium">{{ $personnel->email ?: '-' }}</dd></div>
-                <div><dt class="text-sm text-neutral-500">Telefon</dt><dd class="font-medium">{{ $personnel->phone ?: '-' }}</dd></div>
-                <div><dt class="text-sm text-neutral-500">Unvan</dt><dd class="font-medium">{{ $personnel->title ?: '-' }}</dd></div>
-                <div><dt class="text-sm text-neutral-500">Kategori</dt><dd class="font-medium">{{ $personnel->category ?: '-' }}</dd></div>
+            <h2 class="text-lg font-semibold text-neutral-900 dark:text-white mb-4">{{ $personnel->name }}</h2>
+            <dl class="space-y-3 text-sm">
+                <div><dt class="text-neutral-500">E-posta</dt><dd class="font-medium text-neutral-900 dark:text-white">{{ $personnel->email ?: '—' }}</dd></div>
+                <div><dt class="text-neutral-500">Telefon</dt><dd class="font-medium text-neutral-900 dark:text-white">{{ $personnel->phone ?: '—' }}</dd></div>
+                <div><dt class="text-neutral-500">Unvan</dt><dd class="font-medium text-neutral-900 dark:text-white">{{ $personnel->title ?: '—' }}</dd></div>
+                <div><dt class="text-neutral-500">Kategori</dt><dd class="font-medium text-neutral-900 dark:text-white">{{ $personnel->category ?: '—' }}</dd></div>
                 @if(auth()->user()?->isAdmin())
                 <div class="pt-2 border-t border-neutral-100 dark:border-slate-700">
-                    <dt class="text-sm text-neutral-500">Sistem erişimi</dt>
+                    <dt class="text-neutral-500">Sistem erişimi</dt>
                     <dd class="font-medium mt-1">
                         @if($personnel->hasSystemAccess())
                             <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
@@ -52,38 +62,130 @@
                 @endif
             </dl>
         </div>
+
+        <div class="card p-5 space-y-3">
+            <h2 class="text-sm font-semibold text-neutral-900 dark:text-white">Sipariş Özeti</h2>
+            <dl class="grid grid-cols-2 gap-3 text-sm">
+                <div class="rounded-lg bg-neutral-50 dark:bg-slate-800/60 p-3">
+                    <dt class="text-neutral-500 text-xs">Toplam sipariş</dt>
+                    <dd class="mt-1 text-lg font-semibold tabular-nums">{{ $salesStats->count }}</dd>
+                </div>
+                <div class="rounded-lg bg-neutral-50 dark:bg-slate-800/60 p-3">
+                    <dt class="text-neutral-500 text-xs">Aktif sipariş</dt>
+                    <dd class="mt-1 text-lg font-semibold tabular-nums">{{ $salesStats->activeCount }}</dd>
+                </div>
+                <div class="rounded-lg bg-neutral-50 dark:bg-slate-800/60 p-3 col-span-2">
+                    <dt class="text-neutral-500 text-xs">Toplam ciro</dt>
+                    <dd class="mt-1 text-lg font-semibold tabular-nums">₺{{ number_format($salesStats->total, 0, ',', '.') }}</dd>
+                </div>
+                <div class="rounded-lg bg-neutral-50 dark:bg-slate-800/60 p-3 col-span-2">
+                    <dt class="text-neutral-500 text-xs">Bu ay</dt>
+                    <dd class="mt-1 font-semibold tabular-nums">{{ $salesStats->monthCount }} sipariş</dd>
+                </div>
+            </dl>
+        </div>
     </div>
-    <div class="lg:col-span-2">
+
+    <div class="lg:col-span-2 space-y-6">
         <div class="card overflow-hidden">
-            <div class="px-6 py-4 border-b border-neutral-200">
-                <h2 class="text-lg font-semibold text-slate-900">Teklifler</h2>
-                <p class="text-sm text-neutral-500 mt-1">{{ $personnel->quotes->count() }} teklif</p>
+            <div class="px-6 py-4 border-b border-neutral-200 dark:border-slate-700 flex items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-semibold text-neutral-900 dark:text-white">Siparişler</h2>
+                    <p class="text-sm text-neutral-500 dark:text-slate-400 mt-1">{{ $personnel->name }} personeline atanmış tüm satışlar</p>
+                </div>
+                @if(auth()->user()?->isAdmin())
+                <a href="{{ route('sales.index', ['personnelId' => $personnel->id]) }}" class="text-sm text-emerald-600 hover:text-emerald-700 font-medium shrink-0">Satış listesinde filtrele →</a>
+                @endif
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full">
                     <thead>
+                        <tr class="border-b border-neutral-100 dark:border-slate-700">
+                            <th class="table-th">Sipariş No</th>
+                            <th class="table-th">Müşteri</th>
+                            <th class="table-th">Tarih</th>
+                            <th class="table-th">Termin</th>
+                            <th class="table-th text-right">Toplam</th>
+                            <th class="table-th">Durum</th>
+                            <th class="table-th text-right w-24">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-neutral-100 dark:divide-slate-700">
+                        @forelse($sales as $sale)
+                        @php $saleStatus = \App\Support\CustomerBalance::saleStatus($sale); @endphp
+                        <tr class="hover:bg-neutral-50/50 dark:hover:bg-slate-800/40 transition-colors {{ ($sale->isCancelled ?? false) ? 'opacity-60' : '' }}">
+                            <td class="table-td">
+                                <a href="{{ route('sales.show', $sale) }}" class="font-medium text-neutral-900 dark:text-white hover:text-emerald-600">{{ $sale->saleNumber }}</a>
+                                @if($sale->isCancelled ?? false)
+                                <span class="ml-1 text-[10px] px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 font-medium">İptal</span>
+                                @endif
+                                @if($sale->needsFinalMeasurement ?? false)
+                                <span class="block mt-1">@include('partials.final-measurement-badge', ['sale' => $sale])</span>
+                                @endif
+                            </td>
+                            <td class="table-td">{{ $sale->customer?->name ?? '—' }}</td>
+                            <td class="table-td text-neutral-600 dark:text-slate-300">{{ $sale->saleDate?->format('d.m.Y') ?? '—' }}</td>
+                            <td class="table-td text-neutral-600 dark:text-slate-300">{{ $sale->dueDate?->format('d.m.Y') ?? '—' }}</td>
+                            <td class="table-td text-right font-medium tabular-nums">₺{{ number_format($sale->grandTotal ?? 0, 0, ',', '.') }}</td>
+                            <td class="table-td">
+                                @if(!($sale->isCancelled ?? false))
+                                <div class="flex flex-col items-start gap-1">
+                                    @include('partials.payment-status-badge', ['status' => $saleStatus])
+                                    @include('partials.delivery-status-badge', ['sale' => $sale])
+                                </div>
+                                @else
+                                —
+                                @endif
+                            </td>
+                            <td class="table-td text-right">
+                                <a href="{{ route('sales.show', $sale) }}" class="text-sm font-medium text-emerald-600 hover:text-emerald-700">Gör</a>
+                            </td>
+                        </tr>
+                        @empty
                         <tr>
+                            <td colspan="7" class="px-6 py-10 text-center text-neutral-500 dark:text-slate-400">
+                                Bu personele atanmış sipariş yok.
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            @if($sales->hasPages())
+            <div class="px-6 py-3 border-t border-neutral-100 dark:border-slate-700">{{ $sales->links() }}</div>
+            @endif
+        </div>
+
+        @if($quotes->isNotEmpty())
+        <div class="card overflow-hidden">
+            <div class="px-6 py-4 border-b border-neutral-200 dark:border-slate-700">
+                <h2 class="text-lg font-semibold text-neutral-900 dark:text-white">Teklifler</h2>
+                <p class="text-sm text-neutral-500 dark:text-slate-400 mt-1">Son {{ $quotes->count() }} teklif</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="border-b border-neutral-100 dark:border-slate-700">
                             <th class="table-th">No</th>
                             <th class="table-th">Müşteri</th>
                             <th class="table-th text-right">Tutar</th>
                             <th class="table-th">Tarih</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-200">
-                        @forelse($personnel->quotes->take(10) as $q)
-                        <tr class="hover:bg-slate-50">
-                            <td class="table-td"><a href="{{ route('quotes.show', $q) }}" class="font-medium text-green-600 hover:text-green-700">{{ $q->quoteNumber }}</a></td>
-                            <td class="px-6 py-4 text-slate-600">{{ $q->customer?->name ?? '-' }}</td>
-                            <td class="px-6 py-4 text-right font-medium">{{ number_format($q->grandTotal ?? 0, 0, ',', '.') }} ₺</td>
-                            <td class="px-6 py-4 text-slate-600">{{ $q->createdAt?->format('d.m.Y') }}</td>
+                    <tbody class="divide-y divide-neutral-100 dark:divide-slate-700">
+                        @foreach($quotes as $q)
+                        <tr class="hover:bg-neutral-50/50 dark:hover:bg-slate-800/40">
+                            <td class="table-td"><a href="{{ route('quotes.show', $q) }}" class="font-medium text-emerald-600 hover:text-emerald-700">{{ $q->quoteNumber }}</a></td>
+                            <td class="table-td">{{ $q->customer?->name ?? '—' }}</td>
+                            <td class="table-td text-right font-medium tabular-nums">₺{{ number_format($q->grandTotal ?? 0, 0, ',', '.') }}</td>
+                            <td class="table-td text-neutral-600 dark:text-slate-300">{{ $q->createdAt?->format('d.m.Y') }}</td>
                         </tr>
-                        @empty
-                        <tr><td colspan="4" class="px-6 py-8 text-center text-neutral-500">Henüz teklif yok.</td></tr>
-                        @endforelse
+                        @endforeach
                     </tbody>
                 </table>
             </div>
         </div>
+        @endif
     </div>
 </div>
 @endsection

@@ -17,14 +17,29 @@ class AuditService
                 'entity' => $entity,
                 'entityId' => $entityId,
                 'action' => $action,
-                'oldValue' => $oldValue,
-                'newValue' => $newValue,
+                'oldValue' => $this->withActor($oldValue),
+                'newValue' => $this->withActor($newValue),
                 'ipAddress' => request()->ip(),
                 'userAgent' => request()->userAgent(),
             ]);
         } catch (\Throwable $e) {
             report($e);
         }
+    }
+
+    /** @param  array<string, mixed>|null  $payload */
+    private function withActor(?array $payload): ?array
+    {
+        if ($payload === null) {
+            return null;
+        }
+
+        $user = auth()->user();
+        if ($user && empty($payload['_actorName'])) {
+            $payload['_actorName'] = $user->name;
+        }
+
+        return $payload;
     }
 
     public function logCreate(string $entity, string $entityId, array $data): void

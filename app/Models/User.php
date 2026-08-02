@@ -103,6 +103,11 @@ class User extends Authenticatable implements CanResetPasswordContract
         return $this->hasOne(Personnel::class, 'userId');
     }
 
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(UserTask::class, 'userId')->orderBy('sortOrder')->orderBy('dueDate');
+    }
+
     public function photoDisplayUrl(): ?string
     {
         if (! Schema::hasColumn($this->getTable(), 'photoUrl') || ! $this->photoUrl) {

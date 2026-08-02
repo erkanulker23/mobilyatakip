@@ -27,8 +27,8 @@
                     </div>
                 @endif
                 <div class="flex-1 min-w-[200px]">
-                    <input type="file" name="photo" accept="image/*" class="form-input py-2">
-                    <p class="mt-1 text-xs text-neutral-500">PNG, JPG, WEBP · max 2MB. Yeni resim yüklerseniz mevcut resmin yerini alır.</p>
+                    <input type="file" name="photo" accept="image/*" class="form-input py-2" data-compress-image data-max-bytes="921600">
+                    <p class="mt-1 text-xs text-neutral-500">PNG, JPG, WEBP · max 2MB. Büyük fotoğraflar otomatik küçültülür.</p>
                     @if($personnel->photoUrl)
                     <button type="submit" form="deletePhotoForm" class="mt-2 inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100">
                         Resmi sil

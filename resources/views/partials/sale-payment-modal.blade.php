@@ -49,8 +49,8 @@
                     @endif
                 </div>
                 <div>
-                    <label class="form-label">Tarih <span class="text-red-500">*</span></label>
-                    <input type="date" name="paymentDate" required value="{{ old('redirectToSale') == $sale->id ? old('paymentDate') : date('Y-m-d') }}" class="form-input min-h-[44px]" @if($saleRemaining <= 0) disabled @endif>
+                    <label class="form-label">Tahsilat Tarihi <span class="text-red-500">*</span></label>
+                    <input type="date" name="paymentDate" required value="{{ old('redirectToSale') == $sale->id ? old('paymentDate') : date('Y-m-d') }}" class="form-input min-h-[44px]" max="{{ date('Y-m-d') }}" @if($saleRemaining <= 0) disabled @endif>
                 </div>
             </div>
 

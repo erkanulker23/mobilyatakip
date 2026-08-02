@@ -12,6 +12,7 @@ use App\Models\ShippingCompanyVehicle;
 use App\Models\User;
 use App\Models\Customer;
 use App\Support\ServiceTicketStatus;
+use App\Support\SaleDelivery;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -188,6 +189,13 @@ class ServiceTicketController extends Controller
 
         $this->auditService->logCreate('service_ticket', $ticket->id, ['ticketNumber' => $ticket->ticketNumber]);
 
+        if (! empty($ticket->saleId)) {
+            $sale = Sale::find($ticket->saleId);
+            if ($sale) {
+                SaleDelivery::syncFromServiceTickets($sale);
+            }
+        }
+
         return redirect()->route('service-tickets.index')->with('success', 'Servis kaydı oluşturuldu: ' . $ticket->ticketNumber);
     }
 
@@ -351,6 +359,13 @@ class ServiceTicketController extends Controller
             'status' => $status,
         ]);
 
+        if ($serviceTicket->saleId) {
+            $sale = Sale::find($serviceTicket->saleId);
+            if ($sale) {
+                SaleDelivery::syncFromServiceTickets($sale);
+            }
+        }
+
         return back()->with('success', 'Servis durumu güncellendi.');
     }
 
@@ -358,6 +373,7 @@ class ServiceTicketController extends Controller
     {
         $ticketId = $serviceTicket->id;
         $ticketNumber = $serviceTicket->ticketNumber;
+        $saleId = $serviceTicket->saleId;
 
         DB::transaction(function () use ($serviceTicket) {
             $detailIds = $serviceTicket->details()->pluck('id');
@@ -376,6 +392,13 @@ class ServiceTicketController extends Controller
         });
 
         $this->auditService->logDelete('service_ticket', $ticketId, ['ticketNumber' => $ticketNumber]);
+
+        if ($saleId) {
+            $sale = Sale::find($saleId);
+            if ($sale) {
+                SaleDelivery::syncFromServiceTickets($sale);
+            }
+        }
 
         return redirect()->route('service-tickets.index')->with('success', 'Servis kaydı silindi: ' . $ticketNumber);
     }
