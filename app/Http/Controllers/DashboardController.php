@@ -153,14 +153,14 @@ class DashboardController extends Controller
     public function tasks()
     {
         return view('tasks.index', [
-            'taskUsers' => $this->taskUsersForCurrentUser(),
+            'taskPersonnel' => $this->taskPersonnelForCurrentUser(),
         ]);
     }
 
-    private function taskUsersForCurrentUser()
+    private function taskPersonnelForCurrentUser()
     {
         return auth()->user()?->isAdmin()
-            ? User::where('isActive', true)->orderBy('name')->get(['id', 'name', 'role'])
+            ? \App\Models\Personnel::where('isActive', true)->orderBy('name')->get(['id', 'name', 'title', 'userId'])
             : collect();
     }
 }

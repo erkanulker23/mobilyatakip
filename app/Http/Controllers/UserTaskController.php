@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Personnel;
 use App\Models\User;
 use App\Models\UserTask;
 use App\Support\UserTaskColor;
@@ -22,20 +23,31 @@ class UserTaskController extends Controller
         }
         $monthEnd = $monthStart->copy()->endOfMonth();
 
-        $query = UserTask::query()->with('user:id,name,role');
+        $query = UserTask::query()->with([
+            'user:id,name,role',
+            'personnel:id,name,title,userId',
+        ]);
 
         if ($user->isAdmin()) {
-            if ($request->filled('userId')) {
+            if ($request->filled('personnelId')) {
+                $query->where('personnelId', $request->personnelId);
+            } elseif ($request->filled('userId')) {
                 $query->where('userId', $request->userId);
             }
 
-            // Yönetici: seçili ay + tüm personelin tamamlanmamış görevleri
             $query->where(function ($w) use ($monthStart, $monthEnd) {
                 $w->whereBetween('dueDate', [$monthStart->toDateString(), $monthEnd->toDateString()])
                     ->orWhere('isCompleted', false);
             });
         } else {
-            $query->where('userId', $user->id);
+            $linkedPersonnelId = $user->personnel?->id;
+
+            $query->where(function ($w) use ($user, $linkedPersonnelId) {
+                $w->where('userId', $user->id);
+                if ($linkedPersonnelId) {
+                    $w->orWhere('personnelId', $linkedPersonnelId);
+                }
+            });
 
             $query->where(function ($w) use ($monthStart, $monthEnd) {
                 $w->whereBetween('dueDate', [$monthStart->toDateString(), $monthEnd->toDateString()])
@@ -66,11 +78,28 @@ class UserTaskController extends Controller
             'notes' => 'nullable|string|max:2000',
             'dueDate' => 'nullable|date',
             'color' => 'nullable|string|in:' . implode(',', UserTaskColor::keys()),
+            'personnelId' => 'nullable|string',
             'userId' => 'nullable|string',
         ]);
 
         $ownerId = (string) $request->user()->id;
-        if ($request->user()->isAdmin() && ! empty($validated['userId'])) {
+        $personnelId = null;
+
+        if ($request->user()->isAdmin() && ! empty($validated['personnelId'])) {
+            $personnel = Personnel::query()
+                ->where('id', $validated['personnelId'])
+                ->where('isActive', true)
+                ->first();
+
+            if (! $personnel) {
+                return response()->json(['message' => 'Geçersiz personel seçimi.'], 422);
+            }
+
+            $personnelId = $personnel->id;
+            $ownerId = $personnel->userId
+                ? (string) $personnel->userId
+                : (string) $request->user()->id;
+        } elseif ($request->user()->isAdmin() && ! empty($validated['userId'])) {
             $ownerId = (string) $validated['userId'];
             if (! User::where('id', $ownerId)->where('isActive', true)->exists()) {
                 return response()->json(['message' => 'Geçersiz kullanıcı.'], 422);
@@ -79,13 +108,17 @@ class UserTaskController extends Controller
 
         $task = UserTask::create([
             'userId' => $ownerId,
+            'personnelId' => $personnelId,
             'title' => trim($validated['title']),
             'notes' => isset($validated['notes']) ? trim($validated['notes']) : null,
             'dueDate' => $validated['dueDate'] ?? null,
             'color' => UserTaskColor::normalize($validated['color'] ?? null),
         ]);
 
-        $task->load('user:id,name,role');
+        $task->load([
+            'user:id,name,role',
+            'personnel:id,name,title,userId',
+        ]);
 
         return response()->json([
             'task' => $this->taskPayload($task),
@@ -103,6 +136,7 @@ class UserTaskController extends Controller
             'dueDate' => 'nullable|date',
             'color' => 'nullable|string|in:' . implode(',', UserTaskColor::keys()),
             'isCompleted' => 'sometimes|boolean',
+            'personnelId' => 'nullable|string',
         ]);
 
         $updates = [];
@@ -123,8 +157,32 @@ class UserTaskController extends Controller
             $updates['completedAt'] = $validated['isCompleted'] ? ($userTask->completedAt ?? now()) : null;
         }
 
+        if ($request->user()->isAdmin() && array_key_exists('personnelId', $validated)) {
+            if ($validated['personnelId'] === null || $validated['personnelId'] === '') {
+                $updates['personnelId'] = null;
+                $updates['userId'] = (string) $request->user()->id;
+            } else {
+                $personnel = Personnel::query()
+                    ->where('id', $validated['personnelId'])
+                    ->where('isActive', true)
+                    ->first();
+
+                if (! $personnel) {
+                    return response()->json(['message' => 'Geçersiz personel seçimi.'], 422);
+                }
+
+                $updates['personnelId'] = $personnel->id;
+                $updates['userId'] = $personnel->userId
+                    ? (string) $personnel->userId
+                    : (string) $request->user()->id;
+            }
+        }
+
         $userTask->update($updates);
-        $userTask->load('user:id,name,role');
+        $userTask->load([
+            'user:id,name,role',
+            'personnel:id,name,title,userId',
+        ]);
 
         return response()->json([
             'task' => $this->taskPayload($userTask),
@@ -146,7 +204,12 @@ class UserTaskController extends Controller
         if ($user->isAdmin()) {
             return;
         }
-        if ((string) $task->userId !== (string) $user->id) {
+
+        $linkedPersonnelId = $user->personnel?->id;
+        $allowed = (string) $task->userId === (string) $user->id
+            || ($linkedPersonnelId && (string) $task->personnelId === (string) $linkedPersonnelId);
+
+        if (! $allowed) {
             abort(403, 'Bu görevi yönetme yetkiniz yok.');
         }
     }
@@ -155,12 +218,17 @@ class UserTaskController extends Controller
     {
         $color = UserTaskColor::normalize($task->color);
         $classes = UserTaskColor::classes($color);
+        $assigneeName = $task->personnel?->name ?? $task->user?->name;
 
         return [
             'id' => $task->id,
             'userId' => (string) $task->userId,
             'userName' => $task->user?->name,
             'userRole' => $task->user?->role,
+            'personnelId' => $task->personnelId ? (string) $task->personnelId : null,
+            'personnelName' => $task->personnel?->name,
+            'personnelTitle' => $task->personnel?->title,
+            'assigneeName' => $assigneeName,
             'title' => $task->title,
             'notes' => $task->notes,
             'dueDate' => $task->dueDate?->format('Y-m-d'),

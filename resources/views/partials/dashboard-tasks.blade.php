@@ -26,10 +26,10 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
             @if($isTaskAdmin)
-            <select x-model="filterUserId" @change="loadTasks()" class="form-select text-sm min-h-[36px] py-1.5 max-w-[180px]">
-                <option value="">Tüm kullanıcılar</option>
-                @foreach($taskUsers ?? [] as $u)
-                <option value="{{ $u->id }}">{{ $u->name }}</option>
+            <select x-model="filterPersonnelId" @change="loadTasks()" class="form-select text-sm min-h-[36px] py-1.5 max-w-[200px]">
+                <option value="">Tüm personel</option>
+                @foreach($taskPersonnel ?? [] as $person)
+                <option value="{{ $person->id }}">{{ $person->name }}@if($person->title) — {{ $person->title }}@endif</option>
                 @endforeach
             </select>
             @endif
@@ -65,11 +65,11 @@
             </div>
             @if($isTaskAdmin)
             <div class="md:col-span-2">
-                <label class="form-label">Kullanıcı</label>
-                <select x-model="form.userId" class="form-select text-sm">
-                    <option value="">Kendim</option>
-                    @foreach($taskUsers ?? [] as $u)
-                    <option value="{{ $u->id }}">{{ $u->name }}</option>
+                <label class="form-label">Personel</label>
+                <select x-model="form.personnelId" class="form-select text-sm">
+                    <option value="">Atanmadı (kendim)</option>
+                    @foreach($taskPersonnel ?? [] as $person)
+                    <option value="{{ $person->id }}">{{ $person->name }}@if($person->title) — {{ $person->title }}@endif</option>
                     @endforeach
                 </select>
             </div>
@@ -122,8 +122,8 @@
                             <template x-for="task in cell.tasks.slice(0, 3)" :key="task.id">
                                 <div class="text-[10px] leading-tight truncate px-1 py-0.5 rounded border"
                                     :class="colorClasses(task.color).bg + ' ' + colorClasses(task.color).border + ' ' + colorClasses(task.color).text + (task.isCompleted ? ' opacity-50 line-through' : '')"
-                                    :title="isTaskAdmin && task.userName ? task.userName + ': ' + task.title : task.title">
-                                    <span x-show="isTaskAdmin && task.userId !== currentUserId && task.userName" class="font-semibold" x-text="task.userName.split(' ')[0] + ': '"></span><span x-text="task.title"></span>
+                                    :title="isTaskAdmin && task.assigneeName ? task.assigneeName + ': ' + task.title : task.title">
+                                    <span x-show="isTaskAdmin && task.personnelId && task.assigneeName" class="font-semibold" x-text="task.assigneeName.split(' ')[0] + ': '"></span><span x-text="task.title"></span>
                                 </div>
                             </template>
                             <p x-show="cell.tasks.length > 3" class="text-[10px] text-neutral-400 px-1" x-text="'+' + (cell.tasks.length - 3)"></p>
@@ -150,7 +150,7 @@
                                 <div class="min-w-0 flex-1">
                                     <p class="text-sm font-medium" :class="[colorClasses(task.color).text, task.isCompleted ? 'line-through opacity-60' : '']" x-text="task.title"></p>
                                     @if($isTaskAdmin)
-                                    <p class="text-[11px] text-neutral-500 mt-0.5" x-show="task.userName" x-text="task.userName"></p>
+                                    <p class="text-[11px] text-neutral-500 mt-0.5" x-show="task.assigneeName" x-text="task.assigneeName + (task.personnelTitle ? ' · ' + task.personnelTitle : '')"></p>
                                     @endif
                                     <p x-show="task.notes" class="text-xs text-neutral-500 mt-1" x-text="task.notes"></p>
                                 </div>
@@ -184,7 +184,7 @@
                             <div class="flex items-start gap-2">
                                 <input type="checkbox" :checked="task.isCompleted" @change="toggleComplete(task)" class="mt-1 rounded">
                                 <div class="min-w-0 flex-1">
-                                    <p class="text-[11px] font-medium text-neutral-500" x-text="task.userName"></p>
+                                    <p class="text-[11px] font-medium text-neutral-500" x-text="task.assigneeName"></p>
                                     <div class="flex items-center gap-2 mt-0.5">
                                         <span class="w-2 h-2 rounded-full shrink-0" :class="colorClasses(task.color).dot"></span>
                                         <p class="text-sm font-medium text-neutral-800 dark:text-neutral-200" :class="task.isCompleted ? 'line-through opacity-60' : ''" x-text="task.title"></p>
@@ -214,7 +214,7 @@
                                         <p class="text-sm font-medium text-neutral-800 dark:text-neutral-200" :class="task.isCompleted ? 'line-through opacity-60' : ''" x-text="task.title"></p>
                                     </div>
                                     @if($isTaskAdmin)
-                                    <p class="text-[11px] text-neutral-500 mt-0.5 ml-4" x-text="task.userName"></p>
+                                    <p class="text-[11px] text-neutral-500 mt-0.5 ml-4" x-text="task.assigneeName"></p>
                                     @endif
                                 </div>
                                 <button type="button" @click="deleteTask(task)" class="p-1 text-neutral-400 hover:text-red-600">
@@ -246,11 +246,11 @@ function dashboardTasks() {
         saving: false,
         showForm: false,
         formError: '',
-        filterUserId: '',
+        filterPersonnelId: '',
         currentMonth: today.slice(0, 7),
         selectedDate: today,
         weekdayLabels: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'],
-        form: { title: '', dueDate: today, color: 'emerald', userId: '' },
+        form: { title: '', dueDate: today, color: 'emerald', personnelId: '' },
 
         get monthLabel() {
             const [y, m] = this.currentMonth.split('-').map(Number);
@@ -268,7 +268,7 @@ function dashboardTasks() {
         get teamOpenTasks() {
             if (!isTaskAdmin) return [];
             return this.tasks
-                .filter(t => !t.isCompleted && t.userId !== currentUserId)
+                .filter(t => !t.isCompleted && t.personnelId)
                 .sort((a, b) => {
                     if (!a.dueDate && !b.dueDate) return 0;
                     if (!a.dueDate) return 1;
@@ -331,7 +331,7 @@ function dashboardTasks() {
             try {
                 const url = new URL(apiIndex, window.location.origin);
                 url.searchParams.set('month', this.currentMonth);
-                if (this.filterUserId) url.searchParams.set('userId', this.filterUserId);
+                if (this.filterPersonnelId) url.searchParams.set('personnelId', this.filterPersonnelId);
                 const res = await fetch(url, {
                     credentials: 'same-origin',
                     headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
@@ -378,7 +378,7 @@ function dashboardTasks() {
                     dueDate: this.form.dueDate || null,
                     color: this.form.color,
                 };
-                if (this.form.userId) body.userId = this.form.userId;
+                if (this.form.personnelId) body.personnelId = this.form.personnelId;
                 const res = await fetch(apiStore, {
                     method: 'POST',
                     headers: {
@@ -398,6 +398,7 @@ function dashboardTasks() {
                 await this.loadTasks();
                 this.form.title = '';
                 this.form.dueDate = this.selectedDate || today;
+                this.form.personnelId = '';
                 this.showForm = false;
             } catch (e) {
                 this.formError = e.message || 'Görev eklenemedi';

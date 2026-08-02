@@ -10,6 +10,7 @@ class UserTask extends BaseModel
 
     protected $fillable = [
         'userId',
+        'personnelId',
         'title',
         'notes',
         'dueDate',
@@ -29,5 +30,10 @@ class UserTask extends BaseModel
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'userId');
+    }
+
+    public function personnel(): BelongsTo
+    {
+        return $this->belongsTo(Personnel::class, 'personnelId');
     }
 }
