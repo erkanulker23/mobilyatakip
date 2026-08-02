@@ -25,7 +25,7 @@
         <option value="">Seçiniz</option>
         @foreach($kasalar as $k)
         <option value="{{ $k->id }}" data-kasa-type="{{ $k->type }}" {{ (string) $selectedValue === (string) $k->id ? 'selected' : '' }}>
-            {{ $k->name }} ({{ $k->type === 'banka' ? 'Banka' : 'Nakit Kasa' }})
+            {{ $k->name }} ({{ \App\Support\PaymentType::kasaTypeLabel($k) }})
         </option>
         @endforeach
     </select>

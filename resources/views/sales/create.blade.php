@@ -73,6 +73,16 @@
         @if(session('error'))
         <div class="mb-4 p-4 rounded-xl bg-red-50 text-red-700 text-sm border border-red-100">{{ session('error') }}</div>
         @endif
+        @if($errors->any())
+        <div class="mb-4 p-4 rounded-xl bg-red-50 text-red-700 text-sm border border-red-100">
+            <p class="font-medium mb-1">Formda hatalar var — girdiğiniz bilgiler korundu, lütfen düzeltip tekrar deneyin.</p>
+            <ul class="list-disc list-inside space-y-0.5">
+                @foreach($errors->all() as $err)
+                <li>{{ $err }}</li>
+                @endforeach
+            </ul>
+        </div>
+        @endif
         @if(request('returnTo') === 'service-tickets/create')
         <div class="mb-4 p-4 rounded-xl bg-blue-50 text-blue-800 text-sm border border-blue-100">
             Sipariş kaydedildikten sonra servis kaydı formuna geri döneceksiniz.
@@ -333,7 +343,7 @@
                     <div class="mt-4 pt-4 border-t border-neutral-700">
                         <label for="grandTotalOverride" class="text-xs text-neutral-400 block mb-1">Hedef toplam (indirim otomatik)</label>
                         <div class="flex items-center gap-2">
-                            <input type="text" inputmode="decimal" id="grandTotalOverride" name="grandTotalOverride" class="flex-1 text-right font-semibold bg-neutral-800 border border-neutral-600 rounded-lg px-3 py-2 text-sm text-white tabular-nums focus:outline-none focus:ring-2 focus:ring-neutral-500" placeholder="—">
+                            <input type="text" inputmode="decimal" id="grandTotalOverride" name="grandTotalOverride" value="{{ old('grandTotalOverride') !== null && old('grandTotalOverride') !== '' ? money(old('grandTotalOverride')) : '' }}" class="flex-1 text-right font-semibold bg-neutral-800 border border-neutral-600 rounded-lg px-3 py-2 text-sm text-white tabular-nums focus:outline-none focus:ring-2 focus:ring-neutral-500" placeholder="—">
                             <span class="text-neutral-400 text-sm">₺</span>
                         </div>
                     </div>
@@ -443,9 +453,11 @@
         $img = is_array($p->images ?? null) ? ($p->images[0] ?? null) : ($p->images ?? null);
         return ['id' => $p->id, 'name' => $p->name . ' (' . number_format($p->unitPrice, 0, ',', '.') . ' ₺)', 'price' => (float)$p->unitPrice, 'kdv' => (float)($p->kdvRate ?? 10), 'image' => $img ? (Str::startsWith($img, 'http') ? $img : url($img)) : null];
     })->values();
+    $oldSaleItems = collect(old('items', []))->values()->all();
 @endphp
 const customers = @json($customersJson);
 const productsData = @json($productsJson);
+const oldSaleItems = @json($oldSaleItems);
 function salesCreateForm() {
     return {
         customerId: '{{ old("customerId", request("customerId")) }}',
@@ -598,6 +610,57 @@ function addRow(focusNew) {
         rowEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
     return rowEl;
+}
+function saleItemHasContent(item) {
+    if (!item || typeof item !== 'object') return false;
+    const name = String(item.productName || '').trim();
+    const price = parseTrNum(item.unitPrice);
+    return !!(item.productId || name || (!isNaN(price) && price > 0));
+}
+function restoreSaleRow(item) {
+    const rowEl = addRow(false);
+    if (!rowEl || !item) return;
+
+    const qtyEl = rowEl.querySelector('.item-qty');
+    const kdvEl = rowEl.querySelector('.item-kdv');
+    const descEl = rowEl.querySelector('.item-desc');
+    const priceEl = rowEl.querySelector('.item-price');
+    const idInput = rowEl.querySelector('.item-product-id');
+    const nameInput = rowEl.querySelector('.item-product-name');
+
+    if (qtyEl) qtyEl.value = item.quantity ?? 1;
+    if (kdvEl) kdvEl.value = item.kdvRate ?? 10;
+    if (descEl) descEl.value = item.description ?? '';
+
+    const productId = item.productId ? String(item.productId) : '';
+    const productName = String(item.productName || '').trim();
+    const ts = rowEl.querySelector('.item-product')?.tomselect;
+
+    if (productId) {
+        const product = productsData.find(p => String(p.id) === productId);
+        const text = product ? product.name : (productName || productId);
+        if (idInput) idInput.value = productId;
+        if (nameInput) nameInput.value = '';
+        if (ts) {
+            if (!ts.options[productId]) ts.addOption({ value: productId, text: text });
+            ts.setValue(productId, true);
+        }
+    } else if (productName) {
+        if (idInput) idInput.value = '';
+        if (nameInput) nameInput.value = productName;
+        if (ts) {
+            if (!ts.options[productName]) ts.addOption({ value: productName, text: productName });
+            ts.setValue(productName, true);
+        }
+    }
+
+    if (priceEl && item.unitPrice != null && item.unitPrice !== '') {
+        const priceNum = parseTrNum(item.unitPrice);
+        if (!isNaN(priceNum)) {
+            priceEl.value = fmt(priceNum);
+            priceEl.setAttribute('data-raw', String(priceNum));
+        }
+    }
 }
 function duplicateSaleRow(btn) {
     const src = btn.closest('.item-row');
@@ -999,7 +1062,13 @@ function initSalesForm() {
         });
         setTimeout(function() { updateCustomerInfo(window.customerTomSelect?.getValue()); }, 0);
     }
-    addRow();
+    const itemsToRestore = Array.isArray(oldSaleItems) ? oldSaleItems.filter(saleItemHasContent) : [];
+    if (itemsToRestore.length > 0) {
+        itemsToRestore.forEach(function(item) { restoreSaleRow(item); });
+    }
+    if (document.querySelectorAll('#items .item-row').length === 0) {
+        addRow();
+    }
     updateSaleTotals();
 }
 </script>

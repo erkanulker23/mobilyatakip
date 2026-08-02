@@ -7,16 +7,16 @@
             empty: 'Aktif nakit kasası yok. Kasa menüsünden «Nakit Kasa» ekleyin.',
         },
         havale: {
-            label: 'Banka Hesabı',
-            types: ['banka'],
-            help: 'Havale hangi banka hesabına yapıldı?',
-            empty: 'Aktif banka hesabı yok. Kasa menüsünden «Banka» hesabı ekleyin.',
+            label: 'Banka / Hesap',
+            types: ['banka', 'kasa'],
+            help: 'Havale hangi hesaba yapıldı?',
+            empty: 'Aktif kasa veya banka hesabı yok. Kasa menüsünden hesap ekleyin.',
         },
         kredi_karti: {
             label: 'Banka / POS Hesabı',
-            types: ['banka'],
+            types: ['banka', 'kasa'],
             help: 'Kredi kartı tahsilatı hangi hesaba yansıyacak?',
-            empty: 'Aktif banka hesabı yok. Kasa menüsünden «Banka» hesabı ekleyin.',
+            empty: 'Aktif kasa veya banka hesabı yok. Kasa menüsünden hesap ekleyin.',
         },
         diger: {
             label: 'Kasa',
@@ -78,18 +78,26 @@
         Array.prototype.forEach.call(kasaEl.options, function (opt, idx) {
             if (idx === 0) {
                 opt.hidden = false;
+                opt.disabled = false;
                 return;
             }
             var kasaType = opt.getAttribute('data-kasa-type') || '';
             var show = cfg.types.length === 0 || cfg.types.indexOf(kasaType) !== -1;
             opt.hidden = !show;
+            opt.disabled = !show;
             if (!show && opt.selected) {
                 opt.selected = false;
             }
             if (show) visibleCount++;
         });
 
-        if (selected && (!kasaEl.value || kasaEl.selectedOptions[0]?.hidden)) {
+        if (kasaEl.value) {
+            var current = kasaEl.options[kasaEl.selectedIndex];
+            if (!current || current.disabled || current.value === '') {
+                kasaEl.value = '';
+            }
+        }
+        if (selected && kasaEl.value === '') {
             kasaEl.value = '';
         }
 
@@ -117,6 +125,12 @@
     }
 
     function bindField(root) {
+        if (root.dataset.kasaBound === '1') {
+            updateField(root);
+            return;
+        }
+        root.dataset.kasaBound = '1';
+
         var ptEl = document.getElementById(root.dataset.paymentTypeId);
         var amountEl = root.dataset.amountId ? document.getElementById(root.dataset.amountId) : null;
 

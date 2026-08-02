@@ -49,9 +49,25 @@ class PaymentType
     {
         return match ($paymentType) {
             'nakit' => ['kasa'],
-            'havale', 'kredi_karti' => ['banka'],
+            'havale', 'kredi_karti' => ['banka', 'kasa'],
             default => [],
         };
+    }
+
+    public static function isBankAccount(Kasa $kasa): bool
+    {
+        return $kasa->type === 'banka'
+            || filled($kasa->iban)
+            || filled($kasa->bankName);
+    }
+
+    public static function kasaTypeLabel(Kasa $kasa): string
+    {
+        if ($kasa->type === 'banka' || self::isBankAccount($kasa)) {
+            return 'Banka';
+        }
+
+        return 'Nakit Kasa';
     }
 
     public static function kasaFieldLabel(string $paymentType): string
@@ -66,12 +82,11 @@ class PaymentType
 
     public static function kasaMatchesPaymentType(string $paymentType, Kasa $kasa): bool
     {
-        $allowed = self::allowedKasaTypes($paymentType);
-        if ($allowed === []) {
-            return true;
-        }
-
-        return in_array($kasa->type, $allowed, true);
+        return match ($paymentType) {
+            'nakit' => $kasa->type === 'kasa',
+            'havale', 'kredi_karti' => in_array($kasa->type, ['banka', 'kasa'], true),
+            default => true,
+        };
     }
 
     public static function validateKasaSelection(?string $kasaId, string $paymentType, bool $required = true): ?string
@@ -96,9 +111,9 @@ class PaymentType
 
         if (!self::kasaMatchesPaymentType($paymentType, $kasa)) {
             return match ($paymentType) {
-                'nakit' => 'Nakit ödemeler için «Nakit Kasa» tipinde hesap seçin.',
-                'havale' => 'Havale ödemeleri için «Banka» tipinde hesap seçin.',
-                'kredi_karti' => 'Kredi kartı tahsilatları için «Banka» tipinde hesap seçin.',
+                'nakit' => 'Nakit ödemeler için «Nakit Kasa» tipinde hesap seçin (banka hesabı kullanılamaz).',
+                'havale' => 'Havale için geçerli bir hesap seçin.',
+                'kredi_karti' => 'Kredi kartı tahsilatı için geçerli bir hesap seçin.',
                 default => 'Seçilen hesap bu ödeme tipi için uygun değil.',
             };
         }
