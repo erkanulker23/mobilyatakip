@@ -54,6 +54,9 @@
                 @endif
                 <p class="text-neutral-500 dark:text-neutral-400 text-sm mt-1.5">Hesabınıza giriş yapın</p>
             </div>
+            @if(session('success'))
+            <div class="mb-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 text-sm">{{ session('success') }}</div>
+            @endif
             <form method="POST" action="{{ route('login') }}" class="space-y-5" id="login-form">
                 @csrf
                 <div>
@@ -63,7 +66,10 @@
                     @error('email')<p class="mt-1.5 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
                 </div>
                 <div>
-                    <label for="password" class="block text-sm font-medium text-neutral-500 mb-1.5">Şifre</label>
+                    <div class="flex items-center justify-between gap-3 mb-1.5">
+                        <label for="password" class="block text-sm font-medium text-neutral-500">Şifre</label>
+                        <a href="{{ route('password.request') }}" class="text-xs font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">Şifremi unuttum</a>
+                    </div>
                     <input type="password" id="password" name="password" required
                         class="w-full rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20">
                 </div>

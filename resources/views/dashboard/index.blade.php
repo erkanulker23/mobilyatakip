@@ -33,22 +33,24 @@
 
     {{-- Aylık Satış --}}
     <div class="card p-6">
-        <div class="flex items-start justify-between gap-3">
-            <div>
-                <p class="text-sm text-neutral-500">Aylık Satış</p>
-                <p class="text-3xl font-semibold text-neutral-900 mt-1">
-                    @if($monthlySales > 0)
-                        ₺{{ number_format($monthlySales, 0, ',', '.') }}
-                    @else
-                        <span class="text-neutral-400">₺0</span>
-                    @endif
+        <p class="text-sm text-neutral-500 mb-4">Aylık Satış Cirosu</p>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <div class="rounded-xl bg-neutral-50 p-4">
+                <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Bu Ay</p>
+                <p class="text-2xl font-semibold text-neutral-900 mt-1 tabular-nums">
+                    ₺{{ number_format($monthlySales, 0, ',', '.') }}
                 </p>
                 <p class="text-xs text-neutral-400 mt-1">
-                    @if($monthlySalesCount > 0)
-                        Bu ay {{ $monthlySalesCount }} satış · tahsilat olsun olmasın toplam ciro
-                    @else
-                        Bu ay henüz satış yok
-                    @endif
+                    {{ $monthlySalesCount > 0 ? $monthlySalesCount . ' satış' : 'Henüz satış yok' }}
+                </p>
+            </div>
+            <div class="rounded-xl bg-neutral-50 p-4">
+                <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Geçen Ay</p>
+                <p class="text-2xl font-semibold text-neutral-900 mt-1 tabular-nums">
+                    ₺{{ number_format($lastMonthSales, 0, ',', '.') }}
+                </p>
+                <p class="text-xs text-neutral-400 mt-1">
+                    {{ $lastMonthSalesCount > 0 ? $lastMonthSalesCount . ' satış' : 'Satış yok' }}
                 </p>
             </div>
         </div>

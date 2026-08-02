@@ -411,6 +411,54 @@ class SaleController extends Controller
         return view('sales.shipment', compact('sale'));
     }
 
+    public function workshopKoltuk(Sale $sale)
+    {
+        return $this->workshopSlip($sale, 'koltuk');
+    }
+
+    public function workshopMobilya(Sale $sale)
+    {
+        return $this->workshopSlip($sale, 'mobilya');
+    }
+
+    private function workshopSlip(Sale $sale, string $variant)
+    {
+        $sale = $this->saleService->find($sale->id);
+        if (!$sale) {
+            abort(404);
+        }
+        if ($sale->isCancelled ?? false) {
+            abort(404);
+        }
+
+        return view('sales.workshop', compact('sale', 'variant'));
+    }
+
+    public function updateStatus(Request $request, Sale $sale)
+    {
+        if ($sale->isCancelled) {
+            return redirect()->route('sales.show', $sale)->with('error', 'İptal edilmiş siparişin durumu güncellenemez.');
+        }
+
+        $validated = $request->validate([
+            'deliveryStatus' => 'required|in:pending,delivered',
+        ]);
+
+        if ($validated['deliveryStatus'] === 'delivered') {
+            if (!$sale->deliveredAt) {
+                $sale->update(['deliveredAt' => now()]);
+            }
+            $message = 'Sipariş teslim edildi olarak işaretlendi.';
+        } else {
+            if ($sale->deliveredAt) {
+                $sale->update(['deliveredAt' => null]);
+            }
+            $message = 'Sipariş teslim bekliyor olarak güncellendi.';
+        }
+
+        return redirect()->route('sales.show', $sale)->with('success', $message);
+    }
+
     public function shipmentPdf(Sale $sale)
     {
         $sale = $this->saleService->find($sale->id);

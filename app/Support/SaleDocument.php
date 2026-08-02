@@ -9,7 +9,7 @@ class SaleDocument
     public static function invoiceParams(Sale $sale): array
     {
         return [
-            'documentTitle' => 'SİPARİŞ / SATIŞ FİŞİ',
+            'documentTitle' => 'SİPARİŞ FİŞİ',
             'documentNumber' => $sale->saleNumber,
             'documentDate' => $sale->saleDate,
             'partyLabel' => 'Müşteri',
@@ -43,15 +43,26 @@ class SaleDocument
         ];
     }
 
-    /** Sevkiyat gönder fişi — fiyat ve ödeme bilgisi içermez. */
-    public static function shipmentParams(Sale $sale): array
+    /** Sevkiyat / atölye fişleri — fiyat ve ödeme bilgisi içermez. */
+    public static function slipParams(Sale $sale, string $variant = 'shipment'): array
     {
+        $titles = [
+            'shipment' => 'SEVKİYAT FİŞİ',
+            'koltuk' => 'KOLTUK ATÖLYE FİŞİ',
+            'mobilya' => 'MOBİLYA ATÖLYESİ FİŞİ',
+        ];
+
+        if (! isset($titles[$variant])) {
+            $variant = 'shipment';
+        }
+
         return [
-            'documentTitle' => 'SEVKİYAT GÖNDER FİŞİ',
+            'documentTitle' => $titles[$variant],
+            'slipVariant' => $variant,
             'documentNumber' => $sale->saleNumber,
             'documentDate' => $sale->saleDate,
             'dueDate' => $sale->dueDate,
-            'partyLabel' => 'Teslimat Adresi',
+            'partyLabel' => $variant === 'shipment' ? 'Teslimat Adresi' : 'Müşteri / Sipariş',
             'partyName' => $sale->customer?->name ?? '-',
             'partyAddress' => $sale->customer ? full_address($sale->customer) : null,
             'partyPhone' => $sale->customer?->phone,
@@ -59,7 +70,10 @@ class SaleDocument
             'partyEmail' => $sale->customer?->email,
             'personnelName' => $sale->personnel?->name,
             'documentNotice' => ($sale->needsFinalMeasurement ?? false)
-                ? '<strong>KESİN ÖLÇÜYE GİDİLECEK</strong> — Teslimattan önce kesin ölçü alınacaktır.'
+                ? '<strong>KESİN ÖLÇÜYE GİDİLECEK</strong> — '
+                    . ($variant === 'shipment'
+                        ? 'Teslimattan önce kesin ölçü alınacaktır.'
+                        : 'Üretim kesin ölçü sonrası planlanır.')
                 : null,
             'items' => collect($sale->items ?? [])->map(fn ($i) => [
                 'name' => self::shipmentItemName($i),
@@ -68,7 +82,14 @@ class SaleDocument
                 'sku' => $i->product?->sku ?? null,
             ])->values()->toArray(),
             'notes' => $sale->notes,
+            'showCheckColumn' => $variant === 'shipment',
         ];
+    }
+
+    /** @deprecated Use slipParams($sale, 'shipment') */
+    public static function shipmentParams(Sale $sale): array
+    {
+        return self::slipParams($sale, 'shipment');
     }
 
     /** Ürün adından fiyat parantezlerini kaldırır: "Koltuk (75.000 ₺)" → "Koltuk" */

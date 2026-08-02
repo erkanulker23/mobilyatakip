@@ -52,9 +52,12 @@ class DashboardController extends Controller
             ->value('total');
         $monthlySalesCount = (int) (clone $monthlySalesBase)->count();
 
-        $lastMonthSales = (float) Sale::where('isCancelled', false)
-            ->whereBetween('saleDate', [$lastMonthStart, $lastMonthEnd])
-            ->sum('grandTotal');
+        $lastMonthSalesBase = Sale::query()
+            ->where('isCancelled', false)
+            ->whereBetween('saleDate', [$lastMonthStart->toDateString(), $lastMonthEnd->toDateString()]);
+
+        $lastMonthSales = (float) (clone $lastMonthSalesBase)->sum('grandTotal');
+        $lastMonthSalesCount = (int) (clone $lastMonthSalesBase)->count();
 
         $monthlyChange = $lastMonthSales > 0
             ? round((($monthlySales - $lastMonthSales) / $lastMonthSales) * 100, 1)
@@ -117,6 +120,8 @@ class DashboardController extends Controller
             'monthlyCollected',
             'monthlyReceivable',
             'monthlySalesCount',
+            'lastMonthSales',
+            'lastMonthSalesCount',
             'monthlyChange',
             'avgOrderValue',
             'totalCustomers',

@@ -23,7 +23,61 @@ class ReportsController extends Controller
 
     public function index()
     {
-        return view('reports.index');
+        $monthStart = Carbon::now()->startOfMonth();
+        $monthEnd = Carbon::now()->endOfMonth();
+        $horizon = Carbon::today()->addDays(self::TERMIN_DEFAULT_DAYS);
+
+        $monthlySales = (float) Sale::query()
+            ->where('isCancelled', false)
+            ->whereBetween('saleDate', [$monthStart->toDateString(), $monthEnd->toDateString()])
+            ->sum('grandTotal');
+
+        $monthlySalesCount = (int) Sale::query()
+            ->where('isCancelled', false)
+            ->whereBetween('saleDate', [$monthStart->toDateString(), $monthEnd->toDateString()])
+            ->count();
+
+        $upcomingSalesCount = (int) Sale::query()
+            ->where('isCancelled', false)
+            ->whereNotNull('dueDate')
+            ->whereDate('dueDate', '<=', $horizon)
+            ->count();
+
+        $upcomingTicketsCount = (int) ServiceTicket::query()
+            ->whereNotIn('status', ['tamamlandi', 'iptal'])
+            ->whereNotNull('dueDate')
+            ->whereDate('dueDate', '<=', $horizon)
+            ->count();
+
+        $overdueSalesCount = (int) Sale::query()
+            ->where('isCancelled', false)
+            ->whereNotNull('dueDate')
+            ->whereDate('dueDate', '<', Carbon::today())
+            ->count();
+
+        $incomeExpense = $this->incomeExpenseData($monthStart, $monthEnd);
+        $monthlyNetCash = $incomeExpense['tahsilat'] - $incomeExpense['gider'] - $incomeExpense['tedarikciOdeme'];
+
+        $customerReceivable = max(0, (float) Sale::where('isCancelled', false)->sum('grandTotal')
+            - (float) CustomerPayment::sum('amount'));
+
+        $supplierPayable = max(0, (float) \App\Models\Purchase::where('isCancelled', false)->sum('grandTotal')
+            - (float) SupplierPayment::sum('amount'));
+
+        $monthLabel = Carbon::now()->locale('tr')->isoFormat('MMMM YYYY');
+
+        return view('reports.index', compact(
+            'monthlySales',
+            'monthlySalesCount',
+            'upcomingSalesCount',
+            'upcomingTicketsCount',
+            'overdueSalesCount',
+            'incomeExpense',
+            'monthlyNetCash',
+            'customerReceivable',
+            'supplierPayable',
+            'monthLabel',
+        ));
     }
 
     public function incomeExpense(Request $request)
@@ -183,7 +237,7 @@ class ReportsController extends Controller
     /** @return array<string, mixed> */
     private function salesData(Carbon $from, Carbon $to): array
     {
-        $sales = Sale::with('customer')
+        $sales = Sale::with(['customer', 'personnel'])
             ->where('isCancelled', false)
             ->whereBetween('saleDate', [$from, $to])
             ->orderByDesc('saleDate')

@@ -2,10 +2,10 @@
 @section('title', 'Kasa')
 @section('content')
 @if(session('success'))
-<div class="mb-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-sm">{{ session('success') }}</div>
+<div class="mb-4 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 text-sm">{{ session('success') }}</div>
 @endif
 @if(session('error'))
-<div class="mb-4 p-4 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm">{{ session('error') }}</div>
+<div class="mb-4 p-4 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-200 text-sm">{{ session('error') }}</div>
 @endif
 
 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
@@ -44,7 +44,7 @@
     <div class="overflow-x-auto">
         <table class="min-w-full">
             <thead>
-                <tr class="border-b border-neutral-100">
+                <tr class="border-b border-neutral-100 dark:border-neutral-800">
                     <th class="table-th">Ad</th>
                     <th class="table-th">Tip</th>
                     <th class="table-th">IBAN / Hesap</th>
@@ -55,15 +55,15 @@
             </thead>
             <tbody>
                 @forelse($kasalar as $k)
-                <tr class="border-b border-neutral-50 hover:bg-neutral-50/50 transition-colors">
+                <tr class="border-b border-neutral-50 dark:border-neutral-800/80 hover:bg-neutral-50/50 dark:hover:bg-neutral-800/40 transition-colors">
                     <td class="table-td">
                         <span class="font-medium text-neutral-900">{{ $k->name }}</span>
-                        @if($k->bankName)<span class="block text-xs text-neutral-500 mt-0.5">{{ $k->bankName }}</span>@endif
+                        @if($k->bankName)<span class="block text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ $k->bankName }}</span>@endif
                     </td>
                     <td class="table-td">
                         <span class="inline-flex px-2 py-1 text-xs font-medium rounded-lg {{ $k->type === 'banka' ? 'bg-sky-50 text-sky-700' : 'bg-emerald-50 text-emerald-700' }}">{{ $k->type === 'banka' ? 'Banka' : 'Kasa' }}</span>
                     </td>
-                    <td class="table-td text-sm tabular-nums tracking-wide">{{ $k->iban ?? $k->accountNumber ?? '-' }}</td>
+                    <td class="table-td text-sm tabular-nums tracking-wide text-neutral-600 dark:text-neutral-300">{{ $k->iban ?? $k->accountNumber ?? '-' }}</td>
                     <td class="table-td text-right font-medium {{ ($k->openingBalance ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600' }}">{{ number_format((float)($k->openingBalance ?? 0), 0, ',', '.') }} ₺</td>
                     @php $guncelBakiye = (float)($k->openingBalance ?? 0) + (float)($k->hareketler_sum_amount ?? 0); @endphp
                     <td class="table-td text-right font-semibold {{ $guncelBakiye >= 0 ? 'text-emerald-600' : 'text-red-600' }}">{{ number_format($guncelBakiye, 0, ',', '.') }} ₺</td>
@@ -81,6 +81,6 @@
             </tbody>
         </table>
     </div>
-    <div class="px-5 py-3 border-t border-slate-100 text-sm text-neutral-500">{{ $kasalar->links() }}</div>
+    <div class="px-5 py-3 border-t border-slate-100 dark:border-neutral-800 text-sm text-neutral-500 dark:text-neutral-400">{{ $kasalar->links() }}</div>
 </div>
 @endsection

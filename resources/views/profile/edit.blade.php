@@ -6,6 +6,13 @@
     <p class="page-desc">Profil resminizi, e-posta adresinizi ve şifrenizi yönetin</p>
 </div>
 
+@if(session('success'))
+<div class="mb-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-sm">{{ session('success') }}</div>
+@endif
+@if(session('error'))
+<div class="mb-4 p-4 rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800 text-red-700 dark:text-red-300 text-sm">{{ session('error') }}</div>
+@endif
+
 <div class="card p-6 max-w-2xl">
     <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="space-y-6">
         @csrf
@@ -66,6 +73,21 @@
                     <label class="form-label">Yeni şifre (tekrar)</label>
                     <input type="password" name="password_confirmation" class="form-input" autocomplete="new-password">
                 </div>
+            </div>
+        </div>
+
+        <div class="rounded-xl border border-neutral-200 dark:border-slate-700 bg-neutral-50/80 dark:bg-slate-800/40 p-5">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h2 class="text-sm font-semibold text-neutral-900 dark:text-white">Şifremi unuttum</h2>
+                    <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400 leading-relaxed">
+                        Mevcut şifrenizi hatırlamıyorsanız <strong>{{ $user->email }}</strong> adresine sıfırlama bağlantısı gönderebiliriz.
+                    </p>
+                </div>
+                <form method="POST" action="{{ route('profile.password.email') }}" class="shrink-0" onsubmit="return confirm('Şifre sıfırlama bağlantısı e-posta adresinize gönderilsin mi?');">
+                    @csrf
+                    <button type="submit" class="btn-secondary whitespace-nowrap">Sıfırlama bağlantısı gönder</button>
+                </form>
             </div>
         </div>
 

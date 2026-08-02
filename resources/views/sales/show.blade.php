@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @include('partials.page-seo', \App\Support\PageSeo::sale($sale))
 @section('content')
-<div x-data="{ showCustomerEmail: false, showPaymentModal: @json(session('open_payment_modal') || (old('redirectToSale') && old('redirectToSale') == $sale->id)) }">
+<div x-data="{ showCustomerEmail: false, showStatusModal: false, showPaymentModal: @json(session('open_payment_modal') || (old('redirectToSale') && old('redirectToSale') == $sale->id)) }">
 <div class="mb-6">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -23,65 +23,39 @@
                 @endif
             </p>
         </div>
-        <div class="flex flex-wrap items-center gap-3">
-            <a href="{{ route('sales.print', $sale) }}" target="_blank" class="btn-secondary">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                Yazdır
-            </a>
+        <div class="flex flex-wrap items-center gap-2">
             @if(!($sale->isCancelled ?? false))
-            <a href="{{ route('sales.shipment', $sale) }}" target="_blank" class="btn-secondary">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
-                Sevkiyat Gönder Fişi
+            <a href="{{ route('sales.workshop.koltuk', $sale) }}" target="_blank" class="btn-secondary text-sm">
+                Koltuk Atölye Fişi Çıkar
             </a>
-            <a href="{{ route('sales.shipment.pdf', $sale) }}" class="btn-secondary">Sevkiyat Fişi PDF</a>
+            <a href="{{ route('sales.workshop.mobilya', $sale) }}" target="_blank" class="btn-secondary text-sm">
+                Mobilya Atölyesi Fişi Çıkar
+            </a>
+            <a href="{{ route('sales.print', $sale) }}" target="_blank" class="btn-secondary text-sm">
+                Sipariş Fişi Yaz
+            </a>
+            <a href="{{ route('sales.shipment', $sale) }}" target="_blank" class="btn-secondary text-sm">
+                Sevkiyat Fişi Çıkar
+            </a>
+            <button type="button" @click="showStatusModal = true" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm">
+                Sipariş Durumunu Güncelle
+            </button>
             @endif
-            <a href="{{ route('sales.pdf', $sale) }}" class="btn-secondary">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                PDF İndir
-            </a>
-            <button type="button" @click="showCustomerEmail = true" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+            <button type="button" @click="showCustomerEmail = true" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                 Müşteriye Mail Gönder
             </button>
             @if(!($sale->isCancelled ?? false) && $sale->customerId)
-            <button type="button" @click="showPaymentModal = true" class="btn-primary">Ödeme Al</button>
+            <button type="button" @click="showPaymentModal = true" class="btn-primary text-sm">Ödeme Al</button>
             @endif
             @if(!($sale->isCancelled ?? false))
-            @if(\App\Support\SaleDelivery::isDelivered($sale))
-            <form method="POST" action="{{ route('sales.unmark-delivered', $sale) }}" class="inline" onsubmit="return confirm('Teslim işaretini kaldırmak istediğinize emin misiniz?');">
-                @csrf
-                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100 text-indigo-800 rounded-lg hover:bg-indigo-200 font-medium">Teslim İşaretini Kaldır</button>
-            </form>
-            @else
-            <form method="POST" action="{{ route('sales.mark-delivered', $sale) }}" class="inline" onsubmit="return confirm('Bu satışı teslim edildi olarak işaretlemek istediğinize emin misiniz?');">
-                @csrf
-                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Teslim Edildi</button>
-            </form>
-            @endif
             <form method="POST" action="{{ route('sales.cancel', $sale) }}" class="inline" onsubmit="return confirm('Bu satışı iptal etmek istediğinize emin misiniz?');">
                 @csrf
-                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 font-medium">İptal Et</button>
+                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 font-medium text-sm">İptal Et</button>
             </form>
-            @endif
-            @if(!($sale->isCancelled ?? false))
-            <a href="{{ route('sales.efatura.xml', $sale) }}" class="btn-secondary">E-Fatura XML İndir</a>
-            <form method="POST" action="{{ route('sales.efatura.send', $sale) }}" class="inline" onsubmit="return confirm('Bu faturayı e-fatura olarak GİB/entegratöre göndermek istediğinize emin misiniz?');">
-                @csrf
-                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">E-Fatura Gönder</button>
-            </form>
-            @endif
-            @if($sale->efaturaStatus ?? null)
-            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-                @if($sale->efaturaStatus === 'accepted' || $sale->efaturaStatus === 'sent') bg-emerald-100 text-emerald-800
-                @elseif($sale->efaturaStatus === 'rejected') bg-red-100 text-red-800
-                @else bg-slate-100 text-neutral-700 @endif">
-                E-Fatura: {{ $sale->efaturaStatus === 'sent' ? 'Gönderildi' : ($sale->efaturaStatus === 'accepted' ? 'Kabul' : ($sale->efaturaStatus === 'rejected' ? 'Red' : $sale->efaturaStatus)) }}
-                @if($sale->efaturaSentAt) ({{ $sale->efaturaSentAt->format('d.m.Y H:i') }})@endif
-            </span>
             @endif
             @include('partials.action-buttons', [
                 'edit' => !($sale->isCancelled ?? false) ? route('sales.edit', $sale) : null,
-                'print' => route('sales.print', $sale),
                 'destroy' => route('sales.destroy', $sale),
             ])
         </div>
@@ -92,9 +66,11 @@
 <div class="mb-6 p-4 rounded-xl bg-neutral-50 border border-neutral-200">
     <p class="text-neutral-900 font-medium mb-3">Sipariş oluşturuldu. Hemen paylaşabilirsiniz:</p>
     <div class="flex flex-wrap gap-2">
-        <a href="{{ route('sales.print', $sale) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 text-neutral-800 rounded-lg hover:bg-neutral-100 text-sm font-medium">Yazdır</a>
-        <a href="{{ route('sales.shipment', $sale) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 text-neutral-800 rounded-lg hover:bg-neutral-100 text-sm font-medium">Sevkiyat Gönder Fişi</a>
-        <a href="{{ route('sales.pdf', $sale) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 text-neutral-800 rounded-lg hover:bg-neutral-100 text-sm font-medium">PDF İndir</a>
+        <a href="{{ route('sales.workshop.koltuk', $sale) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 text-neutral-800 rounded-lg hover:bg-neutral-100 text-sm font-medium">Koltuk Atölye Fişi Çıkar</a>
+        <a href="{{ route('sales.workshop.mobilya', $sale) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 text-neutral-800 rounded-lg hover:bg-neutral-100 text-sm font-medium">Mobilya Atölyesi Fişi Çıkar</a>
+        <a href="{{ route('sales.print', $sale) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 text-neutral-800 rounded-lg hover:bg-neutral-100 text-sm font-medium">Sipariş Fişi Yaz</a>
+        <a href="{{ route('sales.shipment', $sale) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 text-neutral-800 rounded-lg hover:bg-neutral-100 text-sm font-medium">Sevkiyat Fişi Çıkar</a>
+        <button type="button" @click="showStatusModal = true" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">Sipariş Durumunu Güncelle</button>
         <button type="button" @click="showCustomerEmail = true" class="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 text-sm font-medium">Müşteriye Mail Gönder</button>
     </div>
 </div>
@@ -213,6 +189,45 @@
             </div>
         </div>
         @endforeach
+    </div>
+</div>
+@endif
+
+{{-- Sipariş durumu güncelle --}}
+@if(!($sale->isCancelled ?? false))
+<div x-show="showStatusModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="sale-status-title">
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showStatusModal = false"></div>
+    <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-neutral-900 shadow-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+        <div class="px-5 pt-5 pb-1">
+            <h2 id="sale-status-title" class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Sipariş Durumunu Güncelle</h2>
+            <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{{ $sale->saleNumber }}</p>
+        </div>
+        <form method="POST" action="{{ route('sales.update-status', $sale) }}" class="p-5 space-y-4">
+            @csrf
+            <div class="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-100 dark:border-neutral-700 text-sm space-y-2">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-neutral-500">Ödeme durumu</span>
+                    @include('partials.payment-status-badge', ['sale' => $sale])
+                </div>
+                @if(\App\Support\SaleDelivery::isDelivered($sale))
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-neutral-500">Teslim tarihi</span>
+                    <span class="font-medium text-neutral-900 dark:text-neutral-100">{{ $sale->deliveredAt->format('d.m.Y H:i') }}</span>
+                </div>
+                @endif
+            </div>
+            <div>
+                <label class="form-label">Teslim durumu</label>
+                <select name="deliveryStatus" class="form-select min-h-[44px]">
+                    <option value="pending" {{ !\App\Support\SaleDelivery::isDelivered($sale) ? 'selected' : '' }}>Teslim bekliyor</option>
+                    <option value="delivered" {{ \App\Support\SaleDelivery::isDelivered($sale) ? 'selected' : '' }}>Teslim edildi</option>
+                </select>
+            </div>
+            <div class="flex gap-3 justify-end pt-2">
+                <button type="button" @click="showStatusModal = false" class="btn-secondary min-h-[44px]">İptal</button>
+                <button type="submit" class="btn-primary min-h-[44px]">Kaydet</button>
+            </div>
+        </form>
     </div>
 </div>
 @endif

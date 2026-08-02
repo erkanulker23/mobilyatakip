@@ -27,7 +27,7 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-                <label class="form-label">E-posta</label>
+                <label class="form-label">E-posta@if(auth()->user()?->isAdmin()) <span class="text-neutral-400 font-normal">(sistem girişi için gerekli)</span>@endif</label>
                 <input type="email" name="email" value="{{ old('email') }}" class="form-input" placeholder="ornek@email.com" inputmode="email" autocomplete="email">
                 @error('email')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>

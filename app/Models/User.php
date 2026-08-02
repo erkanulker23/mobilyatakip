@@ -4,6 +4,10 @@ namespace App\Models;
 
 use App\Support\UserSchema;
 use App\Support\StorageUrl;
+use App\Services\MailConfigService;
+use App\Notifications\ResetPasswordNotification;
+use Illuminate\Auth\Passwords\CanResetPassword;
+use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -11,9 +15,9 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
-class User extends Authenticatable
+class User extends Authenticatable implements CanResetPasswordContract
 {
-    use Notifiable;
+    use Notifiable, CanResetPassword;
 
     protected $table = 'users';
 
@@ -117,5 +121,11 @@ class User extends Authenticatable
             ->join('');
 
         return $initials !== '' ? $initials : 'K';
+    }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        app(MailConfigService::class)->apply();
+        $this->notify(new ResetPasswordNotification($token));
     }
 }

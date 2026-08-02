@@ -4,6 +4,7 @@
         <tr>
             <th class="table-th">No</th>
             <th class="table-th">Müşteri</th>
+            <th class="table-th">Satışı Yapan</th>
             <th class="table-th">Satış Tarihi</th>
             <th class="table-th">Termin</th>
             <th class="table-th text-right">Toplam</th>
@@ -23,6 +24,7 @@
         <tr class="{{ $print ? '' : 'hover:bg-slate-50' }}">
             <td class="table-td font-medium">{{ $s->saleNumber }}</td>
             <td class="table-td">{{ $s->customer?->name ?? '—' }}</td>
+            <td class="table-td text-neutral-600">{{ $s->personnel?->name ?? '—' }}</td>
             <td class="table-td">{{ $s->saleDate?->format('d.m.Y') ?? '—' }}</td>
             <td class="table-td {{ $dueClass }}">{{ $s->dueDate?->format('d.m.Y') ?? '—' }}</td>
             <td class="table-td text-right font-medium">{{ number_format($s->grandTotal ?? 0, 0, ',', '.') }} ₺</td>
@@ -36,13 +38,13 @@
             @endif
         </tr>
         @empty
-        <tr><td colspan="{{ $print ? 8 : 9 }}" class="px-6 py-8 text-center text-neutral-500">Seçilen dönemde satış yok.</td></tr>
+        <tr><td colspan="{{ $print ? 9 : 10 }}" class="px-6 py-8 text-center text-neutral-500">Seçilen dönemde satış yok.</td></tr>
         @endforelse
     </tbody>
     @if($sales->isNotEmpty())
     <tfoot class="{{ $print ? '' : 'bg-slate-50 border-t-2 border-neutral-200' }}">
         <tr class="font-semibold">
-            <td class="table-td" colspan="4">Toplam ({{ $totals->count }} satış)</td>
+            <td class="table-td" colspan="5">Toplam ({{ $totals->count }} satış)</td>
             <td class="table-td text-right">{{ number_format($totals->grandTotal, 0, ',', '.') }} ₺</td>
             <td class="table-td text-right text-emerald-600">{{ number_format($totals->paidAmount, 0, ',', '.') }} ₺</td>
             <td class="table-td text-right">{{ number_format($totals->remaining, 0, ',', '.') }} ₺</td>

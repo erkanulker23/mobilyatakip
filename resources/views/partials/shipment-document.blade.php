@@ -2,7 +2,7 @@
 <div class="print-document print-document--fit card overflow-hidden print:shadow-none print:border-0" role="document" aria-label="Sevkiyat gönder fişi">
     <div class="print-doc-inner p-4 md:p-6 lg:p-8">
         @include('partials.print-brand-header', [
-            'documentTitle' => $documentTitle ?? 'SEVKİYAT GÖNDER FİŞİ',
+            'documentTitle' => $documentTitle ?? 'SEVKİYAT FİŞİ',
             'documentNumber' => $documentNumber,
             'documentDate' => $documentDate ?? null,
             'documentSubtitle' => !empty($dueDate) ? 'Teslim: ' . $dueDate->format('d.m.Y') : null,
@@ -45,7 +45,9 @@
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Ürün / Hizmet</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase w-28">Stok Kodu</th>
                         <th class="px-4 py-3 text-center text-xs font-semibold uppercase w-16">Adet</th>
+                        @if($showCheckColumn ?? (($slipVariant ?? 'shipment') === 'shipment'))
                         <th class="px-4 py-3 text-center text-xs font-semibold uppercase w-12">✓</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200">
@@ -60,13 +62,15 @@
                         </td>
                         <td class="px-4 py-3 text-sm text-slate-600">{{ $item['sku'] ?? '—' }}</td>
                         <td class="px-4 py-3 text-center font-semibold text-slate-900">{{ $item['quantity'] ?? 0 }}</td>
+                        @if($showCheckColumn ?? (($slipVariant ?? 'shipment') === 'shipment'))
                         <td class="px-4 py-3 text-center">
                             <span class="inline-block w-4 h-4 border border-slate-400 rounded-sm"></span>
                         </td>
+                        @endif
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="px-4 py-6 text-center text-neutral-500">Sipariş kalemi yok.</td>
+                        <td colspan="{{ ($showCheckColumn ?? (($slipVariant ?? 'shipment') === 'shipment')) ? 5 : 4 }}" class="px-4 py-6 text-center text-neutral-500">Sipariş kalemi yok.</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -81,6 +85,7 @@
         @endif
 
         <div class="print-signatures mt-6">
+            @if(($slipVariant ?? 'shipment') === 'shipment')
             <p class="text-sm text-neutral-700 mb-4">
                 Yukarıda listelenen ürün / hizmetleri <strong>eksiksiz</strong> ve <strong>hasarsız</strong> olarak teslim aldığımı beyan ederim.
             </p>
@@ -96,6 +101,20 @@
                     <div class="sig-line mt-10">Tarih</div>
                 </div>
             </div>
+            @else
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <p class="text-xs font-semibold text-neutral-500 uppercase mb-8">Atölye Sorumlusu</p>
+                    <div class="sig-line">Ad Soyad / İmza</div>
+                    <div class="sig-line mt-10">Tarih</div>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-neutral-500 uppercase mb-8">Kontrol / Onay</p>
+                    <div class="sig-line">Ad Soyad / İmza</div>
+                    <div class="sig-line mt-10">Tarih</div>
+                </div>
+            </div>
+            @endif
         </div>
     </div>
 </div>

@@ -51,12 +51,22 @@
                 @csrf
                 <div>
                     <label class="form-label">Müşteri *</label>
-                    <select name="customerId" required class="form-select" id="customerSelect" data-placeholder="Müşteri ara veya seçin...">
+                    <select name="customerId" required class="form-select" id="customerSelect" placeholder="Müşteri ara (ad, telefon)...">
                         <option value="">Seçiniz</option>
                         @foreach($customers as $c)
-                        <option value="{{ $c->id }}" {{ old('customerId', $customerId) == $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
+                        @php
+                            $customerLabel = $c->name;
+                            if ($c->phone) {
+                                $customerLabel .= ' — ' . $c->phone;
+                            }
+                            if ($c->phone2 ?? null) {
+                                $customerLabel .= ' / ' . $c->phone2;
+                            }
+                        @endphp
+                        <option value="{{ $c->id }}" data-phone="{{ $c->phone ?? '' }}" data-phone2="{{ $c->phone2 ?? '' }}" {{ old('customerId', $customerId) == $c->id ? 'selected' : '' }}>{{ $customerLabel }}</option>
                         @endforeach
                     </select>
+                    <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400">Ad veya telefon yazarak hızlı arama yapabilirsiniz.</p>
                     @error('customerId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
 
@@ -239,6 +249,7 @@
 <script>
 const salesMeta = @json($salesMeta);
 const createUrl = @json(route('customer-payments.create'));
+const initialCustomerId = @json((string) old('customerId', $customerId ?? ''));
 
 document.addEventListener('DOMContentLoaded', function() {
     if (typeof TomSelect === 'undefined') {
@@ -251,7 +262,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-function initPaymentPage() {
+function selectedSaleRemaining() {
     const saleSelect = document.getElementById('saleSelect');
     if (!saleSelect || !saleSelect.value) return null;
     const option = saleSelect.selectedOptions[0];
@@ -329,18 +340,18 @@ function initPaymentPage() {
     highlightInvoiceButtons();
 
     const sel = document.getElementById('customerSelect');
-    if (!sel || typeof TomSelect === 'undefined') return;
-    const initialVal = sel.value;
-    new TomSelect(sel, {
-        maxOptions: 100,
-        placeholder: 'Müşteri ara veya seçin...',
-        searchField: ['text'],
-        onChange: function(v) {
-            if (v && v !== initialVal) {
-                window.location.href = createUrl + '?customerId=' + encodeURIComponent(v);
+    if (sel && typeof TomSelect !== 'undefined' && !sel.tomselect) {
+        new TomSelect(sel, {
+            maxOptions: null,
+            placeholder: 'Müşteri ara (ad, telefon)...',
+            searchField: ['text', 'phone', 'phone2'],
+            onChange: function(v) {
+                if (v && v !== initialCustomerId) {
+                    window.location.href = createUrl + '?customerId=' + encodeURIComponent(v);
+                }
             }
-        }
-    });
+        });
+    }
 
     if (saleSelect?.value && selectedSaleRemaining() > 0 && !document.getElementById('amountInput')?.value) {
         fillRemainingAmount();

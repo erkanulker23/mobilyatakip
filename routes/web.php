@@ -51,6 +51,10 @@ Route::get('/media/{path}', function (string $path) {
 Route::get('/', fn () => auth()->check() ? redirect()->route('dashboard') : redirect()->route('login'));
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login')->middleware('guest');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+Route::get('/sifremi-unuttum', [\App\Http\Controllers\PasswordResetController::class, 'showForgotForm'])->name('password.request')->middleware('guest');
+Route::post('/sifremi-unuttum', [\App\Http\Controllers\PasswordResetController::class, 'sendResetLink'])->name('password.email')->middleware('guest');
+Route::get('/sifre-sifirla/{token}', [\App\Http\Controllers\PasswordResetController::class, 'showResetForm'])->name('password.reset')->middleware('guest');
+Route::post('/sifre-sifirla', [\App\Http\Controllers\PasswordResetController::class, 'reset'])->name('password.update')->middleware('guest');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
 Route::middleware(['auth'])->group(function () {
@@ -111,11 +115,14 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/sales/actions/bulk-destroy', [SaleController::class, 'bulkDestroy'])->name('sales.bulk-destroy');
     Route::get('/sales/{sale}/print', [SaleController::class, 'print'])->name('sales.print');
     Route::get('/sales/{sale}/shipment', [SaleController::class, 'shipment'])->name('sales.shipment');
+    Route::get('/sales/{sale}/workshop/koltuk', [SaleController::class, 'workshopKoltuk'])->name('sales.workshop.koltuk');
+    Route::get('/sales/{sale}/workshop/mobilya', [SaleController::class, 'workshopMobilya'])->name('sales.workshop.mobilya');
     Route::get('/sales/{sale}/shipment/pdf', [SaleController::class, 'shipmentPdf'])->name('sales.shipment.pdf');
     Route::get('/sales/{sale}/pdf', [SaleController::class, 'pdf'])->name('sales.pdf');
     Route::post('/sales/{sale}/cancel', [SaleController::class, 'cancel'])->name('sales.cancel');
     Route::post('/sales/{sale}/delivered', [SaleController::class, 'markDelivered'])->name('sales.mark-delivered');
     Route::post('/sales/{sale}/undelivered', [SaleController::class, 'unmarkDelivered'])->name('sales.unmark-delivered');
+    Route::post('/sales/{sale}/status', [SaleController::class, 'updateStatus'])->name('sales.update-status');
     Route::post('/sales/{sale}/send-supplier-email', [SaleController::class, 'sendSupplierEmail'])->name('sales.send-supplier-email');
     Route::post('/sales/{sale}/send-customer-email', [SaleController::class, 'sendCustomerEmail'])->name('sales.send-customer-email');
     Route::post('/sales/{sale}/activity', [SaleController::class, 'addActivity'])->name('sales.activity');
@@ -173,6 +180,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/profil', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profil', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profil/sifremi-unuttum', [\App\Http\Controllers\PasswordResetController::class, 'sendResetLinkFromProfile'])->name('profile.password.email');
     Route::post('/profil/foto-sil', [\App\Http\Controllers\ProfileController::class, 'deletePhoto'])->name('profile.delete-photo');
 
     Route::middleware(['role:admin'])->group(function () {
