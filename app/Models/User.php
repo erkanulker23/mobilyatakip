@@ -2,26 +2,18 @@
 
 namespace App\Models;
 
+use App\Support\UserSchema;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-use App\Support\UserSchema;
 
 class User extends Authenticatable
 {
     use Notifiable;
 
     protected $table = 'users';
-
-    public $incrementing = false;
-
-    protected $keyType = 'string';
-
-    const CREATED_AT = 'createdAt';
-
-    const UPDATED_AT = 'updatedAt';
 
     protected $fillable = [
         'email',
@@ -53,6 +45,21 @@ class User extends Authenticatable
         return ! UserSchema::idIsUuid();
     }
 
+    public function getKeyType(): string
+    {
+        return UserSchema::idIsUuid() ? 'string' : 'int';
+    }
+
+    public function getCreatedAtColumn(): ?string
+    {
+        return UserSchema::createdAtColumn();
+    }
+
+    public function getUpdatedAtColumn(): ?string
+    {
+        return UserSchema::updatedAtColumn();
+    }
+
     public function getAuthPassword(): string
     {
         return $this->passwordHash ?? $this->getAttributeFromArray('password') ?? '';
@@ -61,7 +68,9 @@ class User extends Authenticatable
     public function setPasswordAttribute($value): void
     {
         $hash = bcrypt($value);
-        $this->attributes['passwordHash'] = $hash;
+        if (Schema::hasColumn($this->getTable(), 'passwordHash')) {
+            $this->attributes['passwordHash'] = $hash;
+        }
         if (Schema::hasColumn($this->getTable(), 'password')) {
             $this->attributes['password'] = $hash;
         }
