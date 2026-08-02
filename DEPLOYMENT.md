@@ -65,7 +65,7 @@ Deploy script sırasıyla şunları yapar:
 2. `composer install --no-dev --optimize-autoloader`
 3. `php artisan migrate --force`
 4. `php artisan db:seed --force` (süper admin yoksa oluşturur; mevcut şifreyi değiştirmez)
-5. `php artisan turkey-locations:sync` (API erişilemezse deploy devam eder)
+5. `php artisan turkey-locations:sync --if-empty` (tablo boşsa doldurur; mevcut veriyi ezmez)
 6. `npm ci` + `npm run build` (Vite asset'leri; `package-lock.json` repoda)
 7. `php artisan config:cache` / `route:cache` / `view:cache`
 8. `php artisan storage:link` (gerekirse)
@@ -197,3 +197,23 @@ composer install   # dev bağımlılıklar dahil
 ## 11. Sorun giderme: 404 (toplu silme)
 
 Ürün veya tedarikçi toplu silme "404 Not Found" veriyorsa: route cache’i temizleyin (`php artisan route:clear`). Route’lar `POST /products/actions/bulk-destroy` ve `POST /suppliers/actions/bulk-destroy` olarak tanımlıdır.
+
+---
+
+## 12. Güvenli güncelleme (veri kaybını önleme)
+
+Her Git push sonrası Forge **yalnızca** `forge-deploy.sh` çalıştırır. Bu script:
+
+| Çalışır | Çalışmaz |
+|---------|----------|
+| `git pull` | `migrate:fresh` |
+| `composer install --no-dev` | `migrate:refresh` / `migrate:reset` |
+| `migrate --force` (yeni migration'lar) | `db:wipe` |
+| `SuperAdminSeeder` (admin yoksa) | `TestDataSeeder` |
+| `turkey-locations:sync --if-empty` | Mevcut kayıtları truncate etmez |
+
+**Production koruması:** `APP_ENV=production` iken `migrate:fresh`, `db:wipe`, `migrate:rollback` ve `TestDataSeeder` uygulama seviyesinde **engellenir**.
+
+**Yeni migration yazarken:** `database/migrations/README.md` dosyasındaki kurallara uyun — kolon ekleme, `hasColumn` kontrolü, veri silmeme.
+
+**Deploy sonrası kontrol:** Site açılıyor mu, giriş yapılabiliyor mu, son kayıtlar duruyor mu. Migration hatası olursa Forge deploy log'una bakın; script `set -e` ile hatada durur, yarım deploy olmaz.

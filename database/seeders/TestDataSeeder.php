@@ -15,11 +15,21 @@ use Illuminate\Support\Str;
 /**
  * Tarayıcı ve hesaplama testleri için örnek veri.
  * Çalıştırma: php artisan db:seed --class=TestDataSeeder
+ *
+ * Production ortamında çalıştırılamaz.
  */
 class TestDataSeeder extends Seeder
 {
     public function run(): void
     {
+        if (app()->environment('production')) {
+            if ($this->command) {
+                $this->command->error('TestDataSeeder production ortamında çalıştırılamaz.');
+            }
+
+            return;
+        }
+
         $company = Company::first();
         if (!$company) {
             Company::create([

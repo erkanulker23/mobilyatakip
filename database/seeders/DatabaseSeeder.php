@@ -11,7 +11,8 @@ class DatabaseSeeder extends Seeder
     use WithoutModelEvents;
 
     /**
-     * Seed the application's database.
+     * Production deploy yalnızca SuperAdminSeeder çalıştırır.
+     * TestDataSeeder asla buraya eklenmemeli.
      */
     public function run(): void
     {

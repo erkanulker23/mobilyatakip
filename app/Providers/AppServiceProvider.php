@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\AuditLog;
 use App\Support\ActivityMessage;
+use App\Support\ProductionCommandGuard;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -23,6 +24,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        ProductionCommandGuard::register();
+
         Blade::directive('money', function (string $expression) {
             return "<?php echo \\App\\Support\\Money::format($expression); ?>";
         });

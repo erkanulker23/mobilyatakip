@@ -60,6 +60,11 @@ class User extends Authenticatable
         return UserSchema::updatedAtColumn();
     }
 
+    public function usesTimestamps(): bool
+    {
+        return UserSchema::createdAtColumn() !== null || UserSchema::updatedAtColumn() !== null;
+    }
+
     public function getAuthPassword(): string
     {
         return $this->passwordHash ?? $this->getAttributeFromArray('password') ?? '';
