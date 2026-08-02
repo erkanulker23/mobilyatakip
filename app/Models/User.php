@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
@@ -34,6 +35,15 @@ class User extends Authenticatable
     protected $casts = [
         'isActive' => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (User $user) {
+            if (empty($user->getKey())) {
+                $user->setAttribute($user->getKeyName(), (string) Str::uuid());
+            }
+        });
+    }
 
     public function getAuthPassword(): string
     {

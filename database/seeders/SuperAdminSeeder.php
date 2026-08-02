@@ -11,18 +11,28 @@ class SuperAdminSeeder extends Seeder
 {
     public function run(): void
     {
-        $user = User::firstOrNew(['email' => 'erkanulker0@gmail.com']);
-        $user->name     = 'Süper Admin';
-        $user->role     = 'admin';
+        $email = 'erkanulker0@gmail.com';
+
+        $user = User::firstOrNew(['email' => $email]);
+        $user->name = 'Süper Admin';
+        $user->role = 'admin';
         $user->isActive = true;
-        if (! $user->exists) {
-            $user->password = 'password'; // mutator passwordHash'e bcrypt yazar
+
+        $passwordHash = Schema::hasColumn('users', 'passwordHash')
+            ? ($user->exists ? ($user->getRawOriginal('passwordHash') ?? null) : null)
+            : null;
+
+        if (! $user->exists || empty($passwordHash)) {
+            $user->password = 'password';
         }
+
         $user->save();
 
-        // passwordHash kolonu varsa ve hâlâ boşsa (mutator tetiklenmediyse) doğrudan yaz
-        if (Schema::hasColumn('users', 'passwordHash') && empty($user->getRawOriginal('passwordHash'))) {
-            $user->forceFill(['passwordHash' => Hash::make('password')])->save();
+        if (Schema::hasColumn('users', 'passwordHash')) {
+            $user->refresh();
+            if (empty($user->getRawOriginal('passwordHash'))) {
+                $user->forceFill(['passwordHash' => Hash::make('password')])->save();
+            }
         }
     }
 }

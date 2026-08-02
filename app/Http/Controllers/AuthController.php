@@ -22,7 +22,8 @@ class AuthController extends Controller
         ]);
 
         $user = User::where('email', $credentials['email'])->first();
-        if (!$user || !password_verify($credentials['password'], $user->passwordHash)) {
+        $hash = $user?->getAuthPassword() ?? '';
+        if (! $user || $hash === '' || ! password_verify($credentials['password'], $hash)) {
             throw ValidationException::withMessages([
                 'email' => ['E-posta veya şifre hatalı.'],
             ]);
