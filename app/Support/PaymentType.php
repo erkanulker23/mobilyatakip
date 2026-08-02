@@ -8,7 +8,7 @@ class PaymentType
 {
     /** Yeni ödemelerde seçilebilir tipler */
     public const SELECTABLE = [
-        'nakit' => 'Nakit',
+        'nakit' => 'Nakit Elden',
         'havale' => 'Havale',
         'kredi_karti' => 'Kredi Kartı',
         'diger' => 'Diğer',
@@ -49,7 +49,8 @@ class PaymentType
     {
         return match ($paymentType) {
             'nakit' => ['kasa'],
-            'havale', 'kredi_karti' => ['banka', 'kasa'],
+            'havale' => ['banka'],
+            'kredi_karti' => ['banka', 'kasa'],
             default => [],
         };
     }
@@ -84,7 +85,8 @@ class PaymentType
     {
         return match ($paymentType) {
             'nakit' => $kasa->type === 'kasa',
-            'havale', 'kredi_karti' => in_array($kasa->type, ['banka', 'kasa'], true),
+            'havale' => $kasa->type === 'banka' || self::isBankAccount($kasa),
+            'kredi_karti' => in_array($kasa->type, ['banka', 'kasa'], true),
             default => true,
         };
     }
@@ -97,7 +99,7 @@ class PaymentType
 
         if (empty($kasaId)) {
             return match ($paymentType) {
-                'nakit' => 'Nakit ödeme için nakit kasası seçin.',
+                'nakit' => 'Nakit elden ödeme için nakit kasası seçin.',
                 'havale' => 'Havale için banka hesabı seçin.',
                 'kredi_karti' => 'Kredi kartı tahsilatı için banka hesabı seçin.',
                 default => 'Bu ödeme tipi için kasa/hesap seçimi zorunludur.',
@@ -111,7 +113,7 @@ class PaymentType
 
         if (!self::kasaMatchesPaymentType($paymentType, $kasa)) {
             return match ($paymentType) {
-                'nakit' => 'Nakit ödemeler için «Nakit Kasa» tipinde hesap seçin (banka hesabı kullanılamaz).',
+                'nakit' => 'Nakit elden ödemeler için «Nakit Kasa» tipinde hesap seçin (banka hesabı kullanılamaz).',
                 'havale' => 'Havale için geçerli bir hesap seçin.',
                 'kredi_karti' => 'Kredi kartı tahsilatı için geçerli bir hesap seçin.',
                 default => 'Seçilen hesap bu ödeme tipi için uygun değil.',

@@ -38,7 +38,7 @@
             </div>
             <div>
                 <label class="form-label">Telefon</label>
-                <input type="tel" name="phone" value="{{ old('phone') }}" class="form-input" placeholder="0555 123 45 67" inputmode="tel" autocomplete="tel" pattern="[0-9+][0-9\s\-()]{9,19}" title="Örn: 0555 123 45 67 veya +90 555 123 45 67">
+                <input type="tel" name="phone" value="{{ old('phone') }}" class="form-input" placeholder="0555 123 45 67" inputmode="tel" autocomplete="tel" title="Örn: 0555 123 45 67 veya +90 555 123 45 67">
                 @error('phone')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
         </div>

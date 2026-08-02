@@ -8,6 +8,7 @@ use App\Models\Kasa;
 use App\Models\KasaHareket;
 use App\Models\Sale;
 use App\Services\AuditService;
+use App\Support\PaymentType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -202,12 +203,10 @@ class CustomerPaymentController extends Controller
             if ($kasaRequired && $kasaId) {
                 $customer = Customer::find($validated['customerId']);
                 $sale = $validated['saleId'] ? Sale::find($validated['saleId']) : null;
-                $paymentTypeLabel = match ($validated['paymentType'] ?? '') {
-                    'nakit' => 'Nakit',
-                    'havale' => 'Havale',
-                    'kredi_karti' => 'Kredi Kartı',
-                    default => '',
-                };
+                $paymentTypeLabel = PaymentType::label($validated['paymentType'] ?? null);
+                if ($paymentTypeLabel === '—') {
+                    $paymentTypeLabel = '';
+                }
                 $desc = 'Tahsilat - ' . ($customer?->name ?? 'Müşteri');
                 if ($paymentTypeLabel) {
                     $desc .= ' (' . $paymentTypeLabel . ')';
@@ -323,12 +322,10 @@ class CustomerPaymentController extends Controller
             if (!empty($newKasaId)) {
                 $customer = $customerPayment->customer;
                 $sale = $newSaleId ? Sale::find($newSaleId) : null;
-                $paymentTypeLabel = match ($validated['paymentType'] ?? '') {
-                    'nakit' => 'Nakit',
-                    'havale' => 'Havale',
-                    'kredi_karti' => 'Kredi Kartı',
-                    default => '',
-                };
+                $paymentTypeLabel = PaymentType::label($validated['paymentType'] ?? null);
+                if ($paymentTypeLabel === '—') {
+                    $paymentTypeLabel = '';
+                }
                 $desc = 'Tahsilat - ' . ($customer?->name ?? 'Müşteri');
                 if ($paymentTypeLabel) {
                     $desc .= ' (' . $paymentTypeLabel . ')';

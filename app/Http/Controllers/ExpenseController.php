@@ -36,14 +36,25 @@ class ExpenseController extends Controller
         return view('expenses.index', compact('expenses', 'total', 'kasalar'));
     }
 
-    public function create()
+    private function categoriesForForm(): array
     {
-        $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
+        $defaults = [
+            'Kira', 'Elektrik', 'Su', 'Doğalgaz', 'Personel', 'Kırtasiye', 'Vergi', 'Sigorta',
+            'Bakım', 'Ulaşım', 'Reklam', 'Müşteri İkram', 'Mutfak Gideri', 'Diğer',
+        ];
         $categories = array_unique(array_merge(
-            ['Kira', 'Elektrik', 'Su', 'Doğalgaz', 'Personel', 'Kırtasiye', 'Vergi', 'Sigorta', 'Bakım', 'Ulaşım', 'Diğer'],
+            $defaults,
             Expense::distinct()->whereNotNull('category')->where('category', '!=', '')->pluck('category')->toArray()
         ));
         sort($categories);
+
+        return $categories;
+    }
+
+    public function create()
+    {
+        $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
+        $categories = $this->categoriesForForm();
         return view('expenses.create', compact('kasalar', 'categories'));
     }
 
@@ -93,11 +104,7 @@ class ExpenseController extends Controller
     public function edit(Expense $expense)
     {
         $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
-        $categories = array_unique(array_merge(
-            ['Kira', 'Elektrik', 'Su', 'Doğalgaz', 'Personel', 'Kırtasiye', 'Vergi', 'Sigorta', 'Bakım', 'Ulaşım', 'Diğer'],
-            Expense::distinct()->whereNotNull('category')->where('category', '!=', '')->pluck('category')->toArray()
-        ));
-        sort($categories);
+        $categories = $this->categoriesForForm();
         return view('expenses.edit', compact('expense', 'kasalar', 'categories'));
     }
 

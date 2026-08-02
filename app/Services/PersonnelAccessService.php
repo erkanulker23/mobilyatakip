@@ -26,13 +26,14 @@ class PersonnelAccessService
             return;
         }
 
-        if (empty($personnel->email)) {
+        $email = trim((string) ($personnel->email ?: $personnel->user?->email ?: ''));
+        if ($email === '') {
             throw ValidationException::withMessages([
                 'email' => 'Sistem erişimi için e-posta adresi zorunludur.',
             ]);
         }
 
-        DB::transaction(function () use ($personnel, $role, $password) {
+        DB::transaction(function () use ($personnel, $role, $password, $email) {
             $user = $this->resolveLinkedUser($personnel);
 
             if (! $user && empty($password)) {
@@ -42,7 +43,7 @@ class PersonnelAccessService
             }
 
             $emailTaken = User::query()
-                ->where('email', $personnel->email)
+                ->where('email', $email)
                 ->when($user, fn ($q) => $q->where('id', '!=', $user->getKey()))
                 ->exists();
 
@@ -57,7 +58,7 @@ class PersonnelAccessService
             }
 
             $user->name = $personnel->name;
-            $user->email = $personnel->email;
+            $user->email = $email;
             $user->role = $role;
             $user->isActive = (bool) $personnel->isActive;
 
@@ -67,8 +68,15 @@ class PersonnelAccessService
 
             $user->save();
 
+            if ($personnel->email !== $email) {
+                $personnel->email = $email;
+            }
+
             if ($personnel->userId !== $user->getKey()) {
                 $personnel->userId = $user->getKey();
+            }
+
+            if ($personnel->isDirty(['email', 'userId'])) {
                 $personnel->saveQuietly();
             }
         });

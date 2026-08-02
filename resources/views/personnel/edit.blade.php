@@ -14,7 +14,17 @@
 </div>
 
 <div class="card p-6 max-w-2xl">
-    <form method="POST" action="{{ route('personnel.update', $personnel) }}" enctype="multipart/form-data" class="space-y-5">
+    @if($errors->any())
+    <div class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <p class="font-semibold mb-1">Kayıt güncellenemedi</p>
+        <ul class="list-disc list-inside space-y-0.5">
+            @foreach($errors->all() as $error)
+            <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+    @endif
+    <form method="POST" action="{{ route('personnel.update', $personnel) }}" enctype="multipart/form-data" class="space-y-5" novalidate>
         @csrf @method('PUT')
         <div>
             <label class="form-label">Personel Resmi</label>
@@ -56,7 +66,7 @@
             </div>
             <div>
                 <label class="form-label">Telefon</label>
-                <input type="tel" name="phone" value="{{ old('phone', $personnel->phone) }}" class="form-input" placeholder="0555 123 45 67" inputmode="tel" autocomplete="tel" pattern="[0-9+][0-9\s\-()]{9,19}" title="Örn: 0555 123 45 67 veya +90 555 123 45 67">
+                <input type="tel" name="phone" value="{{ old('phone', $personnel->phone) }}" class="form-input" placeholder="0555 123 45 67" inputmode="tel" autocomplete="tel" title="Örn: 0555 123 45 67 veya +90 555 123 45 67">
                 @error('phone')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
         </div>
@@ -73,6 +83,7 @@
             </div>
         </div>
         <div class="flex items-center gap-2">
+            <input type="hidden" name="isActive" value="0">
             <input type="checkbox" name="isActive" value="1" {{ old('isActive', $personnel->isActive ?? true) ? 'checked' : '' }} class="rounded border-slate-300 text-green-600 focus:ring-green-500">
             <label class="form-label mb-0">Aktif</label>
         </div>

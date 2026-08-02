@@ -7,6 +7,7 @@ use App\Services\AuditService;
 use App\Services\PersonnelAccessService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class PersonnelController extends Controller
@@ -179,13 +180,17 @@ class PersonnelController extends Controller
         $canAccess = $request->boolean('canAccessSystem');
         $rules = [
             'name' => 'required|string|max:255',
-            'email' => 'nullable|email',
+            'email' => 'nullable|email|max:100',
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
             'category' => 'nullable|string|max:100',
-            'title' => 'nullable|string|max:255',
+            'title' => 'nullable|string|max:100',
             'isActive' => 'nullable|boolean',
             'photo' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:2048',
         ];
+
+        if ($canAccess && $this->accessService->canManageAccess($request->user())) {
+            $rules['email'] = 'required|email|max:100';
+        }
 
         if ($this->accessService->canManageAccess($request->user())) {
             $rules = array_merge($rules, $this->accessService->validationRules($personnel, $canAccess));
@@ -193,11 +198,12 @@ class PersonnelController extends Controller
 
         $validated = $request->validate($rules, [
             'phone.regex' => 'Geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67)',
+            'email.required' => 'Sistem erişimi için e-posta adresi zorunludur.',
         ]);
 
         unset($validated['photo'], $validated['canAccessSystem'], $validated['systemRole'], $validated['password'], $validated['password_confirmation']);
 
-        $validated['isActive'] = $request->boolean('isActive');
+        $validated['isActive'] = $request->boolean('isActive', true);
 
         if ($request->hasFile('photo')) {
             $this->removePhotoFile($personnel);
@@ -205,21 +211,24 @@ class PersonnelController extends Controller
         }
 
         $oldData = ['name' => $personnel->name];
-        $personnel->update($validated);
 
-        if ($this->accessService->canManageAccess($request->user())) {
-            $this->accessService->sync($personnel, [
-                'canAccessSystem' => $canAccess,
-                'systemRole' => $request->input('systemRole', 'staff'),
-                'password' => $request->input('password'),
-            ]);
-        } else {
-            $this->accessService->syncActiveState($personnel->fresh());
-        }
+        DB::transaction(function () use ($request, $personnel, $validated, $canAccess) {
+            $personnel->update($validated);
 
-        $this->auditService->logUpdate('personnel', $personnel->id, $oldData, ['name' => $personnel->name]);
+            if ($this->accessService->canManageAccess($request->user())) {
+                $this->accessService->sync($personnel->fresh(), [
+                    'canAccessSystem' => $canAccess,
+                    'systemRole' => $request->input('systemRole', 'staff'),
+                    'password' => $request->input('password'),
+                ]);
+            } else {
+                $this->accessService->syncActiveState($personnel->fresh());
+            }
+        });
 
-        return redirect()->route('personnel.index')->with('success', 'Personel güncellendi.');
+        $this->auditService->logUpdate('personnel', $personnel->id, $oldData, ['name' => $personnel->fresh()->name]);
+
+        return redirect()->route('personnel.show', $personnel)->with('success', 'Personel güncellendi.');
     }
 
     public function deletePhoto(Personnel $personnel)

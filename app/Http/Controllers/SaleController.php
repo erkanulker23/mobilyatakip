@@ -699,12 +699,10 @@ class SaleController extends Controller
             ]);
 
             if ($kasaId && in_array($paymentType, ['nakit', 'havale', 'kredi_karti'], true)) {
-                $paymentTypeLabel = match ($paymentType) {
-                    'nakit' => 'Nakit',
-                    'havale' => 'Havale',
-                    'kredi_karti' => 'Kredi Kartı',
-                    default => '',
-                };
+                $paymentTypeLabel = \App\Support\PaymentType::label($paymentType);
+                if ($paymentTypeLabel === '—') {
+                    $paymentTypeLabel = '';
+                }
                 $desc = $paymentLabel . ' - ' . ($sale->customer?->name ?? 'Müşteri');
                 if ($paymentTypeLabel) {
                     $desc .= ' (' . $paymentTypeLabel . ')';

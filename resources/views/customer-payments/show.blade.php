@@ -88,6 +88,10 @@
                 <dd class="font-medium text-slate-800 dark:text-slate-200">{{ $customerPayment->reference }}</dd>
             </div>
             @endif
+            @include('partials.payment-bank-details', [
+                'paymentType' => $customerPayment->paymentType,
+                'kasa' => $customerPayment->kasa,
+            ])
         </dl>
         @if(!empty($customerPayment->notes))
         <div class="mt-6 pt-6 border-t border-slate-100 dark:border-slate-700">

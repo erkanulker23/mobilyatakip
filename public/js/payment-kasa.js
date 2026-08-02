@@ -3,14 +3,14 @@
         nakit: {
             label: 'Nakit Kasası',
             types: ['kasa'],
-            help: 'Nakit tahsilat hangi kasaya girecek?',
+            help: 'Nakit elden tahsilat hangi kasaya girecek?',
             empty: 'Aktif nakit kasası yok. Kasa menüsünden «Nakit Kasa» ekleyin.',
         },
         havale: {
-            label: 'Banka / Hesap',
-            types: ['banka', 'kasa'],
-            help: 'Havale hangi hesaba yapıldı?',
-            empty: 'Aktif kasa veya banka hesabı yok. Kasa menüsünden hesap ekleyin.',
+            label: 'Banka Hesabı',
+            types: ['banka'],
+            help: 'Havale hangi banka hesabına yapıldı? Seçince IBAN bilgisi görünür.',
+            empty: 'Havale için banka hesabı tanımlı değil. Kasa menüsünden banka hesabı ve IBAN ekleyin.',
         },
         kredi_karti: {
             label: 'Banka / POS Hesabı',
@@ -45,6 +45,58 @@
         return checked ? checked.value : 'none';
     }
 
+    function escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function renderBankInfo(root, pt, kasaEl) {
+        var bankInfoEl = root.querySelector('[data-bank-info-panel]');
+        if (!bankInfoEl) return;
+
+        if (pt !== 'havale') {
+            bankInfoEl.classList.add('hidden');
+            bankInfoEl.innerHTML = '';
+            return;
+        }
+
+        bankInfoEl.classList.remove('hidden');
+
+        if (!kasaEl.value) {
+            bankInfoEl.innerHTML = '<p class="text-sky-800 dark:text-sky-200 text-xs">Havale için banka hesabı seçin; IBAN bilgisi burada görünecek.</p>';
+            return;
+        }
+
+        var opt = kasaEl.options[kasaEl.selectedIndex];
+        var bankName = opt ? opt.getAttribute('data-bank-name') || '' : '';
+        var iban = opt ? opt.getAttribute('data-iban') || '' : '';
+        var accountNumber = opt ? opt.getAttribute('data-account-number') || '' : '';
+        var accountLabel = opt ? opt.textContent.trim() : '';
+
+        if (!iban && !bankName && !accountNumber) {
+            bankInfoEl.innerHTML = '<p class="text-amber-700 dark:text-amber-300 text-xs">Seçili hesapta banka / IBAN bilgisi tanımlı değil. Kasa ayarlarından IBAN ekleyin.</p>';
+            return;
+        }
+
+        var html = '<p class="text-[11px] font-semibold uppercase tracking-wider text-sky-700/80 dark:text-sky-300/80 mb-2">Havale Banka Bilgileri</p>';
+        html += '<dl class="space-y-1.5 text-sm">';
+        html += '<div><dt class="text-xs text-sky-700/70 dark:text-sky-300/70">Hesap</dt><dd class="font-medium text-sky-950 dark:text-sky-100">' + escapeHtml(accountLabel) + '</dd></div>';
+        if (bankName) {
+            html += '<div><dt class="text-xs text-sky-700/70 dark:text-sky-300/70">Banka</dt><dd class="font-medium text-sky-950 dark:text-sky-100">' + escapeHtml(bankName) + '</dd></div>';
+        }
+        if (iban) {
+            html += '<div><dt class="text-xs text-sky-700/70 dark:text-sky-300/70">IBAN</dt><dd class="font-mono text-sm font-semibold tracking-wide text-sky-950 dark:text-sky-100 break-all">' + escapeHtml(iban) + '</dd></div>';
+        } else if (accountNumber) {
+            html += '<div><dt class="text-xs text-sky-700/70 dark:text-sky-300/70">Hesap No</dt><dd class="font-mono text-sm font-semibold text-sky-950 dark:text-sky-100">' + escapeHtml(accountNumber) + '</dd></div>';
+        }
+        html += '</dl>';
+
+        bankInfoEl.innerHTML = html;
+    }
+
     function updateField(root) {
         var ptEl = document.getElementById(root.dataset.paymentTypeId);
         var amountEl = root.dataset.amountId ? document.getElementById(root.dataset.amountId) : null;
@@ -62,6 +114,11 @@
         var paymentActive = mode === 'kapora' || mode === 'full';
         var needsKasa = paymentActive && requiresKasa(pt) && (mode === 'full' || amount > 0);
         var showField = paymentActive && requiresKasa(pt);
+
+        if (!root.dataset.paymentModeName) {
+            showField = requiresKasa(pt);
+            needsKasa = requiresKasa(pt);
+        }
 
         root.style.display = showField ? '' : 'none';
 
@@ -122,6 +179,8 @@
                 helpEl.textContent = cfg.help;
             }
         }
+
+        renderBankInfo(root, pt, kasaEl);
     }
 
     function bindField(root) {
@@ -133,12 +192,14 @@
 
         var ptEl = document.getElementById(root.dataset.paymentTypeId);
         var amountEl = root.dataset.amountId ? document.getElementById(root.dataset.amountId) : null;
+        var kasaEl = document.getElementById(root.dataset.kasaId);
 
         function refresh() {
             updateField(root);
         }
 
         if (ptEl) ptEl.addEventListener('change', refresh);
+        if (kasaEl) kasaEl.addEventListener('change', refresh);
         if (amountEl) {
             amountEl.addEventListener('input', refresh);
             amountEl.addEventListener('change', refresh);
