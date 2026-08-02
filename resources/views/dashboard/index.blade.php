@@ -1,20 +1,73 @@
 @extends('layouts.app')
 @section('title', 'Kontrol Paneli')
 @section('content')
-<div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800/60 p-4 sm:p-5">
-    <div class="flex gap-3 sm:gap-4">
-        <div class="shrink-0 mt-0.5">
-            <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-            </span>
-        </div>
-        <div class="min-w-0">
-            <p class="text-sm font-semibold text-amber-900 dark:text-amber-200">Bu proje <span class="whitespace-nowrap">02.08.2026</span> tarihinde işleme alınmıştır.</p>
-            <p class="mt-1.5 text-sm text-amber-800/90 dark:text-amber-300/90 leading-relaxed">
-                Bu tarihten önceki siparişlerde dikkatli olun; satış fişlerinde gerekli düzenlemeleri yapın. Kasa defterleri bu dönem için doğru olmayabilir.
-            </p>
+<div class="space-y-4 mb-6">
+    <div class="rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800/60 p-4 sm:p-5">
+        <div class="flex gap-3 sm:gap-4">
+            <div class="shrink-0 mt-0.5">
+                <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </span>
+            </div>
+            <div class="min-w-0">
+                <p class="text-xs font-semibold uppercase tracking-wider text-amber-800 dark:text-amber-300 mb-1">Dikkat</p>
+                <p class="text-sm font-semibold text-amber-900 dark:text-amber-200">Bu proje <span class="whitespace-nowrap">02.08.2026</span> tarihinde işleme alınmıştır.</p>
+                <p class="mt-1.5 text-sm text-amber-800/90 dark:text-amber-300/90 leading-relaxed">
+                    Bu tarihten önceki siparişlerde dikkatli olun; satış fişlerinde gerekli düzenlemeleri yapın. Kasa defterleri bu dönem için doğru olmayabilir.
+                </p>
+            </div>
         </div>
     </div>
+
+    @if(($urgentDueSales ?? collect())->isNotEmpty())
+    <div class="rounded-2xl border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-800/60 p-4 sm:p-5">
+        <div class="flex gap-3 sm:gap-4">
+            <div class="shrink-0 mt-0.5">
+                <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </span>
+            </div>
+            <div class="min-w-0 flex-1">
+                <p class="text-xs font-semibold uppercase tracking-wider text-red-800 dark:text-red-300 mb-1">Dikkat</p>
+                <p class="text-sm font-semibold text-red-900 dark:text-red-200">
+                    Termin tarihi yakınlaşan siparişleriniz bulunmaktadır.
+                </p>
+                <p class="mt-1.5 text-sm text-red-800/90 dark:text-red-300/90 leading-relaxed">
+                    {{ $urgentDueSales->count() }} siparişin termin tarihi {{ $terminAlertDays }} gün veya daha kısa süre içinde.
+                    @php
+                        $overdueCount = $urgentDueSales->filter(fn ($s) => $s->dueDate && (int) now()->startOfDay()->diffInDays($s->dueDate, false) < 0)->count();
+                    @endphp
+                    @if($overdueCount > 0)
+                        <span class="font-medium">{{ $overdueCount }} tanesi gecikmiş durumda.</span>
+                    @endif
+                </p>
+                <ul class="mt-3 space-y-1.5 text-sm text-red-900/90 dark:text-red-200/90">
+                    @foreach($urgentDueSales->take(5) as $sale)
+                    @php
+                        $daysLeft = (int) now()->startOfDay()->diffInDays($sale->dueDate, false);
+                        $daysText = $daysLeft < 0
+                            ? abs($daysLeft) . ' gün gecikti'
+                            : ($daysLeft === 0 ? 'bugün' : $daysLeft . ' gün kaldı');
+                    @endphp
+                    <li class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <a href="{{ route('sales.show', $sale) }}" class="font-medium hover:underline">{{ $sale->saleNumber }}</a>
+                        <span class="text-red-700/80 dark:text-red-300/80">·</span>
+                        <span>{{ $sale->customer?->name ?? '—' }}</span>
+                        <span class="text-red-700/80 dark:text-red-300/80">·</span>
+                        <span class="font-medium">{{ $sale->dueDate?->format('d.m.Y') }} ({{ $daysText }})</span>
+                    </li>
+                    @endforeach
+                </ul>
+                @if($urgentDueSales->count() > 5)
+                <p class="mt-2 text-xs text-red-700/80 dark:text-red-300/80">+{{ $urgentDueSales->count() - 5 }} sipariş daha</p>
+                @endif
+                <a href="#termin-yaklasan" class="inline-flex items-center gap-1 mt-3 text-sm font-medium text-red-800 dark:text-red-200 hover:underline">
+                    Termin listesine git →
+                </a>
+            </div>
+        </div>
+    </div>
+    @endif
 </div>
 
 <div class="mb-8">
@@ -184,7 +237,7 @@
     </div>
 
     {{-- Termin süresi yaklaşan siparişler --}}
-    <div class="card overflow-hidden">
+    <div id="termin-yaklasan" class="card overflow-hidden scroll-mt-24">
         <div class="card-header flex items-center justify-between">
             <span>Termin Süresi Yaklaşan Siparişler</span>
             <a href="{{ route('sales.index') }}" class="text-sm font-normal text-neutral-500 hover:text-neutral-900 transition-colors">Tümünü Gör →</a>

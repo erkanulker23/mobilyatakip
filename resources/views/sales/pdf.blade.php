@@ -23,7 +23,7 @@
         .party-label { font-size: 9px; text-transform: uppercase; color: #000; font-weight: bold; margin-bottom: 5px; letter-spacing: 0.04em; }
         .items { width: 100%; border-collapse: collapse; margin-top: 6px; }
         .items th, .items td { border: 1px solid #000; padding: 7px 8px; font-size: 10px; line-height: 1.4; color: #000; }
-        .items th { background: #000; font-size: 9px; text-transform: uppercase; color: #fff; font-weight: 700; }
+        .items th { background: #ececec; font-size: 9px; text-transform: uppercase; color: #000; font-weight: 700; }
         .items td.right, .items th.right { text-align: right; }
         .items td.center, .items th.center { text-align: center; }
         .totals { width: 240px; margin-left: auto; margin-top: 12px; color: #000; }
@@ -120,9 +120,9 @@
         @if(isset($kdvTotal))
         <tr><td class="muted">KDV Toplam:</td><td style="text-align:right;">{{ number_format($kdvTotal ?? 0, 0, ',', '.') }} ₺</td></tr>
         @endif
-        <tr class="grand"><td>Genel Toplam:</td><td style="text-align:right; color:#047857;">{{ number_format($grandTotal ?? 0, 0, ',', '.') }} ₺</td></tr>
+        <tr class="grand"><td>Genel Toplam:</td><td style="text-align:right;">{{ number_format($grandTotal ?? 0, 0, ',', '.') }} ₺</td></tr>
         @if(isset($paidAmount) && ($paidAmount ?? 0) > 0)
-        <tr><td class="muted">{{ $paidAmountLabel ?? 'Kapora / Ödenen' }}:</td><td style="text-align:right; color:#047857;">{{ number_format($paidAmount ?? 0, 0, ',', '.') }} ₺</td></tr>
+        <tr><td class="muted">{{ $paidAmountLabel ?? 'Kapora / Ödenen' }}:</td><td style="text-align:right;">{{ number_format($paidAmount ?? 0, 0, ',', '.') }} ₺</td></tr>
         <tr><td class="muted">Kalan:</td><td style="text-align:right;">{{ number_format(($grandTotal ?? 0) - ($paidAmount ?? 0), 0, ',', '.') }} ₺</td></tr>
         @endif
         @php $pdfPaymentStatus = $paymentStatus ?? \App\Support\CustomerBalance::statusFromTotals((float) ($grandTotal ?? 0), (float) ($paidAmount ?? 0)); @endphp

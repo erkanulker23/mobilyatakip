@@ -15,6 +15,8 @@ class DashboardController extends Controller
 {
     private const TERMIN_WINDOW_DAYS = 14;
 
+    private const TERMIN_ALERT_DAYS = 3;
+
     public function __construct(private StockService $stockService) {}
 
     public function index()
@@ -77,6 +79,15 @@ class DashboardController extends Controller
             ->get();
 
         $terminHorizon = Carbon::today()->addDays(self::TERMIN_WINDOW_DAYS);
+        $terminAlertHorizon = Carbon::today()->addDays(self::TERMIN_ALERT_DAYS);
+
+        $urgentDueSales = Sale::with('customer')
+            ->where('isCancelled', false)
+            ->whereNull('deliveredAt')
+            ->whereNotNull('dueDate')
+            ->whereDate('dueDate', '<=', $terminAlertHorizon)
+            ->orderBy('dueDate')
+            ->get();
 
         $upcomingSales = Sale::with('customer')
             ->where('isCancelled', false)
@@ -129,8 +140,9 @@ class DashboardController extends Controller
             'recentSales',
             'upcomingSales',
             'upcomingServiceTickets',
+            'urgentDueSales',
             'topPersonnel',
-        ));
+        ) + ['terminAlertDays' => self::TERMIN_ALERT_DAYS]);
     }
 
     public function tasks()

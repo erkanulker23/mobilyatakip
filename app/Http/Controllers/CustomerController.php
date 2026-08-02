@@ -7,6 +7,8 @@ use App\Http\Controllers\Concerns\ValidatesTurkeyAddress;
 use App\Imports\CustomersImport;
 use App\Models\Customer;
 use App\Models\Sale;
+use App\Models\ServiceTicket;
+use App\Support\CustomerBalance;
 use App\Rules\TurkishTaxId;
 use App\Rules\UniqueCustomerPhone;
 use App\Support\CustomerPhone;
@@ -176,8 +178,41 @@ class CustomerController extends Controller
 
     public function edit(Customer $customer)
     {
-        $customer->load(['sales', 'quotes']);
-        return view('customers.edit', compact('customer'));
+        $customer->load(['quotes', 'sales', 'payments', 'city', 'district']);
+
+        $serviceTickets = ServiceTicket::query()
+            ->with('sale')
+            ->where(function ($q) use ($customer) {
+                $q->where('customerId', $customer->id)
+                    ->orWhereIn('saleId', $customer->sales->pluck('id'));
+            })
+            ->orderByDesc('createdAt')
+            ->get();
+
+        $totalSales = (float) $customer->sales->where('isCancelled', false)->sum('grandTotal');
+        $totalPaid = (float) $customer->payments->sum('amount');
+
+        if ($totalSales <= 0.005 && $totalPaid <= 0.005) {
+            $customerBalance = CustomerBalance::customerStatus($totalSales, $totalPaid);
+        } else {
+            $customerBalance = CustomerBalance::statusFromTotals($totalSales, $totalPaid);
+            $customerBalance['amountLabel'] = match ($customerBalance['key']) {
+                'borclu' => 'Kalan borç',
+                'alacakli' => 'Fazla ödeme',
+                default => 'Kalan borç',
+            };
+        }
+
+        $stats = [
+            'salesCount' => $customer->sales->where('isCancelled', false)->count(),
+            'quotesCount' => $customer->quotes->count(),
+            'sshCount' => $serviceTickets->count(),
+            'openSshCount' => $serviceTickets->whereNotIn('status', ['closed', 'cancelled'])->count(),
+            'totalSales' => $totalSales,
+            'totalPaid' => $totalPaid,
+        ];
+
+        return view('customers.edit', compact('customer', 'serviceTickets', 'customerBalance', 'stats'));
     }
 
     public function update(Request $request, Customer $customer)

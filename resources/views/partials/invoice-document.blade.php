@@ -34,21 +34,21 @@
         {{-- Kalemler Tablosu --}}
         <div class="print-section-lg overflow-x-auto -mx-2">
             <table class="print-table min-w-full">
-                <thead class="bg-slate-100">
+                <thead>
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">#</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Ürün / Açıklama</th>
+                        <th class="text-left">#</th>
+                        <th class="text-left">Ürün / Açıklama</th>
                         @if(isset($showListPrice) && $showListPrice)
-                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Liste fiyatı</th>
-                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">İskontolu fiyat</th>
+                        <th class="text-right">Liste fiyatı</th>
+                        <th class="text-right">İskontolu fiyat</th>
                         @else
-                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Birim Fiyat</th>
+                        <th class="text-right">Birim Fiyat</th>
                         @endif
-                        <th class="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase">Adet</th>
+                        <th class="text-center">Adet</th>
                         @if(isset($showKdv) && $showKdv)
-                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">KDV %</th>
+                        <th class="text-right">KDV %</th>
                         @endif
-                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Toplam</th>
+                        <th class="text-right">Toplam</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200">
@@ -99,13 +99,13 @@
             </div>
             @endif
             <div class="flex justify-end gap-8 text-base font-bold mt-3 pt-3 border-t-2 border-neutral-200">
-                <span class="text-slate-900">Genel Toplam:</span>
-                <span class="text-emerald-600 w-32 text-right">{{ number_format($grandTotal ?? 0, 0, ',', '.') }} ₺</span>
+                <span>Genel Toplam:</span>
+                <span class="w-32 text-right">{{ number_format($grandTotal ?? 0, 0, ',', '.') }} ₺</span>
             </div>
             @if(isset($paidAmount) && ($paidAmount ?? 0) > 0)
             <div class="flex justify-end gap-8 text-sm mt-2">
-                <span class="text-emerald-600">{{ $paidAmountLabel ?? 'Kapora / Ödenen' }}:</span>
-                <span class="font-medium w-32 text-right text-emerald-600">{{ number_format($paidAmount ?? 0, 0, ',', '.') }} ₺</span>
+                <span>{{ $paidAmountLabel ?? 'Kapora / Ödenen' }}:</span>
+                <span class="font-medium w-32 text-right">{{ number_format($paidAmount ?? 0, 0, ',', '.') }} ₺</span>
             </div>
             <div class="flex justify-end gap-8 text-sm mt-1">
                 <span class="text-slate-600">Kalan:</span>

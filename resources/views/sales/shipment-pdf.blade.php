@@ -22,7 +22,7 @@
         .label { font-size: 9px; text-transform: uppercase; color: #000; font-weight: bold; margin-bottom: 5px; letter-spacing: 0.04em; }
         .items { width: 100%; border-collapse: collapse; margin: 10px 0; }
         .items th, .items td { border: 1px solid #000; padding: 7px 8px; font-size: 10px; line-height: 1.4; color: #000; }
-        .items th { background: #000; color: #fff; font-size: 9px; text-transform: uppercase; font-weight: 700; }
+        .items th { background: #ececec; color: #000; font-size: 9px; text-transform: uppercase; font-weight: 700; }
         .items td.center, .items th.center { text-align: center; }
         .check { display: inline-block; width: 12px; height: 12px; border: 1px solid #000; }
         .desc-list { margin: 4px 0 0; padding-left: 14px; list-style: disc; }

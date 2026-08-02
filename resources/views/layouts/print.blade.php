@@ -7,71 +7,25 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --print-ink: #000;
-            --print-border: #000;
-        }
-
-        body { font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--print-ink); font-size: 14px; line-height: 1.5; }
+        body { font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #000; font-size: 14px; line-height: 1.5; }
         button, input, select, textarea, table, th, td, nav, label, a { font-family: inherit; }
-        .print-brand-name { font-family: 'Cormorant Garamond', Georgia, serif; color: var(--print-ink) !important; }
-        .print-document { border: 1px solid #ccc; border-radius: 0; font-size: 14px; line-height: 1.5; color: var(--print-ink); }
+        .print-brand-name { font-family: 'Cormorant Garamond', Georgia, serif; color: #000 !important; }
+        .print-document { border: 1px solid #ccc; border-radius: 0; font-size: 14px; line-height: 1.5; color: #000; }
         .print-document .print-doc-inner { padding: 1.25rem 1.5rem; }
-        .print-document :where(p, li, dd, dt, span, div, label, strong, em, a):not(.print-table thead *) {
-            color: var(--print-ink) !important;
-        }
-        .print-document :where(h1, h2, h3, h4) {
-            color: var(--print-ink) !important;
-        }
-        .print-document [class*="text-neutral"],
-        .print-document [class*="text-slate"],
-        .print-document [class*="text-gray"] {
-            color: var(--print-ink) !important;
-        }
-        .print-table { border-collapse: collapse; width: 100%; }
-        .print-table thead { background: var(--print-ink) !important; color: #fff !important; }
-        .print-table thead th {
-            color: #fff !important;
-            font-weight: 700;
-            letter-spacing: 0.03em;
-            text-transform: uppercase;
-            font-size: 11px !important;
-            padding: 10px 12px !important;
-            border: 1px solid var(--print-ink) !important;
-        }
-        .print-table tbody td {
-            color: var(--print-ink) !important;
-            font-size: 13px !important;
-            padding: 10px 12px !important;
-            vertical-align: top;
-            border: 1px solid #333 !important;
-        }
-        .print-table tbody tr:nth-child(even) { background: #fff !important; }
-        .print-info-banner {
-            background: #fff !important;
-            border-left: 3px solid var(--print-ink) !important;
-            border-radius: 0 !important;
-            padding: 12px 14px !important;
-            font-size: 13px !important;
-            color: var(--print-ink) !important;
-        }
-        .print-signatures { border-top: 1px solid var(--print-border); padding-top: 1.25rem; margin-top: 1.5rem; }
+        .print-signatures { border-top: 1px solid #000; padding-top: 1.25rem; margin-top: 1.5rem; }
         .print-signatures .sig-line {
-            border-top: 1px solid var(--print-ink);
+            border-top: 1px solid #000;
             padding-top: 0.5rem;
             font-size: 12px;
-            color: var(--print-ink) !important;
+            color: #000 !important;
             margin-top: 3rem;
         }
         .print-section { margin-bottom: 1rem; }
         .print-section-lg { margin-bottom: 1.25rem; }
-        .print-brand-header { border-bottom-color: var(--print-ink) !important; }
-        .print-brand-header .print-doc-no { font-size: 1.75rem !important; line-height: 1.1 !important; color: var(--print-ink) !important; }
-        .print-document table:not(.print-table) th,
-        .print-document table:not(.print-table) td {
-            color: var(--print-ink) !important;
-            border-color: #333 !important;
-        }
+        .print-brand-header { border-bottom-color: #000 !important; }
+        .print-brand-header .print-doc-no { font-size: 1.75rem !important; line-height: 1.1 !important; color: #000 !important; }
+
+        @include('partials.print-document-styles')
 
         @page {
             size: A4 portrait;
@@ -88,8 +42,6 @@
                 color: #000 !important;
                 font-size: 12pt;
                 line-height: 1.45;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
             }
 
             .no-print { display: none !important; }
@@ -101,12 +53,6 @@
                 overflow: visible !important;
                 font-size: 12pt !important;
                 color: #000 !important;
-            }
-
-            .print-table thead,
-            .print-table thead th {
-                background: #000 !important;
-                color: #fff !important;
             }
 
             .print-document .print-doc-inner {
