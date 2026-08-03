@@ -30,6 +30,7 @@ class SaleDocument
                 'lineTotal' => $i->lineTotal ?? 0,
             ])->toArray(),
             'showKdv' => true,
+            'kdvIncluded' => (bool) ($sale->kdvIncluded ?? true),
             'subtotal' => $sale->subtotal,
             'kdvTotal' => $sale->kdvTotal,
             'grandTotal' => $sale->grandTotal,

@@ -194,7 +194,7 @@
                         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                             <div>
                                 <label class="form-label">Fiyat ₺</label>
-                                <input type="text" inputmode="decimal" name="items[__IDX__][unitPrice]" required class="form-input item-price" placeholder="20.000">
+                                <input type="text" inputmode="decimal" name="items[__IDX__][unitPrice]" required class="form-input item-price" placeholder="20.000" data-raw="">
                             </div>
                             <div>
                                 <label class="form-label">Adet</label>
@@ -250,6 +250,16 @@
                             <option value="1" {{ old('kdvIncluded', $quote->kdvIncluded ?? true) ? 'selected' : '' }}>KDV Dahil</option>
                             <option value="0" {{ !old('kdvIncluded', $quote->kdvIncluded ?? true) ? 'selected' : '' }}>KDV Hariç</option>
                         </select>
+                        <div class="grid grid-cols-2 gap-3 mt-4">
+                            <div>
+                                <label class="form-label" for="generalDiscountPercent">Genel İskonto %</label>
+                                <input type="number" step="0.01" min="0" max="100" name="generalDiscountPercent" id="generalDiscountPercent" value="{{ old('generalDiscountPercent', $quote->generalDiscountPercent ?? 0) }}" class="form-input min-h-[44px]" placeholder="0">
+                            </div>
+                            <div>
+                                <label class="form-label" for="generalDiscountAmount">Genel İskonto ₺</label>
+                                <input type="text" inputmode="decimal" name="generalDiscountAmount" id="generalDiscountAmount" value="{{ old('generalDiscountAmount') !== null && old('generalDiscountAmount') !== '' ? money(old('generalDiscountAmount')) : money($quote->generalDiscountAmount ?? 0) }}" class="form-input min-h-[44px]" placeholder="0" data-raw="{{ old('generalDiscountAmount', $quote->generalDiscountAmount ?? 0) }}">
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -258,7 +268,8 @@
                     <div class="sale-summary-row"><span>Ara Toplam</span><strong id="quoteSubtotalBeforeDiscDisplay">0 ₺</strong></div>
                     <div id="quoteDiscountPctRow" class="sale-summary-row hidden"><span>İskonto %</span><strong id="quoteDiscountPctDisplay" class="text-amber-300">0 ₺</strong></div>
                     <div id="quoteDiscountAmtRow" class="sale-summary-row hidden"><span>İskonto ₺</span><strong id="quoteDiscountAmtDisplay" class="text-amber-300">0 ₺</strong></div>
-                    <div class="sale-summary-row"><span>KDV Toplam</span><strong id="kdvDisplay">0 ₺</strong></div>
+                    <div id="quoteGeneralDiscountRow" class="sale-summary-row hidden"><span>Genel İskonto</span><strong id="quoteGeneralDiscountDisplay" class="text-amber-300">0 ₺</strong></div>
+                    <div class="sale-summary-row {{ old('kdvIncluded', $quote->kdvIncluded ?? true) ? 'hidden' : '' }}" id="kdvSummaryRow"><span>KDV Toplam</span><strong id="kdvDisplay">0 ₺</strong></div>
                     <div class="sale-summary-total">
                         <span>Genel Toplam</span>
                         <span id="grandTotalDisplay">0 ₺</span>
@@ -342,7 +353,16 @@
 <script src="{{ asset('js/sale-product-select.js') }}"></script>
 <script>
 @php
-    $productsJson = ($initialProducts ?? collect())->map(fn ($p) => \App\Support\ProductSelect::payload($p))->values();
+    $itemsByProductId = $quote->items->keyBy('productId');
+    $productsJson = ($initialProducts ?? collect())->map(function ($p) use ($itemsByProductId) {
+        $payload = \App\Support\ProductSelect::payload($p);
+        $item = $itemsByProductId->get($p->id);
+        if ($item && abs((float) $item->unitPrice - (float) ($payload['price'] ?? 0)) > 0.001) {
+            $payload['price'] = (float) $item->unitPrice;
+            $payload['label'] = ($payload['name'] ?? $p->name) . ' · ' . number_format((float) $item->unitPrice, 0, ',', '.') . ' ₺';
+        }
+        return $payload;
+    })->values();
 @endphp
 const customersQuote = @json($customersQuoteJson);
 const productsData = @json($productsJson);
@@ -422,35 +442,53 @@ function parseTrNum(s) {
     }
     return window.parseMoney ? window.parseMoney(s) : NaN;
 }
+function readItemPrice(priceEl) {
+    if (!priceEl) return NaN;
+    return parseTrNum(priceEl.getAttribute('data-raw') || priceEl.value);
+}
+function roundMoney(n) {
+    return Math.round((Number(n) || 0) * 100) / 100;
+}
+function syncKdvSummaryVisibility() {
+    const kdvIncl = document.querySelector('select[name="kdvIncluded"]')?.value === '1';
+    const row = document.getElementById('kdvSummaryRow');
+    if (row) row.classList.toggle('hidden', kdvIncl);
+}
 function updateQuoteTotals() {
     const kdvIncl = document.querySelector('select[name="kdvIncluded"]')?.value === '1';
-    let subtotalBeforeDisc = 0, totalDiscountPct = 0, totalDiscountAmt = 0, subtotal = 0, kdvTotal = 0;
+    const genDiscPct = parseFloat(document.getElementById('generalDiscountPercent')?.value || 0, 10);
+    const genDiscAmtEl = document.getElementById('generalDiscountAmount');
+    const genDiscAmt = genDiscAmtEl ? readItemPrice(genDiscAmtEl) : 0;
+    let subtotalBeforeDisc = 0, totalDiscountPct = 0, totalDiscountAmt = 0, subtotal = 0, lineKdvSum = 0;
     document.querySelectorAll('#items .item-row').forEach(row => {
-        const price = parseTrNum(row.querySelector('.item-price')?.value || 0);
+        const priceEl = row.querySelector('.item-price');
+        const price = readItemPrice(priceEl);
         const qty = parseInt(row.querySelector('.item-qty')?.value || 1, 10);
         const kdv = parseFloat(row.querySelector('.item-kdv')?.value || 18, 10);
         const discPct = parseFloat(row.querySelector('.item-disc-pct')?.value || 0, 10);
-        const discAmt = parseFloat(row.querySelector('.item-disc-amt')?.value || 0, 10);
+        const discAmt = readItemPrice(row.querySelector('.item-disc-amt')) || 0;
         if (price <= 0 || qty <= 0) return;
-        let lineBeforeDisc;
-        if (kdvIncl) {
-            lineBeforeDisc = price * qty / (1 + kdv / 100);
-        } else {
-            lineBeforeDisc = price * qty;
-        }
-        const lineDiscPct = lineBeforeDisc * (discPct / 100);
-        const lineDiscAmt = discAmt;
-        let lineTotal = lineBeforeDisc - lineDiscPct - lineDiscAmt;
-        lineTotal = Math.max(0, lineTotal);
-        const lineKdv = lineTotal * (kdv / 100);
-        subtotalBeforeDisc += lineBeforeDisc;
+        const rawLineNet = kdvIncl
+            ? roundMoney(price * qty / (1 + kdv / 100))
+            : roundMoney(price * qty);
+        const lineDiscPct = roundMoney(rawLineNet * (discPct / 100));
+        const lineDiscAmt = roundMoney(discAmt);
+        const lineNet = Math.max(0, roundMoney(rawLineNet - lineDiscPct - lineDiscAmt));
+        const lineKdv = roundMoney(lineNet * (kdv / 100));
+        const lineTotal = roundMoney(lineNet + lineKdv);
+        subtotalBeforeDisc += rawLineNet;
         totalDiscountPct += lineDiscPct;
         totalDiscountAmt += lineDiscAmt;
-        subtotal += lineTotal;
-        kdvTotal += lineKdv;
+        subtotal += lineNet;
+        lineKdvSum += lineKdv;
         const lineEl = row.querySelector('.item-line-total');
-        if (lineEl) lineEl.textContent = fmt(lineTotal + lineKdv) + ' ₺';
+        if (lineEl) lineEl.textContent = fmt(lineTotal) + ' ₺';
     });
+    const generalDisc = roundMoney(subtotal * (genDiscPct / 100) + (isNaN(genDiscAmt) ? 0 : genDiscAmt));
+    const afterDisc = Math.max(0, roundMoney(subtotal - generalDisc));
+    const ratio = subtotal > 0 ? afterDisc / subtotal : 0;
+    const kdvTotal = roundMoney(ratio * lineKdvSum);
+    const grandTotal = roundMoney(afterDisc + kdvTotal);
     const beforeDiscEl = document.getElementById('quoteSubtotalBeforeDiscDisplay');
     if (beforeDiscEl) {
         beforeDiscEl.textContent = fmt(subtotalBeforeDisc) + ' ₺';
@@ -466,14 +504,21 @@ function updateQuoteTotals() {
             discAmtRow.classList.toggle('hidden', totalDiscountAmt <= 0);
             discAmtDisp.textContent = '-' + fmt(totalDiscountAmt) + ' ₺';
         }
+        const genRow = document.getElementById('quoteGeneralDiscountRow');
+        const genDisp = document.getElementById('quoteGeneralDiscountDisplay');
+        if (genRow && genDisp) {
+            genRow.classList.toggle('hidden', generalDisc <= 0);
+            genDisp.textContent = '-' + fmt(generalDisc) + ' ₺';
+        }
         document.getElementById('kdvDisplay').textContent = fmt(kdvTotal) + ' ₺';
-        const grand = fmt(subtotal + kdvTotal) + ' ₺';
+        const grand = fmt(grandTotal) + ' ₺';
         document.getElementById('grandTotalDisplay').textContent = grand;
         const sticky = document.getElementById('stickyTotal');
         if (sticky) sticky.textContent = grand;
     }
     const badge = document.getElementById('quoteItemCountBadge');
     if (badge) badge.textContent = String(document.querySelectorAll('#items .item-row').length);
+    syncKdvSummaryVisibility();
 }
 window.openQuickAddQuoteProduct = function(btn) {
     const row = btn && btn.closest ? btn.closest('.item-row') : null;
@@ -485,7 +530,8 @@ function quoteRowIsEmpty(row) {
     const productId = row.querySelector('.item-product-id')?.value;
     const productName = row.querySelector('.item-product-name')?.value;
     const tsVal = row.querySelector('.item-product')?.tomselect?.getValue();
-    const price = parseTrNum(row.querySelector('.item-price')?.value ?? row.querySelector('.item-price')?.getAttribute('data-raw') ?? 0);
+    const priceEl = row.querySelector('.item-price');
+    const price = readItemPrice(priceEl);
     return !productId && !productName && !tsVal && !(price > 0);
 }
 function resolveQuoteRowForQuickProduct(rowIndex) {
@@ -499,28 +545,20 @@ function resolveQuoteRowForQuickProduct(rowIndex) {
 function applyProductToQuoteRow(rowEl, data) {
     if (!rowEl || !data) return;
     const product = window.registerSaleProduct(data);
-    const idInput = rowEl.querySelector('.item-product-id');
-    const nameInput = rowEl.querySelector('.item-product-name');
-    const priceEl = rowEl.querySelector('.item-price');
-    const kdvEl = rowEl.querySelector('.item-kdv');
-    const qtyEl = rowEl.querySelector('.item-qty');
-    if (idInput) idInput.value = String(product.id);
-    if (nameInput) nameInput.value = '';
-    if (priceEl) {
-        priceEl.value = fmt(product.price);
-        priceEl.setAttribute('data-raw', String(product.price));
-    }
-    if (kdvEl) kdvEl.value = product.kdv ?? 18;
-    if (qtyEl && (!qtyEl.value || parseInt(qtyEl.value, 10) < 1)) qtyEl.value = '1';
+    const id = String(product.id);
     const ts = rowEl.querySelector('.item-product')?.tomselect;
+    if (window.applySaleProductToRow) {
+        window.applySaleProductToRow(rowEl, product, { forcePrice: true });
+    }
     if (ts) {
-        if (!ts.options[product.id]) ts.addOption(product);
-        ts.setValue(String(product.id), true);
+        if (!ts.options[id]) ts.addOption(product);
+        ts.setValue(id, true);
     }
 }
 function restoreQuoteRow(item) {
     const rowEl = addQuoteRow(false);
     if (!rowEl || !item) return;
+    rowEl.dataset.restoring = '1';
     const qtyEl = rowEl.querySelector('.item-qty');
     const kdvEl = rowEl.querySelector('.item-kdv');
     const priceEl = rowEl.querySelector('.item-price');
@@ -543,10 +581,6 @@ function restoreQuoteRow(item) {
         }
         if (idInput) idInput.value = productId;
         if (nameInput) nameInput.value = '';
-        if (priceEl) {
-            priceEl.value = fmt(parseTrNum(item.unitPrice) || product.price);
-            priceEl.setAttribute('data-raw', String(parseTrNum(item.unitPrice) || product.price));
-        }
         if (ts) {
             if (!ts.options[productId]) ts.addOption(product);
             ts.setValue(productId, true);
@@ -554,13 +588,32 @@ function restoreQuoteRow(item) {
     } else if (productName && ts) {
         if (idInput) idInput.value = '';
         if (nameInput) nameInput.value = productName;
-        if (priceEl) {
-            priceEl.value = fmt(parseTrNum(item.unitPrice));
-            priceEl.setAttribute('data-raw', String(parseTrNum(item.unitPrice)));
-        }
         ts.addOption({ id: productName, name: productName, label: productName });
         ts.setValue(productName, true);
     }
+
+    if (priceEl && item.unitPrice != null && item.unitPrice !== '') {
+        const priceNum = parseTrNum(item.unitPrice);
+        if (!isNaN(priceNum)) {
+            priceEl.value = fmt(priceNum);
+            priceEl.setAttribute('data-raw', String(priceNum));
+            const catalogProduct = productId ? window.getSaleProduct(productId) : null;
+            const catalogPrice = catalogProduct ? parseTrNum(catalogProduct.price) : NaN;
+            if (catalogProduct && !isNaN(catalogPrice) && Math.abs(priceNum - catalogPrice) > 0.001) {
+                priceEl.dataset.priceCustom = '1';
+            }
+            if (catalogProduct && window.syncSaleProductSelectLabel) {
+                window.syncSaleProductSelectLabel(rowEl, catalogProduct);
+            }
+        }
+    } else if (priceEl && productName && item.unitPrice != null) {
+        const priceNum = parseTrNum(item.unitPrice);
+        if (!isNaN(priceNum)) {
+            priceEl.value = fmt(priceNum);
+            priceEl.setAttribute('data-raw', String(priceNum));
+        }
+    }
+    delete rowEl.dataset.restoring;
     updateQuoteTotals();
 }
 let quoteIdx = 0;
@@ -585,6 +638,7 @@ function duplicateQuoteRow(btn) {
         if (from && to) {
             to.value = from.value;
             if (from.hasAttribute('data-raw')) to.setAttribute('data-raw', from.getAttribute('data-raw'));
+            if (from.dataset.priceCustom) to.dataset.priceCustom = from.dataset.priceCustom;
         }
     });
     if (window.ItemDescriptionLines) ItemDescriptionLines.duplicateLines(src, newRow);
@@ -597,6 +651,9 @@ function duplicateQuoteRow(btn) {
         newTs.setValue(val, true);
         newRow.querySelector('.item-product-id').value = src.querySelector('.item-product-id').value;
         newRow.querySelector('.item-product-name').value = src.querySelector('.item-product-name').value;
+        if (product && window.syncSaleProductSelectLabel) {
+            window.syncSaleProductSelectLabel(newRow, product);
+        }
     }
     updateQuoteTotals();
     newRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -704,14 +761,20 @@ function initQuoteForm() {
     document.getElementById('quoteForm')?.addEventListener('input', function() {
         updateQuoteTotals();
     });
-    document.getElementById('quoteForm')?.addEventListener('change', function() {
+    document.getElementById('quoteForm')?.addEventListener('change', function(e) {
+        if (e.target && e.target.name === 'kdvIncluded') syncKdvSummaryVisibility();
         updateQuoteTotals();
     });
     document.getElementById('quoteForm')?.addEventListener('submit', function() {
         document.querySelectorAll('.item-price').forEach(function(inp) {
-            const v = parseTrNum(inp.value);
+            const v = readItemPrice(inp);
             inp.value = isNaN(v) || v < 0 ? '' : String(v);
         });
+        const genDiscAmt = document.getElementById('generalDiscountAmount');
+        if (genDiscAmt) {
+            const v = readItemPrice(genDiscAmt);
+            genDiscAmt.value = isNaN(v) || v < 0 ? '' : String(v);
+        }
     });
     updateQuoteTotals();
 }

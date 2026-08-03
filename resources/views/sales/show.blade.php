@@ -55,7 +55,7 @@
             <button type="button" @click="openStatusModal()" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm">
                 Sipariş Durumunu Güncelle
             </button>
-            <form method="POST" action="{{ route('sales.convert-to-quote', $sale) }}" class="inline-flex" onsubmit="return confirm('Bu satıştan yeni bir teklif oluşturulsun mu? Satış kaydı silinmez.');">
+            <form method="POST" action="{{ route('sales.convert-to-quote', $sale) }}" class="inline-flex" onsubmit="return confirm('Bu kayıt teklif olarak devam edecek. Satış listesinden kaldırılır; teklifler bölümünde kalır. Devam?');">
                 @csrf
                 <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-900 rounded-lg hover:bg-amber-200 font-medium text-sm dark:bg-amber-900/30 dark:text-amber-200 dark:hover:bg-amber-900/50">
                     Teklife Dönüştür

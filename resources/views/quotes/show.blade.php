@@ -51,6 +51,7 @@
     'extraInfo' => '<p class="text-sm text-slate-600">Geçerlilik: ' . ($quote->validUntil?->format('d.m.Y') ?? '-') . '</p><p class="text-sm text-slate-600">Personel: ' . e($quote->personnel?->name ?? '-') . '</p><p class="text-sm mt-2"><span class="inline-flex px-2 py-1 text-xs font-medium rounded-full ' . (($quote->status ?? '') === 'taslak' ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800') . '">' . e(ucfirst($quote->status ?? '-')) . '</span></p>',
     'items' => $quote->items->map(fn($i) => ['name' => $i->product?->name ?? $i->productName, 'description' => $i->description, 'unitPrice' => $i->unitPrice, 'quantity' => $i->quantity, 'kdvRate' => $i->kdvRate, 'lineTotal' => $i->lineTotal])->toArray(),
     'showKdv' => true,
+    'kdvIncluded' => (bool) ($quote->kdvIncluded ?? true),
     'subtotal' => $quote->subtotal,
     'kdvTotal' => $quote->kdvTotal,
     'discount' => ($quote->generalDiscountPercent ?? 0) > 0 ? $quote->subtotal * ($quote->generalDiscountPercent / 100) : ($quote->generalDiscountAmount ?? 0),

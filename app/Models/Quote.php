@@ -34,6 +34,7 @@ class Quote extends BaseModel
         'drawingFiles',
         'isCancelled',
         'convertedSaleId',
+        'sourceSaleId',
         'personnelId',
         'customerSource',
     ];
@@ -74,5 +75,10 @@ class Quote extends BaseModel
     public function convertedSale(): BelongsTo
     {
         return $this->belongsTo(Sale::class, 'convertedSaleId');
+    }
+
+    public function sourceSale(): BelongsTo
+    {
+        return $this->belongsTo(Sale::class, 'sourceSaleId');
     }
 }

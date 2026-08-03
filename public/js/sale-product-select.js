@@ -267,6 +267,17 @@
                 },
             },
             onItemAdd: function (value) {
+                if (row.dataset.restoring === '1') {
+                    const product = getSaleProduct(value);
+                    if (product) {
+                        if (idInput) idInput.value = String(product.id);
+                        if (nameInput) nameInput.value = '';
+                    } else {
+                        if (idInput) idInput.value = '';
+                        if (nameInput) nameInput.value = value;
+                    }
+                    return;
+                }
                 var priceEl = row.querySelector('.item-price');
                 if (priceEl) {
                     delete priceEl.dataset.priceCustom;

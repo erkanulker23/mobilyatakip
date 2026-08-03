@@ -211,7 +211,7 @@ class SaleController extends Controller
 
     public function index(Request $request)
     {
-        $q = Sale::with(['customer', 'personnel'])->orderBy('createdAt', 'desc');
+        $q = Sale::with(['customer', 'personnel'])->where('isCancelled', false)->orderBy('createdAt', 'desc');
         if ($request->filled('search')) {
             $s = $request->search;
             $q->where(function ($w) use ($s) {
@@ -489,7 +489,7 @@ class SaleController extends Controller
                 'fromSaleNumber' => $sale->saleNumber,
             ]);
 
-            return redirect()->route('quotes.show', $quote)->with('success', 'Satış teklife dönüştürüldü: ' . $quote->quoteNumber);
+            return redirect()->route('quotes.show', $quote)->with('success', 'Kayıt teklif olarak düzenlendi. Eski satış kaydı listeden kaldırıldı: ' . $quote->quoteNumber);
         } catch (\RuntimeException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

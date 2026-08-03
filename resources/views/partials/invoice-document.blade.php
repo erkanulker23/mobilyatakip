@@ -32,6 +32,9 @@
         </div>
 
         {{-- Kalemler Tablosu --}}
+        @php
+            $displayKdvDetails = isset($kdvIncluded) ? !($kdvIncluded ?? true) : ($showKdv ?? false);
+        @endphp
         <div class="print-section-lg overflow-x-auto -mx-2">
             <table class="print-table min-w-full">
                 <thead>
@@ -45,7 +48,7 @@
                         <th class="text-right">Birim Fiyat</th>
                         @endif
                         <th class="text-center">Adet</th>
-                        @if(isset($showKdv) && $showKdv)
+                        @if($displayKdvDetails)
                         <th class="text-right">KDV %</th>
                         @endif
                         <th class="text-right">Toplam</th>
@@ -68,7 +71,7 @@
                         <td class="px-4 py-3 text-right text-slate-600">{{ number_format($item['unitPrice'] ?? 0, 0, ',', '.') }} ₺</td>
                         @endif
                         <td class="px-4 py-3 text-center text-slate-600">{{ $item['quantity'] ?? 0 }}</td>
-                        @if(isset($showKdv) && $showKdv)
+                        @if($displayKdvDetails)
                         <td class="px-4 py-3 text-right text-slate-600">%{{ number_format($item['kdvRate'] ?? 0, 0) }}</td>
                         @endif
                         <td class="px-4 py-3 text-right font-medium text-neutral-900">{{ number_format($item['lineTotal'] ?? 0, 0, ',', '.') }} ₺</td>
@@ -86,7 +89,7 @@
                 <span class="font-medium w-32 text-right">{{ number_format($subtotal ?? 0, 0, ',', '.') }} ₺</span>
             </div>
             @endif
-            @if(isset($kdvTotal))
+            @if($displayKdvDetails && isset($kdvTotal))
             <div class="flex justify-end gap-8 text-sm mt-1">
                 <span class="text-slate-600">KDV Toplam:</span>
                 <span class="font-medium w-32 text-right">{{ number_format($kdvTotal ?? 0, 0, ',', '.') }} ₺</span>

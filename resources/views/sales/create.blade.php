@@ -366,7 +366,7 @@
                 <div class="sale-summary-panel" id="saleTotals">
                     <p class="text-xs uppercase tracking-wider text-neutral-400 mb-3">Sipariş Özeti</p>
                     <div class="sale-summary-row"><span>Ara Toplam</span><strong id="subtotalBeforeDiscDisplay">0 ₺</strong></div>
-                    <div class="sale-summary-row"><span>KDV Toplam</span><strong id="kdvDisplay">0 ₺</strong></div>
+                    <div class="sale-summary-row {{ old('kdvIncluded', '1') == '1' ? 'hidden' : '' }}" id="kdvSummaryRow"><span>KDV Toplam</span><strong id="kdvDisplay">0 ₺</strong></div>
                     <div id="saleDiscountGeneralRow" class="sale-summary-row hidden"><span>İndirim</span><strong id="saleDiscountGeneralDisplay" class="text-amber-300">0 ₺</strong></div>
                     <div class="sale-summary-total">
                         <span>Genel Toplam</span>
@@ -645,6 +645,7 @@ function saleItemHasContent(item) {
 function restoreSaleRow(item) {
     const rowEl = addRow(false);
     if (!rowEl || !item) return;
+    rowEl.dataset.restoring = '1';
 
     const qtyEl = rowEl.querySelector('.item-qty');
     const kdvEl = rowEl.querySelector('.item-kdv');
@@ -695,6 +696,7 @@ function restoreSaleRow(item) {
             }
         }
     }
+    delete rowEl.dataset.restoring;
 }
 function duplicateSaleRow(btn) {
     const src = btn.closest('.item-row');
@@ -759,11 +761,12 @@ function applyProductToSaleRow(rowEl, data) {
     const product = window.registerSaleProduct(data);
     const id = String(product.id);
     const ts = rowEl.querySelector('.item-product')?.tomselect;
+    if (window.applySaleProductToRow) {
+        window.applySaleProductToRow(rowEl, product, { forcePrice: true });
+    }
     if (ts) {
         if (!ts.options[id]) ts.addOption(product);
         ts.setValue(id, true);
-    } else if (window.applySaleProductToRow) {
-        window.applySaleProductToRow(rowEl, product, { forcePrice: true });
     }
 }
 function fmt(n) { return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n || 0); }
@@ -779,6 +782,11 @@ function parseTrNum(s) {
 function readItemPrice(priceEl) {
     if (!priceEl) return NaN;
     return parseTrNum(priceEl.getAttribute('data-raw') || priceEl.value);
+}
+function syncKdvSummaryVisibility() {
+    const kdvIncl = document.querySelector('select[name="kdvIncluded"]')?.value === '1';
+    const row = document.getElementById('kdvSummaryRow');
+    if (row) row.classList.toggle('hidden', kdvIncl);
 }
 function updateSaleTotals() {
     const subtotalEl = document.getElementById('subtotalBeforeDiscDisplay');
@@ -864,6 +872,7 @@ function updateSaleTotals() {
         stickyRemainingWrap.classList.toggle('hidden', !(deposit > 0) || paymentMode === 'full');
         stickyRemaining.textContent = fmt(Math.max(0, remaining)) + ' ₺';
     }
+    syncKdvSummaryVisibility();
 }
 function updateInitialPaymentMode() {
     const mode = document.querySelector('input[name="initialPaymentMode"]:checked')?.value || 'none';
@@ -916,6 +925,7 @@ document.getElementById('saleForm')?.addEventListener('input', function(e) {
 });
 document.getElementById('saleForm')?.addEventListener('change', function(e) {
     if (e.target.id === 'grandTotalOverride') { onGrandTotalOverrideInput(); return; }
+    if (e.target.name === 'kdvIncluded') { syncKdvSummaryVisibility(); }
     updateSaleTotals();
 });
 document.getElementById('saleForm')?.addEventListener('keydown', function(e) {

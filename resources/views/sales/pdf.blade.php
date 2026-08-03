@@ -85,7 +85,7 @@
             <th>Ürün / Açıklama</th>
             <th class="right" style="width:70px;">Birim</th>
             <th class="center" style="width:36px;">Adet</th>
-            @if(!empty($showKdv))<th class="right" style="width:40px;">KDV</th>@endif
+            @if(!empty($showKdv) && empty($kdvIncluded))<th class="right" style="width:40px;">KDV</th>@endif
             <th class="right" style="width:70px;">Toplam</th>
         </tr>
     </thead>
@@ -105,7 +105,7 @@
             </td>
             <td class="right">{{ number_format($item['unitPrice'] ?? 0, 0, ',', '.') }} ₺</td>
             <td class="center">{{ $item['quantity'] ?? 0 }}</td>
-            @if(!empty($showKdv))<td class="right">%{{ number_format($item['kdvRate'] ?? 0, 0) }}</td>@endif
+            @if(!empty($showKdv) && empty($kdvIncluded))<td class="right">%{{ number_format($item['kdvRate'] ?? 0, 0) }}</td>@endif
             <td class="right">{{ number_format($item['lineTotal'] ?? 0, 0, ',', '.') }} ₺</td>
         </tr>
         @endforeach
@@ -117,7 +117,7 @@
         @if(isset($subtotal))
         <tr><td class="muted">Ara Toplam:</td><td style="text-align:right;">{{ number_format($subtotal ?? 0, 0, ',', '.') }} ₺</td></tr>
         @endif
-        @if(isset($kdvTotal))
+        @if(!empty($showKdv) && empty($kdvIncluded) && isset($kdvTotal))
         <tr><td class="muted">KDV Toplam:</td><td style="text-align:right;">{{ number_format($kdvTotal ?? 0, 0, ',', '.') }} ₺</td></tr>
         @endif
         <tr class="grand"><td>Genel Toplam:</td><td style="text-align:right;">{{ number_format($grandTotal ?? 0, 0, ',', '.') }} ₺</td></tr>

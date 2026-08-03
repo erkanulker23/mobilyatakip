@@ -285,7 +285,7 @@
                 <div class="sale-summary-panel" id="saleTotals">
                     <p class="text-xs uppercase tracking-wider text-neutral-400 mb-3">Sipariş Özeti</p>
                     <div class="sale-summary-row"><span>Ara Toplam</span><strong id="subtotalBeforeDiscDisplay">0 ₺</strong></div>
-                    <div class="sale-summary-row"><span>KDV Toplam</span><strong id="kdvDisplay">0 ₺</strong></div>
+                    <div class="sale-summary-row {{ old('kdvIncluded', $sale->kdvIncluded ?? true) ? 'hidden' : '' }}" id="kdvSummaryRow"><span>KDV Toplam</span><strong id="kdvDisplay">0 ₺</strong></div>
                     <div id="saleDiscountGeneralRow" class="sale-summary-row hidden"><span>İndirim</span><strong id="saleDiscountGeneralDisplay" class="text-amber-300">0 ₺</strong></div>
                     <div class="sale-summary-total">
                         <span>Genel Toplam</span>
@@ -394,7 +394,16 @@
         'cityId' => $c->cityId, 'districtId' => $c->districtId,
         'taxNumber' => $c->taxNumber ?? '', 'taxOffice' => $c->taxOffice ?? '', 'identityNumber' => $c->identityNumber ?? ''
     ])->values();
-    $productsJson = ($initialProducts ?? collect())->map(fn ($p) => \App\Support\ProductSelect::payload($p))->values();
+    $itemsByProductId = $sale->items->keyBy('productId');
+    $productsJson = ($initialProducts ?? collect())->map(function ($p) use ($itemsByProductId) {
+        $payload = \App\Support\ProductSelect::payload($p);
+        $item = $itemsByProductId->get($p->id);
+        if ($item && abs((float) $item->unitPrice - (float) ($payload['price'] ?? 0)) > 0.001) {
+            $payload['price'] = (float) $item->unitPrice;
+            $payload['label'] = ($payload['name'] ?? $p->name) . ' · ' . number_format((float) $item->unitPrice, 0, ',', '.') . ' ₺';
+        }
+        return $payload;
+    })->values();
 @endphp
 const customers = @json($customersJson);
 const productsData = @json($productsJson);
@@ -600,11 +609,12 @@ function applyProductToSaleRow(rowEl, data) {
     const product = window.registerSaleProduct(data);
     const id = String(product.id);
     const ts = rowEl.querySelector('.item-product')?.tomselect;
+    if (window.applySaleProductToRow) {
+        window.applySaleProductToRow(rowEl, product, { forcePrice: true });
+    }
     if (ts) {
         if (!ts.options[id]) ts.addOption(product);
         ts.setValue(id, true);
-    } else if (window.applySaleProductToRow) {
-        window.applySaleProductToRow(rowEl, product, { forcePrice: true });
     }
 }
 function fmt(n) { return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n || 0); }
@@ -620,6 +630,11 @@ function parseTrNum(s) {
 function readItemPrice(priceEl) {
     if (!priceEl) return NaN;
     return parseTrNum(priceEl.getAttribute('data-raw') || priceEl.value);
+}
+function syncKdvSummaryVisibility() {
+    const kdvIncl = document.querySelector('select[name="kdvIncluded"]')?.value === '1';
+    const row = document.getElementById('kdvSummaryRow');
+    if (row) row.classList.toggle('hidden', kdvIncl);
 }
 function updateSaleTotals() {
     const subtotalEl = document.getElementById('subtotalBeforeDiscDisplay');
@@ -685,23 +700,15 @@ function updateSaleTotals() {
     if (stickyRemainingWrap && stickyRemaining) {
         stickyRemaining.textContent = fmt(Math.max(0, remaining)) + ' ₺';
     }
+    syncKdvSummaryVisibility();
 }
 function addRowWithData(item) {
     const rowEl = addRow(false);
     if (!rowEl || !item) return rowEl;
+    rowEl.dataset.restoring = '1';
     const idInput = rowEl.querySelector('.item-id');
     if (idInput && item.id) idInput.value = item.id;
     const priceEl = rowEl.querySelector('.item-price');
-    if (priceEl && item.unitPrice != null) {
-        priceEl.value = fmt(item.unitPrice);
-        priceEl.setAttribute('data-raw', String(item.unitPrice));
-        const catalogProduct = item.productId ? window.getSaleProduct(item.productId) : null;
-        const catalogPrice = catalogProduct ? parseTrNum(catalogProduct.price) : NaN;
-        const salePrice = parseTrNum(item.unitPrice);
-        if (catalogProduct && !isNaN(catalogPrice) && !isNaN(salePrice) && Math.abs(salePrice - catalogPrice) > 0.001) {
-            priceEl.dataset.priceCustom = '1';
-        }
-    }
     const qtyEl = rowEl.querySelector('.item-qty');
     if (qtyEl) qtyEl.value = item.quantity || 1;
     const kdvEl = rowEl.querySelector('.item-kdv');
@@ -719,15 +726,28 @@ function addRowWithData(item) {
         ts.setValue(String(item.productId), true);
         if (idProductInput) idProductInput.value = item.productId;
         if (nameProductInput) nameProductInput.value = '';
-        if (product && window.syncSaleProductSelectLabel) {
-            window.syncSaleProductSelectLabel(rowEl, product);
-        }
     } else if (item.productName && ts) {
         ts.addOption({ value: '__manual__', text: item.productName });
         ts.addItem('__manual__');
         if (idProductInput) idProductInput.value = '';
         if (nameProductInput) nameProductInput.value = item.productName;
     }
+    if (priceEl && item.unitPrice != null) {
+        const priceNum = parseTrNum(item.unitPrice);
+        if (!isNaN(priceNum)) {
+            priceEl.value = fmt(priceNum);
+            priceEl.setAttribute('data-raw', String(priceNum));
+            const catalogProduct = item.productId ? window.getSaleProduct(item.productId) : null;
+            const catalogPrice = catalogProduct ? parseTrNum(catalogProduct.price) : NaN;
+            if (catalogProduct && !isNaN(catalogPrice) && Math.abs(priceNum - catalogPrice) > 0.001) {
+                priceEl.dataset.priceCustom = '1';
+            }
+            if (catalogProduct && window.syncSaleProductSelectLabel) {
+                window.syncSaleProductSelectLabel(rowEl, catalogProduct);
+            }
+        }
+    }
+    delete rowEl.dataset.restoring;
     return rowEl;
 }
 function onGrandTotalOverrideInput() {
@@ -760,6 +780,7 @@ document.getElementById('saleForm')?.addEventListener('input', function(e) {
 });
 document.getElementById('saleForm')?.addEventListener('change', function(e) {
     if (e.target.id === 'grandTotalOverride') { onGrandTotalOverrideInput(); return; }
+    if (e.target.name === 'kdvIncluded') { syncKdvSummaryVisibility(); }
     updateSaleTotals();
 });
 document.getElementById('saleForm')?.addEventListener('keydown', function(e) {

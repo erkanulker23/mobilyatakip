@@ -59,10 +59,12 @@
         <td colspan="2" align="right" style="padding: 10px 12px; color: #64748b;">Ara Toplam</td>
         <td align="right" style="padding: 10px 12px;">{{ number_format($sale->subtotal ?? 0, 2, ',', '.') }} ₺</td>
     </tr>
+    @if(!($sale->kdvIncluded ?? true))
     <tr>
         <td colspan="2" align="right" style="padding: 10px 12px; color: #64748b;">KDV</td>
         <td align="right" style="padding: 10px 12px;">{{ number_format($sale->kdvTotal ?? 0, 2, ',', '.') }} ₺</td>
     </tr>
+    @endif
     <tr>
         <td colspan="2" align="right" style="padding: 12px; font-weight: 600; border-top: 2px solid #e2e8f0;">Genel Toplam</td>
         <td align="right" style="padding: 12px; font-weight: 700; font-size: 16px; color: #047857; border-top: 2px solid #e2e8f0;">{{ number_format($sale->grandTotal ?? 0, 2, ',', '.') }} ₺</td>

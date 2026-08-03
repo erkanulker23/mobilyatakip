@@ -125,7 +125,7 @@
                                 'destroy' => route('sales.destroy', $s),
                             ])
                             @if(!($s->isCancelled ?? false))
-                            <form method="POST" action="{{ route('sales.convert-to-quote', $s) }}" class="inline-flex" onsubmit="return confirm('Bu satıştan yeni bir teklif oluşturulsun mu? Satış kaydı silinmez.');">
+                            <form method="POST" action="{{ route('sales.convert-to-quote', $s) }}" class="inline-flex" onsubmit="return confirm('Bu kayıt teklif olarak devam edecek. Satış listesinden kaldırılır; teklifler bölümünde kalır. Devam?');">
                                 @csrf
                                 <button type="submit" title="Teklife Dönüştür" aria-label="Teklife dönüştür" class="p-2 rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-300 transition-colors">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"></path></svg>

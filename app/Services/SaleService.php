@@ -8,6 +8,7 @@ use App\Models\SaleActivity;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Product;
+use App\Models\StockMovement;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -207,10 +208,33 @@ class SaleService
     public function createQuoteFromSale(string $saleId): Quote
     {
         return DB::transaction(function () use ($saleId) {
-            $sale = Sale::with(['customer', 'items.product'])->findOrFail($saleId);
+            $sale = Sale::with(['customer', 'items.product', 'payments'])->findOrFail($saleId);
 
             if ($sale->isCancelled ?? false) {
                 throw new \RuntimeException('İptal edilmiş satış teklife dönüştürülemez.');
+            }
+
+            if ((float) ($sale->paidAmount ?? 0) > 0.005 || $sale->payments()->exists()) {
+                throw new \RuntimeException('Ödeme alınmış satış teklife dönüştürülemez.');
+            }
+
+            $existing = Quote::where('sourceSaleId', $saleId)
+                ->whereNull('convertedSaleId')
+                ->first();
+
+            if (! $existing) {
+                $existing = Quote::where('notes', 'like', '%Kaynak satış: '.$sale->saleNumber.'%')
+                    ->whereNull('convertedSaleId')
+                    ->first();
+            }
+
+            if ($existing) {
+                if (! $existing->sourceSaleId) {
+                    $existing->update(['sourceSaleId' => $sale->id]);
+                }
+                $this->archiveSaleAsQuoteSource($sale, $existing->quoteNumber);
+
+                return Quote::with(['customer', 'personnel', 'items.product'])->find($existing->id);
             }
 
             $last = Quote::whereYear('createdAt', date('Y'))
@@ -238,6 +262,7 @@ class SaleService
                 'kdvTotal' => $sale->kdvTotal,
                 'grandTotal' => $sale->grandTotal,
                 'drawingFiles' => $sale->drawingFiles,
+                'sourceSaleId' => $sale->id,
             ]);
 
             foreach ($sale->items as $item) {
@@ -255,8 +280,46 @@ class SaleService
                 ]);
             }
 
+            $this->archiveSaleAsQuoteSource($sale, $quote->quoteNumber);
+
             return Quote::with(['customer', 'personnel', 'items.product'])->find($quote->id);
         });
+    }
+
+    public function archiveSaleAsQuoteSource(Sale $sale, string $quoteNumber): void
+    {
+        if ($sale->isCancelled ?? false) {
+            return;
+        }
+
+        $this->reverseSaleStockMovements($sale, 'satis_teklife');
+        $sale->update(['isCancelled' => true]);
+        SaleActivity::create([
+            'saleId' => $sale->id,
+            'type' => SaleActivity::TYPE_CREATED,
+            'description' => 'Teklife dönüştürüldü ('.$quoteNumber.') — satış listesinden kaldırıldı',
+        ]);
+    }
+
+    public function reverseSaleStockMovements(Sale $sale, string $refType = 'satis_iptal'): void
+    {
+        $movements = StockMovement::where('refType', 'satis')->where('refId', $sale->id)->get();
+        foreach ($movements as $movement) {
+            $qty = (int) abs($movement->quantity);
+            if ($qty > 0 && $movement->productId && $movement->warehouseId) {
+                $this->stockService->movement(
+                    $movement->productId,
+                    $movement->warehouseId,
+                    'giris',
+                    $qty,
+                    [
+                        'refType' => $refType,
+                        'refId' => $sale->id,
+                        'description' => "Stok iade - {$refType}: {$sale->saleNumber}",
+                    ]
+                );
+            }
+        }
     }
 
     public function find(int|string $id): ?Sale

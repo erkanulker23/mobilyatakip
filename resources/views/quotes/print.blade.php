@@ -22,6 +22,7 @@
         . '<p class="text-sm text-slate-600 mt-1">Personel: ' . e($quote->personnel?->name ?? '-') . '</p>',
     'items' => $quote->items->map(fn($i) => ['name' => $i->product?->name ?? $i->productName, 'description' => $i->description, 'unitPrice' => $i->unitPrice, 'quantity' => $i->quantity, 'kdvRate' => $i->kdvRate, 'lineTotal' => $i->lineTotal])->toArray(),
     'showKdv' => true,
+    'kdvIncluded' => (bool) ($quote->kdvIncluded ?? true),
     'subtotal' => $quote->subtotal,
     'kdvTotal' => $quote->kdvTotal,
     'discount' => ($quote->generalDiscountPercent ?? 0) > 0 ? $quote->subtotal * ($quote->generalDiscountPercent / 100) : ($quote->generalDiscountAmount ?? 0),
