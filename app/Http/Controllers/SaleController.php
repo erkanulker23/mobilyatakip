@@ -481,33 +481,40 @@ class SaleController extends Controller
             'deliveredAt.required_if' => 'Teslim tarihi seçilmelidir.',
         ]);
 
+        $fromStatus = \App\Support\SaleDelivery::currentStatus($sale);
         $status = $validated['deliveryStatus'];
         if ($status === \App\Support\SaleDelivery::DELIVERED) {
+            $deliveredAt = Carbon::parse($validated['deliveredAt'])->startOfDay();
             $sale->update([
                 'orderStatus' => \App\Support\SaleDelivery::DELIVERED,
-                'deliveredAt' => Carbon::parse($validated['deliveredAt'])->startOfDay(),
+                'deliveredAt' => $deliveredAt,
             ]);
+            SaleActivity::logStatusChange($sale->fresh(), $fromStatus, \App\Support\SaleDelivery::DELIVERED, $deliveredAt);
             $message = 'Sipariş teslim edildi olarak işaretlendi.';
         } elseif ($status === \App\Support\SaleDelivery::SSH) {
             $sale->update(['orderStatus' => \App\Support\SaleDelivery::SSH]);
+            SaleActivity::logStatusChange($sale->fresh(), $fromStatus, \App\Support\SaleDelivery::SSH);
             $message = 'Sipariş SSH var olarak işaretlendi.';
         } elseif ($status === \App\Support\SaleDelivery::IN_PRODUCTION) {
             $sale->update([
                 'orderStatus' => \App\Support\SaleDelivery::IN_PRODUCTION,
                 'deliveredAt' => null,
             ]);
+            SaleActivity::logStatusChange($sale->fresh(), $fromStatus, \App\Support\SaleDelivery::IN_PRODUCTION);
             $message = 'Sipariş üretimde olarak işaretlendi.';
         } elseif ($status === \App\Support\SaleDelivery::IN_DISCUSSION) {
             $sale->update([
                 'orderStatus' => \App\Support\SaleDelivery::IN_DISCUSSION,
                 'deliveredAt' => null,
             ]);
+            SaleActivity::logStatusChange($sale->fresh(), $fromStatus, \App\Support\SaleDelivery::IN_DISCUSSION);
             $message = 'Sipariş halen görüşülüyor olarak işaretlendi.';
         } else {
             $sale->update([
                 'orderStatus' => \App\Support\SaleDelivery::PENDING,
                 'deliveredAt' => null,
             ]);
+            SaleActivity::logStatusChange($sale->fresh(), $fromStatus, \App\Support\SaleDelivery::PENDING);
             $message = 'Sipariş teslim bekliyor olarak güncellendi.';
         }
 
@@ -606,10 +613,13 @@ class SaleController extends Controller
         if ($sale->deliveredAt) {
             return redirect()->route('sales.show', $sale)->with('info', 'Bu satış zaten teslim edildi olarak işaretli.');
         }
+        $fromStatus = \App\Support\SaleDelivery::currentStatus($sale);
+        $deliveredAt = now()->startOfDay();
         $sale->update([
             'orderStatus' => 'delivered',
-            'deliveredAt' => now(),
+            'deliveredAt' => $deliveredAt,
         ]);
+        SaleActivity::logStatusChange($sale->fresh(), $fromStatus, \App\Support\SaleDelivery::DELIVERED, $deliveredAt);
         return redirect()->route('sales.show', $sale)->with('success', 'Satış teslim edildi olarak işaretlendi.');
     }
 
@@ -618,10 +628,12 @@ class SaleController extends Controller
         if (!$sale->deliveredAt) {
             return redirect()->route('sales.show', $sale)->with('info', 'Bu satış teslim edildi olarak işaretli değil.');
         }
+        $fromStatus = \App\Support\SaleDelivery::currentStatus($sale);
         $sale->update([
             'orderStatus' => 'pending',
             'deliveredAt' => null,
         ]);
+        SaleActivity::logStatusChange($sale->fresh(), $fromStatus, \App\Support\SaleDelivery::PENDING);
         return redirect()->route('sales.show', $sale)->with('success', 'Teslim işareti kaldırıldı.');
     }
 

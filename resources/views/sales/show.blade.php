@@ -118,11 +118,33 @@
 </div>
 
 @php
+    use App\Models\SaleActivity;
+    use App\Support\SaleDelivery;
+
     $pt = \App\Support\PaymentType::labels();
     $paymentEntries = collect($sale->payments ?? [])->map(fn($p) => (object)['type' => 'payment', 'sortAt' => $p->paymentDate ? $p->paymentDate->format('Y-m-d') . ' 00:00' : '', 'payment' => $p, 'linked' => true]);
     $unlinkedEntries = collect($unlinkedPayments ?? [])->map(fn($p) => (object)['type' => 'payment', 'sortAt' => $p->paymentDate ? $p->paymentDate->format('Y-m-d') . ' 00:00' : '', 'payment' => $p, 'linked' => false]);
     $activityEntries = collect($sale->activities ?? [])->map(fn($a) => (object)['type' => 'activity', 'sortAt' => $a->createdAt->format('Y-m-d H:i'), 'activity' => $a]);
-    $timeline = $paymentEntries->concat($unlinkedEntries)->concat($activityEntries)->sortByDesc('sortAt')->values();
+
+    $hasDeliveryActivity = collect($sale->activities ?? [])->contains(function ($a) {
+        return $a->type === SaleActivity::TYPE_STATUS_CHANGED
+            && (($a->metadata['toStatus'] ?? null) === SaleDelivery::DELIVERED);
+    });
+    $legacyStatusEntries = collect();
+    if (SaleDelivery::isDelivered($sale) && $sale->deliveredAt && !$hasDeliveryActivity) {
+        $legacyStatusEntries->push((object)[
+            'type' => 'activity',
+            'sortAt' => $sale->deliveredAt->format('Y-m-d H:i'),
+            'activity' => (object)[
+                'type' => SaleActivity::TYPE_STATUS_CHANGED,
+                'description' => 'Sipariş teslim edildi (' . $sale->deliveredAt->format('d.m.Y') . ')',
+                'metadata' => ['toStatus' => SaleDelivery::DELIVERED],
+                'createdAt' => $sale->deliveredAt,
+            ],
+        ]);
+    }
+
+    $timeline = $paymentEntries->concat($unlinkedEntries)->concat($activityEntries)->concat($legacyStatusEntries)->sortByDesc('sortAt')->values();
 @endphp
 @if($timeline->isNotEmpty())
 <div class="mt-8 card p-6">
@@ -137,12 +159,14 @@
                 @php $activity = $entry->activity; @endphp
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full
                     @if($activity->type === 'created') bg-slate-200 text-neutral-700
+                    @elseif($activity->type === 'status_changed') bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300
                     @elseif($activity->type === 'supplier_email_sent') bg-blue-100 text-blue-700
                     @elseif($activity->type === 'supplier_email_read') bg-amber-100 text-amber-700
                     @elseif($activity->type === 'supplier_email_replied') bg-emerald-100 text-emerald-700
                     @elseif($activity->type === 'customer_email_sent') bg-indigo-100 text-indigo-700
                     @else bg-slate-100 text-slate-600 @endif">
                     @if($activity->type === 'created') 📋
+                    @elseif($activity->type === 'status_changed') 📦
                     @elseif($activity->type === 'supplier_email_sent') ✉️
                     @elseif($activity->type === 'supplier_email_read') 👁️
                     @elseif($activity->type === 'supplier_email_replied') ↩️

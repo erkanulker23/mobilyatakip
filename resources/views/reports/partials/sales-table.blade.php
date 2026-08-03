@@ -19,7 +19,12 @@
         @php
             $remaining = \App\Support\CustomerBalance::saleRemaining($s);
             $status = \App\Support\CustomerBalance::saleStatus($s);
-            $dueClass = $s->dueDate && $s->dueDate->isPast() ? 'text-red-600 font-medium' : ($s->dueDate && $s->dueDate->lte(now()->addDays(7)) ? 'text-amber-600 font-medium' : 'text-slate-600');
+            $isDelivered = \App\Support\SaleDelivery::isDelivered($s);
+            $dueClass = !$isDelivered && $s->dueDate && $s->dueDate->isPast()
+                ? 'text-red-600 font-medium'
+                : ($s->dueDate && !$isDelivered && $s->dueDate->lte(now()->addDays(7))
+                    ? 'text-amber-600 font-medium'
+                    : 'text-slate-600');
         @endphp
         <tr class="{{ $print ? '' : 'hover:bg-slate-50' }}">
             <td class="table-td font-medium">{{ $s->saleNumber }}</td>

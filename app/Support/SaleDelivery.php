@@ -81,7 +81,66 @@ class SaleDelivery
 
     public static function isDelivered(Sale $sale): bool
     {
-        return !($sale->isCancelled ?? false) && $sale->deliveredAt !== null;
+        if ($sale->isCancelled ?? false) {
+            return false;
+        }
+
+        return $sale->deliveredAt !== null
+            || ($sale->orderStatus ?? null) === self::DELIVERED;
+    }
+
+    /**
+     * Satış listesi termin sütunu — teslim edildiyse gecikme uyarısı göstermez.
+     *
+     * @return array{prefix: ?string, date: ?\Carbon\CarbonInterface, suffix: ?string, class: string, empty: ?string}
+     */
+    public static function terminListMeta(Sale $sale): array
+    {
+        if (self::isDelivered($sale)) {
+            $deliveredAt = $sale->deliveredAt ?? $sale->dueDate;
+
+            return [
+                'prefix' => 'Teslim',
+                'date' => $deliveredAt,
+                'suffix' => null,
+                'class' => 'text-indigo-600 dark:text-indigo-400',
+                'empty' => null,
+            ];
+        }
+
+        if (!$sale->dueDate) {
+            return [
+                'prefix' => null,
+                'date' => null,
+                'suffix' => null,
+                'class' => 'text-neutral-400 dark:text-neutral-500',
+                'empty' => 'Termin yok',
+            ];
+        }
+
+        $daysLeft = (int) now()->startOfDay()->diffInDays($sale->dueDate, false);
+
+        if ($daysLeft < 0) {
+            $class = 'text-red-600 dark:text-red-400';
+            $suffix = abs($daysLeft) . ' gün gecikti';
+        } elseif ($daysLeft === 0) {
+            $class = 'text-amber-600 dark:text-amber-400';
+            $suffix = 'Termin bugün';
+        } elseif ($daysLeft <= 3) {
+            $class = 'text-amber-600 dark:text-amber-400';
+            $suffix = $daysLeft . ' gün kaldı';
+        } else {
+            $class = 'text-neutral-500 dark:text-neutral-400';
+            $suffix = $daysLeft . ' gün';
+        }
+
+        return [
+            'prefix' => 'Termin',
+            'date' => $sale->dueDate,
+            'suffix' => $suffix,
+            'class' => $class,
+            'empty' => null,
+        ];
     }
 
     public static function isSsh(Sale $sale): bool

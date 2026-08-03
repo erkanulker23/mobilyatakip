@@ -145,7 +145,7 @@
                     $orderStatus = \App\Support\SaleDelivery::currentStatus($s);
                     $remaining = \App\Support\CustomerBalance::saleRemaining($s);
                     $saleNumberClass = \App\Support\SaleDelivery::numberClassFor($s);
-                    $daysLeft = $s->dueDate ? (int) now()->startOfDay()->diffInDays($s->dueDate, false) : null;
+                    $terminMeta = \App\Support\SaleDelivery::terminListMeta($s);
                 @endphp
                 <tr class="border-b border-neutral-50 dark:border-neutral-800/60 hover:bg-neutral-50/50 dark:hover:bg-neutral-900/40 transition-colors {{ ($s->isCancelled ?? false) ? 'opacity-60 bg-slate-50 dark:bg-slate-800/30' : '' }}">
                     <td class="table-td col-hide-mobile">
@@ -166,37 +166,22 @@
                         @endif
                         <span class="block mt-1 text-xs text-neutral-400 md:hidden">
                             {{ $s->saleDate?->format('d.m.Y') ?? '—' }}
-                            @if($s->dueDate)
-                                · Termin {{ $s->dueDate->format('d.m.Y') }}
+                            @if($terminMeta['date'])
+                                · {{ $terminMeta['prefix'] }} {{ $terminMeta['date']->format('d.m.Y') }}
                             @endif
                         </span>
                     </td>
                     <td class="table-td col-hide-mobile whitespace-nowrap">
                         <p class="text-neutral-900 dark:text-neutral-100">{{ $s->saleDate?->format('d.m.Y') ?? '—' }}</p>
-                        @if($s->dueDate)
-                            @php
-                                if ($daysLeft !== null && $daysLeft < 0) {
-                                    $terminClass = 'text-red-600 dark:text-red-400';
-                                    $terminLabel = abs($daysLeft) . ' gün gecikti';
-                                } elseif ($daysLeft === 0) {
-                                    $terminClass = 'text-amber-600 dark:text-amber-400';
-                                    $terminLabel = 'Termin bugün';
-                                } elseif ($daysLeft !== null && $daysLeft <= 3) {
-                                    $terminClass = 'text-amber-600 dark:text-amber-400';
-                                    $terminLabel = $daysLeft . ' gün kaldı';
-                                } else {
-                                    $terminClass = 'text-neutral-500 dark:text-neutral-400';
-                                    $terminLabel = $daysLeft !== null ? $daysLeft . ' gün' : '';
-                                }
-                            @endphp
-                            <p class="text-xs mt-0.5 {{ $terminClass }}">
-                                Termin {{ $s->dueDate->format('d.m.Y') }}
-                                @if($terminLabel !== '')
-                                    · {{ $terminLabel }}
+                        @if($terminMeta['empty'])
+                            <p class="text-xs text-neutral-400 mt-0.5">{{ $terminMeta['empty'] }}</p>
+                        @elseif($terminMeta['date'])
+                            <p class="text-xs mt-0.5 {{ $terminMeta['class'] }}">
+                                {{ $terminMeta['prefix'] }} {{ $terminMeta['date']->format('d.m.Y') }}
+                                @if($terminMeta['suffix'])
+                                    · {{ $terminMeta['suffix'] }}
                                 @endif
                             </p>
-                        @else
-                            <p class="text-xs text-neutral-400 mt-0.5">Termin yok</p>
                         @endif
                     </td>
                     <td class="table-td text-right whitespace-nowrap">

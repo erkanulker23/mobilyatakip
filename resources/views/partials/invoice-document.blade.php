@@ -1,7 +1,7 @@
 @php $company = \App\Models\Company::first(); @endphp
 <div class="print-document card overflow-hidden print:shadow-none print:border-0" id="invoice-document" role="document" aria-label="Fatura belgesi">
     <div class="print-doc-inner p-4 md:p-6 lg:p-8">
-        @include('partials.print-brand-header', [
+        @include('partials.invoice-brand-header', [
             'documentTitle' => $documentTitle,
             'documentNumber' => $documentNumber,
             'documentDate' => $documentDate ?? null,
