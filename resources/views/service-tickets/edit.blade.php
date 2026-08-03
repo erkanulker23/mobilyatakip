@@ -2,10 +2,16 @@
 @section('title', 'Düzenle: ' . $serviceTicket->ticketNumber)
 @section('content')
 @php
-    $problems = \App\Support\ServiceTicketStatus::normalizeProblems(old('problems', $serviceTicket->reportedProblems ?? []));
+    use App\Support\ServiceTicketStatus;
+
+    $problems = ServiceTicketStatus::normalizeProblems(old('problems', $serviceTicket->reportedProblems ?? []));
     if ($problems === [] && $serviceTicket->issueType) {
         $problems = [['description' => $serviceTicket->issueType, 'status' => 'bekliyor']];
     }
+    $ticketStatus = old('status', $serviceTicket->status ?? 'acildi');
+    $isClosed = ServiceTicketStatus::isClosed($ticketStatus);
+    $oldStages = old('newStages', ['']);
+    $stageHistory = $serviceTicket->details->sortByDesc('actionDate');
 @endphp
 <div class="mb-6">
     <div class="flex items-center gap-2 text-neutral-500 text-sm mb-1">
@@ -72,12 +78,85 @@
         </div>
         <div>
             <label class="form-label">Kayıt Durumu</label>
-            <select name="status" class="form-select">
-                @foreach(\App\Support\ServiceTicketStatus::STATUSES as $value => $label)
-                <option value="{{ $value }}" {{ old('status', $serviceTicket->status) == $value ? 'selected' : '' }}>{{ $label }}</option>
+            <select name="status" class="form-select" id="ticketStatusSelect">
+                @foreach(ServiceTicketStatus::STATUSES as $value => $label)
+                <option value="{{ $value }}" {{ $ticketStatus == $value ? 'selected' : '' }}>{{ $label }}</option>
                 @endforeach
             </select>
+            <p class="mt-1 text-xs text-neutral-500">Hızlı kapatma için aşağıdaki “SSH kapat” seçeneğini de kullanabilirsiniz.</p>
         </div>
+
+        <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+            <div class="px-4 py-3 bg-neutral-50 dark:bg-neutral-900/60 border-b border-neutral-200 dark:border-neutral-700">
+                <h2 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">İşlem Aşamaları</h2>
+                <p class="text-xs text-neutral-500 mt-0.5">Servis sürecinde yapılan adımları ekleyin; geçmiş kayıtlar aşağıda listelenir.</p>
+            </div>
+            <div class="p-4 space-y-4">
+                @if($stageHistory->isNotEmpty())
+                <div class="space-y-3 max-h-56 overflow-y-auto">
+                    @foreach($stageHistory as $detail)
+                    <div class="flex gap-3 text-sm">
+                        <span class="shrink-0 w-2 h-2 mt-2 rounded-full bg-neutral-300 dark:bg-neutral-600"></span>
+                        <div class="min-w-0">
+                            <p class="font-medium text-neutral-900 dark:text-neutral-100">{{ ServiceTicketStatus::detailActionLabel($detail->action) }}</p>
+                            <p class="text-xs text-neutral-500">{{ $detail->actionDate?->format('d.m.Y H:i') ?? '—' }} · {{ $detail->user?->name ?? '—' }}</p>
+                            @if($detail->notes)
+                            <p class="text-neutral-600 dark:text-neutral-400 mt-1 whitespace-pre-wrap">{{ $detail->notes }}</p>
+                            @endif
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                @else
+                <p class="text-sm text-neutral-500">Henüz aşama kaydı yok.</p>
+                @endif
+
+                <div>
+                    <label class="form-label">Yeni aşama ekle</label>
+                    <div id="newStagesList" class="space-y-2">
+                        @foreach($oldStages as $i => $stageText)
+                        <div class="stage-row flex gap-2">
+                            <input type="text" name="newStages[]" value="{{ $stageText }}" class="form-input flex-1" placeholder="Örn: Servis ekibi yönlendirildi, Parça değişimi yapıldı">
+                            @if($i > 0)
+                            <button type="button" class="remove-stage px-3 py-2 text-sm rounded-lg border border-neutral-200 text-neutral-600 hover:bg-neutral-50 shrink-0">Sil</button>
+                            @else
+                            <span class="w-[52px] shrink-0"></span>
+                            @endif
+                        </div>
+                        @endforeach
+                    </div>
+                    <button type="button" id="addStageBtn" class="mt-2 text-sm font-medium text-neutral-700 hover:text-neutral-900">+ Aşama satırı ekle</button>
+                </div>
+            </div>
+        </div>
+
+        @if($isClosed)
+        <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/40 p-4">
+            <p class="text-sm text-neutral-700 dark:text-neutral-300">
+                Bu SSH kaydı <strong>{{ ServiceTicketStatus::label($ticketStatus) }}</strong> durumunda.
+                @if($serviceTicket->closedAt)
+                Kapanış: {{ $serviceTicket->closedAt->format('d.m.Y H:i') }}
+                @endif
+            </p>
+            @if($ticketStatus === 'tamamlandi')
+            <label class="mt-3 flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" name="reopenTicket" value="1" {{ old('reopenTicket') ? 'checked' : '' }} class="mt-1 rounded border-slate-300 text-green-600 focus:ring-green-500">
+                <span class="text-sm text-neutral-700 dark:text-neutral-300">Kaydı tekrar aç (Devam Ediyor)</span>
+            </label>
+            @endif
+        </div>
+        @else
+        <div class="rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/60 dark:bg-emerald-950/20 p-4">
+            <label class="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" name="closeTicket" value="1" {{ old('closeTicket') ? 'checked' : '' }} class="mt-1 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500" id="closeTicketCheckbox">
+                <span>
+                    <span class="font-medium text-emerald-900 dark:text-emerald-200">SSH kaydını kapat</span>
+                    <span class="block text-sm text-emerald-800/80 dark:text-emerald-300/80 mt-0.5">Kayıt tamamlandı olarak işaretlenir, kapanış tarihi kaydedilir ve bağlı sipariş durumu güncellenir.</span>
+                </span>
+            </label>
+        </div>
+        @endif
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
                 <label class="form-label">Atanan Teknisyen</label>
@@ -163,6 +242,32 @@ document.getElementById('editProblemsList')?.addEventListener('click', function(
     const rows = document.querySelectorAll('#editProblemsList .problem-row');
     if (rows.length <= 1) return;
     e.target.closest('.problem-row')?.remove();
+});
+
+document.getElementById('addStageBtn')?.addEventListener('click', function() {
+    const list = document.getElementById('newStagesList');
+    if (!list) return;
+    const row = document.createElement('div');
+    row.className = 'stage-row flex gap-2';
+    row.innerHTML =
+        '<input type="text" name="newStages[]" class="form-input flex-1" placeholder="Örn: Servis ekibi yönlendirildi, Parça değişimi yapıldı">' +
+        '<button type="button" class="remove-stage px-3 py-2 text-sm rounded-lg border border-neutral-200 text-neutral-600 hover:bg-neutral-50 shrink-0">Sil</button>';
+    list.appendChild(row);
+});
+
+document.getElementById('newStagesList')?.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('remove-stage')) return;
+    const rows = document.querySelectorAll('#newStagesList .stage-row');
+    if (rows.length <= 1) return;
+    e.target.closest('.stage-row')?.remove();
+});
+
+document.getElementById('closeTicketCheckbox')?.addEventListener('change', function() {
+    const statusSelect = document.getElementById('ticketStatusSelect');
+    if (!statusSelect) return;
+    if (this.checked) {
+        statusSelect.value = 'tamamlandi';
+    }
 });
 </script>
 @endsection

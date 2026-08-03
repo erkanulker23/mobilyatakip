@@ -168,6 +168,9 @@
                             {{ $s->saleDate?->format('d.m.Y') ?? '—' }}
                             @if($terminMeta['date'])
                                 · {{ $terminMeta['prefix'] }} {{ $terminMeta['date']->format('d.m.Y') }}
+                                @if($terminMeta['suffix'])
+                                    · {{ $terminMeta['suffix'] }}
+                                @endif
                             @endif
                         </span>
                     </td>

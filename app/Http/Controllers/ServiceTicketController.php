@@ -202,7 +202,7 @@ class ServiceTicketController extends Controller
 
     public function edit(ServiceTicket $serviceTicket)
     {
-        $serviceTicket->load(['sale.customer', 'customer', 'details']);
+        $serviceTicket->load(['sale.customer', 'customer', 'details.user']);
         $sales = Sale::with('customer')->orderBy('createdAt', 'desc')->take(100)->get();
         $users = User::where('isActive', true)->orderBy('name')->get();
         $shippingFormData = $this->shippingFormData();
@@ -240,6 +240,10 @@ class ServiceTicketController extends Controller
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'removeImages' => 'nullable|array',
             'removeImages.*' => 'string|max:500',
+            'newStages' => 'nullable|array',
+            'newStages.*' => 'nullable|string|max:1000',
+            'closeTicket' => 'nullable|boolean',
+            'reopenTicket' => 'nullable|boolean',
         ], [
             'assignedDriverPhone.regex' => 'Geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67)',
             'problems.required' => 'En az bir müşteri problemi girilmelidir.',
@@ -261,11 +265,30 @@ class ServiceTicketController extends Controller
         $validated['reportedProblems'] = $reportedProblems;
         $validated['issueType'] = $reportedProblems[0]['description'];
         unset($validated['problems']);
-        $validated = $this->resolveShippingAssignment($validated);
 
-        if (($validated['status'] ?? $serviceTicket->status) === 'tamamlandi' && ! $serviceTicket->closedAt) {
-            $validated['closedAt'] = now();
+        $oldStatus = $serviceTicket->status ?? 'acildi';
+        if ($request->boolean('closeTicket') && ! ServiceTicketStatus::isClosed($oldStatus)) {
+            $validated['status'] = 'tamamlandi';
+        } elseif ($request->boolean('reopenTicket') && ServiceTicketStatus::isClosed($oldStatus)) {
+            $validated['status'] = 'devam_ediyor';
+            $validated['closedAt'] = null;
         }
+
+        $newStatus = $validated['status'] ?? $oldStatus;
+        if ($newStatus === 'tamamlandi' && ! $serviceTicket->closedAt) {
+            $validated['closedAt'] = now();
+        } elseif (in_array($newStatus, ['acildi', 'devam_ediyor'], true)) {
+            $validated['closedAt'] = null;
+        }
+
+        $newStages = collect($validated['newStages'] ?? [])
+            ->map(fn ($note) => trim((string) $note))
+            ->filter()
+            ->values()
+            ->all();
+        unset($validated['newStages'], $validated['closeTicket'], $validated['reopenTicket']);
+
+        $validated = $this->resolveShippingAssignment($validated);
 
         $images = (array) ($serviceTicket->images ?? []);
         $removeImages = collect($validated['removeImages'] ?? [])->filter()->values()->all();
@@ -291,13 +314,56 @@ class ServiceTicketController extends Controller
 
         $oldProblems = ServiceTicketStatus::normalizeProblems($serviceTicket->reportedProblems ?? []);
         $serviceTicket->update($validated);
+        $serviceTicket->refresh();
 
         $this->logProblemChanges($serviceTicket, $oldProblems, $reportedProblems);
+
+        foreach ($newStages as $stageNote) {
+            ServiceTicketDetail::create([
+                'ticketId' => $serviceTicket->id,
+                'userId' => auth()->id() ?: null,
+                'action' => 'asama',
+                'actionDate' => now(),
+                'notes' => $stageNote,
+            ]);
+        }
+
+        if ($newStages !== [] && ($serviceTicket->status ?? 'acildi') === 'acildi') {
+            $serviceTicket->update(['status' => 'devam_ediyor']);
+            $serviceTicket->refresh();
+        }
+
+        $currentStatus = $serviceTicket->status ?? 'acildi';
+        if ($oldStatus !== $currentStatus) {
+            ServiceTicketDetail::create([
+                'ticketId' => $serviceTicket->id,
+                'userId' => auth()->id() ?: null,
+                'action' => $currentStatus === 'tamamlandi' ? 'kapatildi' : 'durum_guncelleme',
+                'actionDate' => now(),
+                'notes' => 'Durum: ' . ServiceTicketStatus::label($currentStatus),
+            ]);
+
+            if ($serviceTicket->saleId) {
+                $sale = Sale::find($serviceTicket->saleId);
+                if ($sale) {
+                    SaleDelivery::syncFromServiceTickets($sale);
+                }
+            }
+        }
+
         $this->auditService->logUpdate('service_ticket', $serviceTicket->id, [], [
             'ticketNumber' => $serviceTicket->ticketNumber,
         ]);
 
-        return redirect()->route('service-tickets.show', $serviceTicket)->with('success', 'Servis kaydı güncellendi.');
+        $message = 'Servis kaydı güncellendi.';
+        if ($newStages !== []) {
+            $message .= ' ' . count($newStages) . ' aşama eklendi.';
+        }
+        if ($currentStatus === 'tamamlandi' && $oldStatus !== 'tamamlandi') {
+            $message = 'SSH kaydı kapatıldı.';
+        }
+
+        return redirect()->route('service-tickets.show', $serviceTicket)->with('success', $message);
     }
 
     public function updateProblemStatus(Request $request, ServiceTicket $serviceTicket)

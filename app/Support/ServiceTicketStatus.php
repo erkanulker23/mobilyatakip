@@ -88,9 +88,16 @@ class ServiceTicketStatus
     {
         return match ($action) {
             'acildi' => 'Kayıt açıldı',
+            'asama' => 'Aşama eklendi',
             'problem_durumu' => 'Problem durumu güncellendi',
             'durum_guncelleme' => 'Durum güncellendi',
+            'kapatildi' => 'SSH kapatıldı',
             default => ucfirst(str_replace('_', ' ', $action ?? '—')),
         };
+    }
+
+    public static function isClosed(?string $status): bool
+    {
+        return in_array($status, ['tamamlandi', 'iptal'], true);
     }
 }

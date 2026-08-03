@@ -97,13 +97,26 @@ class SaleDelivery
     public static function terminListMeta(Sale $sale): array
     {
         if (self::isDelivered($sale)) {
-            $deliveredAt = $sale->deliveredAt ?? $sale->dueDate;
+            $deliveredAt = $sale->deliveredAt;
+            $suffix = self::deliveredRelativeToTermin($sale);
+            $class = 'text-indigo-600 dark:text-indigo-400';
+            if ($sale->dueDate && $deliveredAt) {
+                $daysFromTermin = (int) $sale->dueDate->copy()->startOfDay()
+                    ->diffInDays($deliveredAt->copy()->startOfDay(), false);
+                if ($daysFromTermin > 0) {
+                    $class = $daysFromTermin <= 3
+                        ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-red-600 dark:text-red-400';
+                } elseif ($daysFromTermin < 0) {
+                    $class = 'text-emerald-600 dark:text-emerald-400';
+                }
+            }
 
             return [
                 'prefix' => 'Teslim',
-                'date' => $deliveredAt,
-                'suffix' => null,
-                'class' => 'text-indigo-600 dark:text-indigo-400',
+                'date' => $deliveredAt ?? $sale->dueDate,
+                'suffix' => $suffix,
+                'class' => $class,
                 'empty' => null,
             ];
         }
@@ -141,6 +154,27 @@ class SaleDelivery
             'class' => $class,
             'empty' => null,
         ];
+    }
+
+    /** Termin tarihine göre teslim farkı: "3 gün önce teslim edildi" vb. */
+    public static function deliveredRelativeToTermin(Sale $sale): ?string
+    {
+        if (! self::isDelivered($sale) || ! $sale->deliveredAt || ! $sale->dueDate) {
+            return null;
+        }
+
+        $daysFromTermin = (int) $sale->dueDate->copy()->startOfDay()
+            ->diffInDays($sale->deliveredAt->copy()->startOfDay(), false);
+
+        if ($daysFromTermin < 0) {
+            return abs($daysFromTermin) . ' gün önce teslim edildi';
+        }
+
+        if ($daysFromTermin > 0) {
+            return $daysFromTermin . ' gün sonra teslim edildi';
+        }
+
+        return 'termin gününde teslim edildi';
     }
 
     public static function isSsh(Sale $sale): bool
