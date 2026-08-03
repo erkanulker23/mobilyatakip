@@ -51,9 +51,7 @@ class UserTaskController extends Controller
 
             $query->where(function ($w) use ($monthStart, $monthEnd) {
                 $w->whereBetween('dueDate', [$monthStart->toDateString(), $monthEnd->toDateString()])
-                    ->orWhere(function ($inner) {
-                        $inner->whereNull('dueDate')->where('isCompleted', false);
-                    });
+                    ->orWhere('isCompleted', false);
             });
         }
 

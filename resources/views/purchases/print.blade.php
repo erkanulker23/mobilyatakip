@@ -1,7 +1,7 @@
 @extends('layouts.print')
 @section('title', 'Alış ' . $purchase->purchaseNumber . ' - Yazdır')
 @section('content')
-@include('partials.invoice-document', [
+@include('partials.invoice-document-print', [
     'documentTitle' => 'ALIŞ FİŞİ',
     'documentNumber' => $purchase->purchaseNumber,
     'documentDate' => $purchase->purchaseDate,

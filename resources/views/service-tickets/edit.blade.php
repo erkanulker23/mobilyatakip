@@ -20,7 +20,7 @@
 </div>
 
 <div class="card p-6 max-w-3xl">
-    <form method="POST" action="{{ route('service-tickets.update', $serviceTicket) }}" class="space-y-5">
+    <form method="POST" action="{{ route('service-tickets.update', $serviceTicket) }}" enctype="multipart/form-data" class="space-y-5">
         @csrf @method('PUT')
         <div>
             <label class="form-label">İlgili Sipariş</label>
@@ -94,6 +94,29 @@
             </div>
         </div>
         @include('partials.service-ticket-shipping-fields', ['serviceTicket' => $serviceTicket])
+        @if(!empty($serviceTicket->images))
+        <div>
+            <label class="form-label">Mevcut Resimler</label>
+            <div class="flex flex-wrap gap-3">
+                @foreach($serviceTicket->images as $image)
+                <label class="relative block w-24 cursor-pointer group">
+                    <img src="{{ $image }}" alt="SSH resmi" class="w-24 h-24 object-cover rounded-lg border border-neutral-200">
+                    <span class="absolute inset-0 flex items-center justify-center rounded-lg bg-black/50 opacity-0 group-hover:opacity-100 transition">
+                        <input type="checkbox" name="removeImages[]" value="{{ $image }}" class="rounded border-white text-red-600 focus:ring-red-500">
+                        <span class="sr-only">Sil</span>
+                    </span>
+                </label>
+                @endforeach
+            </div>
+            <p class="mt-1 text-xs text-neutral-500">Silmek istediğiniz resimlerin üzerine gelip işaretleyin.</p>
+        </div>
+        @endif
+        <div>
+            <label class="form-label">Yeni Resimler</label>
+            <input type="file" name="images[]" multiple accept="image/*" class="form-input py-2">
+            @error('images')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+            @error('images.*')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+        </div>
         <div>
             <label class="form-label">Notlar</label>
             <textarea name="notes" rows="3" class="form-input form-textarea">{{ old('notes', $serviceTicket->notes) }}</textarea>

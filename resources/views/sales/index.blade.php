@@ -40,9 +40,9 @@
                 <label class="form-label">Teslim</label>
                 <select name="deliveryStatus" class="form-select">
                     <option value="">Tümü</option>
-                    <option value="delivered" {{ request('deliveryStatus') === 'delivered' ? 'selected' : '' }}>Teslim edildi</option>
-                    <option value="pending" {{ request('deliveryStatus') === 'pending' ? 'selected' : '' }}>Teslim bekliyor</option>
-                    <option value="ssh" {{ request('deliveryStatus') === 'ssh' ? 'selected' : '' }}>SSH var</option>
+                    @foreach(\App\Support\SaleDelivery::options() as $value => $label)
+                    <option value="{{ $value }}" {{ request('deliveryStatus') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
                 </select>
             </div>
             <div class="min-w-[130px]">

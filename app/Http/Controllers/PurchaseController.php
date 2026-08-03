@@ -290,6 +290,11 @@ class PurchaseController extends Controller
 
     public function destroy(Purchase $purchase)
     {
+        $paidAmount = (float) ($purchase->paidAmount ?? 0);
+        $hasPayments = \App\Models\SupplierPayment::where('purchaseId', $purchase->id)->exists();
+        if ($paidAmount > 0 || $hasPayments) {
+            return redirect()->back()->with('error', 'Ödeme yapılmış alış silinemez. Önce ödemeleri iptal edin veya alışı iptal edin.');
+        }
         DB::transaction(function () use ($purchase) {
             if (!$purchase->isCancelled && $purchase->warehouseId) {
                 foreach ($purchase->items as $item) {
@@ -321,6 +326,11 @@ class PurchaseController extends Controller
         foreach ($request->input('ids', []) as $id) {
             $purchase = Purchase::find($id);
             if (!$purchase) {
+                continue;
+            }
+            $paidAmount = (float) ($purchase->paidAmount ?? 0);
+            $hasPayments = \App\Models\SupplierPayment::where('purchaseId', $purchase->id)->exists();
+            if ($paidAmount > 0 || $hasPayments) {
                 continue;
             }
             DB::transaction(function () use ($purchase) {

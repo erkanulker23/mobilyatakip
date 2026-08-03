@@ -73,6 +73,18 @@ class CustomerBalance
             ];
         }
 
+        if ($balance < -0.005) {
+            $credit = abs($balance);
+
+            return [
+                'key' => 'alacakli',
+                'label' => 'Alacaklı',
+                'amount' => $credit,
+                'amountLabel' => 'Fazla ödeme',
+                'description' => 'Fazla tahsilat: ' . number_format($credit, 0, ',', '.') . ' ₺',
+            ];
+        }
+
         return [
             'key' => 'borcu_yok',
             'label' => 'Borcu yoktur',

@@ -15,6 +15,8 @@ class Sale extends BaseModel
         'customerId',
         'personnelId',
         'kdvIncluded',
+        'saleDiscountPercent',
+        'grandTotalOverride',
         'quoteId',
         'saleDate',
         'dueDate',
@@ -38,6 +40,8 @@ class Sale extends BaseModel
     protected $casts = [
         'efaturaSentAt' => 'datetime',
         'kdvIncluded' => 'boolean',
+        'saleDiscountPercent' => 'decimal:2',
+        'grandTotalOverride' => 'decimal:2',
         'saleDate' => 'date',
         'dueDate' => 'date',
         'deliveredAt' => 'datetime',

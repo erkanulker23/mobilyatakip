@@ -13,7 +13,6 @@ use App\Models\CustomerPayment;
 use App\Models\Kasa;
 use App\Models\KasaHareket;
 use App\Models\Product;
-use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Services\AuditService;
 use App\Services\MailConfigService;
@@ -236,12 +235,8 @@ class SaleController extends Controller
         }
         if ($request->filled('deliveryStatus')) {
             $q->where('isCancelled', false);
-            if ($request->deliveryStatus === 'delivered') {
-                $q->where('orderStatus', 'delivered');
-            } elseif ($request->deliveryStatus === 'pending') {
-                $q->where('orderStatus', 'pending');
-            } elseif ($request->deliveryStatus === 'ssh') {
-                $q->where('orderStatus', 'ssh');
+            if (in_array($request->deliveryStatus, \App\Support\SaleDelivery::statuses(), true)) {
+                $q->where('orderStatus', $request->deliveryStatus);
             }
         }
         $sales = $q->paginate(20)->withQueryString();
@@ -338,7 +333,7 @@ class SaleController extends Controller
                 'description' => ItemDescription::fromInput($item['descriptionLines'] ?? $item['description'] ?? null),
                 'unitPrice' => (float) $item['unitPrice'],
                 'quantity' => (int) $item['quantity'],
-                'kdvRate' => (float) ($item['kdvRate'] ?? 18),
+                'kdvRate' => (float) ($item['kdvRate'] ?? 10),
                 'lineDiscountPercent' => (float) ($item['lineDiscountPercent'] ?? 0),
                 'lineDiscountAmount' => (float) ($item['lineDiscountAmount'] ?? 0),
             ];
@@ -351,6 +346,7 @@ class SaleController extends Controller
             if (!$sale) {
                 abort(404);
             }
+            $oldCustomerId = $sale->customerId;
             $sale->update([
                 'customerId' => $validated['customerId'],
                 'personnelId' => $validated['personnelId'] ?? null,
@@ -365,11 +361,21 @@ class SaleController extends Controller
                     'drawings/sales'
                 ),
             ]);
-            $this->saleService->updateSaleItems($sale, $items, [
+            if ($validated['customerId'] !== $oldCustomerId) {
+                CustomerPayment::where('saleId', $sale->id)->update(['customerId' => $validated['customerId']]);
+            }
+            $sale = $this->saleService->updateSaleItems($sale, $items, [
                 'saleDiscountPercent' => (float) ($validated['saleDiscountPercent'] ?? 0),
                 'grandTotalOverride' => isset($validated['grandTotalOverride']) && $validated['grandTotalOverride'] > 0
                     ? (float) $validated['grandTotalOverride'] : null,
             ]);
+            $paidAmount = (float) ($sale->paidAmount ?? 0);
+            if ((float) $sale->grandTotal + 0.005 < $paidAmount) {
+                throw new \RuntimeException(
+                    'Genel toplam (' . number_format((float) $sale->grandTotal, 0, ',', '.') . ' ₺), '
+                    . 'tahsil edilen tutardan (' . number_format($paidAmount, 0, ',', '.') . ' ₺) düşük olamaz.'
+                );
+            }
             $this->auditService->logUpdate('sale', $sale->id, [], ['saleNumber' => $sale->saleNumber]);
             return redirect()->route('sales.show', $sale)->with('success', 'Satış güncellendi.');
         } catch (\Throwable $e) {
@@ -449,25 +455,37 @@ class SaleController extends Controller
         }
 
         $validated = $request->validate([
-            'deliveryStatus' => 'required|in:pending,delivered,ssh',
+            'deliveryStatus' => 'required|' . \App\Support\SaleDelivery::validationRule(),
             'deliveredAt' => 'nullable|date|required_if:deliveryStatus,delivered',
         ], [
             'deliveredAt.required_if' => 'Teslim tarihi seçilmelidir.',
         ]);
 
         $status = $validated['deliveryStatus'];
-        if ($status === 'delivered') {
+        if ($status === \App\Support\SaleDelivery::DELIVERED) {
             $sale->update([
-                'orderStatus' => 'delivered',
+                'orderStatus' => \App\Support\SaleDelivery::DELIVERED,
                 'deliveredAt' => Carbon::parse($validated['deliveredAt'])->startOfDay(),
             ]);
             $message = 'Sipariş teslim edildi olarak işaretlendi.';
-        } elseif ($status === 'ssh') {
-            $sale->update(['orderStatus' => 'ssh']);
+        } elseif ($status === \App\Support\SaleDelivery::SSH) {
+            $sale->update(['orderStatus' => \App\Support\SaleDelivery::SSH]);
             $message = 'Sipariş SSH var olarak işaretlendi.';
+        } elseif ($status === \App\Support\SaleDelivery::IN_PRODUCTION) {
+            $sale->update([
+                'orderStatus' => \App\Support\SaleDelivery::IN_PRODUCTION,
+                'deliveredAt' => null,
+            ]);
+            $message = 'Sipariş üretimde olarak işaretlendi.';
+        } elseif ($status === \App\Support\SaleDelivery::IN_DISCUSSION) {
+            $sale->update([
+                'orderStatus' => \App\Support\SaleDelivery::IN_DISCUSSION,
+                'deliveredAt' => null,
+            ]);
+            $message = 'Sipariş halen görüşülüyor olarak işaretlendi.';
         } else {
             $sale->update([
-                'orderStatus' => 'pending',
+                'orderStatus' => \App\Support\SaleDelivery::PENDING,
                 'deliveredAt' => null,
             ]);
             $message = 'Sipariş teslim bekliyor olarak güncellendi.';
@@ -587,26 +605,10 @@ class SaleController extends Controller
         return redirect()->route('sales.show', $sale)->with('success', 'Teslim işareti kaldırıldı.');
     }
 
-    /** Satış iptal/silme: Bu satıştan yapılan stok çıkışlarını depoya iade eder. */
+    /** Satış iptal/silme: Net stok çıkışını (satis − satis_iade) depoya iade eder. */
     private function reverseSaleStock(string $saleId, string $saleNumber, string $refType): void
     {
-        $movements = StockMovement::where('refType', 'satis')->where('refId', $saleId)->get();
-        foreach ($movements as $m) {
-            $qty = (int) abs($m->quantity);
-            if ($qty > 0 && $m->productId && $m->warehouseId) {
-                $this->stockService->movement(
-                    $m->productId,
-                    $m->warehouseId,
-                    'giris',
-                    $qty,
-                    [
-                        'refType' => $refType,
-                        'refId' => $saleId,
-                        'description' => "Stok iade - {$refType}: {$saleNumber}",
-                    ]
-                );
-            }
-        }
+        $this->stockService->reverseNetSaleStock($saleId, $saleNumber, $refType);
     }
 
     public function sendSupplierEmail(Sale $sale)

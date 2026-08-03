@@ -55,9 +55,9 @@
     }
     .dark .print-document .print-table thead,
     .dark .print-document .print-table thead th {
-        background: #171717 !important;
-        color: #ffffff !important;
-        border: none !important;
+        background: #ececec !important;
+        color: #000 !important;
+        border-color: #333 !important;
     }
     .dark .print-document .print-table tbody td {
         background: #fff !important;

@@ -106,4 +106,52 @@ class StockService
 
         return $this->getStock($productId, $warehouseId);
     }
+
+    /**
+     * Satışa bağlı net stok çıkışını iade eder (satis − satis_iade).
+     * Düzenleme sonrası iptal/silmede çift iadeyi önler.
+     */
+    public function reverseNetSaleStock(string $saleId, string $saleNumber, string $refType): void
+    {
+        $movements = StockMovement::where('refId', $saleId)
+            ->whereIn('refType', ['satis', 'satis_iade'])
+            ->get();
+
+        $netByKey = [];
+        foreach ($movements as $movement) {
+            if (! $movement->productId || ! $movement->warehouseId) {
+                continue;
+            }
+            $key = $movement->productId . '|' . $movement->warehouseId;
+            $qty = (int) abs($movement->quantity);
+            if ($qty <= 0) {
+                continue;
+            }
+            $netByKey[$key]['productId'] = $movement->productId;
+            $netByKey[$key]['warehouseId'] = $movement->warehouseId;
+            if ($movement->refType === 'satis') {
+                $netByKey[$key]['out'] = ($netByKey[$key]['out'] ?? 0) + $qty;
+            } else {
+                $netByKey[$key]['in'] = ($netByKey[$key]['in'] ?? 0) + $qty;
+            }
+        }
+
+        foreach ($netByKey as $entry) {
+            $netOut = ($entry['out'] ?? 0) - ($entry['in'] ?? 0);
+            if ($netOut <= 0) {
+                continue;
+            }
+            $this->movement(
+                $entry['productId'],
+                $entry['warehouseId'],
+                'giris',
+                $netOut,
+                [
+                    'refType' => $refType,
+                    'refId' => $saleId,
+                    'description' => "Stok iade - {$refType}: {$saleNumber}",
+                ]
+            );
+        }
+    }
 }

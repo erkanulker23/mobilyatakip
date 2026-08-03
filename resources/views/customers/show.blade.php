@@ -63,8 +63,8 @@
                 <p class="mt-1">
                     @include('partials.payment-status-badge', ['status' => ['key' => $customerBalance['key'], 'label' => $customerBalance['label']]])
                 </p>
-                <p class="text-xl font-semibold mt-2 tracking-tight {{ $customerBalance['key'] === 'borclu' ? 'text-red-600 dark:text-red-400' : ($customerBalance['key'] === 'siparis_yok' ? 'text-neutral-400 dark:text-slate-500' : 'text-emerald-600 dark:text-emerald-400') }}">
-                    @if($customerBalance['key'] === 'borclu')
+                <p class="text-xl font-semibold mt-2 tracking-tight {{ $customerBalance['key'] === 'borclu' ? 'text-red-600 dark:text-red-400' : ($customerBalance['key'] === 'alacakli' ? 'text-blue-600 dark:text-blue-400' : ($customerBalance['key'] === 'siparis_yok' ? 'text-neutral-400 dark:text-slate-500' : 'text-emerald-600 dark:text-emerald-400')) }}">
+                    @if(in_array($customerBalance['key'], ['borclu', 'alacakli'], true))
                     {{ number_format($customerBalance['amount'], 0, ',', '.') }} ₺
                     @elseif($customerBalance['key'] === 'siparis_yok')
                     —

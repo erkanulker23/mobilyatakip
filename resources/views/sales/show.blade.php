@@ -239,9 +239,9 @@
             <div>
                 <label class="form-label" for="deliveryStatus">Sipariş durumu</label>
                 <select id="deliveryStatus" name="deliveryStatus" x-model="deliveryStatus" class="form-select min-h-[44px]">
-                    <option value="pending">Teslim bekliyor</option>
-                    <option value="delivered">Teslim edildi</option>
-                    <option value="ssh">SSH var</option>
+                    @foreach(\App\Support\SaleDelivery::options() as $value => $label)
+                    <option value="{{ $value }}">{{ $label }}</option>
+                    @endforeach
                 </select>
                 @error('deliveryStatus')
                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>

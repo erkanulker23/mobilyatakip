@@ -93,6 +93,7 @@ class ServiceTicketController extends Controller
             'problems' => 'required|array|min:1',
             'problems.*' => 'required|string|max:500',
             'description' => 'nullable|string',
+            'notes' => 'nullable|string',
             'dueDate' => 'nullable|date',
             'underWarranty' => 'boolean',
             'assignedUserId' => 'nullable|exists:users,id',
@@ -162,6 +163,7 @@ class ServiceTicketController extends Controller
                 'underWarranty' => $request->boolean('underWarranty'),
                 'issueType' => $reportedProblems[0]['description'],
                 'description' => $validated['description'] ?? null,
+                'notes' => isset($validated['notes']) ? trim((string) $validated['notes']) : null,
                 'dueDate' => $validated['dueDate'] ?? null,
                 'reportedProblems' => $reportedProblems,
                 'assignedUserId' => $validated['assignedUserId'] ?? null,
@@ -234,6 +236,10 @@ class ServiceTicketController extends Controller
             ],
             'notes' => 'nullable|string',
             'serviceChargeAmount' => 'nullable|numeric|min:0',
+            'images' => 'nullable|array',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'removeImages' => 'nullable|array',
+            'removeImages.*' => 'string|max:500',
         ], [
             'assignedDriverPhone.regex' => 'Geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67)',
             'problems.required' => 'En az bir müşteri problemi girilmelidir.',
@@ -260,6 +266,28 @@ class ServiceTicketController extends Controller
         if (($validated['status'] ?? $serviceTicket->status) === 'tamamlandi' && ! $serviceTicket->closedAt) {
             $validated['closedAt'] = now();
         }
+
+        $images = (array) ($serviceTicket->images ?? []);
+        $removeImages = collect($validated['removeImages'] ?? [])->filter()->values()->all();
+        unset($validated['removeImages']);
+        if ($removeImages !== []) {
+            $images = array_values(array_filter($images, function ($path) use ($removeImages) {
+                if (in_array($path, $removeImages, true)) {
+                    $this->deleteServiceTicketImage($path);
+
+                    return false;
+                }
+
+                return true;
+            }));
+        }
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $file) {
+                $path = $file->store('service-tickets', 'public');
+                $images[] = '/storage/' . $path;
+            }
+        }
+        $validated['images'] = $images;
 
         $oldProblems = ServiceTicketStatus::normalizeProblems($serviceTicket->reportedProblems ?? []);
         $serviceTicket->update($validated);

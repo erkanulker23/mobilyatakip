@@ -5,7 +5,7 @@
     $quoteIssuedAt = $quote->createdAt;
     $quoteValidUntil = $quoteIssuedAt?->copy()->addDays(3);
 @endphp
-@include('partials.invoice-document', [
+@include('partials.invoice-document-print', [
     'documentTitle' => 'TEKLİFTİR',
     'documentSubtitle' => 'Teklif süresi 3 gündür.',
     'documentNotice' => '<span class="font-bold uppercase tracking-wider text-neutral-900">Tekliftir.</span> Bu belge fatura değildir. <strong>Teklif süresi 3 gündür.</strong>',

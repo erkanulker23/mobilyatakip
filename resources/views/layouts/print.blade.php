@@ -68,8 +68,14 @@
                 var pageWidth = 186 * mmToPx;
                 var height = target.scrollHeight;
                 var width = target.scrollWidth;
+
+                // Çok sayfalı belgelerde ölçekleme yapma; doğal sayfalama kullan
+                if (height > pageHeight * 1.08) {
+                    return;
+                }
+
                 var scale = Math.min(1, pageHeight / height, pageWidth / width);
-                scale = Math.max(0.82, scale);
+                scale = Math.max(0.88, scale);
 
                 if (scale < 0.995) {
                     target.style.transformOrigin = 'top left';

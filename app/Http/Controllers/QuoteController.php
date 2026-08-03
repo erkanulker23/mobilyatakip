@@ -194,6 +194,12 @@ class QuoteController extends Controller
 
     public function convert(Quote $quote)
     {
+        if ($quote->convertedSaleId) {
+            $existing = Sale::find($quote->convertedSaleId);
+
+            return redirect()->route('sales.show', $quote->convertedSaleId)
+                ->with('info', 'Bu teklif zaten satışa dönüştürülmüş' . ($existing ? ': ' . $existing->saleNumber : '') . '.');
+        }
         try {
             $sale = $this->saleService->createFromQuote($quote->id);
             $this->auditService->logAction('quote', $quote->id, 'convert', [

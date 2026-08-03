@@ -94,6 +94,11 @@
             @error('description')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
         <div>
+            <label class="form-label">Notlar</label>
+            <textarea name="notes" rows="3" class="form-input form-textarea" placeholder="İç notlar (opsiyonel)">{{ old('notes') }}</textarea>
+            @error('notes')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+        </div>
+        <div>
             <label class="form-label">Termin Tarihi</label>
             <input type="date" name="dueDate" value="{{ old('dueDate') }}" class="form-input">
             @error('dueDate')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror

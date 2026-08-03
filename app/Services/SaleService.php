@@ -8,7 +8,6 @@ use App\Models\SaleActivity;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Product;
-use App\Models\StockMovement;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -136,7 +135,15 @@ class SaleService
                 }
             }
 
-            $sale->update(['subtotal' => $subtotal, 'kdvTotal' => $kdvTotal, 'grandTotal' => $grandTotal]);
+            $sale->update([
+                'subtotal' => $subtotal,
+                'kdvTotal' => $kdvTotal,
+                'grandTotal' => $grandTotal,
+                'saleDiscountPercent' => $saleDiscountPercent ?: null,
+                'grandTotalOverride' => ($grandTotalOverride !== null && (float) $grandTotalOverride > 0)
+                    ? round((float) $grandTotalOverride, 2)
+                    : null,
+            ]);
 
             SaleActivity::create([
                 'saleId' => $sale->id,
@@ -152,12 +159,15 @@ class SaleService
     {
         return DB::transaction(function () use ($quoteId) {
             $quote = Quote::with(['customer', 'items.product'])->findOrFail($quoteId);
-            // Negatif stoka izin veriliyor
+            if ($quote->convertedSaleId) {
+                throw new \RuntimeException('Bu teklif zaten satışa dönüştürülmüş.');
+            }
             $saleNumber = $this->nextSaleNumber();
             $sale = Sale::create([
                 'id' => (string) Str::uuid(),
                 'saleNumber' => $saleNumber,
                 'customerId' => $quote->customerId,
+                'personnelId' => $quote->personnelId,
                 'quoteId' => $quote->id,
                 'saleDate' => now(),
                 'dueDate' => null,
@@ -166,6 +176,11 @@ class SaleService
                 'grandTotal' => $quote->grandTotal,
                 'paidAmount' => 0,
                 'kdvIncluded' => $quote->kdvIncluded ?? true,
+                'notes' => $quote->notes,
+                'saleDiscountPercent' => $quote->generalDiscountPercent,
+                'grandTotalOverride' => ($quote->generalDiscountAmount && (float) $quote->generalDiscountAmount > 0)
+                    ? (float) $quote->grandTotal
+                    : null,
             ]);
 
             foreach ($quote->items as $qi) {
@@ -178,6 +193,8 @@ class SaleService
                     'unitPrice' => $qi->unitPrice,
                     'quantity' => $qi->quantity,
                     'kdvRate' => $qi->kdvRate,
+                    'lineDiscountPercent' => $qi->lineDiscountPercent,
+                    'lineDiscountAmount' => $qi->lineDiscountAmount,
                     'lineTotal' => round((float) $qi->lineTotal, 2),
                 ]);
                 $warehouseId = $this->stockService->findWarehouseWithStock($qi->productId, (int) $qi->quantity)
@@ -303,23 +320,7 @@ class SaleService
 
     public function reverseSaleStockMovements(Sale $sale, string $refType = 'satis_iptal'): void
     {
-        $movements = StockMovement::where('refType', 'satis')->where('refId', $sale->id)->get();
-        foreach ($movements as $movement) {
-            $qty = (int) abs($movement->quantity);
-            if ($qty > 0 && $movement->productId && $movement->warehouseId) {
-                $this->stockService->movement(
-                    $movement->productId,
-                    $movement->warehouseId,
-                    'giris',
-                    $qty,
-                    [
-                        'refType' => $refType,
-                        'refId' => $sale->id,
-                        'description' => "Stok iade - {$refType}: {$sale->saleNumber}",
-                    ]
-                );
-            }
-        }
+        $this->stockService->reverseNetSaleStock($sale->id, $sale->saleNumber, $refType);
     }
 
     public function find(int|string $id): ?Sale
@@ -439,7 +440,15 @@ class SaleService
             if ($grandTotalOverride !== null && (float) $grandTotalOverride > 0) {
                 $grandTotal = round((float) $grandTotalOverride, 2);
             }
-            $sale->update(['subtotal' => $subtotal, 'kdvTotal' => $kdvTotal, 'grandTotal' => $grandTotal]);
+            $sale->update([
+                'subtotal' => $subtotal,
+                'kdvTotal' => $kdvTotal,
+                'grandTotal' => $grandTotal,
+                'saleDiscountPercent' => $saleDiscountPercent ?: null,
+                'grandTotalOverride' => ($grandTotalOverride !== null && (float) $grandTotalOverride > 0)
+                    ? round((float) $grandTotalOverride, 2)
+                    : null,
+            ]);
 
             return Sale::with(['customer', 'items.product.supplier'])->find($sale->id);
         });

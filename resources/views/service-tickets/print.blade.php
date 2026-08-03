@@ -54,6 +54,18 @@
             </div>
             @endif
 
+            @php $ticketImages = is_array($serviceTicket->images ?? null) ? $serviceTicket->images : []; @endphp
+            @if($ticketImages !== [])
+            <div class="print-section">
+                <p class="print-section-title">Fotoğraflar</p>
+                <div class="flex flex-wrap gap-3">
+                    @foreach($ticketImages as $image)
+                    <img src="{{ $image }}" alt="SSH fotoğrafı" class="h-28 w-28 object-cover rounded border border-neutral-200">
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
             <div class="print-section-lg">
                 <p class="print-section-title">Müşteri Problemleri</p>
                 <table class="print-table">

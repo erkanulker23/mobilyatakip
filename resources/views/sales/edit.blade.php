@@ -277,7 +277,7 @@
                         </div>
                         <div>
                             <label class="form-label">Genel İndirim %</label>
-                            <input type="number" step="0.01" min="0" max="100" name="saleDiscountPercent" id="saleDiscountPercent" value="{{ old('saleDiscountPercent', '0') }}" class="form-input min-h-[44px]" placeholder="0">
+                            <input type="number" step="0.01" min="0" max="100" name="saleDiscountPercent" id="saleDiscountPercent" value="{{ old('saleDiscountPercent', $sale->saleDiscountPercent ?? '0') }}" class="form-input min-h-[44px]" placeholder="0">
                         </div>
                     </div>
                 </div>
@@ -302,7 +302,7 @@
                     <div class="mt-4 pt-4 border-t border-neutral-700">
                         <label for="grandTotalOverride" class="text-xs text-neutral-400 block mb-1">Hedef toplam (indirim otomatik)</label>
                         <div class="flex items-center gap-2">
-                            <input type="text" inputmode="decimal" id="grandTotalOverride" name="grandTotalOverride" class="flex-1 text-right font-semibold bg-neutral-800 border border-neutral-600 rounded-lg px-3 py-2 text-sm text-white tabular-nums focus:outline-none focus:ring-2 focus:ring-neutral-500" placeholder="—">
+                            <input type="text" inputmode="decimal" id="grandTotalOverride" name="grandTotalOverride" value="{{ old('grandTotalOverride', $sale->grandTotalOverride ? money($sale->grandTotalOverride) : '') }}" class="flex-1 text-right font-semibold bg-neutral-800 border border-neutral-600 rounded-lg px-3 py-2 text-sm text-white tabular-nums focus:outline-none focus:ring-2 focus:ring-neutral-500" placeholder="—">
                             <span class="text-neutral-400 text-sm">₺</span>
                         </div>
                     </div>

@@ -45,6 +45,7 @@ class SupplierPaymentController extends Controller
         $supplierId = $request->get('supplierId');
         $openPurchases = Purchase::with('supplier')
             ->when($supplierId, fn ($q) => $q->where('supplierId', $supplierId))
+            ->where('isCancelled', false)
             ->whereRaw('(grandTotal - COALESCE(paidAmount, 0)) > 0')
             ->orderBy('purchaseDate', 'desc')
             ->get();
