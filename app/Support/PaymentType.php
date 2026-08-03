@@ -16,10 +16,10 @@ class PaymentType
 
     /** Müşteriden tahsilat (Ödeme Al) ekranı */
     public const CUSTOMER_RECEIVE = [
-        'nakit' => 'Nakit Elden',
-        'havale' => 'Havale',
+        'nakit' => 'Elden Nakit',
         'kredi_karti' => 'Kredi Kartı',
-        'tedarikciye_ode' => 'Tedarikçiye Öde',
+        'tedarikciye_ode' => 'Tedarikçiye Ödeme',
+        'havale' => 'Havale',
     ];
 
     /** Eski kayıtlar için etiket (yeni seçimde kullanılmaz) */

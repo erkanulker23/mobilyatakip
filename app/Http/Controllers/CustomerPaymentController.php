@@ -165,7 +165,7 @@ class CustomerPaymentController extends Controller
 
         if ($isSupplierPay) {
             if (empty($validated['supplierId'])) {
-                $msg = 'Tedarikçiye öde seçildiğinde tedarikçi seçimi zorunludur.';
+                $msg = 'Tedarikçiye Ödeme seçildiğinde tedarikçi seçimi zorunludur.';
                 $response = $redirectBackToSale();
                 if ($response) {
                     return $response->with('error', $msg);
@@ -324,7 +324,7 @@ class CustomerPaymentController extends Controller
 
         if ($isSupplierPay) {
             if (empty($validated['supplierId'])) {
-                return back()->withInput()->with('error', 'Tedarikçiye öde seçildiğinde tedarikçi seçimi zorunludur.');
+                return back()->withInput()->with('error', 'Tedarikçiye Ödeme seçildiğinde tedarikçi seçimi zorunludur.');
             }
             $validated['kasaId'] = null;
         } else {
