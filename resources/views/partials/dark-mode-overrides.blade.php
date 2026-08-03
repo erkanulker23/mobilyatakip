@@ -44,18 +44,25 @@
         color: #525252 !important;
     }
     .dark .print-document .print-brand-header {
-        border-color: #000 !important;
+        border-color: #a3a3a3 !important;
+    }
+    .dark .print-document .print-card,
+    .dark .print-document .print-doc-meta,
+    .dark .print-document .print-totals-panel,
+    .dark .print-document .print-highlight-box {
+        background: #fafafa !important;
+        border-color: #e5e5e5 !important;
     }
     .dark .print-document .print-table thead,
     .dark .print-document .print-table thead th {
-        background: #ececec !important;
-        color: #000 !important;
-        border-color: #333 !important;
+        background: #171717 !important;
+        color: #ffffff !important;
+        border: none !important;
     }
     .dark .print-document .print-table tbody td {
         background: #fff !important;
         color: #171717 !important;
-        border-color: #333 !important;
+        border-color: #e5e5e5 !important;
     }
     .dark .print-document .print-table tbody tr:hover td {
         background: #f8fafc !important;

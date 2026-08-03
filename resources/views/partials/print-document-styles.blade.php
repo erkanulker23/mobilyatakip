@@ -86,6 +86,8 @@
 .print-brand-logo {
     height: 48px;
     max-height: 48px;
+    width: auto;
+    max-width: 160px;
     margin-bottom: 8px;
     object-fit: contain;
     object-position: left;
