@@ -77,20 +77,6 @@
     </div>
 </div>
 
-@if(session('show_sale_actions'))
-<div class="mb-6 p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700">
-    <p class="text-neutral-900 dark:text-neutral-100 font-medium mb-3">Sipariş oluşturuldu. Hemen paylaşabilirsiniz:</p>
-    <div class="flex flex-wrap gap-2">
-        <a href="{{ route('sales.workshop.koltuk', $sale) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm font-medium">Koltuk Atölye Fişi Çıkar</a>
-        <a href="{{ route('sales.workshop.mobilya', $sale) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm font-medium">Mobilya Atölyesi Fişi Çıkar</a>
-        <a href="{{ route('sales.print', $sale) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm font-medium">Sipariş Fişi Yaz</a>
-        <a href="{{ route('sales.shipment', $sale) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm font-medium">Sevkiyat Fişi Çıkar</a>
-        <button type="button" @click="openStatusModal()" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">Sipariş Durumunu Güncelle</button>
-        <button type="button" @click="showCustomerEmail = true" class="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 text-sm font-medium">Müşteriye Mail Gönder</button>
-    </div>
-</div>
-@endif
-
 @if(!($sale->isCancelled ?? false))
 @php $suppliersWithEmail = $sale->getSuppliersWithEmail(); $showPrompt = session('show_supplier_email_prompt') || (!$sale->hasSupplierEmailSent() && $suppliersWithEmail->isNotEmpty()); @endphp
 @if($showPrompt && $suppliersWithEmail->isNotEmpty())

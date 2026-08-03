@@ -141,15 +141,13 @@ class SaleController extends Controller
                     return redirect()->route('sales.show', $sale)
                         ->with('success', 'Satış oluşturuldu.')
                         ->with('error', 'Tahsilat kaydedilemedi: genel toplam sıfır.')
-                        ->with('show_supplier_email_prompt', true)
-                        ->with('show_sale_actions', true);
+                        ->with('show_supplier_email_prompt', true);
                 }
                 if ($depositAmount > (float) $sale->grandTotal) {
                     return redirect()->route('sales.show', $sale)
                         ->with('success', 'Satış oluşturuldu.')
                         ->with('error', 'Tahsilat kaydedilemedi: tutar genel toplamdan fazla.')
-                        ->with('show_supplier_email_prompt', true)
-                        ->with('show_sale_actions', true);
+                        ->with('show_supplier_email_prompt', true);
                 }
                 $paymentLabel = $isFullPayment ? 'Tam ödeme' : 'Kapora';
                 $paymentNotes = $isFullPayment
@@ -193,8 +191,7 @@ class SaleController extends Controller
                 return redirect()->route('sales.show', $sale)
                     ->with('success', $message)
                     ->with('error', 'Satış kaydedildi ancak müşteriye e-posta gönderilemedi. Müşteri e-posta adresini kontrol edin.')
-                    ->with('show_supplier_email_prompt', true)
-                    ->with('show_sale_actions', true);
+                    ->with('show_supplier_email_prompt', true);
             }
 
             if ($request->input('returnTo') === 'service-tickets/create') {
@@ -206,8 +203,7 @@ class SaleController extends Controller
 
             return redirect()->route('sales.show', $sale)
                 ->with('success', $message)
-                ->with('show_supplier_email_prompt', true)
-                ->with('show_sale_actions', true);
+                ->with('show_supplier_email_prompt', true);
         } catch (\RuntimeException $e) {
             return redirect()->back()->withInput()->with('error', $e->getMessage());
         }
