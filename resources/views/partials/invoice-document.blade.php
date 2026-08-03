@@ -1,5 +1,6 @@
 @php $company = \App\Models\Company::first(); @endphp
-<div class="print-document print-document--fit card overflow-hidden print:shadow-none print:border-0" id="invoice-document" role="document" aria-label="Fatura belgesi">
+<div class="print-document print-document--fit print-document--compact card overflow-hidden print:shadow-none print:border-0" id="invoice-document" role="document" aria-label="Fatura belgesi">
+    <div class="print-fit-target">
     <div class="print-doc-inner p-4 md:p-6 lg:p-8">
         @include('partials.print-brand-header', [
             'documentTitle' => $documentTitle,
@@ -9,13 +10,13 @@
         ])
 
         @if(!empty($documentNotice))
-        <div class="print-info-banner print-section text-sm text-neutral-800 p-3 mb-4">
+        <div class="print-info-banner print-section text-sm text-neutral-800 p-2 mb-3">
             {!! $documentNotice !!}
         </div>
         @endif
 
         {{-- Alıcı / Satıcı Bilgisi --}}
-        <div class="print-section-lg grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div class="print-section-lg print-party-grid grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
             <div>
                 <h3 class="text-xs font-semibold text-neutral-500 uppercase mb-2">{{ $partyLabel ?? 'Alıcı' }}</h3>
                 <p class="font-semibold text-slate-900">{{ $partyName ?? '-' }}</p>
@@ -37,7 +38,7 @@
             $displayKdvDetails = isset($kdvIncluded) ? !($kdvIncluded ?? true) : ($showKdv ?? false);
             $displaySubtotal = !$kdvIncludedDoc && isset($subtotal);
         @endphp
-        <div class="print-section-lg overflow-x-auto -mx-2">
+        <div class="print-section-lg print-items-table overflow-x-auto -mx-2">
             <table class="print-table min-w-full">
                 <thead>
                     <tr>
@@ -58,9 +59,9 @@
                 </thead>
                 <tbody class="divide-y divide-slate-200">
                     @foreach($items as $i => $item)
-                    <tr class="hover:bg-slate-50">
-                        <td class="px-4 py-3 text-sm text-slate-600">{{ $i + 1 }}</td>
-                        <td class="px-4 py-3 font-medium text-neutral-900">
+                    <tr class="hover:bg-slate-50 print-item-row">
+                        <td class="px-3 py-2 text-sm text-slate-600 print-col-no">{{ $i + 1 }}</td>
+                        <td class="px-3 py-2 font-medium text-neutral-900 print-col-name">
                             {{ $item['name'] ?? '-' }}
                             @if(!empty($item['description']))
                                 @include('partials.item-description-list', ['description' => $item['description']])
@@ -70,13 +71,13 @@
                         <td class="px-4 py-3 text-right text-slate-600">{{ isset($item['listPrice']) && $item['listPrice'] !== null ? number_format($item['listPrice'], 0, ',', '.') . ' ₺' : '—' }}</td>
                         <td class="px-4 py-3 text-right text-slate-600">{{ number_format($item['unitPrice'] ?? 0, 0, ',', '.') }} ₺</td>
                         @else
-                        <td class="px-4 py-3 text-right text-slate-600">{{ number_format($item['unitPrice'] ?? 0, 0, ',', '.') }} ₺</td>
+                        <td class="px-3 py-2 text-right text-slate-600 print-col-price">{{ number_format($item['unitPrice'] ?? 0, 0, ',', '.') }} ₺</td>
                         @endif
-                        <td class="px-4 py-3 text-center text-slate-600">{{ $item['quantity'] ?? 0 }}</td>
+                        <td class="px-3 py-2 text-center text-slate-600 print-col-qty">{{ $item['quantity'] ?? 0 }}</td>
                         @if($displayKdvDetails)
-                        <td class="px-4 py-3 text-right text-slate-600">%{{ number_format($item['kdvRate'] ?? 0, 0) }}</td>
+                        <td class="px-3 py-2 text-right text-slate-600 print-col-kdv">%{{ number_format($item['kdvRate'] ?? 0, 0) }}</td>
                         @endif
-                        <td class="px-4 py-3 text-right font-medium text-neutral-900">{{ number_format($item['lineTotal'] ?? 0, 0, ',', '.') }} ₺</td>
+                        <td class="px-3 py-2 text-right font-medium text-neutral-900 print-col-total">{{ number_format($item['lineTotal'] ?? 0, 0, ',', '.') }} ₺</td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -84,7 +85,7 @@
         </div>
 
         {{-- Toplamlar --}}
-        <div class="print-section mt-4 flex flex-col items-end">
+        <div class="print-section print-totals-block mt-3 flex flex-col items-end">
             @if($displaySubtotal)
             <div class="flex justify-end gap-8 text-sm">
                 <span class="text-slate-600">Ara Toplam:</span>
@@ -103,7 +104,7 @@
                 <span class="font-medium w-32 text-right text-red-600">-{{ number_format($discount ?? 0, 0, ',', '.') }} ₺</span>
             </div>
             @endif
-            <div class="flex justify-end gap-8 text-base font-bold mt-3 pt-3 border-t-2 border-neutral-200">
+            <div class="flex justify-end gap-8 text-base font-bold mt-2 pt-2 border-t-2 border-neutral-200">
                 <span>Genel Toplam:</span>
                 <span class="w-32 text-right">{{ number_format($grandTotal ?? 0, 0, ',', '.') }} ₺</span>
             </div>
@@ -127,10 +128,11 @@
         </div>
 
         @if(isset($notes) && $notes)
-        <div class="print-section pt-4 mt-4 border-t border-neutral-200">
-            <h3 class="text-xs font-semibold text-neutral-500 uppercase mb-2">Notlar</h3>
+        <div class="print-section print-notes-block pt-3 mt-3 border-t border-neutral-200">
+            <h3 class="text-xs font-semibold text-neutral-500 uppercase mb-1">Notlar</h3>
             <p class="text-sm text-slate-600 whitespace-pre-wrap">{{ $notes }}</p>
         </div>
         @endif
+    </div>
     </div>
 </div>

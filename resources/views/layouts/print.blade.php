@@ -29,7 +29,11 @@
 
         @page {
             size: A4 portrait;
-            margin: 12mm;
+            margin: 10mm;
+        }
+
+        .print-document--fit .print-fit-target {
+            transform-origin: top left;
         }
 
         @media print {
@@ -40,8 +44,8 @@
                 padding: 0 !important;
                 background: #fff !important;
                 color: #000 !important;
-                font-size: 12pt;
-                line-height: 1.45;
+                font-size: 11pt;
+                line-height: 1.35;
             }
 
             .no-print { display: none !important; }
@@ -51,7 +55,7 @@
                 border: none !important;
                 border-radius: 0 !important;
                 overflow: visible !important;
-                font-size: 12pt !important;
+                font-size: 11pt !important;
                 color: #000 !important;
             }
 
@@ -60,39 +64,99 @@
             }
 
             .print-document .print-section {
-                margin-bottom: 14px !important;
+                margin-bottom: 10px !important;
             }
 
             .print-document .print-section-lg {
-                margin-bottom: 18px !important;
+                margin-bottom: 12px !important;
             }
 
-            .print-document h1 { font-size: 18pt !important; line-height: 1.25 !important; }
-            .print-document h2 { font-size: 14pt !important; line-height: 1.25 !important; }
-            .print-document h3 { font-size: 11pt !important; margin-bottom: 6px !important; letter-spacing: 0.04em; }
+            .print-document h1 { font-size: 16pt !important; line-height: 1.2 !important; }
+            .print-document h2 { font-size: 13pt !important; line-height: 1.2 !important; }
+            .print-document h3 { font-size: 9pt !important; margin-bottom: 4px !important; letter-spacing: 0.04em; }
             .print-document p,
-            .print-document li { font-size: 11pt !important; line-height: 1.45 !important; }
+            .print-document li { font-size: 9.5pt !important; line-height: 1.35 !important; }
             .print-document td,
-            .print-document th { font-size: 11pt !important; line-height: 1.4 !important; }
-            .print-document .print-doc-no { font-size: 22pt !important; line-height: 1.1 !important; }
+            .print-document th { font-size: 9.5pt !important; line-height: 1.3 !important; }
+            .print-document .print-doc-no { font-size: 18pt !important; line-height: 1.05 !important; }
 
-            .print-document img { max-height: 52px !important; margin-bottom: 8px !important; }
+            .print-document img,
+            .print-document .print-brand-logo { max-height: 42px !important; margin-bottom: 4px !important; }
 
             .print-document table th,
             .print-document table td {
-                padding: 8px 10px !important;
+                padding: 5px 6px !important;
+            }
+
+            .print-table {
+                table-layout: fixed;
+                width: 100% !important;
             }
 
             .print-table thead th {
+                font-size: 8pt !important;
+                padding: 5px 6px !important;
+            }
+
+            .print-document--fit .print-col-no { width: 6% !important; }
+            .print-document--fit .print-col-name { width: auto !important; word-break: break-word; }
+            .print-document--fit .print-col-price { width: 16% !important; white-space: nowrap; }
+            .print-document--fit .print-col-qty { width: 8% !important; }
+            .print-document--fit .print-col-kdv { width: 8% !important; }
+            .print-document--fit .print-col-total { width: 16% !important; white-space: nowrap; }
+
+            .print-document--fit .print-brand-header {
+                padding-bottom: 8px !important;
+                margin-bottom: 8px !important;
+                gap: 12px !important;
+            }
+
+            .print-document--fit .print-brand-name {
+                font-size: 11pt !important;
+            }
+
+            .print-document--fit .print-info-banner {
+                padding: 6px 8px !important;
+                margin-bottom: 8px !important;
                 font-size: 9pt !important;
-                padding: 8px 10px !important;
+                line-height: 1.3 !important;
+            }
+
+            .print-document--fit .print-party-grid {
+                margin-bottom: 8px !important;
+                gap: 8px !important;
+            }
+
+            .print-document--fit .item-description-list {
+                margin-top: 2px !important;
+                font-size: 8pt !important;
+                line-height: 1.25 !important;
+            }
+
+            .print-document--fit .item-description-list li {
+                margin: 0 !important;
+            }
+
+            .print-document--fit .print-totals-block {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            .print-document--fit .print-items-table + .print-totals-block {
+                break-before: avoid;
+                page-break-before: avoid;
             }
 
             .print-document .print-table thead {
                 display: table-header-group;
             }
 
-            .print-document .print-table tr {
+            .print-document--fit .print-table tr {
+                break-inside: auto;
+                page-break-inside: auto;
+            }
+
+            .print-document:not(.print-document--fit) .print-table tr {
                 break-inside: avoid;
                 page-break-inside: avoid;
             }
@@ -100,18 +164,18 @@
             .print-document .print-signatures {
                 break-inside: avoid;
                 page-break-inside: avoid;
-                margin-top: 1rem !important;
-                padding-top: 1rem !important;
+                margin-top: 0.75rem !important;
+                padding-top: 0.75rem !important;
             }
 
             .print-signatures .sig-line {
-                margin-top: 2.5rem !important;
-                font-size: 10pt !important;
+                margin-top: 2rem !important;
+                font-size: 9pt !important;
             }
 
             .print-document--compact .print-info-banner {
-                padding: 10px 12px !important;
-                margin-bottom: 12px !important;
+                padding: 6px 8px !important;
+                margin-bottom: 8px !important;
             }
         }
     </style>
@@ -124,6 +188,50 @@
     </div>
     @yield('content')
     <script>
+        (function () {
+            var fitTarget = null;
+            var fitHost = null;
+
+            function resetPrintFit() {
+                if (!fitTarget) return;
+                fitTarget.style.transform = '';
+                fitTarget.style.width = '';
+                if (fitHost) {
+                    fitHost.style.height = '';
+                    fitHost.style.overflow = '';
+                }
+                fitTarget = null;
+                fitHost = null;
+            }
+
+            function fitPrintDocumentToPage() {
+                resetPrintFit();
+                var host = document.querySelector('.print-document--fit');
+                if (!host) return;
+                var target = host.querySelector('.print-fit-target') || host;
+                fitHost = host;
+                fitTarget = target;
+
+                var mmToPx = 96 / 25.4;
+                var pageHeight = 252 * mmToPx;
+                var pageWidth = 190 * mmToPx;
+                var height = target.scrollHeight;
+                var width = target.scrollWidth;
+                var scale = Math.min(1, pageHeight / height, pageWidth / width);
+
+                if (scale < 0.995) {
+                    target.style.transformOrigin = 'top left';
+                    target.style.transform = 'scale(' + scale + ')';
+                    target.style.width = (100 / scale) + '%';
+                    host.style.height = Math.ceil(height * scale) + 'px';
+                    host.style.overflow = 'hidden';
+                }
+            }
+
+            window.addEventListener('beforeprint', fitPrintDocumentToPage);
+            window.addEventListener('afterprint', resetPrintFit);
+        })();
+
         window.onload = function () {
             if (window.location.search.includes('auto=1')) window.print();
         };
