@@ -1,7 +1,10 @@
 <div class="mt-2 item-desc-block">
     <div class="flex items-center justify-between gap-2 mb-1.5">
         <label class="form-label mb-0">Açıklama (madde madde)</label>
-        <button type="button" class="item-desc-add text-xs font-medium text-neutral-600 hover:text-neutral-900 px-2 py-1 rounded-lg hover:bg-neutral-100 touch-manipulation">+ Madde</button>
+        <button type="button" class="item-desc-add inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors touch-manipulation shadow-sm">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            Madde Ekle
+        </button>
     </div>
     <div class="item-desc-lines space-y-1.5">
         <div class="item-desc-line flex gap-2 items-start">

@@ -48,6 +48,49 @@
 .dark .sale-item-row .ts-wrapper .ts-control { background: #262626 !important; border-color: #404040 !important; color: #f5f5f5 !important; }
 .dark .sale-item-row .ts-wrapper .ts-control input { color: #f5f5f5 !important; }
 .dark .sale-item-row:focus-within .ts-wrapper .ts-control { background: #262626 !important; }
+.payment-mode-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid #e5e5e5;
+    background: #fff;
+    color: #404040;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
+}
+.payment-mode-btn:hover { border-color: #d4d4d4; }
+.dark .payment-mode-btn {
+    border-color: #525252;
+    background: #262626;
+    color: #d4d4d4;
+}
+.dark .payment-mode-btn:hover { border-color: #737373; }
+.payment-mode-btn.is-active.is-none {
+    border-color: #525252;
+    background: #525252;
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,.08);
+}
+.dark .payment-mode-btn.is-active.is-none {
+    border-color: #a3a3a3;
+    background: #737373;
+    color: #fff;
+}
+.payment-mode-btn.is-active.is-pay {
+    border-color: #059669;
+    background: #059669;
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(5,150,105,.25);
+}
+.dark .payment-mode-btn.is-active.is-pay {
+    border-color: #10b981;
+    background: #059669;
+    color: #fff;
+}
 </style>
 @endpush
 @section('content')
@@ -240,15 +283,15 @@
                     <div class="sale-form-section-body">
                         <p class="text-sm text-neutral-600 mb-4">Kapora veya siparişin tamamı tahsil edilebilir. Ödeme alınmayacaksa «Ödeme yok» bırakın.</p>
                         <div class="flex flex-wrap gap-2 mb-5">
-                            <label class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer text-sm font-medium transition-colors {{ $initialPaymentMode === 'none' ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300' }}">
+                            <label class="payment-mode-btn is-none {{ $initialPaymentMode === 'none' ? 'is-active' : '' }}">
                                 <input type="radio" name="initialPaymentMode" value="none" class="sr-only" {{ $initialPaymentMode === 'none' ? 'checked' : '' }}>
                                 Ödeme yok
                             </label>
-                            <label class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer text-sm font-medium transition-colors {{ $initialPaymentMode === 'kapora' ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300' }}">
+                            <label class="payment-mode-btn is-pay {{ $initialPaymentMode === 'kapora' ? 'is-active' : '' }}">
                                 <input type="radio" name="initialPaymentMode" value="kapora" class="sr-only" {{ $initialPaymentMode === 'kapora' ? 'checked' : '' }}>
                                 Kapora
                             </label>
-                            <label class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer text-sm font-medium transition-colors {{ $initialPaymentMode === 'full' ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300' }}">
+                            <label class="payment-mode-btn is-pay {{ $initialPaymentMode === 'full' ? 'is-active' : '' }}">
                                 <input type="radio" name="initialPaymentMode" value="full" class="sr-only" {{ $initialPaymentMode === 'full' ? 'checked' : '' }}>
                                 Hepsi ödendi
                             </label>
@@ -831,17 +874,7 @@ function updateInitialPaymentMode() {
     document.querySelectorAll('input[name="initialPaymentMode"]').forEach(function(radio) {
         const label = radio.closest('label');
         if (!label) return;
-        const active = radio.checked;
-        const isNone = radio.value === 'none';
-        label.classList.toggle('border-neutral-900', active && isNone);
-        label.classList.toggle('bg-neutral-900', active && isNone);
-        label.classList.toggle('text-white', active && isNone);
-        label.classList.toggle('border-emerald-600', active && !isNone);
-        label.classList.toggle('bg-emerald-600', active && !isNone);
-        label.classList.toggle('text-white', active && !isNone);
-        label.classList.toggle('border-neutral-200', !active);
-        label.classList.toggle('bg-white', !active);
-        label.classList.toggle('text-neutral-700', !active);
+        label.classList.toggle('is-active', radio.checked);
     });
     if (window.initPaymentKasaFields) window.initPaymentKasaFields();
     updateSaleTotals();
