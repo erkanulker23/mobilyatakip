@@ -108,15 +108,6 @@
         </div>
         @include('partials.service-ticket-shipping-fields', ['serviceTicket' => null])
         <div class="space-y-3">
-            <div>
-                <label class="form-label">Atanan Teknisyen</label>
-                <select name="assignedUserId" class="form-select">
-                    <option value="">Seçiniz</option>
-                    @foreach($users as $u)
-                    <option value="{{ $u->id }}" {{ old('assignedUserId') == $u->id ? 'selected' : '' }}>{{ $u->name }}</option>
-                    @endforeach
-                </select>
-            </div>
             <div class="flex items-center gap-2">
                 <input type="checkbox" name="underWarranty" value="1" id="underWarranty" {{ old('underWarranty') ? 'checked' : '' }} class="rounded border-slate-300 dark:border-slate-500 text-green-600 focus:ring-green-500">
                 <label class="form-label mb-0" for="underWarranty">Garanti kapsamında</label>

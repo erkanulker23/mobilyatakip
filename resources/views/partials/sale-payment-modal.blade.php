@@ -2,7 +2,7 @@
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showPaymentModal = false"></div>
     <div class="relative w-full max-w-lg rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-neutral-200 dark:border-slate-700 overflow-hidden max-h-[90vh] overflow-y-auto">
         <div class="px-5 pt-5 pb-1">
-            <h2 id="sale-payment-title" class="text-lg font-semibold text-neutral-900">Ödeme Al</h2>
+            <h2 id="sale-payment-title" class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Ödeme Al</h2>
             <p class="mt-1 text-sm text-neutral-500 dark:text-slate-400">{{ $sale->saleNumber }} numaralı sipariş için tahsilat kaydı</p>
         </div>
         <form method="POST" action="{{ route('customer-payments.store') }}" class="p-5 space-y-4" id="salePaymentForm">
@@ -13,7 +13,7 @@
 
             <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-neutral-200 dark:border-slate-600">
                 <p class="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-slate-400 mb-1">Müşteri</p>
-                <p class="font-semibold text-neutral-900">{{ $sale->customer?->name ?? '—' }}</p>
+                <p class="font-semibold text-neutral-900 dark:text-neutral-100">{{ $sale->customer?->name ?? '—' }}</p>
                 @if($sale->customer?->phone)
                 <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">{{ $sale->customer->phone }}</p>
                 @endif

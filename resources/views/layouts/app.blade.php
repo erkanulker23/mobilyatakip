@@ -208,6 +208,7 @@
         .dark .hover\:bg-slate-50\/50:hover, .dark .hover\:bg-neutral-50\/50:hover { background-color: rgba(255,255,255,.04); }
         .dark .hover\:bg-slate-300:hover, .dark .dark\:hover\:bg-slate-700:hover, .dark .dark\:hover\:bg-slate-800:hover { background-color: #262626; }
         .dark .dark\:hover\:bg-slate-700\/50:hover { background-color: rgba(255,255,255,.06); }
+        @include('partials.dark-mode-overrides')
         /* Tom Select (satış, alış, teklif formları) */
         .dark .ts-wrapper .ts-control { background: #262626; border-color: #404040; color: #f5f5f5; }
         .dark .ts-wrapper .ts-control input { color: #f5f5f5; }

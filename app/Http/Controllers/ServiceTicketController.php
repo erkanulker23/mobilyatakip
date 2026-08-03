@@ -70,13 +70,12 @@ class ServiceTicketController extends Controller
 
     public function create()
     {
-        $users = User::where('isActive', true)->orderBy('name')->get();
         $customers = Customer::with(['city', 'district'])->where('isActive', true)->orderBy('name')->get();
         $selectedCustomerId = old('customerId', request('customerId'));
         $selectedSaleId = old('saleId', request('saleId'));
         $shippingFormData = $this->shippingFormData();
 
-        return view('service-tickets.create', compact('users', 'customers', 'selectedCustomerId', 'selectedSaleId') + $shippingFormData);
+        return view('service-tickets.create', compact('customers', 'selectedCustomerId', 'selectedSaleId') + $shippingFormData);
     }
 
     public function store(Request $request)

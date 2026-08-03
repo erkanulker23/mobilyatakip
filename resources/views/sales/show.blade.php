@@ -18,10 +18,10 @@
 <div class="mb-6">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <div class="flex items-center gap-2 text-neutral-500 text-sm mb-1">
-                <a href="{{ route('sales.index') }}" class="hover:text-neutral-900">Satışlar</a>
+            <div class="flex items-center gap-2 text-neutral-500 dark:text-neutral-400 text-sm mb-1">
+                <a href="{{ route('sales.index') }}" class="hover:text-neutral-900 dark:hover:text-neutral-100">Satışlar</a>
                 <span>/</span>
-                <span class="text-neutral-700">{{ $sale->saleNumber }}</span>
+                <span class="text-neutral-700 dark:text-neutral-300">{{ $sale->saleNumber }}</span>
             </div>
             <h1 class="page-title">{{ $sale->saleNumber }} @if($sale->isCancelled ?? false)<span class="ml-2 text-sm font-normal px-2 py-1 rounded-full bg-red-100 text-red-700">İptal</span>@endif @include('partials.final-measurement-badge', ['sale' => $sale, 'class' => 'align-middle'])</h1>
             <p class="page-desc">
@@ -78,13 +78,13 @@
 </div>
 
 @if(session('show_sale_actions'))
-<div class="mb-6 p-4 rounded-xl bg-neutral-50 border border-neutral-200">
-    <p class="text-neutral-900 font-medium mb-3">Sipariş oluşturuldu. Hemen paylaşabilirsiniz:</p>
+<div class="mb-6 p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700">
+    <p class="text-neutral-900 dark:text-neutral-100 font-medium mb-3">Sipariş oluşturuldu. Hemen paylaşabilirsiniz:</p>
     <div class="flex flex-wrap gap-2">
-        <a href="{{ route('sales.workshop.koltuk', $sale) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 text-neutral-800 rounded-lg hover:bg-neutral-100 text-sm font-medium">Koltuk Atölye Fişi Çıkar</a>
-        <a href="{{ route('sales.workshop.mobilya', $sale) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 text-neutral-800 rounded-lg hover:bg-neutral-100 text-sm font-medium">Mobilya Atölyesi Fişi Çıkar</a>
-        <a href="{{ route('sales.print', $sale) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 text-neutral-800 rounded-lg hover:bg-neutral-100 text-sm font-medium">Sipariş Fişi Yaz</a>
-        <a href="{{ route('sales.shipment', $sale) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 text-neutral-800 rounded-lg hover:bg-neutral-100 text-sm font-medium">Sevkiyat Fişi Çıkar</a>
+        <a href="{{ route('sales.workshop.koltuk', $sale) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm font-medium">Koltuk Atölye Fişi Çıkar</a>
+        <a href="{{ route('sales.workshop.mobilya', $sale) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm font-medium">Mobilya Atölyesi Fişi Çıkar</a>
+        <a href="{{ route('sales.print', $sale) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm font-medium">Sipariş Fişi Yaz</a>
+        <a href="{{ route('sales.shipment', $sale) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm font-medium">Sevkiyat Fişi Çıkar</a>
         <button type="button" @click="openStatusModal()" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">Sipariş Durumunu Güncelle</button>
         <button type="button" @click="showCustomerEmail = true" class="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 text-sm font-medium">Müşteriye Mail Gönder</button>
     </div>
@@ -106,14 +106,14 @@
 @endif
 
 @if($sale->needsFinalMeasurement ?? false)
-<div class="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-950">
+<div class="mb-6 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-950 dark:text-amber-100">
     <div class="flex items-start gap-3">
-        <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-200 text-amber-900" aria-hidden="true">
+        <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100" aria-hidden="true">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
         </span>
         <div>
             <p class="font-semibold text-lg">Kesin ölçüye gidilecek</p>
-            <p class="text-sm text-amber-900/90 mt-1">Bu sipariş için saha ölçüsü alınacaktır. Üretim ve teslimat kesin ölçü sonrası planlanır.</p>
+            <p class="text-sm text-amber-900/90 dark:text-amber-200/90 mt-1">Bu sipariş için saha ölçüsü alınacaktır. Üretim ve teslimat kesin ölçü sonrası planlanır.</p>
         </div>
     </div>
 </div>
@@ -134,7 +134,7 @@
 @endphp
 @if($timeline->isNotEmpty())
 <div class="mt-8 card p-6">
-    <h2 class="text-lg font-semibold text-slate-900 mb-4">Zaman çizelgesi</h2>
+    <h2 class="text-lg font-semibold text-slate-900 dark:text-neutral-100 mb-4">Zaman çizelgesi</h2>
     <div class="relative space-y-0">
         @foreach($timeline as $entry)
         <div class="flex gap-4 pb-6 last:pb-0">
@@ -159,25 +159,25 @@
                 </span>
                 @endif
                 @if(!$loop->last)
-                <div class="mt-1 w-px flex-1 bg-slate-200 min-h-[24px]"></div>
+                <div class="mt-1 w-px flex-1 bg-slate-200 dark:bg-neutral-700 min-h-[24px]"></div>
                 @endif
             </div>
             <div class="flex-1 min-w-0 pt-0.5">
                 @if($entry->type === 'payment')
                 @php $p = $entry->payment; $isLinked = $entry->linked ?? true; @endphp
-                <p class="font-medium text-neutral-900">
-                    <a href="{{ $isLinked ? route('customer-payments.show', $p) : route('customer-payments.edit', $p) }}" class="text-emerald-600 hover:text-emerald-700 hover:underline">Tahsilat alındı: {{ number_format($p->amount ?? 0, 0, ',', '.') }} ₺</a>
+                <p class="font-medium text-neutral-900 dark:text-neutral-100">
+                    <a href="{{ $isLinked ? route('customer-payments.show', $p) : route('customer-payments.edit', $p) }}" class="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline">Tahsilat alındı: {{ number_format($p->amount ?? 0, 0, ',', '.') }} ₺</a>
                     @if($pt[$p->paymentType ?? ''] ?? null)
-                    <span class="text-slate-600 font-normal">({{ $pt[$p->paymentType ?? ''] }})</span>
+                    <span class="text-slate-600 dark:text-neutral-400 font-normal">({{ $pt[$p->paymentType ?? ''] }})</span>
                     @endif
                     @if(!$isLinked)
                     <span class="ml-1 text-amber-600 text-sm font-normal">— Faturaya bağlı değil</span>
                     @endif
                 </p>
-                <p class="text-xs text-neutral-500 mt-1">{{ $p->paymentDate?->format('d.m.Y H:i') ?? '—' }}</p>
+                <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{{ $p->paymentDate?->format('d.m.Y H:i') ?? '—' }}</p>
                 @else
                 @php $activity = $entry->activity; @endphp
-                <p class="font-medium text-neutral-900">{{ $activity->description }}</p>
+                <p class="font-medium text-neutral-900 dark:text-neutral-100">{{ $activity->description }}</p>
                 @if($activity->metadata && isset($activity->metadata['suppliers']))
                 <p class="text-sm page-desc">
                     @foreach($activity->metadata['suppliers'] as $s)
@@ -185,7 +185,7 @@
                     @endforeach
                 </p>
                 @endif
-                <p class="text-xs text-neutral-500 mt-1">{{ $activity->createdAt->format('d.m.Y H:i') }}</p>
+                <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{{ $activity->createdAt->format('d.m.Y H:i') }}</p>
                 @if($activity->type === 'supplier_email_sent')
                 <div class="mt-2 flex flex-wrap gap-2">
                     <form method="POST" action="{{ route('sales.activity', $sale) }}" class="inline">

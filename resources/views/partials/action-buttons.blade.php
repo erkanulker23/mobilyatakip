@@ -36,8 +36,8 @@
   <div x-show="deleteOpen" x-cloak class="fixed inset-0 z-[200] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
     <div x-show="deleteOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-black/50" @click="deleteOpen = false"></div>
     <div x-show="deleteOpen" x-transition class="relative card max-w-sm w-full p-6" @keydown.escape.window="deleteOpen = false">
-      <h2 id="delete-modal-title" class="text-base font-semibold text-neutral-900">Kaydı sil</h2>
-      <p class="mt-2 text-sm text-neutral-500">Bu kaydı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.</p>
+      <h2 id="delete-modal-title" class="text-base font-semibold text-neutral-900 dark:text-neutral-100">Kaydı sil</h2>
+      <p class="mt-2 text-sm text-neutral-500 dark:text-neutral-400">Bu kaydı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.</p>
       <div class="mt-6 flex gap-3 justify-end">
         <button type="button" @click="deleteOpen = false" class="btn-secondary">İptal</button>
         <form method="POST" action="{{ $destroy }}" class="inline">
