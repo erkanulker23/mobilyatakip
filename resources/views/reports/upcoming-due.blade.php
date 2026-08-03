@@ -1,10 +1,16 @@
 @extends('layouts.app')
 @section('title', 'Termin Yaklaşanlar')
 @section('content')
+@php $filterDesc = $filters['label'] ?? null; @endphp
 <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
     <div>
         <h1 class="page-title">Termin Tarihi Yaklaşanlar</h1>
-        <p class="page-desc">Önümüzdeki {{ $days }} gün içinde termin tarihi gelen sipariş ve SSH formları</p>
+        <p class="page-desc">
+            Önümüzdeki {{ $days }} gün içinde termin tarihi gelen sipariş ve SSH formları
+            @if($filterDesc)
+            <span class="text-neutral-500">· {{ $filterDesc }}</span>
+            @endif
+        </p>
     </div>
     @include('reports.partials.toolbar', [
         'printRoute' => 'reports.upcoming-due.print',
@@ -28,7 +34,11 @@
                 @endforeach
             </select>
         </div>
-        <button type="submit" class="btn-primary">Filtrele</button>
+        @include('reports.partials.sales-filters', ['showOdemeFilter' => false])
+        <div class="flex gap-2">
+            <button type="submit" class="btn-primary">Filtrele</button>
+            <a href="{{ route('reports.upcoming-due') }}" class="btn-secondary">Temizle</a>
+        </div>
     </form>
 </div>
 

@@ -243,12 +243,6 @@ class ShippingCompanyPaymentController extends Controller
         if ($linkType === 'purchase' && empty($validated['purchaseId'])) {
             throw ValidationException::withMessages(['purchaseId' => 'Alış faturası seçiniz.']);
         }
-        if ($linkType === 'sale' && empty($validated['saleId'])) {
-            throw ValidationException::withMessages(['saleId' => 'Sipariş seçiniz.']);
-        }
-        if ($linkType === 'service_ticket' && empty($validated['serviceTicketId'])) {
-            throw ValidationException::withMessages(['serviceTicketId' => 'SSH kaydı seçiniz.']);
-        }
         if ($linkType === 'manual' && empty($validated['paymentFor'])) {
             throw ValidationException::withMessages(['paymentFor' => 'Manuel açıklama giriniz.']);
         }

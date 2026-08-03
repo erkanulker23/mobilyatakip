@@ -1,6 +1,7 @@
 @php
     $isTaskAdmin = auth()->user()?->isAdmin() ?? false;
     $currentUserId = (string) auth()->id();
+    $initialPersonnelFilter = request('personnelId', '');
     $taskColorPalette = \App\Support\UserTaskColor::PALETTE;
     $taskColorMapJson = collect($taskColorPalette)->map(function ($c) {
         return [
@@ -255,7 +256,7 @@ function dashboardTasks() {
         saving: false,
         showForm: false,
         formError: '',
-        filterPersonnelId: '',
+        filterPersonnelId: @json($initialPersonnelFilter),
         currentMonth: today.slice(0, 7),
         selectedDate: today,
         weekdayLabels: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'],

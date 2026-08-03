@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class SupplierPayment extends BaseModel
 {
@@ -37,5 +38,10 @@ class SupplierPayment extends BaseModel
     public function purchase(): BelongsTo
     {
         return $this->belongsTo(Purchase::class, 'purchaseId');
+    }
+
+    public function customerPayment(): HasOne
+    {
+        return $this->hasOne(CustomerPayment::class, 'linkedSupplierPaymentId');
     }
 }

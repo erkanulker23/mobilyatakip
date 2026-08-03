@@ -12,7 +12,7 @@
         <span class="text-neutral-700 dark:text-neutral-300">Nakliye Ödemesi Yap</span>
     </div>
     <h1 class="page-title">Nakliye Ödemesi Yap</h1>
-    <p class="page-desc">Nakliye firmasına ödeme kaydı — ürün teslimatında sipariş, SSH ödemesinde servis kaydı seçin</p>
+    <p class="page-desc">Nakliye firmasına ödeme kaydı — ürün teslimatında sipariş, SSH ödemesinde servis kaydı isteğe bağlı seçilebilir</p>
 </div>
 
 @if(session('error'))

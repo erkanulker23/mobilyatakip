@@ -83,7 +83,7 @@
                             <td class="print-muted">{{ $pm->paymentDate?->format('d.m.Y') }}</td>
                             <td class="text-right font-medium">{{ number_format($pm->amount ?? 0, 0, ',', '.') }} ₺</td>
                             <td>{{ ucfirst($pm->paymentType ?? '-') }}</td>
-                            <td class="print-muted">{{ $pm->reference ?? '-' }}</td>
+                            <td class="print-muted">@include('partials.supplier-payment-source', ['payment' => $pm])</td>
                         </tr>
                         @empty
                         <tr><td colspan="4" class="text-center print-muted py-4">Ödeme kaydı yok.</td></tr>

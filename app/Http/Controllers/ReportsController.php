@@ -139,16 +139,24 @@ class ReportsController extends Controller
     public function upcomingDue(Request $request)
     {
         $days = max(1, min(90, (int) $request->input('days', self::TERMIN_DEFAULT_DAYS)));
+        $personnelOptions = $this->salesPersonnelOptions();
+        $filters = $this->salesFilterState($request, $personnelOptions);
 
-        return view('reports.upcoming-due', $this->upcomingDueData($days));
+        return view('reports.upcoming-due', array_merge(
+            $this->upcomingDueData($days, $request),
+            compact('personnelOptions', 'filters'),
+        ));
     }
 
     public function upcomingDuePrint(Request $request): View
     {
         $days = max(1, min(90, (int) $request->input('days', self::TERMIN_DEFAULT_DAYS)));
+        $personnelOptions = $this->salesPersonnelOptions();
+        $filters = $this->salesFilterState($request, $personnelOptions);
 
         return view('reports.print.upcoming-due', array_merge(
-            $this->upcomingDueData($days),
+            $this->upcomingDueData($days, $request),
+            compact('personnelOptions', 'filters'),
             ['print' => true, 'forShipment' => false],
         ));
     }
@@ -156,9 +164,12 @@ class ReportsController extends Controller
     public function upcomingDueShipmentPrint(Request $request): View
     {
         $days = max(1, min(90, (int) $request->input('days', self::TERMIN_DEFAULT_DAYS)));
+        $personnelOptions = $this->salesPersonnelOptions();
+        $filters = $this->salesFilterState($request, $personnelOptions);
 
         return view('reports.print.upcoming-due-shipment', array_merge(
-            $this->upcomingDueData($days),
+            $this->upcomingDueData($days, $request),
+            compact('personnelOptions', 'filters'),
             ['print' => true, 'forShipment' => true],
         ));
     }
@@ -411,25 +422,44 @@ class ReportsController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function upcomingDueData(int $days): array
+    private function upcomingDueData(int $days, Request $request): array
     {
         $horizon = Carbon::today()->addDays($days);
+
+        $salesQuery = Sale::with(['customer.city', 'customer.district', 'personnel'])
+            ->where('isCancelled', false)
+            ->whereNotNull('dueDate')
+            ->whereDate('dueDate', '<=', $horizon);
+
+        if ($request->filled('personnelId')) {
+            if ($request->input('personnelId') === 'none') {
+                $salesQuery->whereNull('personnelId');
+            } else {
+                $salesQuery->where('personnelId', $request->input('personnelId'));
+            }
+        }
+
+        $sshQuery = ServiceTicket::with(['customer.city', 'customer.district', 'sale'])
+            ->whereNotIn('status', ['tamamlandi', 'iptal'])
+            ->whereNotNull('dueDate')
+            ->whereDate('dueDate', '<=', $horizon);
+
+        if ($request->filled('personnelId')) {
+            if ($request->input('personnelId') === 'none') {
+                $sshQuery->where(function ($q) {
+                    $q->whereNull('saleId')
+                        ->orWhereHas('sale', fn ($s) => $s->whereNull('personnelId'));
+                });
+            } else {
+                $sshQuery->whereHas('sale', fn ($s) => $s->where('personnelId', $request->input('personnelId')));
+            }
+        }
 
         return [
             'days' => $days,
             'horizon' => $horizon,
-            'upcomingSales' => Sale::with(['customer.city', 'customer.district'])
-                ->where('isCancelled', false)
-                ->whereNotNull('dueDate')
-                ->whereDate('dueDate', '<=', $horizon)
-                ->orderBy('dueDate')
-                ->get(),
-            'upcomingServiceTickets' => ServiceTicket::with(['customer.city', 'customer.district', 'sale'])
-                ->whereNotIn('status', ['tamamlandi', 'iptal'])
-                ->whereNotNull('dueDate')
-                ->whereDate('dueDate', '<=', $horizon)
-                ->orderBy('dueDate')
-                ->get(),
+            'upcomingSales' => $salesQuery->orderBy('dueDate')->get(),
+            'upcomingServiceTickets' => $sshQuery->orderBy('dueDate')->get(),
         ];
     }
 

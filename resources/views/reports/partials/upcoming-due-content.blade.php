@@ -2,7 +2,7 @@
     $print = $print ?? false;
     $forShipment = $forShipment ?? false;
     $today = now()->startOfDay();
-    $salesColspan = 6 + ($forShipment ? 0 : 2) + ($print ? 0 : 1);
+    $salesColspan = 7 + ($forShipment ? 0 : 2) + ($print ? 0 : 1);
     $sshColspan = 7 + ($print ? 0 : 1);
 @endphp
 
@@ -16,6 +16,7 @@
                 <tr>
                     <th class="table-th">Sipariş</th>
                     <th class="table-th">Müşteri</th>
+                    <th class="table-th">Satışı Yapan</th>
                     <th class="table-th">İl</th>
                     <th class="table-th">İlçe</th>
                     <th class="table-th">Termin</th>
@@ -37,6 +38,7 @@
                 <tr>
                     <td class="table-td font-medium text-neutral-900">{{ $s->saleNumber }}</td>
                     <td class="table-td">{{ $s->customer?->name ?? '—' }}</td>
+                    <td class="table-td text-neutral-600">{{ $s->personnel?->name ?? '—' }}</td>
                     <td class="table-td">{{ $s->customer?->city?->name ?? '—' }}</td>
                     <td class="table-td">{{ $s->customer?->district?->name ?? '—' }}</td>
                     <td class="table-td {{ $rowClass }}">{{ $s->dueDate?->format('d.m.Y') ?? '—' }}</td>

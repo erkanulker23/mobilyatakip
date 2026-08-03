@@ -92,13 +92,28 @@ class SupplierController extends Controller
 
     public function show(Supplier $supplier)
     {
-        $supplier->load(['purchases.items.product', 'products', 'payments.purchase', 'city', 'district']);
+        $supplier->load([
+            'purchases.items.product',
+            'products',
+            'payments.purchase',
+            'payments.customerPayment.customer',
+            'payments.customerPayment.sale',
+            'city',
+            'district',
+        ]);
         return view('suppliers.show', compact('supplier'));
     }
 
     public function print(Supplier $supplier)
     {
-        $supplier->load(['purchases.items.product', 'payments', 'city', 'district']);
+        $supplier->load([
+            'purchases.items.product',
+            'payments.purchase',
+            'payments.customerPayment.customer',
+            'payments.customerPayment.sale',
+            'city',
+            'district',
+        ]);
         return view('suppliers.print', compact('supplier'));
     }
 

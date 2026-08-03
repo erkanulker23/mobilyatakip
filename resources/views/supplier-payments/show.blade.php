@@ -71,6 +71,30 @@
                 </dd>
             </div>
             @endif
+            @if($supplierPayment->customerPayment?->sale)
+            @php
+                $customerPayment = $supplierPayment->customerPayment;
+                $coverage = \App\Support\CustomerPaymentSaleCoverage::label($customerPayment);
+            @endphp
+            <div>
+                <dt class="form-label">Müşteri Tahsilatı</dt>
+                <dd class="font-medium">
+                    <a href="{{ route('customer-payments.show', $customerPayment) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">Tahsilat detayı</a>
+                    @if($customerPayment->customer)
+                        <span class="text-neutral-500 dark:text-slate-400"> · {{ $customerPayment->customer->name }}</span>
+                    @endif
+                </dd>
+            </div>
+            <div>
+                <dt class="form-label">İlgili Satış</dt>
+                <dd class="font-medium">
+                    <a href="{{ route('sales.show', $customerPayment->sale) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">{{ $customerPayment->sale->saleNumber ?? '—' }}</a>
+                    @if($coverage)
+                        <span class="text-neutral-500 dark:text-slate-400"> · {{ $coverage }}</span>
+                    @endif
+                </dd>
+            </div>
+            @endif
             @if(!empty($supplierPayment->reference))
             <div>
                 <dt class="form-label">Referans</dt>

@@ -17,13 +17,13 @@
             <option value="purchase" {{ $linkType === 'purchase' ? 'selected' : '' }}>Alış nakliyesi</option>
             <option value="manual" {{ $linkType === 'manual' ? 'selected' : '' }}>Manuel açıklama</option>
         </select>
-        <p class="mt-1 text-xs text-neutral-500">Ürün teslimatında sipariş, SSH ödemesinde ilgili SSH kaydı seçilmelidir.</p>
+        <p class="mt-1 text-xs text-neutral-500">Ürün teslimatında sipariş, SSH ödemesinde ilgili SSH kaydı isteğe bağlı seçilebilir.</p>
         @error('linkType')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
     </div>
 
     <div x-show="linkType === 'sale'" x-cloak>
-        <label for="payment-sale-id" class="form-label">Sipariş <span class="text-red-500">*</span></label>
-        <select id="payment-sale-id" name="saleId" class="form-select min-h-[44px]" :disabled="linkType !== 'sale'" :required="linkType === 'sale'">
+        <label for="payment-sale-id" class="form-label">Sipariş <span class="text-neutral-400 text-xs font-normal">(isteğe bağlı)</span></label>
+        <select id="payment-sale-id" name="saleId" class="form-select min-h-[44px]" :disabled="linkType !== 'sale'">
             <option value="">Sipariş seçiniz</option>
             @foreach($sales as $s)
             <option value="{{ $s->id }}" {{ (string) $saleId === (string) $s->id ? 'selected' : '' }}>
@@ -35,8 +35,8 @@
     </div>
 
     <div x-show="linkType === 'service_ticket'" x-cloak>
-        <label for="payment-service-ticket-id" class="form-label">SSH kaydı <span class="text-red-500">*</span></label>
-        <select id="payment-service-ticket-id" name="serviceTicketId" class="form-select min-h-[44px]" :disabled="linkType !== 'service_ticket'" :required="linkType === 'service_ticket'">
+        <label for="payment-service-ticket-id" class="form-label">SSH kaydı <span class="text-neutral-400 text-xs font-normal">(isteğe bağlı)</span></label>
+        <select id="payment-service-ticket-id" name="serviceTicketId" class="form-select min-h-[44px]" :disabled="linkType !== 'service_ticket'">
             <option value="">SSH seçiniz</option>
             @foreach($serviceTickets as $t)
             <option value="{{ $t->id }}" {{ (string) $serviceTicketId === (string) $t->id ? 'selected' : '' }}>

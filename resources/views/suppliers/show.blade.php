@@ -132,7 +132,7 @@
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full">
-                    <thead><tr class="border-b border-neutral-100 dark:border-slate-700"><th class="table-th">Tarih</th><th class="table-th text-right">Tutar</th><th class="table-th">Tip</th><th class="table-th">İlgili Fatura</th><th class="table-th text-right w-40">İşlem</th></tr></thead>
+                    <thead><tr class="border-b border-neutral-100 dark:border-slate-700"><th class="table-th">Tarih</th><th class="table-th text-right">Tutar</th><th class="table-th">Tip</th><th class="table-th">Kaynak</th><th class="table-th text-right w-40">İşlem</th></tr></thead>
                     <tbody>
                         @php $pt = \App\Support\PaymentType::labels(); @endphp
                         @forelse($supplier->payments->sortByDesc('paymentDate') as $pm)
@@ -140,7 +140,7 @@
                             <td class="table-td">{{ $pm->paymentDate?->format('d.m.Y') }}</td>
                             <td class="table-td text-right font-medium text-emerald-600 dark:text-emerald-400">{{ number_format($pm->amount ?? 0, 0, ',', '.') }} ₺</td>
                             <td class="table-td">{{ $pt[$pm->paymentType ?? ''] ?? ucfirst($pm->paymentType ?? '—') }}</td>
-                            <td class="table-td">@if($pm->purchaseId && $pm->purchase)<a href="{{ route('purchases.show', $pm->purchase) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">{{ $pm->purchase->purchaseNumber }}</a>@else{{ $pm->reference ?? '—' }}@endif</td>
+                            <td class="table-td">@include('partials.supplier-payment-source', ['payment' => $pm])</td>
                             <td class="table-td text-right">@include('partials.action-buttons', ['show' => route('supplier-payments.show', $pm), 'edit' => route('supplier-payments.edit', $pm)])</td>
                         </tr>
                         @empty

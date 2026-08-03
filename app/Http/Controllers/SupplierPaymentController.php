@@ -18,7 +18,13 @@ class SupplierPaymentController extends Controller
 
     public function show(SupplierPayment $supplierPayment)
     {
-        $supplierPayment->load(['supplier', 'kasa', 'purchase']);
+        $supplierPayment->load([
+            'supplier',
+            'kasa',
+            'purchase',
+            'customerPayment.customer',
+            'customerPayment.sale',
+        ]);
         return view('supplier-payments.show', compact('supplierPayment'));
     }
 

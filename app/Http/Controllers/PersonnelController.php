@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Personnel;
+use App\Models\UserTask;
 use App\Services\AuditService;
 use App\Services\PersonnelAccessService;
 use Carbon\Carbon;
@@ -160,9 +161,25 @@ class PersonnelController extends Controller
 
         $quotes = $personnel->quotes()->with('customer')->orderByDesc('createdAt')->limit(10)->get();
 
+        $personnelTasks = collect();
+        if ($personnel->hasSystemAccess()) {
+            $personnelTasks = UserTask::query()
+                ->where(function ($q) use ($personnel) {
+                    $q->where('personnelId', $personnel->id);
+                    if ($personnel->userId) {
+                        $q->orWhere('userId', $personnel->userId);
+                    }
+                })
+                ->orderBy('isCompleted')
+                ->orderByRaw('dueDate IS NULL, dueDate ASC')
+                ->orderBy('sortOrder')
+                ->orderByDesc('createdAt')
+                ->get();
+        }
+
         $viewingOwnProfile = auth()->user()?->personnel?->id === $personnel->id;
 
-        return view('personnel.show', compact('personnel', 'sales', 'quotes', 'salesStats', 'viewingOwnProfile', 'upcomingDueSales', 'monthlyPerformance'));
+        return view('personnel.show', compact('personnel', 'sales', 'quotes', 'salesStats', 'viewingOwnProfile', 'upcomingDueSales', 'monthlyPerformance', 'personnelTasks'));
     }
 
     public function edit(Personnel $personnel)
