@@ -200,10 +200,4 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/ayarlar/logo-sil', [\App\Http\Controllers\SettingsController::class, 'deleteLogo'])->name('settings.delete-logo');
     });
 
-    Route::get('/xml-feeds', [\App\Http\Controllers\XmlFeedController::class, 'index'])->name('xml-feeds.index');
-    Route::get('/xml-feeds/create', [\App\Http\Controllers\XmlFeedController::class, 'create'])->name('xml-feeds.create');
-    Route::post('/xml-feeds', [\App\Http\Controllers\XmlFeedController::class, 'store'])->name('xml-feeds.store');
-    Route::get('/xml-feeds/{xmlFeed}/sync-supplier', [\App\Http\Controllers\XmlFeedController::class, 'syncSupplierForm'])->name('xml-feeds.sync-supplier');
-    Route::post('/xml-feeds/{xmlFeed}/sync', [\App\Http\Controllers\XmlFeedController::class, 'sync'])->name('xml-feeds.sync');
-    Route::delete('/xml-feeds/{xmlFeed}', [\App\Http\Controllers\XmlFeedController::class, 'destroy'])->name('xml-feeds.destroy');
 });

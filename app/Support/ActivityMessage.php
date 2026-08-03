@@ -59,7 +59,6 @@ class ActivityMessage
         'shipping_company' => ['shipping-companies.show', 'shippingCompany'],
         'stock' => ['stock.edit', 'stock'],
         'company' => ['settings.index', null],
-        'xml_feed' => ['xml-feeds.index', null],
     ];
 
     public static function from(AuditLog $log): array

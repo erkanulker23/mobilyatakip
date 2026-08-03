@@ -125,7 +125,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="6" class="px-6 py-12 text-center text-neutral-500">Kayıt bulunamadı. <a href="{{ route('xml-feeds.index') }}" class="text-green-600 hover:underline">XML Feed</a> ile ürün çekebilirsiniz.</td></tr>
+                <tr><td colspan="6" class="px-6 py-12 text-center text-neutral-500">Kayıt bulunamadı. <a href="{{ route('products.create') }}" class="text-green-600 hover:underline">Yeni ürün ekleyin</a>.</td></tr>
                 @endforelse
             </tbody>
         </table>
