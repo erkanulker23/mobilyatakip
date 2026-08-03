@@ -685,6 +685,14 @@ function restoreSaleRow(item) {
         if (!isNaN(priceNum)) {
             priceEl.value = fmt(priceNum);
             priceEl.setAttribute('data-raw', String(priceNum));
+            const catalogProduct = productId ? window.getSaleProduct(productId) : null;
+            const catalogPrice = catalogProduct ? parseTrNum(catalogProduct.price) : NaN;
+            if (catalogProduct && !isNaN(catalogPrice) && Math.abs(priceNum - catalogPrice) > 0.001) {
+                priceEl.dataset.priceCustom = '1';
+            }
+            if (catalogProduct && window.syncSaleProductSelectLabel) {
+                window.syncSaleProductSelectLabel(rowEl, catalogProduct);
+            }
         }
     }
 }
@@ -698,6 +706,7 @@ function duplicateSaleRow(btn) {
         if (from && to) {
             to.value = from.value;
             if (from.hasAttribute('data-raw')) to.setAttribute('data-raw', from.getAttribute('data-raw'));
+            if (from.dataset.priceCustom) to.dataset.priceCustom = from.dataset.priceCustom;
         }
     });
     if (window.ItemDescriptionLines) ItemDescriptionLines.duplicateLines(src, newRow);
@@ -710,6 +719,10 @@ function duplicateSaleRow(btn) {
         newTs.setValue(val, true);
         newRow.querySelector('.item-product-id').value = src.querySelector('.item-product-id').value;
         newRow.querySelector('.item-product-name').value = src.querySelector('.item-product-name').value;
+        const dupProduct = val && window.getSaleProduct ? window.getSaleProduct(val) : null;
+        if (dupProduct && window.syncSaleProductSelectLabel) {
+            window.syncSaleProductSelectLabel(newRow, dupProduct);
+        }
         // setValue silent olduğu için fiyat/kdv kopyalanan değerlerde kalır
         ['.item-price', '.item-kdv'].forEach(function(cls) {
             const from = src.querySelector(cls), to = newRow.querySelector(cls);
@@ -729,7 +742,8 @@ function saleRowIsEmpty(row) {
     const productId = row.querySelector('.item-product-id')?.value;
     const productName = row.querySelector('.item-product-name')?.value;
     const tsVal = row.querySelector('.item-product')?.tomselect?.getValue();
-    const price = parseTrNum(row.querySelector('.item-price')?.value ?? row.querySelector('.item-price')?.getAttribute('data-raw') ?? 0);
+    const priceEl = row.querySelector('.item-price');
+    const price = parseTrNum(priceEl?.getAttribute('data-raw') || priceEl?.value || 0);
     return !productId && !productName && !tsVal && !(price > 0);
 }
 function resolveSaleRowForQuickProduct(rowIndex) {
@@ -744,23 +758,12 @@ function applyProductToSaleRow(rowEl, data) {
     if (!rowEl || !data) return;
     const product = window.registerSaleProduct(data);
     const id = String(product.id);
-    const idInput = rowEl.querySelector('.item-product-id');
-    const nameInput = rowEl.querySelector('.item-product-name');
-    const priceEl = rowEl.querySelector('.item-price');
-    const kdvEl = rowEl.querySelector('.item-kdv');
-    const qtyEl = rowEl.querySelector('.item-qty');
-    if (idInput) idInput.value = id;
-    if (nameInput) nameInput.value = '';
-    if (priceEl) {
-        priceEl.value = fmt(product.price);
-        priceEl.setAttribute('data-raw', String(product.price));
-    }
-    if (kdvEl) kdvEl.value = product.kdv ?? 10;
-    if (qtyEl && (!qtyEl.value || parseInt(qtyEl.value, 10) < 1)) qtyEl.value = '1';
     const ts = rowEl.querySelector('.item-product')?.tomselect;
     if (ts) {
         if (!ts.options[id]) ts.addOption(product);
         ts.setValue(id, true);
+    } else if (window.applySaleProductToRow) {
+        window.applySaleProductToRow(rowEl, product, { forcePrice: true });
     }
 }
 function fmt(n) { return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n || 0); }
@@ -773,6 +776,10 @@ function parseTrNum(s) {
     }
     return window.parseMoney ? window.parseMoney(s) : NaN;
 }
+function readItemPrice(priceEl) {
+    if (!priceEl) return NaN;
+    return parseTrNum(priceEl.getAttribute('data-raw') || priceEl.value);
+}
 function updateSaleTotals() {
     const subtotalEl = document.getElementById('subtotalBeforeDiscDisplay');
     if (!subtotalEl) return;
@@ -784,7 +791,7 @@ function updateSaleTotals() {
     document.querySelectorAll('.item-row').forEach(row => {
         const priceEl = row.querySelector('.item-price');
         const lineTotalEl = row.querySelector('.item-line-total');
-        const price = parseTrNum(priceEl?.value ?? priceEl?.getAttribute('data-raw') ?? 0);
+        const price = readItemPrice(priceEl);
         const qty = parseInt(row.querySelector('.item-qty')?.value || 1, 10);
         const kdv = parseFloat(row.querySelector('.item-kdv')?.value || 10, 10);
         if (price <= 0 || qty <= 0) {
@@ -887,7 +894,7 @@ function onGrandTotalOverrideInput() {
     let subtotal = 0, kdvTotal = 0;
     document.querySelectorAll('.item-row').forEach(row => {
         const priceEl = row.querySelector('.item-price');
-        const price = parseTrNum(priceEl?.value ?? priceEl?.getAttribute('data-raw') ?? 0);
+        const price = readItemPrice(priceEl);
         const qty = parseInt(row.querySelector('.item-qty')?.value || 1, 10);
         const kdv = parseFloat(row.querySelector('.item-kdv')?.value || 10, 10);
         if (price <= 0 || qty <= 0) return;
@@ -926,7 +933,7 @@ document.getElementById('saleForm')?.addEventListener('keydown', function(e) {
     e.preventDefault();
     const rows = Array.from(document.querySelectorAll('.item-row'));
     const isLast = rows[rows.length - 1] === row;
-    const hasPrice = parseTrNum(row.querySelector('.item-price')?.value) > 0;
+    const hasPrice = readItemPrice(row.querySelector('.item-price')) > 0;
     if (isLast) {
         if (hasPrice) addRow(true);
         return;
@@ -937,7 +944,7 @@ document.getElementById('saleForm')?.addEventListener('keydown', function(e) {
 });
 document.getElementById('saleForm')?.addEventListener('submit', function() {
     document.querySelectorAll('.item-price').forEach(function(inp) {
-        const v = parseTrNum(inp.value);
+        const v = readItemPrice(inp);
         inp.value = isNaN(v) || v < 0 ? '' : String(v);
     });
     const overrideInp = document.getElementById('grandTotalOverride');

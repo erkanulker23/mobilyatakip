@@ -132,6 +132,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/sales/{sale}/delivered', [SaleController::class, 'markDelivered'])->name('sales.mark-delivered');
     Route::post('/sales/{sale}/undelivered', [SaleController::class, 'unmarkDelivered'])->name('sales.unmark-delivered');
     Route::post('/sales/{sale}/status', [SaleController::class, 'updateStatus'])->name('sales.update-status');
+    Route::post('/sales/{sale}/convert-to-quote', [SaleController::class, 'convertToQuote'])->name('sales.convert-to-quote');
     Route::post('/sales/{sale}/send-supplier-email', [SaleController::class, 'sendSupplierEmail'])->name('sales.send-supplier-email');
     Route::post('/sales/{sale}/send-customer-email', [SaleController::class, 'sendCustomerEmail'])->name('sales.send-customer-email');
     Route::post('/sales/{sale}/activity', [SaleController::class, 'addActivity'])->name('sales.activity');

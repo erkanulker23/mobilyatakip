@@ -85,7 +85,7 @@
                     <th class="table-th text-right">Ödenen</th>
                     <th class="table-th text-right">Kalan</th>
                     <th class="table-th">Durum</th>
-                    <th class="table-th text-right w-40">İşlem</th>
+                    <th class="table-th text-right w-48">İşlem</th>
                 </tr>
             </thead>
             <tbody>
@@ -116,13 +116,23 @@
                         @else—@endif
                     </td>
                     <td class="table-td">
-                        @include('partials.action-buttons', [
-                            'show' => route('sales.show', $s),
-                            'edit' => !($s->isCancelled ?? false) ? route('sales.edit', $s) : null,
-                            'print' => route('sales.print', $s),
-                            'shipment' => !($s->isCancelled ?? false) ? route('sales.shipment', $s) : null,
-                            'destroy' => route('sales.destroy', $s),
-                        ])
+                        <div class="flex items-center justify-end gap-1">
+                            @include('partials.action-buttons', [
+                                'show' => route('sales.show', $s),
+                                'edit' => !($s->isCancelled ?? false) ? route('sales.edit', $s) : null,
+                                'print' => route('sales.print', $s),
+                                'shipment' => !($s->isCancelled ?? false) ? route('sales.shipment', $s) : null,
+                                'destroy' => route('sales.destroy', $s),
+                            ])
+                            @if(!($s->isCancelled ?? false))
+                            <form method="POST" action="{{ route('sales.convert-to-quote', $s) }}" class="inline-flex" onsubmit="return confirm('Bu satıştan yeni bir teklif oluşturulsun mu? Satış kaydı silinmez.');">
+                                @csrf
+                                <button type="submit" title="Teklife Dönüştür" aria-label="Teklife dönüştür" class="p-2 rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-300 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"></path></svg>
+                                </button>
+                            </form>
+                            @endif
+                        </div>
                     </td>
                 </tr>
                 @empty

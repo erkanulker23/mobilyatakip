@@ -6,6 +6,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\SaleActivity;
 use App\Models\Quote;
+use App\Models\QuoteItem;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -200,6 +201,61 @@ class SaleService
             ]);
 
             return Sale::with(['customer', 'items.product.supplier'])->find($sale->id);
+        });
+    }
+
+    public function createQuoteFromSale(string $saleId): Quote
+    {
+        return DB::transaction(function () use ($saleId) {
+            $sale = Sale::with(['customer', 'items.product'])->findOrFail($saleId);
+
+            if ($sale->isCancelled ?? false) {
+                throw new \RuntimeException('İptal edilmiş satış teklife dönüştürülemez.');
+            }
+
+            $last = Quote::whereYear('createdAt', date('Y'))
+                ->orderBy('quoteNumber', 'desc')
+                ->lockForUpdate()
+                ->first();
+            $next = $last ? (int) preg_replace('/^TKL-\d+-/', '', $last->quoteNumber) + 1 : 1;
+            $quoteNumber = 'TKL-' . date('Y') . '-' . str_pad((string) $next, 5, '0', STR_PAD_LEFT);
+
+            $sourceNote = 'Kaynak satış: ' . $sale->saleNumber;
+            $notes = filled($sale->notes) ? trim($sale->notes) . "\n\n" . $sourceNote : $sourceNote;
+
+            $quote = Quote::create([
+                'quoteNumber' => $quoteNumber,
+                'customerId' => $sale->customerId,
+                'personnelId' => $sale->personnelId,
+                'status' => 'taslak',
+                'kdvIncluded' => $sale->kdvIncluded ?? true,
+                'generalDiscountPercent' => 0,
+                'generalDiscountAmount' => 0,
+                'revision' => 1,
+                'validUntil' => now()->addDays(30)->toDateString(),
+                'notes' => $notes,
+                'subtotal' => $sale->subtotal,
+                'kdvTotal' => $sale->kdvTotal,
+                'grandTotal' => $sale->grandTotal,
+                'drawingFiles' => $sale->drawingFiles,
+            ]);
+
+            foreach ($sale->items as $item) {
+                QuoteItem::create([
+                    'quoteId' => $quote->id,
+                    'productId' => $item->productId,
+                    'productName' => $item->product?->name ?? $item->productName,
+                    'description' => $item->description,
+                    'unitPrice' => $item->unitPrice,
+                    'quantity' => $item->quantity,
+                    'lineDiscountPercent' => $item->lineDiscountPercent ?? 0,
+                    'lineDiscountAmount' => $item->lineDiscountAmount ?? 0,
+                    'kdvRate' => $item->kdvRate,
+                    'lineTotal' => $item->lineTotal,
+                ]);
+            }
+
+            return Quote::with(['customer', 'personnel', 'items.product'])->find($quote->id);
         });
     }
 

@@ -55,6 +55,12 @@
             <button type="button" @click="openStatusModal()" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm">
                 Sipariş Durumunu Güncelle
             </button>
+            <form method="POST" action="{{ route('sales.convert-to-quote', $sale) }}" class="inline-flex" onsubmit="return confirm('Bu satıştan yeni bir teklif oluşturulsun mu? Satış kaydı silinmez.');">
+                @csrf
+                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-900 rounded-lg hover:bg-amber-200 font-medium text-sm dark:bg-amber-900/30 dark:text-amber-200 dark:hover:bg-amber-900/50">
+                    Teklife Dönüştür
+                </button>
+            </form>
             @endif
             <button type="button" @click="showCustomerEmail = true" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>

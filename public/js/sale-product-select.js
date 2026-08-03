@@ -80,18 +80,103 @@
         });
     }
 
-    function applyProductToRow(row, product) {
+    function parseRowPrice(priceEl) {
+        if (!priceEl) return NaN;
+        var raw = priceEl.getAttribute('data-raw');
+        if (raw !== null && raw !== '') {
+            var parsedRaw = parseFloat(String(raw).replace(',', '.'));
+            if (!isNaN(parsedRaw)) return parsedRaw;
+        }
+        if (typeof window.parseLinePrice === 'function') {
+            var linePrice = window.parseLinePrice(priceEl.value);
+            if (!isNaN(linePrice)) return linePrice;
+        }
+        if (typeof window.parseMoney === 'function') {
+            var money = window.parseMoney(priceEl.value);
+            if (!isNaN(money)) return money;
+        }
+        return parseFloat(String(priceEl.value || '').replace(/\./g, '').replace(',', '.'));
+    }
+
+    function syncProductSelectLabel(row, product) {
         if (!row || !product) return;
-        const idInput = row.querySelector('.item-product-id');
-        const nameInput = row.querySelector('.item-product-name');
-        const priceEl = row.querySelector('.item-price');
-        const kdvEl = row.querySelector('.item-kdv');
-        const qtyEl = row.querySelector('.item-qty');
+        var sel = row.querySelector('.item-product');
+        var ts = sel && sel.tomselect;
+        if (!ts) return;
+
+        var priceEl = row.querySelector('.item-price');
+        var price = parseRowPrice(priceEl);
+        if (isNaN(price) || price <= 0) {
+            price = parseFloat(product.price) || 0;
+        }
+
+        var id = String(product.id);
+        var name = product.name || product.label || '';
+        if (name.indexOf(' · ') !== -1) {
+            name = name.split(' · ')[0];
+        }
+        var customLabel = name + ' · ' + fmtPrice(price) + ' ₺';
+        var updated = Object.assign({}, getSaleProduct(id) || product, {
+            id: id,
+            name: name,
+            label: customLabel,
+            price: price,
+        });
+        registry.set(id, updated);
+
+        if (ts.options[id]) {
+            Object.assign(ts.options[id], updated);
+        } else {
+            ts.addOption(updated);
+        }
+
+        if (typeof ts.updateOption === 'function') {
+            ts.updateOption(id, updated);
+        }
+    }
+
+    function bindPriceInput(row) {
+        var priceEl = row.querySelector('.item-price');
+        if (!priceEl || priceEl.dataset.priceBound === '1') return;
+        priceEl.dataset.priceBound = '1';
+
+        function onPriceEdited() {
+            priceEl.dataset.priceCustom = '1';
+            var productId = row.querySelector('.item-product-id') && row.querySelector('.item-product-id').value;
+            var product = productId ? getSaleProduct(productId) : null;
+            if (product) {
+                syncProductSelectLabel(row, product);
+            }
+            if (typeof window.updateSaleTotals === 'function') {
+                window.updateSaleTotals();
+            }
+        }
+
+        priceEl.addEventListener('input', onPriceEdited);
+        priceEl.addEventListener('change', onPriceEdited);
+    }
+
+    function applyProductToRow(row, product, options) {
+        options = options || {};
+        if (!row || !product) return;
+        var idInput = row.querySelector('.item-product-id');
+        var nameInput = row.querySelector('.item-product-name');
+        var priceEl = row.querySelector('.item-price');
+        var kdvEl = row.querySelector('.item-kdv');
+        var qtyEl = row.querySelector('.item-qty');
         if (idInput) idInput.value = String(product.id);
         if (nameInput) nameInput.value = '';
         if (priceEl) {
-            priceEl.value = fmtPrice(product.price);
-            priceEl.setAttribute('data-raw', String(product.price));
+            var isCustom = priceEl.dataset.priceCustom === '1';
+            var currentPrice = parseRowPrice(priceEl);
+            var shouldApplyCatalogPrice = options.forcePrice
+                || (!isCustom && (isNaN(currentPrice) || currentPrice <= 0));
+            if (shouldApplyCatalogPrice) {
+                priceEl.value = fmtPrice(product.price);
+                priceEl.setAttribute('data-raw', String(product.price));
+                delete priceEl.dataset.priceCustom;
+            }
+            syncProductSelectLabel(row, product);
         }
         if (kdvEl) kdvEl.value = product.kdv ?? 10;
         if (qtyEl && (!qtyEl.value || parseInt(qtyEl.value, 10) < 1)) qtyEl.value = '1';
@@ -182,9 +267,13 @@
                 },
             },
             onItemAdd: function (value) {
+                var priceEl = row.querySelector('.item-price');
+                if (priceEl) {
+                    delete priceEl.dataset.priceCustom;
+                }
                 const product = getSaleProduct(value);
                 if (product) {
-                    applyProductToRow(row, product);
+                    applyProductToRow(row, product, { forcePrice: true });
                     if (idInput) idInput.value = String(product.id);
                     if (nameInput) nameInput.value = '';
                 } else {
@@ -218,6 +307,7 @@
         });
 
         window.salesProductSelects[rowIdx] = ts;
+        bindPriceInput(row);
         return ts;
     }
 
@@ -229,5 +319,7 @@
     window.getSaleProduct = getSaleProduct;
     window.initSaleProductSelect = initSaleProductSelect;
     window.seedSaleProducts = seedSaleProducts;
+    window.applySaleProductToRow = applyProductToRow;
+    window.syncSaleProductSelectLabel = syncProductSelectLabel;
     window.saleProductRegistry = registry;
 })();

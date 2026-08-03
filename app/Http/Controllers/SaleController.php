@@ -476,6 +476,25 @@ class SaleController extends Controller
         return redirect()->route('sales.show', $sale)->with('success', $message);
     }
 
+    public function convertToQuote(Sale $sale)
+    {
+        try {
+            $quote = $this->saleService->createQuoteFromSale($sale->id);
+            $this->auditService->logAction('sale', $sale->id, 'convert_to_quote', [
+                'saleNumber' => $sale->saleNumber,
+                'quoteNumber' => $quote->quoteNumber,
+            ]);
+            $this->auditService->logCreate('quote', $quote->id, [
+                'quoteNumber' => $quote->quoteNumber,
+                'fromSaleNumber' => $sale->saleNumber,
+            ]);
+
+            return redirect()->route('quotes.show', $quote)->with('success', 'Satış teklife dönüştürüldü: ' . $quote->quoteNumber);
+        } catch (\RuntimeException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
     public function shipmentPdf(Sale $sale)
     {
         $sale = $this->saleService->find($sale->id);
