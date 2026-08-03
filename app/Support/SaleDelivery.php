@@ -105,13 +105,29 @@ class SaleDelivery
         };
     }
 
+    public static function numberClassFor(Sale $sale): string
+    {
+        if ($sale->isCancelled ?? false) {
+            return 'text-neutral-500 dark:text-neutral-400 line-through';
+        }
+
+        if ($sale->needsFinalMeasurement ?? false) {
+            return self::numberClass(self::FINAL_MEASUREMENT);
+        }
+
+        return self::numberClass(self::currentStatus($sale));
+    }
+
+    /** Satış listesinde sipariş numarası rengi — her teslimat durumu farklı. */
     public static function numberClass(?string $status = null): string
     {
         return match ($status) {
+            self::FINAL_MEASUREMENT => 'text-amber-600 dark:text-amber-400',
             self::DELIVERED => 'text-indigo-600 dark:text-indigo-400',
-            self::SSH => 'text-amber-600 dark:text-amber-500',
+            self::SSH => 'text-orange-600 dark:text-orange-400',
             self::IN_PRODUCTION => 'text-violet-600 dark:text-violet-400',
             self::IN_DISCUSSION => 'text-sky-600 dark:text-sky-400',
+            self::PENDING => 'text-teal-700 dark:text-teal-400',
             default => 'text-neutral-900 dark:text-neutral-100',
         };
     }

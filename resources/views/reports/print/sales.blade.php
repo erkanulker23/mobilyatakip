@@ -14,6 +14,7 @@
             'documentDate' => now(),
         ])
         @include('reports.partials.sales-table', ['print' => true])
+        @include('partials.print-document-footer', ['documentRef' => 'Satış Raporu · ' . $printSubtitle, 'footerNote' => null])
         </div>
     </div>
 </div>

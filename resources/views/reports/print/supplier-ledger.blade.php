@@ -22,6 +22,7 @@
                 @endforeach
             </tbody>
         </table>
+        @include('partials.print-document-footer', ['documentRef' => 'Tedarikçi Cari', 'footerNote' => null])
         </div>
     </div>
 </div>

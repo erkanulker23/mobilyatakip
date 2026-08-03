@@ -38,8 +38,10 @@ class SaleDocument
             'paidAmountLabel' => 'Kapora / Ödenen',
             'paymentStatus' => CustomerBalance::saleStatus($sale),
             'notes' => $sale->notes,
+            'showSignatures' => true,
+            'footerNote' => 'Sipariş fişi — fiyatlar KDV dahil/hariç bilgisi toplam satırında belirtilmiştir.',
             'documentNotice' => ($sale->needsFinalMeasurement ?? false)
-                ? '<strong>KESİN ÖLÇÜYE GİDİLECEK</strong> — Bu sipariş için saha ölçüsü alınacaktır. Üretim ve teslimat kesin ölçü sonrası planlanır.'
+                ? '<strong>KESİN ÖLÇÜ BEKLİYOR</strong> — Bu sipariş için saha ölçüsü alınacaktır. Üretim ve teslimat kesin ölçü sonrası planlanır.'
                 : null,
         ];
     }
@@ -118,22 +120,26 @@ class SaleDocument
 
     public static function extraInfoHtml(Sale $sale): string
     {
-        $parts = [];
+        $rows = [];
+
         if ($sale->dueDate) {
-            $parts[] = '<p class="text-sm text-slate-600"><strong>Tahmini Teslim:</strong> '
-                . $sale->dueDate->format('d.m.Y') . '</p>';
+            $rows[] = ['Tahmini Teslim', $sale->dueDate->format('d.m.Y')];
         }
         if ($sale->personnel) {
-            $parts[] = '<p class="text-sm text-slate-600">Satış Temsilcisi: '
-                . e($sale->personnel->name) . '</p>';
+            $rows[] = ['Satış Temsilcisi', $sale->personnel->name];
         }
         if ($sale->needsFinalMeasurement ?? false) {
-            $parts[] = '<p class="text-sm font-semibold text-amber-800"><strong>Kesin ölçü:</strong> Evet — saha ölçüsü alınacak</p>';
+            $rows[] = ['Kesin Ölçü', 'Evet — saha ölçüsü alınacak'];
         }
-        $paymentStatus = CustomerBalance::saleStatus($sale);
-        $parts[] = '<p class="text-sm text-slate-600"><strong>Ödeme Durumu:</strong> '
-            . e($paymentStatus['label']) . ' — ' . e($paymentStatus['description']) . '</p>';
 
-        return implode('', $parts);
+        $paymentStatus = CustomerBalance::saleStatus($sale);
+        $rows[] = ['Ödeme Durumu', $paymentStatus['label'] . ' (' . $paymentStatus['description'] . ')'];
+
+        $html = '<div class="print-kv-list">';
+        foreach ($rows as [$label, $value]) {
+            $html .= '<div class="print-kv-row"><span class="print-kv-label">' . e($label) . '</span><span class="print-kv-value">' . e($value) . '</span></div>';
+        }
+
+        return $html . '</div>';
     }
 }

@@ -1,5 +1,13 @@
-@php $company = \App\Models\Company::first(); @endphp
-<div class="print-document print-document--fit card overflow-hidden print:shadow-none print:border-0" id="invoice-document" role="document" aria-label="Fatura belgesi">
+@php
+    $company = \App\Models\Company::first();
+    $itemCount = count($items ?? []);
+    $compactTable = $itemCount > 6;
+    $kdvIncludedDoc = $kdvIncluded ?? true;
+    $displayKdvDetails = isset($kdvIncluded) ? !($kdvIncluded ?? true) : ($showKdv ?? false);
+    $displaySubtotal = !$kdvIncludedDoc && isset($subtotal);
+    $footerNote = $footerNote ?? null;
+@endphp
+<div class="print-document print-document--fit {{ $compactTable ? 'print-document--compact' : '' }} card overflow-hidden print:shadow-none print:border-0" id="invoice-document" role="document" aria-label="Fatura belgesi">
     <div class="print-fit-target">
         <div class="print-doc-inner">
             @include('partials.print-brand-header-sheet', [
@@ -20,37 +28,33 @@
                     <p class="print-label">{{ $partyLabel ?? 'Alıcı' }}</p>
                     <p class="print-party-name">{{ $partyName ?? '-' }}</p>
                     @if(isset($partyAddress) && $partyAddress)<p class="print-muted mt-1">{{ $partyAddress }}</p>@endif
-                    @if(isset($partyPhone) && $partyPhone)<p class="print-muted mt-1">{{ $partyPhone }}</p>@endif
+                    @if(isset($partyPhone) && $partyPhone)<p class="print-muted mt-1">Tel: {{ $partyPhone }}</p>@endif
                     @if(isset($partyEmail) && $partyEmail)<p class="print-muted">{{ $partyEmail }}</p>@endif
                     @if(isset($partyTax) && $partyTax)<p class="print-muted">Vergi: {{ $partyTax }}</p>@endif
                 </div>
                 @if(isset($extraInfo) && $extraInfo)
                 <div class="print-card print-card--meta">
+                    <p class="print-label">Sipariş Bilgileri</p>
                     {!! $extraInfo !!}
                 </div>
                 @endif
             </div>
 
-            @php
-                $kdvIncludedDoc = $kdvIncluded ?? true;
-                $displayKdvDetails = isset($kdvIncluded) ? !($kdvIncluded ?? true) : ($showKdv ?? false);
-                $displaySubtotal = !$kdvIncludedDoc && isset($subtotal);
-            @endphp
             <div class="print-section-lg print-items-table">
-                <table class="print-table">
+                <table class="print-table {{ $compactTable ? 'print-table--compact' : '' }}">
                     <thead>
                         <tr>
                             <th class="text-left print-col-no">#</th>
                             <th class="text-left print-col-name">Ürün / Açıklama</th>
                             @if(isset($showListPrice) && $showListPrice)
-                            <th class="text-right">Liste fiyatı</th>
-                            <th class="text-right">İskontolu fiyat</th>
+                            <th class="text-right">Liste</th>
+                            <th class="text-right">İskontolu</th>
                             @else
                             <th class="text-right print-col-price">Birim Fiyat</th>
                             @endif
                             <th class="text-center print-col-qty">Adet</th>
                             @if($displayKdvDetails)
-                            <th class="text-right print-col-kdv">KDV %</th>
+                            <th class="text-right print-col-kdv">KDV</th>
                             @endif
                             <th class="text-right print-col-total">Toplam</th>
                         </tr>
@@ -101,6 +105,12 @@
                     <span>-{{ number_format($discount ?? 0, 0, ',', '.') }} ₺</span>
                 </div>
                 @endif
+                @if($kdvIncludedDoc)
+                <div class="print-totals-row">
+                    <span>KDV</span>
+                    <span>Dahil</span>
+                </div>
+                @endif
                 <div class="print-totals-grand">
                     <span>Genel Toplam</span>
                     <span>{{ number_format($grandTotal ?? 0, 0, ',', '.') }} ₺</span>
@@ -118,7 +128,7 @@
                 @if(isset($grandTotal))
                 @php $docPaymentStatus = $paymentStatus ?? \App\Support\CustomerBalance::statusFromTotals((float) $grandTotal, (float) ($paidAmount ?? 0)); @endphp
                 <div class="print-totals-row print-totals-row--status">
-                    <span>Durum</span>
+                    <span>Ödeme Durumu</span>
                     <span>@include('partials.payment-status-badge', ['status' => $docPaymentStatus])</span>
                 </div>
                 @endif
@@ -130,6 +140,26 @@
                 <p class="whitespace-pre-wrap">{{ $notes }}</p>
             </div>
             @endif
+
+            @if($showSignatures ?? false)
+            <div class="print-signatures print-signatures--compact">
+                <div class="grid grid-cols-2 gap-8">
+                    <div>
+                        <p class="print-label">Satış Temsilcisi</p>
+                        <div class="sig-line">Ad Soyad / İmza</div>
+                    </div>
+                    <div>
+                        <p class="print-label">Müşteri Onayı</p>
+                        <div class="sig-line">Ad Soyad / İmza</div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            @include('partials.print-document-footer', [
+                'documentRef' => ($documentTitle ?? 'Belge') . ' · ' . ($documentNumber ?? ''),
+                'footerNote' => $footerNote,
+            ])
         </div>
     </div>
 </div>

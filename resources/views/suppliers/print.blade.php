@@ -91,6 +91,11 @@
                     </tbody>
                 </table>
             </div>
+
+            @include('partials.print-document-footer', [
+                'documentRef' => 'Tedarikçi Ekstre · ' . $supplier->name,
+                'footerNote' => 'Tedarikçi cari ekstresi — bilgilendirme amaçlıdır.',
+            ])
         </div>
     </div>
 </div>

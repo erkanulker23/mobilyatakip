@@ -50,9 +50,10 @@
             </div>
             @endif
 
-            <div class="print-footer-note">
-                <p>Bu belge tahsilat makbuzu olup {{ now()->format('d.m.Y H:i') }} tarihinde düzenlenmiştir.</p>
-            </div>
+            @include('partials.print-document-footer', [
+                'documentRef' => 'Tahsilat · ' . $makbuzNo,
+                'footerNote' => 'Tahsilat makbuzu — ödeme alındı belgesidir.',
+            ])
         </div>
     </div>
 </div>

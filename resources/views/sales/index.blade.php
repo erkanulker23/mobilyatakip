@@ -144,9 +144,7 @@
                     $saleStatus = \App\Support\CustomerBalance::saleStatus($s);
                     $orderStatus = \App\Support\SaleDelivery::currentStatus($s);
                     $remaining = \App\Support\CustomerBalance::saleRemaining($s);
-                    $saleNumberClass = ($s->isCancelled ?? false)
-                        ? 'text-neutral-500 dark:text-neutral-400 line-through'
-                        : \App\Support\SaleDelivery::numberClass($orderStatus);
+                    $saleNumberClass = \App\Support\SaleDelivery::numberClassFor($s);
                     $daysLeft = $s->dueDate ? (int) now()->startOfDay()->diffInDays($s->dueDate, false) : null;
                 @endphp
                 <tr class="border-b border-neutral-50 dark:border-neutral-800/60 hover:bg-neutral-50/50 dark:hover:bg-neutral-900/40 transition-colors {{ ($s->isCancelled ?? false) ? 'opacity-60 bg-slate-50 dark:bg-slate-800/30' : '' }}">

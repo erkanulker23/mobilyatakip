@@ -210,7 +210,7 @@ class CustomerController extends Controller
 
     public function show(Customer $customer)
     {
-        $customer->load(['quotes', 'sales.items.product', 'payments.sale', 'serviceTickets.sale', 'city', 'district']);
+        $customer->load(['quotes', 'sales', 'payments.sale', 'serviceTickets.sale', 'city', 'district']);
 
         $serviceTickets = \App\Models\ServiceTicket::query()
             ->with('sale')

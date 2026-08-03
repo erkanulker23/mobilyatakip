@@ -5,12 +5,6 @@
     $totalSales = $customer->sales->where('isCancelled', false)->sum('grandTotal');
     $totalPaid = $customer->payments->sum('amount');
     $customerBalance = \App\Support\CustomerBalance::customerStatus((float) $totalSales, (float) $totalPaid);
-    $soldProducts = collect();
-    foreach ($customer->sales->where('isCancelled', false) as $sale) {
-        foreach ($sale->items ?? [] as $item) {
-            if ($item->product) $soldProducts->push(['product' => $item->product->name, 'quantity' => $item->quantity, 'sale' => $sale->saleNumber, 'saleId' => $sale->id]);
-        }
-    }
 @endphp
 
 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
@@ -157,25 +151,6 @@
                             <td class="table-td" colspan="2"></td>
                         </tr>
                     </tfoot>
-                </table>
-            </div>
-        </div>
-        @endif
-        @if($soldProducts->count() > 0)
-        <div class="card overflow-hidden">
-            <div class="card-header">Satın Alınan Ürünler</div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full">
-                    <thead><tr class="border-b border-neutral-100 dark:border-slate-700"><th class="table-th">Ürün</th><th class="table-th text-right">Adet</th><th class="table-th">Satış No</th></tr></thead>
-                    <tbody>
-                        @foreach($soldProducts->take(10) as $sp)
-                        <tr class="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
-                            <td class="table-td font-medium">{{ $sp['product'] ?? '—' }}</td>
-                            <td class="table-td text-right">{{ $sp['quantity'] ?? 0 }}</td>
-                            <td class="table-td">@if(!empty($sp['saleId']))<a href="{{ route('sales.show', $sp['saleId']) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">{{ $sp['sale'] ?? '—' }}</a>@else{{ $sp['sale'] ?? '—' }}@endif</td>
-                        </tr>
-                        @endforeach
-                    </tbody>
                 </table>
             </div>
         </div>

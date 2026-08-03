@@ -1,12 +1,17 @@
 :root {
-    --print-ink: #171717;
-    --print-muted: #525252;
-    --print-border: #e5e5e5;
-    --print-border-strong: #a3a3a3;
-    --print-surface: #fafafa;
-    --print-head-bg: #171717;
+    --print-ink: #111827;
+    --print-muted: #4b5563;
+    --print-faint: #6b7280;
+    --print-border: #e5e7eb;
+    --print-border-strong: #9ca3af;
+    --print-surface: #f9fafb;
+    --print-head-bg: #111827;
     --print-head-text: #ffffff;
-    --print-accent: #171717;
+    --print-accent: #111827;
+    --print-accent-soft: #d1d5db;
+    --print-space: 14px;
+    --print-space-sm: 10px;
+    --print-space-xs: 6px;
 }
 
 .print-document,
@@ -15,11 +20,19 @@
     print-color-adjust: exact;
 }
 
-/* ── Tipografi ── */
+/* ── Belge kabuğu ── */
 .print-document {
     color: var(--print-ink);
-    font-size: 13px;
-    line-height: 1.5;
+    font-size: 12.5px;
+    line-height: 1.45;
+    background: #fff;
+}
+
+.print-document .print-doc-inner {
+    padding: 22px 26px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
 .print-document :where(p, li, dd, dt, span, div, label, strong, em, a, td):not(.print-table thead *) {
@@ -31,21 +44,23 @@
 }
 
 .print-label {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--print-muted) !important;
     margin-bottom: 6px;
 }
 
 .print-section-title {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--print-muted) !important;
     margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--print-border);
 }
 
 .print-muted { color: var(--print-muted) !important; }
@@ -71,106 +86,114 @@
     color: var(--print-ink) !important;
 }
 
-/* ── Başlık ── */
+/* ── Kurumsal başlık ── */
 .print-brand-header {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 20px;
-    padding-bottom: 16px;
-    margin-bottom: 16px;
-    border-bottom: 1px solid var(--print-border-strong);
+    gap: 18px;
+    padding-bottom: 14px;
+    margin-bottom: 14px;
+    border-bottom: 2px solid var(--print-ink);
+}
+
+.print-brand-header__company {
+    flex: 1;
+    min-width: 0;
 }
 
 .print-brand-logo {
-    height: 48px;
-    max-height: 48px;
+    height: 46px;
+    max-height: 46px;
     width: auto;
-    max-width: 160px;
+    max-width: 150px;
     margin-bottom: 8px;
     object-fit: contain;
     object-position: left;
 }
 
 .print-brand-name {
-    font-family: 'Cormorant Garamond', Georgia, serif;
-    font-size: 17px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
+    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--print-ink) !important;
-    line-height: 1.2;
+    line-height: 1.15;
 }
 
 .print-brand-meta {
-    font-size: 11px;
-    line-height: 1.45;
+    font-size: 10.5px;
+    line-height: 1.4;
     color: var(--print-muted) !important;
     margin-top: 4px;
+    max-width: 34rem;
 }
 
 .print-brand-contacts {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px 12px;
+    gap: 2px 10px;
     margin-top: 6px;
-    font-size: 11px;
-    color: var(--print-muted) !important;
+    font-size: 10.5px;
+    color: var(--print-faint) !important;
 }
 
 .print-doc-meta {
     flex-shrink: 0;
-    max-width: 44%;
+    width: min(100%, 220px);
     text-align: right;
     background: var(--print-surface);
     border: 1px solid var(--print-border);
-    padding: 12px 16px;
+    border-top: 3px solid var(--print-ink);
+    padding: 12px 14px;
 }
 
 .print-doc-type {
     display: block;
-    font-size: 9px;
-    font-weight: 600;
-    letter-spacing: 0.14em;
+    font-size: 8.5px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--print-muted) !important;
 }
 
 .print-doc-no {
     display: block;
-    font-size: 22px;
-    font-weight: 700;
-    line-height: 1.1;
+    font-size: 21px;
+    font-weight: 800;
+    line-height: 1.05;
     color: var(--print-ink) !important;
     margin-top: 4px;
+    letter-spacing: -0.02em;
 }
 
 .print-doc-sub {
     display: block;
-    font-size: 11px;
+    font-size: 10.5px;
     color: var(--print-muted) !important;
-    margin-top: 6px;
-    line-height: 1.4;
+    margin-top: 5px;
+    line-height: 1.35;
 }
 
-/* ── Bilgi kartları ── */
+/* ── Bilgi alanları ── */
 .print-meta-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
 }
 
 .print-card {
     background: var(--print-surface);
     border: 1px solid var(--print-border);
-    padding: 12px 14px;
+    padding: 11px 13px;
 }
 
 .print-card--meta p {
-    font-size: 12px;
-    line-height: 1.45;
+    font-size: 11.5px;
+    line-height: 1.4;
     color: var(--print-muted) !important;
     margin-top: 4px;
 }
@@ -188,41 +211,69 @@
 .print-card p,
 .print-card dd,
 .print-card dt {
-    font-size: 12px;
-    line-height: 1.45;
+    font-size: 11.5px;
+    line-height: 1.4;
 }
 
 .print-card .print-party-name {
     font-size: 14px;
+    font-weight: 700;
+    color: var(--print-ink) !important;
+    line-height: 1.25;
+}
+
+.print-kv-list {
+    display: grid;
+    gap: 5px;
+}
+
+.print-kv-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    font-size: 11px;
+    line-height: 1.35;
+}
+
+.print-kv-label {
+    color: var(--print-muted) !important;
+    flex-shrink: 0;
+}
+
+.print-kv-value {
     font-weight: 600;
+    text-align: right;
     color: var(--print-ink) !important;
 }
 
 .print-info-banner {
     background: var(--print-surface) !important;
     border: 1px solid var(--print-border) !important;
-    border-left: 3px solid var(--print-accent) !important;
+    border-left: 4px solid var(--print-ink) !important;
     border-radius: 0 !important;
-    padding: 10px 14px !important;
-    font-size: 12px !important;
-    line-height: 1.45 !important;
+    padding: 9px 12px !important;
+    font-size: 11.5px !important;
+    line-height: 1.4 !important;
     color: var(--print-ink) !important;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
 }
 
 .print-highlight-box {
     border: 1px solid var(--print-border-strong);
     background: var(--print-surface);
-    padding: 16px 18px;
-    margin-bottom: 16px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    text-align: center;
 }
 
 .print-highlight-amount {
-    font-size: 24px;
-    font-weight: 700;
+    font-size: 26px;
+    font-weight: 800;
     color: var(--print-ink) !important;
-    line-height: 1.2;
+    line-height: 1.1;
     margin-top: 4px;
+    letter-spacing: -0.02em;
 }
 
 /* ── Tablo ── */
@@ -241,52 +292,59 @@
     background: var(--print-head-bg) !important;
     color: var(--print-head-text) !important;
     font-weight: 600;
-    font-size: 9px;
-    letter-spacing: 0.08em;
+    font-size: 8.5px;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
-    padding: 9px 10px !important;
+    padding: 8px 9px !important;
     border: none !important;
     vertical-align: middle;
 }
 
 .print-table tbody td {
     color: var(--print-ink) !important;
-    font-size: 12px;
-    padding: 8px 10px !important;
+    font-size: 11.5px;
+    padding: 7px 9px !important;
     vertical-align: top;
     border: none !important;
     border-bottom: 1px solid var(--print-border) !important;
     background: #fff !important;
+    word-wrap: break-word;
 }
 
 .print-table tbody tr:last-child td {
     border-bottom: 1px solid var(--print-border-strong) !important;
 }
 
-.print-table tbody tr:nth-child(even) td {
-    background: #fff !important;
-}
-
 .print-table tfoot td {
-    padding: 8px 10px !important;
-    font-size: 12px;
-    font-weight: 600;
-    border-top: 2px solid var(--print-border-strong) !important;
+    padding: 8px 9px !important;
+    font-size: 11.5px;
+    font-weight: 700;
+    border-top: 2px solid var(--print-ink) !important;
     background: var(--print-surface) !important;
     color: var(--print-ink) !important;
 }
 
-.print-col-no { width: 5%; }
+.print-table--compact thead th {
+    padding: 6px 7px !important;
+    font-size: 7.5px !important;
+}
+
+.print-table--compact tbody td {
+    padding: 4px 7px !important;
+    font-size: 10.5px !important;
+}
+
+.print-col-no { width: 4.5%; }
 .print-col-name { width: auto; word-break: break-word; }
-.print-col-price { width: 15%; white-space: nowrap; }
-.print-col-qty { width: 8%; }
-.print-col-kdv { width: 8%; }
-.print-col-total { width: 15%; white-space: nowrap; }
+.print-col-price { width: 14%; white-space: nowrap; }
+.print-col-qty { width: 7%; }
+.print-col-kdv { width: 7%; }
+.print-col-total { width: 14%; white-space: nowrap; }
 
 .item-description-list {
-    margin-top: 3px;
-    font-size: 10px;
-    line-height: 1.35;
+    margin-top: 2px;
+    font-size: 9.5px;
+    line-height: 1.3;
     color: var(--print-muted) !important;
 }
 
@@ -296,21 +354,22 @@
 
 /* ── Toplamlar ── */
 .print-totals-panel {
-    width: min(100%, 300px);
+    width: min(100%, 280px);
     margin-left: auto;
-    margin-top: 14px;
+    margin-top: 12px;
     background: var(--print-surface);
     border: 1px solid var(--print-border);
-    padding: 12px 14px;
+    border-top: 2px solid var(--print-ink);
+    padding: 11px 13px;
 }
 
 .print-totals-row {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    gap: 16px;
-    font-size: 12px;
-    padding: 3px 0;
+    gap: 14px;
+    font-size: 11.5px;
+    padding: 2px 0;
 }
 
 .print-totals-row span:first-child {
@@ -318,69 +377,107 @@
 }
 
 .print-totals-row span:last-child {
-    font-weight: 500;
+    font-weight: 600;
     text-align: right;
-    min-width: 100px;
+    min-width: 92px;
+    font-variant-numeric: tabular-nums;
 }
 
 .print-totals-grand {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    gap: 16px;
+    gap: 14px;
     margin-top: 8px;
-    padding-top: 10px;
-    border-top: 2px solid var(--print-ink);
-    font-size: 14px;
-    font-weight: 700;
+    padding-top: 9px;
+    border-top: 1px solid var(--print-border-strong);
+    font-size: 13.5px;
+    font-weight: 800;
 }
 
 .print-totals-grand span:last-child {
     text-align: right;
-    min-width: 100px;
+    min-width: 92px;
+    font-variant-numeric: tabular-nums;
 }
 
-.print-totals-row--after-grand {
-    margin-top: 8px;
-}
-
-.print-totals-row--status {
-    margin-top: 6px;
-}
+.print-totals-row--after-grand { margin-top: 7px; }
+.print-totals-row--status { margin-top: 5px; }
 
 /* ── Notlar & imza ── */
 .print-notes-block {
-    margin-top: 14px;
-    padding-top: 12px;
+    margin-top: 12px;
+    padding-top: 10px;
     border-top: 1px solid var(--print-border);
 }
 
 .print-notes-block p {
-    font-size: 12px;
-    line-height: 1.45;
+    font-size: 11.5px;
+    line-height: 1.4;
     color: var(--print-muted) !important;
 }
 
 .print-footer-note {
-    margin-top: 16px;
-    padding-top: 12px;
-    border-top: 1px solid var(--print-border);
-    font-size: 10px;
-    color: var(--print-muted) !important;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--print-border);
+    font-size: 9.5px;
+    color: var(--print-faint) !important;
+    line-height: 1.4;
 }
 
 .print-signatures {
     border-top: 1px solid var(--print-border-strong);
-    padding-top: 16px;
-    margin-top: 20px;
+    padding-top: 14px;
+    margin-top: 16px;
 }
 
 .print-signatures .sig-line {
     border-top: 1px solid var(--print-ink);
-    padding-top: 6px;
-    font-size: 11px;
+    padding-top: 5px;
+    font-size: 10px;
     color: var(--print-muted) !important;
-    margin-top: 48px;
+    margin-top: 42px;
+}
+
+.print-signatures--compact .sig-line {
+    margin-top: 32px;
+}
+
+.print-document-footer {
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid var(--print-border-strong);
+    font-size: 9px;
+    color: var(--print-faint) !important;
+    line-height: 1.45;
+}
+
+.print-document-footer__brand {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0;
+}
+
+.print-document-footer__name {
+    font-weight: 700;
+    color: var(--print-ink) !important;
+}
+
+.print-document-footer__sep {
+    margin: 0 5px;
+    opacity: 0.55;
+}
+
+.print-document-footer__meta {
+    margin-top: 3px;
+    font-variant-numeric: tabular-nums;
+}
+
+.print-document-footer__note {
+    margin-top: 6px;
+    font-style: italic;
 }
 
 /* ── Rozetler ── */
@@ -399,8 +496,9 @@
     border: 1px solid var(--print-border-strong) !important;
     color: var(--print-ink) !important;
     box-shadow: none !important;
-    font-size: 10px !important;
-    padding: 2px 8px !important;
+    font-size: 9.5px !important;
+    padding: 1px 7px !important;
+    border-radius: 999px !important;
 }
 
 .print-document table:not(.print-table) th,
@@ -409,32 +507,46 @@
     border-color: var(--print-border) !important;
 }
 
+.print-check-box {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid var(--print-border-strong);
+    vertical-align: middle;
+}
+
 /* ── Ekran önizleme ── */
 .print-document {
     border: 1px solid var(--print-border);
     border-radius: 0;
     max-width: 210mm;
     margin: 0 auto;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
 }
 
-.print-document .print-doc-inner {
-    padding: 20px 24px;
-}
-
-.print-section { margin-bottom: 14px; }
-.print-section-lg { margin-bottom: 16px; }
+.print-section { margin-bottom: 12px; }
+.print-section-lg { margin-bottom: 14px; }
 
 .print-fit-target {
     transform-origin: top left;
 }
 
+.print-document--compact {
+    font-size: 11.5px;
+}
+
+.print-document--compact .print-doc-inner {
+    padding: 16px 20px;
+}
+
 @media print {
     .print-document {
         border: none !important;
+        box-shadow: none !important;
         max-width: none !important;
         margin: 0 !important;
-        font-size: 10.5pt !important;
-        line-height: 1.4 !important;
+        font-size: 10pt !important;
+        line-height: 1.35 !important;
     }
 
     .print-document .print-doc-inner {
@@ -442,52 +554,61 @@
     }
 
     .print-brand-header {
-        padding-bottom: 12px !important;
-        margin-bottom: 12px !important;
-        gap: 16px !important;
+        padding-bottom: 10px !important;
+        margin-bottom: 10px !important;
+        gap: 14px !important;
     }
 
     .print-brand-logo {
-        max-height: 44px !important;
-        height: 44px !important;
+        max-height: 40px !important;
+        height: 40px !important;
     }
 
-    .print-brand-name { font-size: 14pt !important; }
-    .print-doc-no { font-size: 18pt !important; }
-    .print-doc-meta { padding: 10px 12px !important; }
+    .print-brand-name { font-size: 13.5pt !important; }
+    .print-doc-no { font-size: 16pt !important; }
+    .print-doc-meta { padding: 9px 11px !important; width: 48mm; }
 
     .print-meta-grid {
-        gap: 10px !important;
-        margin-bottom: 12px !important;
+        gap: 8px !important;
+        margin-bottom: 10px !important;
     }
 
-    .print-card { padding: 10px 12px !important; }
+    .print-card { padding: 8px 10px !important; }
 
     .print-info-banner {
-        padding: 8px 12px !important;
-        margin-bottom: 10px !important;
-        font-size: 10pt !important;
+        padding: 7px 10px !important;
+        margin-bottom: 8px !important;
+        font-size: 9.5pt !important;
     }
 
     .print-table thead th {
-        font-size: 7.5pt !important;
-        padding: 7px 8px !important;
+        font-size: 7pt !important;
+        padding: 6px 7px !important;
     }
 
     .print-table tbody td {
-        font-size: 10pt !important;
-        padding: 6px 8px !important;
+        font-size: 9.5pt !important;
+        padding: 5px 7px !important;
+    }
+
+    .print-table--compact tbody td {
+        font-size: 8.5pt !important;
+        padding: 3px 6px !important;
     }
 
     .print-totals-panel {
-        padding: 10px 12px !important;
-        margin-top: 10px !important;
+        padding: 8px 10px !important;
+        margin-top: 8px !important;
     }
 
-    .print-totals-grand { font-size: 12pt !important; }
+    .print-totals-grand { font-size: 11pt !important; }
+
+    .print-highlight-amount { font-size: 18pt !important; }
 
     .print-document--fit .print-totals-block,
-    .print-document--fit .print-totals-panel {
+    .print-document--fit .print-totals-panel,
+    .print-document--fit .print-document-footer,
+    .print-document--fit .print-signatures {
         break-inside: avoid;
         page-break-inside: avoid;
     }

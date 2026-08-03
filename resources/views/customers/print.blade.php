@@ -28,7 +28,7 @@
 
             <div class="print-section-lg">
                 <p class="print-section-title">Satışlar</p>
-                <table class="print-table">
+                <table class="print-table {{ $customer->sales->count() > 8 ? 'print-table--compact' : '' }}">
                     <thead>
                         <tr>
                             <th class="text-left">No</th>
@@ -58,7 +58,7 @@
 
             <div class="print-section">
                 <p class="print-section-title">Ödemeler</p>
-                <table class="print-table">
+                <table class="print-table {{ $customer->payments->count() > 8 ? 'print-table--compact' : '' }}">
                     <thead>
                         <tr>
                             <th class="text-left">Tarih</th>
@@ -78,6 +78,11 @@
                     </tbody>
                 </table>
             </div>
+
+            @include('partials.print-document-footer', [
+                'documentRef' => 'Müşteri Extresi · ' . $customer->name,
+                'footerNote' => 'Cari extre — borç/alacak özeti bilgilendirme amaçlıdır.',
+            ])
         </div>
     </div>
 </div>

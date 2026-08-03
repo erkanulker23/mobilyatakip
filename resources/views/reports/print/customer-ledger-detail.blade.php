@@ -11,6 +11,7 @@
             'documentSubtitle' => ($from || $to) ? (($from?->format('d.m.Y') ?? '…') . ' – ' . ($to?->format('d.m.Y') ?? '…')) : 'Tüm hareketler',
         ])
         @include('reports.partials.ledger-detail-table', ['print' => true])
+        @include('partials.print-document-footer', ['documentRef' => 'Cari Ekstre · ' . $customer->name, 'footerNote' => null])
         </div>
     </div>
 </div>

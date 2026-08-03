@@ -29,7 +29,7 @@
             <td class="table-td {{ $dueClass }}">{{ $s->dueDate?->format('d.m.Y') ?? '—' }}</td>
             <td class="table-td text-right font-medium">{{ number_format($s->grandTotal ?? 0, 0, ',', '.') }} ₺</td>
             <td class="table-td text-right text-emerald-600">{{ number_format($s->paidAmount ?? 0, 0, ',', '.') }} ₺</td>
-            <td class="table-td text-right {{ $remaining > 0 ? 'text-red-600 font-medium' : 'text-slate-600' }}">{{ number_format($remaining, 0, ',', '.') }} ₺</td>
+            <td class="table-td text-right {{ $remaining > 0 ? 'text-red-600 font-medium' : ($remaining < -0.005 ? 'text-blue-600 font-medium' : 'text-slate-600') }}">{{ number_format($remaining, 0, ',', '.') }} ₺</td>
             <td class="table-td">{{ $status['label'] ?? '—' }}</td>
             @if(!$print)
             <td class="table-td">
@@ -44,10 +44,15 @@
     @if($sales->isNotEmpty())
     <tfoot class="{{ $print ? '' : 'bg-slate-50 border-t-2 border-neutral-200' }}">
         <tr class="font-semibold">
-            <td class="table-td" colspan="5">Toplam ({{ $totals->count }} satış)</td>
-            <td class="table-td text-right">{{ number_format($totals->grandTotal, 0, ',', '.') }} ₺</td>
-            <td class="table-td text-right text-emerald-600">{{ number_format($totals->paidAmount, 0, ',', '.') }} ₺</td>
-            <td class="table-td text-right">{{ number_format($totals->remaining, 0, ',', '.') }} ₺</td>
+            <td class="table-td" colspan="5">
+                Dönem toplamı ({{ $totals->count }} satış)
+                @if(!$print)
+                <span class="block text-xs font-normal text-neutral-500 mt-0.5">Satış tarihine göre filtrelenir · tablodaki tüm satırların toplamı</span>
+                @endif
+            </td>
+            <td class="table-td text-right tabular-nums">{{ number_format($totals->grandTotal, 0, ',', '.') }} ₺</td>
+            <td class="table-td text-right text-emerald-600 tabular-nums">{{ number_format($totals->paidAmount, 0, ',', '.') }} ₺</td>
+            <td class="table-td text-right tabular-nums {{ $totals->remaining > 0 ? 'text-red-600' : '' }}">{{ number_format($totals->remaining, 0, ',', '.') }} ₺</td>
             <td class="table-td" colspan="{{ $print ? 1 : 2 }}"></td>
         </tr>
     </tfoot>

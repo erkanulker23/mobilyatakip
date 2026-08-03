@@ -20,7 +20,7 @@
 
         @page {
             size: A4 portrait;
-            margin: 12mm;
+            margin: 10mm;
         }
     </style>
     @stack('print-styles')
@@ -64,18 +64,17 @@
                 fitTarget = target;
 
                 var mmToPx = 96 / 25.4;
-                var pageHeight = 258 * mmToPx;
-                var pageWidth = 186 * mmToPx;
+                var pageHeight = 277 * mmToPx;
+                var pageWidth = 190 * mmToPx;
                 var height = target.scrollHeight;
                 var width = target.scrollWidth;
 
-                // Çok sayfalı belgelerde ölçekleme yapma; doğal sayfalama kullan
-                if (height > pageHeight * 1.08) {
+                if (height > pageHeight * 1.06) {
                     return;
                 }
 
                 var scale = Math.min(1, pageHeight / height, pageWidth / width);
-                scale = Math.max(0.88, scale);
+                scale = Math.max(0.74, scale);
 
                 if (scale < 0.995) {
                     target.style.transformOrigin = 'top left';

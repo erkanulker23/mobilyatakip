@@ -67,6 +67,11 @@
             <div class="print-footer-note">
                 <p>Bu belge {{ now()->format('d.m.Y H:i') }} tarihinde oluşturulmuştur. Tahsilat tarihleri, ödemenin alındığı günü gösterir.</p>
             </div>
+
+            @include('partials.print-document-footer', [
+                'documentRef' => 'Tahsilat · ' . $customer->name,
+                'footerNote' => null,
+            ])
         </div>
     </div>
 </div>

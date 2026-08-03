@@ -100,18 +100,21 @@
             </div>
             @endif
 
-            <div class="print-signatures grid grid-cols-2 gap-8">
+            <div class="print-signatures print-signatures--compact grid grid-cols-2 gap-8">
                 <div>
-                    <p class="print-label mb-10">Servis / Sevkiyat Görevlisi</p>
+                    <p class="print-label">Servis / Sevkiyat Görevlisi</p>
                     <div class="sig-line">Ad Soyad / İmza / Tarih</div>
                 </div>
                 <div>
-                    <p class="print-label mb-10">Müşteri Onayı</p>
+                    <p class="print-label">Müşteri Onayı</p>
                     <div class="sig-line">Ad Soyad / İmza / Tarih</div>
                 </div>
             </div>
 
-            <p class="print-footer-note text-center">{{ $serviceTicket->ticketNumber }} · {{ now()->format('d.m.Y H:i') }} · {{ \App\Models\Company::first()?->name }}</p>
+            @include('partials.print-document-footer', [
+                'documentRef' => $serviceTicket->ticketNumber,
+                'footerNote' => 'SSH sevkiyat formu — saha ekibine verilir.',
+            ])
         </div>
     </div>
 </div>

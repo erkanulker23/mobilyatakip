@@ -11,6 +11,7 @@
             'documentDate' => now(),
         ])
         @include('reports.partials.kdv-content', ['print' => true])
+        @include('partials.print-document-footer', ['documentRef' => 'KDV · ' . $periodLabel, 'footerNote' => null])
         </div>
     </div>
 </div>

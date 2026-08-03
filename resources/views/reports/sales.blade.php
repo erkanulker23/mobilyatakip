@@ -29,6 +29,26 @@
     </form>
 </div>
 
+@if($sales->isNotEmpty())
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    <div class="card p-4">
+        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Toplam ciro</p>
+        <p class="text-2xl font-semibold text-neutral-900 dark:text-neutral-100 mt-1 tabular-nums">{{ number_format($totals->grandTotal, 0, ',', '.') }} ₺</p>
+        <p class="text-xs text-neutral-400 mt-1">{{ $totals->count }} satış · {{ $periodLabel }}</p>
+    </div>
+    <div class="card p-4">
+        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Tahsil edilen</p>
+        <p class="text-2xl font-semibold text-emerald-600 mt-1 tabular-nums">{{ number_format($totals->paidAmount, 0, ',', '.') }} ₺</p>
+        <p class="text-xs text-neutral-400 mt-1">Siparişe işlenen ödemeler</p>
+    </div>
+    <div class="card p-4">
+        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Kalan borç</p>
+        <p class="text-2xl font-semibold {{ $totals->remaining > 0 ? 'text-red-600' : 'text-neutral-900 dark:text-neutral-100' }} mt-1 tabular-nums">{{ number_format($totals->remaining, 0, ',', '.') }} ₺</p>
+        <p class="text-xs text-neutral-400 mt-1">{{ number_format($totals->paidAmount + $totals->remaining, 0, ',', '.') }} ₺ = tahsil + kalan</p>
+    </div>
+</div>
+@endif
+
 <div class="card overflow-hidden">
     @include('reports.partials.sales-table')
 </div>

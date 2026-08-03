@@ -17,6 +17,7 @@
             'documentSubtitle' => $printSubtitle,
         ])
         @include('reports.partials.upcoming-due-content', ['print' => true, 'forShipment' => true])
+        @include('partials.print-document-footer', ['documentRef' => 'Sevkiyat Termin · ' . $days . ' gün', 'footerNote' => 'Fiyat bilgisi içermez.'])
         </div>
     </div>
 </div>
