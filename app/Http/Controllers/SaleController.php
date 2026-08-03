@@ -230,12 +230,10 @@ class SaleController extends Controller
         if ($request->filled('to')) {
             $q->whereDate('saleDate', '<=', $request->to);
         }
-        if ($request->filled('needsFinalMeasurement')) {
-            $q->where('needsFinalMeasurement', $request->needsFinalMeasurement === '1');
-        }
         if ($request->filled('deliveryStatus')) {
-            $q->where('isCancelled', false);
-            if (in_array($request->deliveryStatus, \App\Support\SaleDelivery::statuses(), true)) {
+            if ($request->deliveryStatus === \App\Support\SaleDelivery::FINAL_MEASUREMENT) {
+                $q->where('needsFinalMeasurement', true);
+            } elseif (in_array($request->deliveryStatus, \App\Support\SaleDelivery::statuses(), true)) {
                 $q->where('orderStatus', $request->deliveryStatus);
             }
         }

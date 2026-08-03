@@ -289,6 +289,69 @@
         </div>
     </div>
 
+    {{-- Kesin ölçüye gidilecek müşteriler --}}
+    <div id="kesin-olcu" class="card overflow-hidden scroll-mt-24">
+        <div class="card-header flex items-center justify-between gap-3 flex-wrap">
+            <span class="inline-flex items-center gap-2">
+                <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+                </span>
+                Kesin Ölçüye Gidilecek Müşteriler
+            </span>
+            <a href="{{ route('sales.index', ['deliveryStatus' => \App\Support\SaleDelivery::FINAL_MEASUREMENT]) }}" class="text-sm font-normal text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors">Tümünü Gör →</a>
+        </div>
+        <div class="overflow-x-auto">
+            @if(($finalMeasurementSales ?? collect())->isEmpty())
+                <div class="p-12 text-center">
+                    <p class="text-neutral-500 text-sm">Kesin ölçü bekleyen sipariş yok.</p>
+                </div>
+            @else
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="border-b border-neutral-100 dark:border-slate-700">
+                            <th class="table-th">Sipariş No</th>
+                            <th class="table-th">Müşteri</th>
+                            <th class="table-th col-hide-mobile">Telefon</th>
+                            <th class="table-th col-hide-mobile">Adres</th>
+                            <th class="table-th col-hide-mobile">Satışı Yapan</th>
+                            <th class="table-th">Sipariş Tarihi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($finalMeasurementSales as $s)
+                        <tr class="border-b border-neutral-50 dark:border-slate-700/50 hover:bg-neutral-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                            <td class="table-td min-w-[8.5rem]">
+                                <a href="{{ route('sales.show', $s) }}" class="font-medium text-amber-700 dark:text-amber-400 hover:underline">{{ $s->saleNumber }}</a>
+                                <span class="block mt-1 md:hidden text-xs text-neutral-500">{{ $s->customer?->name ?? '—' }}</span>
+                                @if($s->customer?->phone)
+                                <a href="tel:{{ preg_replace('/\s+/', '', $s->customer->phone) }}" class="block mt-0.5 text-xs text-neutral-500 md:hidden">{{ $s->customer->phone }}</a>
+                                @endif
+                            </td>
+                            <td class="table-td col-hide-mobile">
+                                @if($s->customer)
+                                <a href="{{ route('customers.show', $s->customer) }}" class="font-medium text-neutral-900 dark:text-neutral-100 hover:underline">{{ $s->customer->name }}</a>
+                                @else
+                                —
+                                @endif
+                            </td>
+                            <td class="table-td col-hide-mobile cell-phone">
+                                @if($s->customer?->phone)
+                                <a href="tel:{{ preg_replace('/\s+/', '', $s->customer->phone) }}" class="text-neutral-700 dark:text-slate-300 hover:underline">{{ $s->customer->phone }}</a>
+                                @else
+                                —
+                                @endif
+                            </td>
+                            <td class="table-td text-neutral-600 dark:text-slate-400 max-w-xs truncate col-hide-mobile">{{ $s->customer?->full_address ?: '—' }}</td>
+                            <td class="table-td text-neutral-600 col-hide-mobile">{{ $s->personnel?->name ?? '—' }}</td>
+                            <td class="table-td whitespace-nowrap">{{ $s->saleDate?->format('d.m.Y') ?? '—' }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @endif
+        </div>
+    </div>
+
     {{-- SSH süresi yaklaşan formlar --}}
     <div class="card overflow-hidden">
         <div class="card-header flex items-center justify-between">

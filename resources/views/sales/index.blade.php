@@ -6,60 +6,52 @@
         <h1 class="page-title">Satışlar</h1>
         <p class="page-desc">Satış faturaları ve tahsilat takibi</p>
     </div>
-    <a href="{{ route('sales.create') }}" class="btn-primary">
+    <a href="{{ route('sales.create') }}" class="btn-primary w-full sm:w-auto justify-center">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
         Satış Oluştur
     </a>
 </div>
 
 <div class="card overflow-hidden" x-data="salesBulk" data-sale-ids='{{ json_encode($saleIds ?? []) }}'>
-    <div class="p-4 border-b border-neutral-100">
-        <form method="GET" class="flex flex-wrap gap-4 items-end">
-            <div class="min-w-[180px] flex-1">
+    <div class="p-4 border-b border-neutral-100 dark:border-slate-700">
+        <form method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-end">
+            <div class="sm:col-span-2 xl:col-span-2">
                 <label class="form-label">Ara (fatura no, müşteri)</label>
-                <input type="text" name="search" placeholder="Ara..." value="{{ request('search') }}" class="form-input">
+                <input type="text" name="search" placeholder="Ara..." value="{{ request('search') }}" class="form-input w-full">
             </div>
-            <div class="min-w-[160px]">
+            <div>
                 <label class="form-label">Müşteri</label>
-                <select name="customerId" class="form-select">
+                <select name="customerId" class="form-select w-full">
                     <option value="">Tümü</option>
                     @foreach($customers ?? [] as $c)
                     <option value="{{ $c->id }}" {{ request('customerId') == $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
                     @endforeach
                 </select>
             </div>
-            <div class="min-w-[160px]">
-                <label class="form-label">Kesin Ölçü</label>
-                <select name="needsFinalMeasurement" class="form-select">
-                    <option value="">Tümü</option>
-                    <option value="1" {{ request('needsFinalMeasurement') === '1' ? 'selected' : '' }}>Kesin ölçüye gidilecek</option>
-                    <option value="0" {{ request('needsFinalMeasurement') === '0' ? 'selected' : '' }}>Kesin ölçü yok</option>
-                </select>
-            </div>
-            <div class="min-w-[160px]">
+            <div>
                 <label class="form-label">Teslim</label>
-                <select name="deliveryStatus" class="form-select">
+                <select name="deliveryStatus" class="form-select w-full">
                     <option value="">Tümü</option>
-                    @foreach(\App\Support\SaleDelivery::options() as $value => $label)
+                    @foreach(\App\Support\SaleDelivery::filterOptions() as $value => $label)
                     <option value="{{ $value }}" {{ request('deliveryStatus') === $value ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
             </div>
-            <div class="min-w-[130px]">
+            <div>
                 <label class="form-label">Başlangıç</label>
-                <input type="date" name="from" value="{{ request('from') }}" class="form-input">
+                <input type="date" name="from" value="{{ request('from') }}" class="form-input w-full">
             </div>
-            <div class="min-w-[130px]">
+            <div>
                 <label class="form-label">Bitiş</label>
-                <input type="date" name="to" value="{{ request('to') }}" class="form-input">
+                <input type="date" name="to" value="{{ request('to') }}" class="form-input w-full">
             </div>
-            <div class="flex gap-2">
-                <button type="submit" class="btn-primary">Filtrele</button>
-                <a href="{{ route('sales.index') }}" class="btn-secondary">Temizle</a>
+            <div class="flex flex-col sm:flex-row gap-2 sm:col-span-2 xl:col-span-4">
+                <button type="submit" class="btn-primary w-full sm:w-auto justify-center">Filtrele</button>
+                <a href="{{ route('sales.index') }}" class="btn-secondary w-full sm:w-auto justify-center">Temizle</a>
             </div>
         </form>
     </div>
-    <div class="px-5 py-3 border-b border-neutral-100 flex items-center justify-between gap-4 flex-wrap" x-show="selected.length > 0">
+    <div class="px-4 sm:px-5 py-3 border-b border-neutral-100 dark:border-slate-700 flex items-center justify-between gap-4 flex-wrap" x-show="selected.length > 0">
         <span class="text-sm text-neutral-500" x-text="selected.length + ' satış seçildi'"></span>
         <button type="button" @click="showBulkDeleteModal = true" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium text-sm">
             Seçilenleri sil
@@ -69,23 +61,23 @@
         @csrf
         <div id="sales-bulk-form-ids"></div>
     </form>
-    <div class="overflow-x-auto">
-        <table class="min-w-full">
+    <div class="overflow-x-auto -mx-px">
+        <table class="min-w-full sales-index-table">
             <thead>
-                <tr class="border-b border-neutral-100">
-                    <th class="table-th w-12">
+                <tr class="border-b border-neutral-100 dark:border-slate-700">
+                    <th class="table-th w-10 col-hide-mobile">
                         <input type="checkbox" class="rounded border-slate-300 text-green-600 focus:ring-green-500"
                                @change="toggleAll($event.target.checked)" :checked="selected.length === items.length && items.length > 0">
                     </th>
                     <th class="table-th">No</th>
-                    <th class="table-th">Müşteri</th>
-                    <th class="table-th">Satışı Yapan</th>
-                    <th class="table-th">Tarih</th>
-                    <th class="table-th text-right">Toplam</th>
-                    <th class="table-th text-right">Ödenen</th>
-                    <th class="table-th text-right">Kalan</th>
+                    <th class="table-th col-hide-mobile">Müşteri</th>
+                    <th class="table-th col-hide-mobile">Satışı Yapan</th>
+                    <th class="table-th col-hide-mobile">Tarih</th>
+                    <th class="table-th text-right whitespace-nowrap">Toplam</th>
+                    <th class="table-th text-right whitespace-nowrap col-hide-mobile">Ödenen</th>
+                    <th class="table-th text-right whitespace-nowrap">Kalan</th>
                     <th class="table-th">Durum</th>
-                    <th class="table-th text-right w-48">İşlem</th>
+                    <th class="table-th text-right w-36 sm:w-48">İşlem</th>
                 </tr>
             </thead>
             <tbody>
@@ -97,23 +89,25 @@
                         ? 'text-neutral-500 dark:text-neutral-400 line-through'
                         : \App\Support\SaleDelivery::numberClass($orderStatus);
                 @endphp
-                <tr class="border-b border-neutral-50 hover:bg-neutral-50/50 transition-colors {{ ($s->isCancelled ?? false) ? 'opacity-60 bg-slate-50' : '' }}">
-                    <td class="table-td">
+                <tr class="border-b border-neutral-50 dark:border-slate-700/50 hover:bg-neutral-50/50 dark:hover:bg-slate-800/40 transition-colors {{ ($s->isCancelled ?? false) ? 'opacity-60 bg-slate-50 dark:bg-slate-800/30' : '' }}">
+                    <td class="table-td col-hide-mobile">
                         <input type="checkbox" name="ids[]" value="{{ $s->id }}" class="sale-row-check rounded border-slate-300 text-green-600 focus:ring-green-500"
                                @change="toggleRow('{{ $s->id }}', $event.target.checked)">
                     </td>
-                    <td class="table-td">
+                    <td class="table-td min-w-[8.5rem]">
                         <span class="font-medium {{ $saleNumberClass }}">{{ $s->saleNumber }}</span>
                         @if($s->isCancelled ?? false)<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 font-medium">İptal</span>@endif
                         @if($s->needsFinalMeasurement ?? false)<span class="block mt-1">@include('partials.final-measurement-badge', ['sale' => $s])</span>@endif
+                        <span class="block mt-1 text-xs text-neutral-500 dark:text-slate-400 md:hidden">{{ $s->customer?->name ?? '—' }}</span>
+                        <span class="block mt-0.5 text-xs text-neutral-400 dark:text-slate-500 md:hidden">{{ $s->saleDate?->format('d.m.Y') ?? '—' }}</span>
                     </td>
-                    <td class="table-td">{{ $s->customer?->name ?? '-' }}</td>
-                    <td class="table-td text-neutral-600">{{ $s->personnel?->name ?? '—' }}</td>
-                    <td class="table-td">{{ $s->saleDate?->format('d.m.Y') ?? '-' }}</td>
-                    <td class="table-td text-right font-medium text-neutral-900">{{ number_format($s->grandTotal ?? 0, 0, ',', '.') }} ₺</td>
-                    <td class="table-td text-right text-emerald-600">{{ number_format($s->paidAmount ?? 0, 0, ',', '.') }} ₺</td>
-                    <td class="table-td text-right {{ \App\Support\CustomerBalance::saleRemaining($s) > 0 ? 'text-red-600 dark:text-red-400 font-medium' : (\App\Support\CustomerBalance::saleRemaining($s) < 0 ? 'amount-negative' : 'text-neutral-500 dark:text-slate-400') }}">{{ number_format(\App\Support\CustomerBalance::saleRemaining($s), 0, ',', '.') }} ₺</td>
-                    <td class="table-td">
+                    <td class="table-td col-hide-mobile max-w-[10rem] truncate">{{ $s->customer?->name ?? '-' }}</td>
+                    <td class="table-td text-neutral-600 col-hide-mobile max-w-[8rem] truncate">{{ $s->personnel?->name ?? '—' }}</td>
+                    <td class="table-td col-hide-mobile whitespace-nowrap">{{ $s->saleDate?->format('d.m.Y') ?? '-' }}</td>
+                    <td class="table-td text-right font-medium text-neutral-900 dark:text-neutral-100 whitespace-nowrap">{{ number_format($s->grandTotal ?? 0, 0, ',', '.') }} ₺</td>
+                    <td class="table-td text-right text-emerald-600 whitespace-nowrap col-hide-mobile">{{ number_format($s->paidAmount ?? 0, 0, ',', '.') }} ₺</td>
+                    <td class="table-td text-right whitespace-nowrap {{ \App\Support\CustomerBalance::saleRemaining($s) > 0 ? 'text-red-600 dark:text-red-400 font-medium' : (\App\Support\CustomerBalance::saleRemaining($s) < 0 ? 'amount-negative' : 'text-neutral-500 dark:text-slate-400') }}">{{ number_format(\App\Support\CustomerBalance::saleRemaining($s), 0, ',', '.') }} ₺</td>
+                    <td class="table-td min-w-[6.5rem]">
                         @if(!($s->isCancelled ?? false))
                         <div class="flex flex-col items-start gap-1">
                             @include('partials.payment-status-badge', ['status' => $saleStatus])
@@ -122,7 +116,7 @@
                         @else—@endif
                     </td>
                     <td class="table-td">
-                        <div class="flex items-center justify-end gap-1">
+                        <div class="flex items-center justify-end gap-1 flex-wrap sm:flex-nowrap">
                             @include('partials.action-buttons', [
                                 'show' => route('sales.show', $s),
                                 'edit' => !($s->isCancelled ?? false) ? route('sales.edit', $s) : null,
@@ -158,7 +152,7 @@
             </tbody>
         </table>
     </div>
-    <div class="px-5 py-3 border-t border-slate-100 text-sm text-neutral-500">{{ $sales->links() }}</div>
+    <div class="px-4 sm:px-5 py-3 border-t border-slate-100 dark:border-slate-700 text-sm text-neutral-500">{{ $sales->links() }}</div>
 
     <div x-show="showBulkDeleteModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
         <div x-show="showBulkDeleteModal" x-transition class="fixed inset-0 bg-black/50" @click="showBulkDeleteModal = false"></div>

@@ -16,6 +16,8 @@ class SaleDelivery
 
     public const IN_DISCUSSION = 'in_discussion';
 
+    public const FINAL_MEASUREMENT = 'final_measurement';
+
     /** @return list<string> */
     public static function statuses(): array
     {
@@ -38,6 +40,24 @@ class SaleDelivery
             self::DELIVERED => 'Teslim edildi',
             self::SSH => 'SSH var',
         ];
+    }
+
+    /** Satış listesi teslim filtresi — ölçü bekleyenler dahil. */
+    public static function filterOptions(): array
+    {
+        return [
+            self::PENDING => 'Teslim bekliyor',
+            self::FINAL_MEASUREMENT => 'Ölçü bekliyor',
+            self::IN_DISCUSSION => 'Halen görüşülüyor',
+            self::IN_PRODUCTION => 'Üretimde',
+            self::DELIVERED => 'Teslim edildi',
+            self::SSH => 'SSH var',
+        ];
+    }
+
+    public static function isFilterValue(?string $value): bool
+    {
+        return $value !== null && array_key_exists($value, self::filterOptions());
     }
 
     public static function validationRule(): string

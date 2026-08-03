@@ -105,6 +105,14 @@ class DashboardController extends Controller
             ->take(8)
             ->get();
 
+        $finalMeasurementSales = Sale::with(['customer.city', 'customer.district', 'personnel'])
+            ->where('isCancelled', false)
+            ->where('needsFinalMeasurement', true)
+            ->orderBy('saleDate')
+            ->orderBy('createdAt')
+            ->take(12)
+            ->get();
+
         $topPersonnel = Sale::query()
             ->join('personnel', 'sales.personnelId', '=', 'personnel.id')
             ->where('sales.isCancelled', false)
@@ -143,6 +151,7 @@ class DashboardController extends Controller
             'recentSales',
             'upcomingSales',
             'upcomingServiceTickets',
+            'finalMeasurementSales',
             'urgentDueSales',
             'topPersonnel',
             'employeeOfTheMonth',
