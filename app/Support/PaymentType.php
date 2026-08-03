@@ -6,12 +6,20 @@ use App\Models\Kasa;
 
 class PaymentType
 {
-    /** Yeni ödemelerde seçilebilir tipler */
+    /** Yeni ödemelerde seçilebilir tipler (tedarikçi / nakliye ödemeleri vb.) */
     public const SELECTABLE = [
         'nakit' => 'Nakit Elden',
         'havale' => 'Havale',
         'kredi_karti' => 'Kredi Kartı',
         'diger' => 'Diğer',
+    ];
+
+    /** Müşteriden tahsilat (Ödeme Al) ekranı */
+    public const CUSTOMER_RECEIVE = [
+        'nakit' => 'Nakit Elden',
+        'havale' => 'Havale',
+        'kredi_karti' => 'Kredi Kartı',
+        'tedarikciye_ode' => 'Tedarikçiye Öde',
     ];
 
     /** Eski kayıtlar için etiket (yeni seçimde kullanılmaz) */
@@ -22,7 +30,7 @@ class PaymentType
 
     public static function labels(): array
     {
-        return self::SELECTABLE + self::LEGACY;
+        return self::SELECTABLE + self::CUSTOMER_RECEIVE + self::LEGACY;
     }
 
     public static function label(?string $type): string
@@ -37,6 +45,11 @@ class PaymentType
     public static function validationRule(): string
     {
         return 'nullable|in:' . implode(',', array_keys(self::SELECTABLE));
+    }
+
+    public static function customerReceiveValidationRule(): string
+    {
+        return 'nullable|in:' . implode(',', array_keys(self::CUSTOMER_RECEIVE));
     }
 
     public static function requiresKasa(string $type): bool

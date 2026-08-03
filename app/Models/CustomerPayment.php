@@ -17,6 +17,8 @@ class CustomerPayment extends BaseModel
         'reference',
         'notes',
         'saleId',
+        'supplierId',
+        'linkedSupplierPaymentId',
     ];
 
     protected $casts = [
@@ -37,5 +39,15 @@ class CustomerPayment extends BaseModel
     public function sale(): BelongsTo
     {
         return $this->belongsTo(Sale::class, 'saleId');
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class, 'supplierId');
+    }
+
+    public function linkedSupplierPayment(): BelongsTo
+    {
+        return $this->belongsTo(SupplierPayment::class, 'linkedSupplierPaymentId');
     }
 }

@@ -26,6 +26,9 @@
                 <h3 class="text-xs font-semibold text-neutral-500 uppercase mb-2">Tahsilat Bilgileri</h3>
                 <p class="text-sm text-slate-600">Ödeme Tipi: <span class="font-medium">{{ $pt[$customerPayment->paymentType ?? ''] ?? ucfirst($customerPayment->paymentType ?? '-') }}</span></p>
                 @if($customerPayment->kasa)<p class="text-sm text-slate-600 mt-1">Kasa: <span class="font-medium">{{ $customerPayment->kasa->name }}</span></p>@endif
+                @if($customerPayment->paymentType === 'tedarikciye_ode' && $customerPayment->supplier)
+                <p class="text-sm text-slate-600 mt-1">Tedarikçi: <span class="font-medium">{{ $customerPayment->supplier->name }}</span></p>
+                @endif
                 @if(($customerPayment->paymentType ?? '') === 'havale' && $customerPayment->kasa)
                     @if($customerPayment->kasa->bankName)<p class="text-sm text-slate-600 mt-1">Banka: <span class="font-medium">{{ $customerPayment->kasa->bankName }}</span></p>@endif
                     @if($customerPayment->kasa->iban)<p class="text-sm text-slate-600 mt-1">IBAN: <span class="font-mono font-medium">{{ $customerPayment->kasa->iban }}</span></p>@endif

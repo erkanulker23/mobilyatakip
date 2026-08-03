@@ -59,7 +59,7 @@
                     <label class="form-label">Ödeme Tipi</label>
                     <select name="paymentType" class="form-select min-h-[44px]" id="salePaymentType" @if($saleRemaining <= 0) disabled @endif>
                         @php $oldPt = old('redirectToSale') == $sale->id ? old('paymentType') : 'nakit'; @endphp
-                        @foreach(\App\Support\PaymentType::SELECTABLE as $value => $label)
+                        @foreach(\App\Support\PaymentType::CUSTOMER_RECEIVE as $value => $label)
                         <option value="{{ $value }}" {{ $oldPt == $value ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
                     </select>
@@ -73,6 +73,16 @@
                         'disabled' => $saleRemaining <= 0,
                     ])
                 </div>
+            </div>
+
+            <div id="saleSupplierFieldWrap" class="{{ $oldPt === 'tedarikciye_ode' ? '' : 'hidden' }}">
+                <label class="form-label">Tedarikçi <span class="text-red-500">*</span></label>
+                <select name="supplierId" class="form-select min-h-[44px]" id="saleSupplierSelect" @if($saleRemaining <= 0) disabled @endif>
+                    <option value="">Tedarikçi seçin</option>
+                    @foreach($suppliers as $s)
+                    <option value="{{ $s->id }}" {{ old('redirectToSale') == $sale->id && old('supplierId') == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
+                    @endforeach
+                </select>
             </div>
 
             <div>
@@ -89,3 +99,21 @@
         </form>
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function toggleSaleSupplierField() {
+        const pt = document.getElementById('salePaymentType')?.value || '';
+        const wrap = document.getElementById('saleSupplierFieldWrap');
+        const supplierSelect = document.getElementById('saleSupplierSelect');
+        const isSupplierPay = pt === 'tedarikciye_ode';
+        if (wrap) wrap.classList.toggle('hidden', !isSupplierPay);
+        if (supplierSelect) supplierSelect.required = isSupplierPay;
+    }
+    document.getElementById('salePaymentType')?.addEventListener('change', function() {
+        toggleSaleSupplierField();
+        if (window.initPaymentKasaFields) window.initPaymentKasaFields();
+    });
+    if (window.initPaymentKasaFields) window.initPaymentKasaFields();
+    toggleSaleSupplierField();
+});
+</script>

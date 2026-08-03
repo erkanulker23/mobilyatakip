@@ -29,7 +29,7 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                 Yazdır / PDF
             </a>
-            <form method="POST" action="{{ route('customer-payments.destroy', $customerPayment) }}" class="inline" onsubmit="return confirm('Bu tahsilatı silmek istediğinize emin misiniz? Kasa hareketi ve fatura ödenen tutarı geri alınacaktır.');">
+            <form method="POST" action="{{ route('customer-payments.destroy', $customerPayment) }}" class="inline" onsubmit="return confirm('Bu tahsilatı silmek istediğinize emin misiniz?{{ $customerPayment->paymentType === 'tedarikciye_ode' ? ' Bağlı tedarikçi ödeme kaydı da silinecektir.' : ' Kasa hareketi ve fatura ödenen tutarı geri alınacaktır.' }}');">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="btn-delete">
@@ -72,6 +72,22 @@
             <div>
                 <dt class="form-label">Kasa</dt>
                 <dd class="font-medium text-slate-800 dark:text-slate-200">{{ $customerPayment->kasa->name ?? '—' }}</dd>
+            </div>
+            @endif
+            @if($customerPayment->paymentType === 'tedarikciye_ode' && $customerPayment->supplier)
+            <div>
+                <dt class="form-label">Tedarikçi</dt>
+                <dd class="font-medium">
+                    <a href="{{ route('suppliers.show', $customerPayment->supplier) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">{{ $customerPayment->supplier->name }}</a>
+                </dd>
+            </div>
+            @endif
+            @if($customerPayment->linkedSupplierPayment)
+            <div>
+                <dt class="form-label">Tedarikçi Ödeme Kaydı</dt>
+                <dd class="font-medium">
+                    <a href="{{ route('supplier-payments.show', $customerPayment->linkedSupplierPayment) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">Ödeme detayı</a>
+                </dd>
             </div>
             @endif
             @if($customerPayment->sale)

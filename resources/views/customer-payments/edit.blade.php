@@ -1,6 +1,12 @@
 @extends('layouts.app')
 @section('title', 'Tahsilat Düzenle')
 @section('content')
+@php
+    $paymentTypes = \App\Support\PaymentType::CUSTOMER_RECEIVE;
+    if ($customerPayment->paymentType && !isset($paymentTypes[$customerPayment->paymentType])) {
+        $paymentTypes[$customerPayment->paymentType] = \App\Support\PaymentType::label($customerPayment->paymentType);
+    }
+@endphp
 <div class="mb-6">
     <div class="flex items-center gap-2 text-neutral-500 text-sm mb-1">
         <a href="{{ route('customers.show', $customerPayment->customer) }}" class="hover:text-emerald-600 dark:hover:text-emerald-400">Müşteri</a>
@@ -53,7 +59,7 @@
             <div>
                 <label class="form-label">Ödeme Tipi</label>
                 <select name="paymentType" class="form-select" id="editPaymentType">
-                    @foreach(\App\Support\PaymentType::SELECTABLE as $value => $label)
+                    @foreach($paymentTypes as $value => $label)
                     <option value="{{ $value }}" {{ old('paymentType', $customerPayment->paymentType) == $value ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
@@ -65,6 +71,16 @@
                     'selected' => old('kasaId', $customerPayment->kasaId),
                 ])
             </div>
+        </div>
+        <div id="editSupplierFieldWrap" class="{{ old('paymentType', $customerPayment->paymentType) === 'tedarikciye_ode' ? '' : 'hidden' }}">
+            <label class="form-label">Tedarikçi *</label>
+            <select name="supplierId" class="form-select" id="editSupplierSelect">
+                <option value="">Tedarikçi seçin</option>
+                @foreach($suppliers as $s)
+                <option value="{{ $s->id }}" {{ old('supplierId', $customerPayment->supplierId) == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
+                @endforeach
+            </select>
+            @error('supplierId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
         <div>
             <label class="form-label">Referans / Açıklama</label>
@@ -80,4 +96,22 @@
         </div>
     </form>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function toggleEditSupplierField() {
+        const pt = document.getElementById('editPaymentType')?.value || '';
+        const wrap = document.getElementById('editSupplierFieldWrap');
+        const supplierSelect = document.getElementById('editSupplierSelect');
+        const isSupplierPay = pt === 'tedarikciye_ode';
+        if (wrap) wrap.classList.toggle('hidden', !isSupplierPay);
+        if (supplierSelect) supplierSelect.required = isSupplierPay;
+    }
+    if (window.initPaymentKasaFields) window.initPaymentKasaFields();
+    document.getElementById('editPaymentType')?.addEventListener('change', function() {
+        toggleEditSupplierField();
+        if (window.initPaymentKasaFields) window.initPaymentKasaFields();
+    });
+    toggleEditSupplierField();
+});
+</script>
 @endsection

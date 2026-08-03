@@ -7,6 +7,8 @@ use App\Models\CustomerPayment;
 use App\Models\Kasa;
 use App\Models\KasaHareket;
 use App\Models\Sale;
+use App\Models\Supplier;
+use App\Models\SupplierPayment;
 use App\Services\AuditService;
 use App\Support\PaymentType;
 use Illuminate\Http\Request;
@@ -23,6 +25,7 @@ class CustomerPaymentController extends Controller
 
         $customers = Customer::where('isActive', true)->orderBy('name')->get();
         $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
+        $suppliers = Supplier::where('isActive', true)->orderBy('name')->get();
         $customerId = request('customerId', old('customerId'));
         $openSales = collect();
         $totalDebt = null;
@@ -60,6 +63,7 @@ class CustomerPaymentController extends Controller
         return view('customer-payments.create', compact(
             'customers',
             'kasalar',
+            'suppliers',
             'customerId',
             'openSales',
             'totalDebt',
@@ -137,7 +141,8 @@ class CustomerPaymentController extends Controller
             'saleId' => 'nullable|exists:sales,id',
             'amount' => 'required|numeric|min:0.01',
             'paymentDate' => 'required|date|before_or_equal:today',
-            'paymentType' => \App\Support\PaymentType::validationRule(),
+            'paymentType' => PaymentType::customerReceiveValidationRule(),
+            'supplierId' => 'nullable|exists:suppliers,id',
             'kasaId' => 'nullable|exists:kasa,id',
             'reference' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
@@ -156,21 +161,35 @@ class CustomerPaymentController extends Controller
                 ->with('open_payment_modal', true);
         };
 
-        // Nakit, havale ve kredi kartı tahsilatları kasaya işlendiği için kasa zorunlu
-        $kasaError = \App\Support\PaymentType::validateKasaSelection(
-            $validated['kasaId'] ?? null,
-            $validated['paymentType'],
-            true
-        );
-        if ($kasaError) {
-            $response = $redirectBackToSale();
-            if ($response) {
-                return $response->with('error', $kasaError);
+        $isSupplierPay = $validated['paymentType'] === 'tedarikciye_ode';
+
+        if ($isSupplierPay) {
+            if (empty($validated['supplierId'])) {
+                $msg = 'Tedarikçiye öde seçildiğinde tedarikçi seçimi zorunludur.';
+                $response = $redirectBackToSale();
+                if ($response) {
+                    return $response->with('error', $msg);
+                }
+                return back()->withInput()->with('error', $msg);
             }
-            return back()->withInput()->with('error', $kasaError);
+            $validated['kasaId'] = null;
+        } else {
+            $validated['supplierId'] = null;
+            $kasaError = PaymentType::validateKasaSelection(
+                $validated['kasaId'] ?? null,
+                $validated['paymentType'],
+                PaymentType::requiresKasa($validated['paymentType'])
+            );
+            if ($kasaError) {
+                $response = $redirectBackToSale();
+                if ($response) {
+                    return $response->with('error', $kasaError);
+                }
+                return back()->withInput()->with('error', $kasaError);
+            }
         }
 
-        $kasaRequired = \App\Support\PaymentType::requiresKasa($validated['paymentType']);
+        $kasaRequired = PaymentType::requiresKasa($validated['paymentType']);
 
         if (!empty($validated['saleId'])) {
             $sale = Sale::findOrFail($validated['saleId']);
@@ -192,13 +211,12 @@ class CustomerPaymentController extends Controller
             }
         }
 
-        DB::transaction(function () use ($validated, $kasaRequired) {
+        DB::transaction(function () use ($validated, $kasaRequired, $isSupplierPay) {
             $payment = CustomerPayment::create($validated);
             $this->auditService->logCreate('customer_payment', $payment->id, ['amount' => $validated['amount'], 'customerId' => $validated['customerId']]);
             if (!empty($validated['saleId'])) {
                 Sale::where('id', $validated['saleId'])->increment('paidAmount', $validated['amount']);
             }
-            // Nakit, havale, kredi kartı: kasaya giriş kaydı (bu tiplerde kasa zorunlu olduğu için kasaId dolu)
             $kasaId = $validated['kasaId'] ?? null;
             if ($kasaRequired && $kasaId) {
                 $customer = Customer::find($validated['customerId']);
@@ -228,6 +246,28 @@ class CustomerPaymentController extends Controller
                     'refId' => $payment->id,
                 ]);
             }
+
+            if ($isSupplierPay) {
+                $customer = Customer::find($validated['customerId']);
+                $supplierNote = 'Müşteri tahsilatı: ' . ($customer?->name ?? 'Müşteri');
+                if (!empty($validated['notes'])) {
+                    $supplierNote .= ' — ' . $validated['notes'];
+                }
+                $supplierPayment = SupplierPayment::create([
+                    'supplierId' => $validated['supplierId'],
+                    'amount' => $validated['amount'],
+                    'paymentDate' => $validated['paymentDate'],
+                    'paymentType' => 'diger',
+                    'reference' => $validated['reference'],
+                    'notes' => $supplierNote,
+                ]);
+                $payment->update(['linkedSupplierPaymentId' => $supplierPayment->id]);
+                $this->auditService->logCreate('supplier_payment', $supplierPayment->id, [
+                    'amount' => $validated['amount'],
+                    'supplierId' => $validated['supplierId'],
+                    'viaCustomerPayment' => $payment->id,
+                ]);
+            }
         });
 
         if ($redirectToSale) {
@@ -239,14 +279,15 @@ class CustomerPaymentController extends Controller
 
     public function show(CustomerPayment $customerPayment)
     {
-        $customerPayment->load(['customer', 'kasa', 'sale']);
+        $customerPayment->load(['customer', 'kasa', 'sale', 'supplier', 'linkedSupplierPayment']);
         return view('customer-payments.show', compact('customerPayment'));
     }
 
     public function edit(CustomerPayment $customerPayment)
     {
-        $customerPayment->load(['customer', 'sale']);
+        $customerPayment->load(['customer', 'sale', 'supplier']);
         $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
+        $suppliers = Supplier::where('isActive', true)->orderBy('name')->get();
         $openSales = Sale::with('customer')
             ->where('customerId', $customerPayment->customerId)
             ->where(function ($q) use ($customerPayment) {
@@ -257,31 +298,48 @@ class CustomerPaymentController extends Controller
             })
             ->orderBy('saleDate', 'desc')
             ->get();
-        return view('customer-payments.edit', compact('customerPayment', 'kasalar', 'openSales'));
+        return view('customer-payments.edit', compact('customerPayment', 'kasalar', 'suppliers', 'openSales'));
     }
 
     public function update(Request $request, CustomerPayment $customerPayment)
     {
+        if ($request->filled('amount')) {
+            $request->merge(['amount' => money_parse($request->input('amount'))]);
+        }
+
         $validated = $request->validate([
             'saleId' => 'nullable|exists:sales,id',
             'amount' => 'required|numeric|min:0.01',
             'paymentDate' => 'required|date|before_or_equal:today',
-            'paymentType' => \App\Support\PaymentType::validationRule(),
+            'paymentType' => PaymentType::customerReceiveValidationRule(),
+            'supplierId' => 'nullable|exists:suppliers,id',
             'kasaId' => 'nullable|exists:kasa,id',
             'reference' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
         ]);
         $validated['paymentType'] = $validated['paymentType'] ?? 'nakit';
 
-        // Nakit, havale ve kredi kartı tahsilatları kasaya işlendiği için kasa zorunlu
-        $kasaError = \App\Support\PaymentType::validateKasaSelection(
-            $validated['kasaId'] ?? null,
-            $validated['paymentType'],
-            true
-        );
-        if ($kasaError) {
-            return back()->withInput()->with('error', $kasaError);
+        $isSupplierPay = $validated['paymentType'] === 'tedarikciye_ode';
+        $wasSupplierPay = $customerPayment->paymentType === 'tedarikciye_ode';
+
+        if ($isSupplierPay) {
+            if (empty($validated['supplierId'])) {
+                return back()->withInput()->with('error', 'Tedarikçiye öde seçildiğinde tedarikçi seçimi zorunludur.');
+            }
+            $validated['kasaId'] = null;
+        } else {
+            $validated['supplierId'] = null;
+            $kasaError = PaymentType::validateKasaSelection(
+                $validated['kasaId'] ?? null,
+                $validated['paymentType'],
+                PaymentType::requiresKasa($validated['paymentType'])
+            );
+            if ($kasaError) {
+                return back()->withInput()->with('error', $kasaError);
+            }
         }
+
+        $kasaRequired = PaymentType::requiresKasa($validated['paymentType']);
 
         if (!empty($validated['saleId'])) {
             $sale = Sale::findOrFail($validated['saleId']);
@@ -302,10 +360,10 @@ class CustomerPaymentController extends Controller
         $newSaleId = $validated['saleId'] ?? null;
         $newKasaId = $validated['kasaId'] ?? null;
 
-        DB::transaction(function () use ($validated, $customerPayment, $oldAmount, $oldSaleId, $newAmount, $newSaleId, $newKasaId) {
-            $oldData = ['amount' => $customerPayment->amount, 'saleId' => $customerPayment->saleId, 'kasaId' => $customerPayment->kasaId];
+        DB::transaction(function () use ($validated, $customerPayment, $oldAmount, $oldSaleId, $newAmount, $newSaleId, $newKasaId, $kasaRequired, $isSupplierPay, $wasSupplierPay) {
+            $oldData = ['amount' => $customerPayment->amount, 'saleId' => $customerPayment->saleId, 'kasaId' => $customerPayment->kasaId, 'paymentType' => $customerPayment->paymentType];
             $customerPayment->update($validated);
-            $this->auditService->logUpdate('customer_payment', $customerPayment->id, $oldData, ['amount' => $validated['amount'], 'saleId' => $validated['saleId'] ?? null, 'kasaId' => $validated['kasaId'] ?? null]);
+            $this->auditService->logUpdate('customer_payment', $customerPayment->id, $oldData, ['amount' => $validated['amount'], 'saleId' => $validated['saleId'] ?? null, 'kasaId' => $validated['kasaId'] ?? null, 'paymentType' => $validated['paymentType']]);
 
             if ($oldSaleId) {
                 Sale::where('id', $oldSaleId)->decrement('paidAmount', $oldAmount);
@@ -319,7 +377,7 @@ class CustomerPaymentController extends Controller
                 $oldHareket->delete();
             }
 
-            if (!empty($newKasaId)) {
+            if ($kasaRequired && !empty($newKasaId)) {
                 $customer = $customerPayment->customer;
                 $sale = $newSaleId ? Sale::find($newSaleId) : null;
                 $paymentTypeLabel = PaymentType::label($validated['paymentType'] ?? null);
@@ -347,6 +405,50 @@ class CustomerPaymentController extends Controller
                     'refId' => $customerPayment->id,
                 ]);
             }
+
+            if ($wasSupplierPay && $customerPayment->linkedSupplierPaymentId) {
+                $linked = SupplierPayment::find($customerPayment->linkedSupplierPaymentId);
+                if ($linked) {
+                    if ($isSupplierPay) {
+                        $customer = $customerPayment->customer;
+                        $supplierNote = 'Müşteri tahsilatı: ' . ($customer?->name ?? 'Müşteri');
+                        if (!empty($validated['notes'])) {
+                            $supplierNote .= ' — ' . $validated['notes'];
+                        }
+                        $linked->update([
+                            'supplierId' => $validated['supplierId'],
+                            'amount' => $newAmount,
+                            'paymentDate' => $validated['paymentDate'],
+                            'reference' => $validated['reference'],
+                            'notes' => $supplierNote,
+                        ]);
+                    } else {
+                        $this->auditService->logDelete('supplier_payment', $linked->id, ['amount' => (float) $linked->amount, 'supplierId' => $linked->supplierId]);
+                        $linked->delete();
+                        $customerPayment->update(['linkedSupplierPaymentId' => null]);
+                    }
+                }
+            } elseif ($isSupplierPay) {
+                $customer = $customerPayment->customer;
+                $supplierNote = 'Müşteri tahsilatı: ' . ($customer?->name ?? 'Müşteri');
+                if (!empty($validated['notes'])) {
+                    $supplierNote .= ' — ' . $validated['notes'];
+                }
+                $supplierPayment = SupplierPayment::create([
+                    'supplierId' => $validated['supplierId'],
+                    'amount' => $newAmount,
+                    'paymentDate' => $validated['paymentDate'],
+                    'paymentType' => 'diger',
+                    'reference' => $validated['reference'],
+                    'notes' => $supplierNote,
+                ]);
+                $customerPayment->update(['linkedSupplierPaymentId' => $supplierPayment->id]);
+                $this->auditService->logCreate('supplier_payment', $supplierPayment->id, [
+                    'amount' => $newAmount,
+                    'supplierId' => $validated['supplierId'],
+                    'viaCustomerPayment' => $customerPayment->id,
+                ]);
+            }
         });
 
         return redirect()->route('customer-payments.show', $customerPayment)->with('success', 'Tahsilat güncellendi.');
@@ -366,6 +468,17 @@ class CustomerPaymentController extends Controller
                 $hareket->delete();
             }
 
+            if ($customerPayment->linkedSupplierPaymentId) {
+                $linked = SupplierPayment::find($customerPayment->linkedSupplierPaymentId);
+                if ($linked) {
+                    $this->auditService->logDelete('supplier_payment', $linked->id, [
+                        'amount' => (float) $linked->amount,
+                        'supplierId' => $linked->supplierId,
+                    ]);
+                    $linked->delete();
+                }
+            }
+
             $this->auditService->logDelete('customer_payment', $customerPayment->id, [
                 'amount' => (float) $customerPayment->amount,
                 'customerId' => $customerPayment->customerId,
@@ -379,7 +492,7 @@ class CustomerPaymentController extends Controller
 
     public function print(CustomerPayment $customerPayment)
     {
-        $customerPayment->load(['customer', 'kasa', 'sale']);
+        $customerPayment->load(['customer', 'kasa', 'sale', 'supplier']);
         return view('customer-payments.print', compact('customerPayment'));
     }
 }

@@ -314,7 +314,7 @@
 
 {{-- Ödeme al modal --}}
 @if($sale->customerId)
-@include('partials.sale-payment-modal', compact('sale', 'kasalar', 'saleRemaining'))
+@include('partials.sale-payment-modal', compact('sale', 'kasalar', 'saleRemaining', 'suppliers'))
 @endif
 </div>
 @endsection

@@ -24,6 +24,12 @@
             help: '',
             empty: '',
         },
+        tedarikciye_ode: {
+            label: 'Kasa',
+            types: [],
+            help: '',
+            empty: '',
+        },
     };
 
     function requiresKasa(type) {

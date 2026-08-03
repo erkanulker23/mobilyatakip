@@ -14,6 +14,7 @@ use App\Models\Kasa;
 use App\Models\KasaHareket;
 use App\Models\Product;
 use App\Models\StockMovement;
+use App\Models\Supplier;
 use App\Services\AuditService;
 use App\Services\MailConfigService;
 use App\Services\SaleService;
@@ -397,7 +398,8 @@ class SaleController extends Controller
         }
         $saleRemaining = max(0, (float) $sale->grandTotal - (float) ($sale->paidAmount ?? 0));
         $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
-        return view('sales.show', compact('sale', 'unlinkedPayments', 'saleRemaining', 'kasalar'));
+        $suppliers = Supplier::where('isActive', true)->orderBy('name')->get();
+        return view('sales.show', compact('sale', 'unlinkedPayments', 'saleRemaining', 'kasalar', 'suppliers'));
     }
 
     public function print(Sale $sale)

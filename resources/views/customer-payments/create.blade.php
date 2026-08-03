@@ -117,11 +117,23 @@
                     <div>
                         <label class="form-label">Ödeme Tipi</label>
                         <select name="paymentType" class="form-select" id="paymentTypeSelect">
-                            @foreach(\App\Support\PaymentType::SELECTABLE as $value => $label)
+                            @foreach(\App\Support\PaymentType::CUSTOMER_RECEIVE as $value => $label)
                             <option value="{{ $value }}" {{ old('paymentType', 'nakit') == $value ? 'selected' : '' }}>{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>
+                </div>
+
+                <div id="supplierFieldWrap" class="hidden">
+                    <label class="form-label">Tedarikçi *</label>
+                    <select name="supplierId" class="form-select" id="supplierSelect">
+                        <option value="">Tedarikçi seçin</option>
+                        @foreach($suppliers as $s)
+                        <option value="{{ $s->id }}" {{ old('supplierId') == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
+                        @endforeach
+                    </select>
+                    <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400">Müşteriden alınan tutar doğrudan tedarikçi borcuna mahsup edilir; kasaya giriş/çıkış yapılmaz.</p>
+                    @error('supplierId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
 
                 <div>
@@ -321,8 +333,26 @@ function highlightInvoiceButtons() {
     });
 }
 
+function toggleSupplierField() {
+    const pt = document.getElementById('paymentTypeSelect')?.value || '';
+    const wrap = document.getElementById('supplierFieldWrap');
+    const supplierSelect = document.getElementById('supplierSelect');
+    const isSupplierPay = pt === 'tedarikciye_ode';
+    if (wrap) wrap.classList.toggle('hidden', !isSupplierPay);
+    if (supplierSelect) supplierSelect.required = isSupplierPay;
+}
+
 function initPaymentPage() {
     if (window.initPaymentKasaFields) window.initPaymentKasaFields();
+
+    const paymentTypeSelect = document.getElementById('paymentTypeSelect');
+    if (paymentTypeSelect) {
+        paymentTypeSelect.addEventListener('change', function() {
+            toggleSupplierField();
+            if (window.initPaymentKasaFields) window.initPaymentKasaFields();
+        });
+    }
+    toggleSupplierField();
 
     const saleSelect = document.getElementById('saleSelect');
     if (saleSelect) {
