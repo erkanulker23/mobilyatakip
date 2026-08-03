@@ -290,6 +290,7 @@
             }
             .card > .overflow-x-auto > table { min-width: 34rem; }
             .card > .overflow-x-auto > table.sales-index-table { min-width: 22rem; }
+            .card > .overflow-x-auto > table.customers-index-table { min-width: 20rem; }
             .cell-phone { white-space: nowrap; min-width: 8.75rem; }
             .col-hide-mobile { display: none; }
         }

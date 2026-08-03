@@ -237,10 +237,32 @@ class SaleController extends Controller
                 $q->where('orderStatus', $request->deliveryStatus);
             }
         }
+        if ($request->filled('paymentStatus')) {
+            match ($request->paymentStatus) {
+                'borclu' => $q->whereRaw('grandTotal - COALESCE(paidAmount, 0) > 0.005'),
+                'odendi' => $q->whereRaw('grandTotal - COALESCE(paidAmount, 0) <= 0.005 AND grandTotal > 0'),
+                default => null,
+            };
+        }
+
         $sales = $q->paginate(20)->withQueryString();
-        $customers = Customer::orderBy('name')->get();
+        $customers = Customer::orderBy('name')->get(['id', 'name']);
         $saleIds = $sales->getCollection()->pluck('id')->values()->all();
-        return view('sales.index', compact('sales', 'customers', 'saleIds'));
+
+        $stats = [
+            'total' => (int) Sale::where('isCancelled', false)->count(),
+            'receivable' => (float) Sale::where('isCancelled', false)
+                ->selectRaw('COALESCE(SUM(GREATEST(grandTotal - COALESCE(paidAmount, 0), 0)), 0) as total')
+                ->value('total'),
+            'withDebt' => (int) Sale::where('isCancelled', false)
+                ->whereRaw('grandTotal - COALESCE(paidAmount, 0) > 0.005')
+                ->count(),
+            'finalMeasurement' => (int) Sale::where('isCancelled', false)
+                ->where('needsFinalMeasurement', true)
+                ->count(),
+        ];
+
+        return view('sales.index', compact('sales', 'customers', 'saleIds', 'stats'));
     }
 
     public function bulkDestroy(Request $request)

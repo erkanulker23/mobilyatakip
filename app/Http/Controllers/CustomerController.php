@@ -56,7 +56,9 @@ class CustomerController extends Controller
             ->with(['city', 'district'])
             ->withSum(['sales as totalSales' => fn ($s) => $s->where('isCancelled', false)], 'grandTotal')
             ->withSum('payments as totalPaid', 'amount')
+            ->withCount(['sales as ordersCount' => fn ($s) => $s->where('isCancelled', false)])
             ->orderBy('name');
+
         if ($request->filled('search')) {
             $s = $request->search;
             $q->where(function ($w) use ($s) {
@@ -68,8 +70,54 @@ class CustomerController extends Controller
                     ->orWhere('taxNumber', 'like', "%{$s}%");
             });
         }
+
+        if ($request->filled('isActive')) {
+            $q->where('isActive', $request->isActive === '1');
+        }
+
+        if ($request->filled('balance')) {
+            $this->applyCustomerBalanceFilter($q, $request->balance);
+        }
+
         $customers = $q->paginate(20)->withQueryString();
-        return view('customers.index', compact('customers'));
+
+        $stats = [
+            'total' => Customer::count(),
+            'active' => Customer::where('isActive', true)->count(),
+            'debtors' => $this->countCustomersByBalance('borclu'),
+            'creditors' => $this->countCustomersByBalance('alacakli'),
+        ];
+
+        return view('customers.index', compact('customers', 'stats'));
+    }
+
+    private function customerBalanceExpression(): string
+    {
+        return '(SELECT COALESCE(SUM(s.grandTotal), 0) FROM sales s WHERE s.customerId = customers.id AND s.isCancelled = 0)
+            - (SELECT COALESCE(SUM(p.amount), 0) FROM customer_payments p WHERE p.customerId = customers.id)';
+    }
+
+    private function applyCustomerBalanceFilter($query, string $balance): void
+    {
+        $expr = $this->customerBalanceExpression();
+
+        match ($balance) {
+            'borclu' => $query->whereRaw("{$expr} > 0.005"),
+            'alacakli' => $query->whereRaw("{$expr} < -0.005"),
+            'borcu_yok' => $query
+                ->whereRaw('(SELECT COALESCE(SUM(s.grandTotal), 0) FROM sales s WHERE s.customerId = customers.id AND s.isCancelled = 0) > 0.005')
+                ->whereRaw("ABS({$expr}) <= 0.005"),
+            'siparis_yok' => $query->whereRaw('(SELECT COALESCE(SUM(s.grandTotal), 0) FROM sales s WHERE s.customerId = customers.id AND s.isCancelled = 0) <= 0.005'),
+            default => null,
+        };
+    }
+
+    private function countCustomersByBalance(string $balance): int
+    {
+        $query = Customer::query();
+        $this->applyCustomerBalanceFilter($query, $balance);
+
+        return (int) $query->count();
     }
 
     public function create()
