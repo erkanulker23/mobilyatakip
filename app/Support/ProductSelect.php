@@ -18,11 +18,12 @@ class ProductSelect
 
         $price = (float) $product->unitPrice;
         $priceFormatted = number_format($price, 0, ',', '.');
+        $displayName = $product->name . ((! ($product->isActive ?? true)) ? ' (pasif)' : '');
 
         return [
             'id' => $product->id,
-            'name' => $product->name,
-            'label' => $product->name . ' · ' . $priceFormatted . ' ₺',
+            'name' => $displayName,
+            'label' => $displayName . ' · ' . $priceFormatted . ' ₺',
             'sku' => $product->sku,
             'supplier' => $product->supplier?->name,
             'price' => $price,
@@ -33,6 +34,7 @@ class ProductSelect
                 $product->sku,
                 $product->description,
                 $product->supplier?->name,
+                (! ($product->isActive ?? true)) ? 'pasif' : null,
             ])))),
         ];
     }

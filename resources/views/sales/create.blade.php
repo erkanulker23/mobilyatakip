@@ -45,7 +45,9 @@
 .kbd { display: inline-block; padding: 0.05rem 0.35rem; border-radius: 0.25rem; border: 1px solid #e5e5e5; background: #fafafa; font-size: 0.6875rem; font-family: ui-monospace, monospace; color: #737373; }
 .ts-wrapper .ts-control .item { display: flex; align-items: center; gap: 0.5rem; }
 .ts-wrapper .ts-control .item img { flex-shrink: 0; }
-.ts-dropdown.dropup { bottom: 100%; top: auto !important; margin-top: 0; margin-bottom: 4px; }
+.dark .sale-item-row .ts-wrapper .ts-control { background: #262626 !important; border-color: #404040 !important; color: #f5f5f5 !important; }
+.dark .sale-item-row .ts-wrapper .ts-control input { color: #f5f5f5 !important; }
+.dark .sale-item-row:focus-within .ts-wrapper .ts-control { background: #262626 !important; }
 </style>
 @endpush
 @section('content')

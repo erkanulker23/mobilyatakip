@@ -82,9 +82,7 @@ class ProductController extends Controller
         $limit = min(50, max(5, (int) $request->input('limit', 30)));
         $ids = array_values(array_filter((array) $request->input('ids', [])));
 
-        $query = Product::query()
-            ->with('supplier:id,name')
-            ->where('isActive', true);
+        $query = Product::query()->with('supplier:id,name');
 
         if ($ids !== []) {
             $query->whereIn('id', $ids)->orderBy('name');

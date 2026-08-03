@@ -115,9 +115,10 @@
             sortField: [{ field: 'name', direction: 'asc' }],
             placeholder: 'Ürün adı, stok kodu veya tedarikçi ara...',
             dropdownParent: 'body',
-            dropdownClass: 'sale-product-dropdown',
+            dropdownClass: 'ts-dropdown sale-product-dropdown',
             preload: true,
             loadThrottle: 200,
+            openOnFocus: true,
             shouldLoad: function () {
                 return true;
             },
@@ -151,17 +152,9 @@
                 };
             },
             onDropdownOpen: function () {
-                const rect = this.control.getBoundingClientRect();
-                const viewportH = window.innerHeight || document.documentElement.clientHeight;
-                if (rect.bottom > viewportH - 260) {
-                    this.dropdown.classList.add('dropup');
-                }
                 if (!this.loading && this.options && Object.keys(this.options).length <= 1) {
                     this.load('');
                 }
-            },
-            onDropdownClose: function () {
-                this.dropdown.classList.remove('dropup');
             },
             render: {
                 option_create: function (data, escape) {
