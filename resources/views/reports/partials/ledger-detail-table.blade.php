@@ -23,8 +23,10 @@
         <tr>
             <td class="table-td">{{ $r->date->format('d.m.Y') }}</td>
             <td class="table-td">
-                @if(!$print && $r->refRoute && $r->refId)
-                <span class="font-medium">{{ $r->aciklama }}</span>
+                @if(!$print && !empty($r->refRoute) && !empty($r->refId))
+                <a href="{{ route($r->refRoute, $r->refId) }}" class="font-medium text-emerald-600 hover:text-emerald-700 hover:underline dark:text-emerald-400 dark:hover:text-emerald-300">
+                    {{ $r->aciklama }}
+                </a>
                 @else
                 {{ $r->aciklama }}
                 @endif

@@ -20,7 +20,7 @@
     'extraInfo' => '<p class="text-sm text-slate-600">Teklif tarihi: ' . ($quoteIssuedAt?->format('d.m.Y') ?? '-') . '</p>'
         . '<p class="text-sm font-semibold text-slate-900 mt-1">Son geçerlilik: ' . ($quoteValidUntil?->format('d.m.Y') ?? '-') . '</p>'
         . '<p class="text-sm text-slate-600 mt-1">Personel: ' . e($quote->personnel?->name ?? '-') . '</p>',
-    'items' => $quote->items->map(fn($i) => ['name' => $i->product?->name, 'description' => $i->description, 'unitPrice' => $i->unitPrice, 'quantity' => $i->quantity, 'kdvRate' => $i->kdvRate, 'lineTotal' => $i->lineTotal])->toArray(),
+    'items' => $quote->items->map(fn($i) => ['name' => $i->product?->name ?? $i->productName, 'description' => $i->description, 'unitPrice' => $i->unitPrice, 'quantity' => $i->quantity, 'kdvRate' => $i->kdvRate, 'lineTotal' => $i->lineTotal])->toArray(),
     'showKdv' => true,
     'subtotal' => $quote->subtotal,
     'kdvTotal' => $quote->kdvTotal,

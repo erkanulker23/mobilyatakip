@@ -171,7 +171,7 @@ class SaleService
                     'id' => (string) Str::uuid(),
                     'saleId' => $sale->id,
                     'productId' => $qi->productId,
-                    'productName' => $qi->product?->name ?? null,
+                    'productName' => $qi->product?->name ?? $qi->productName ?? null,
                     'description' => $qi->description,
                     'unitPrice' => $qi->unitPrice,
                     'quantity' => $qi->quantity,

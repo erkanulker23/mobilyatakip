@@ -10,14 +10,20 @@
 .sale-form-section-title { font-size: 0.9375rem; font-weight: 600; color: #171717; }
 .dark .sale-form-section-title { color: #f5f5f5; }
 .sale-form-section-body { padding: 1.25rem; }
-.sale-item-row { border: 1px solid #e5e5e5; border-radius: 0.75rem; padding: 1rem; background: #fafafa; transition: border-color .15s, box-shadow .15s; }
-.sale-item-row:focus-within { border-color: #a3a3a3; box-shadow: 0 0 0 3px rgba(0,0,0,.04); background: #fff; }
 .dark .sale-item-row { background: #262626; border-color: #404040; }
+.dark .sale-item-row:focus-within { background: #171717; border-color: #525252; }
 .sale-item-row .form-label { margin-bottom: 0.25rem; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: .04em; color: #737373; }
+.sale-item-row .form-input, .sale-item-row .form-select { min-height: 40px; padding: 0.5rem 0.625rem; font-size: 0.875rem; }
 .row-no { flex-shrink: 0; width: 1.75rem; height: 1.75rem; display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px; background: #171717; color: #fff; font-size: 0.75rem; font-weight: 600; }
-.icon-btn { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 2.25rem; height: 2.25rem; border-radius: 0.5rem; border: 1px solid #e5e5e5; background: #fff; color: #525252; }
-.icon-btn-danger { border-color: #fecaca; color: #dc2626; }
-.add-row-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.875rem; border: 1.5px dashed #d4d4d4; border-radius: 0.75rem; color: #525252; font-size: 0.875rem; font-weight: 500; background: transparent; }
+.dark .row-no { background: #404040; }
+.item-line-total { font-variant-numeric: tabular-nums; font-weight: 600; color: #171717; font-size: 0.9375rem; }
+.dark .item-line-total { color: #f5f5f5; }
+.icon-btn { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 2.25rem; height: 2.25rem; border-radius: 0.5rem; border: 1px solid #e5e5e5; background: #fff; color: #525252; transition: background .15s, border-color .15s, color .15s; }
+.icon-btn:hover { background: #f5f5f5; color: #171717; }
+.icon-btn-danger { border-color: #fecaca; color: #dc2626; background: #fff; }
+.icon-btn-danger:hover { background: #fef2f2; }
+.add-row-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.875rem; border: 1.5px dashed #d4d4d4; border-radius: 0.75rem; color: #525252; font-size: 0.875rem; font-weight: 500; background: transparent; transition: background .15s, border-color .15s, color .15s; }
+.add-row-btn:hover { border-color: #171717; color: #171717; background: #fafafa; }
 .sale-summary-panel { background: #171717; color: #fff; border-radius: 1rem; padding: 1.25rem; }
 .sale-summary-row { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.875rem; padding: 0.375rem 0; color: #d4d4d4; }
 .sale-summary-row strong { color: #fff; font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -26,10 +32,15 @@
 .sale-meta-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
 @media (min-width: 640px) { .sale-meta-grid { grid-template-columns: 1fr 1fr; } }
 .customer-info-panel { margin-top: 1rem; padding: 1rem; border-radius: 0.75rem; background: #fafafa; border: 1px solid #e5e5e5; }
+.dark .customer-info-panel { background: #262626; border-color: #404040; }
 .customer-info-panel dt { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: .04em; color: #a3a3a3; }
 .customer-info-panel dd { font-size: 0.875rem; color: #171717; margin-top: 0.125rem; }
+.dark .customer-info-panel dd { color: #f5f5f5; }
 .ts-wrapper .ts-control .item { display: flex; align-items: center; gap: 0.5rem; }
-.ts-dropdown.dropup { bottom: 100%; top: auto !important; margin-top: 0; margin-bottom: 4px; }
+.ts-wrapper .ts-control .item img { flex-shrink: 0; }
+.dark .sale-item-row .ts-wrapper .ts-control { background: #262626 !important; border-color: #404040 !important; color: #f5f5f5 !important; }
+.dark .sale-item-row .ts-wrapper .ts-control input { color: #f5f5f5 !important; }
+.dark .sale-item-row:focus-within .ts-wrapper .ts-control { background: #262626 !important; }
 </style>
 @endpush
 @section('content')
@@ -54,10 +65,6 @@
         'phone' => $c->phone ?? '', 'email' => $c->email ?? '', 'address' => $c->full_address,
         'taxNumber' => $c->taxNumber ?? '', 'taxOffice' => $c->taxOffice ?? '', 'identityNumber' => $c->identityNumber ?? ''
     ])->values();
-    $productsQuoteJson = $products->map(function($p) {
-        $img = is_array($p->images ?? null) ? ($p->images[0] ?? null) : ($p->images ?? null);
-        return ['id' => $p->id, 'name' => $p->name . ' (' . number_format($p->unitPrice, 0, ',', '.') . ' ₺)', 'price' => (float)$p->unitPrice, 'kdv' => (float)($p->kdvRate ?? 18), 'image' => $img ? (Str::startsWith($img, 'http') ? $img : url($img)) : null];
-    })->values();
 @endphp
 <div class="max-w-7xl" x-data="quoteCreateForm()" @open-quick-add-product.window="showQuickAddProduct = true">
     <form method="POST" action="{{ route('quotes.store') }}" id="quoteForm" enctype="multipart/form-data">
@@ -126,22 +133,23 @@
                     <template id="quote-item-template">
                     <div class="item-row sale-item-row mb-3" data-row-idx="__IDX__">
                         <div class="flex flex-wrap items-start gap-2 mb-2">
-                            <span class="row-no">1</span>
-                            <div class="flex-1 min-w-0">
-                                <label class="form-label">Ürün / Hizmet <span class="text-red-500">*</span></label>
-                                <select name="items[__IDX__][productId]" required class="form-select item-product" data-placeholder="Ara veya seç...">
-                                    <option value="">Seçiniz</option>
-                                    @foreach($products as $p)
-                                    @php $img = is_array($p->images ?? null) ? ($p->images[0] ?? null) : ($p->images ?? null); @endphp
-                                    <option value="{{ $p->id }}" data-price="{{ $p->unitPrice }}" data-kdv="{{ $p->kdvRate ?? 18 }}" data-image="{{ $img ? (Str::startsWith($img, 'http') ? $img : url($img)) : '' }}">{{ $p->name }} ({{ number_format($p->unitPrice, 0, ',', '.') }} ₺)</option>
-                                    @endforeach
+                            <span class="row-no" aria-hidden="true">1</span>
+                            <div class="item-product-wrap flex-1 min-w-0">
+                                <label class="form-label lg:sr-only">Ürün / Hizmet <span class="text-red-500">*</span></label>
+                                <select class="form-select item-product" data-placeholder="Ürün ara...">
+                                    <option value=""></option>
                                 </select>
+                                <input type="hidden" class="item-product-id" name="items[__IDX__][productId]" value="">
+                                <input type="hidden" class="item-product-name" name="items[__IDX__][productName]" value="">
                             </div>
                             <div class="flex items-center gap-1 shrink-0">
-                                <button type="button" onclick="window.openQuickAddQuoteProduct && window.openQuickAddQuoteProduct(this)" class="icon-btn" title="Yeni ürün" aria-label="Yeni ürün">
+                                <button type="button" onclick="window.openQuickAddQuoteProduct && window.openQuickAddQuoteProduct(this)" class="icon-btn touch-manipulation" title="Yeni ürün" aria-label="Yeni ürün">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                                 </button>
-                                <button type="button" onclick="removeQuoteRow(this)" class="btn-remove-row icon-btn icon-btn-danger" aria-label="Sil" title="Sil">
+                                <button type="button" onclick="duplicateQuoteRow(this)" class="icon-btn touch-manipulation" title="Çoğalt" aria-label="Çoğalt">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                </button>
+                                <button type="button" onclick="removeQuoteRow(this)" class="btn-remove-row icon-btn icon-btn-danger touch-manipulation" aria-label="Sil" title="Sil">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 </button>
                             </div>
@@ -293,9 +301,17 @@
         </div>
     </div>
 </div>
+<script>window.SALE_PRODUCT_SEARCH_URL = @json(route('api.products.search'));</script>
+<script src="{{ asset('js/sale-product-select.js') }}"></script>
 <script>
+@php
+    $productsJson = ($initialProducts ?? collect())->map(fn ($p) => \App\Support\ProductSelect::payload($p))->values();
+    $oldQuoteItems = collect(old('items', []))->values()->all();
+@endphp
 const customersQuote = @json($customersQuoteJson);
-const productsQuoteData = @json($productsQuoteJson);
+const productsData = @json($productsJson);
+const oldQuoteItems = @json($oldQuoteItems);
+window.updateSaleTotals = function() { if (typeof updateQuoteTotals === 'function') updateQuoteTotals(); };
 function quoteCreateForm() {
     return {
         showQuickAddCustomer: false,
@@ -343,23 +359,9 @@ function quoteCreateForm() {
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    const text = data.name + ' (' + fmt(data.price) + ' ₺)';
-                    productsQuoteData.push({ id: String(data.id), name: text, price: data.price, kdv: data.kdv, image: data.image || null });
-                    const tmplSelect = document.getElementById('quote-item-template')?.content?.querySelector('.item-product');
-                    if (tmplSelect) {
-                        const opt = document.createElement('option');
-                        opt.value = data.id;
-                        opt.setAttribute('data-price', data.price);
-                        opt.setAttribute('data-kdv', data.kdv);
-                        if (data.image) opt.setAttribute('data-image', data.image);
-                        opt.textContent = text;
-                        tmplSelect.appendChild(opt);
-                    }
-                    (window.quoteProductSelects || []).forEach(function(ts) {
-                        if (ts) ts.addOption({ value: String(data.id), text: text });
-                    });
+                    const product = window.registerSaleProduct(data);
                     const targetRow = resolveQuoteRowForQuickProduct(window.quickAddQuoteProductForRowIndex ?? 0);
-                    applyProductToQuoteRow(targetRow, data, text);
+                    applyProductToQuoteRow(targetRow, product);
                     targetRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
                     this.showQuickAddProduct = false;
                     this.quickProduct = { name: '', unitPrice: '', kdvRate: '18' };
@@ -444,9 +446,11 @@ window.openQuickAddQuoteProduct = function(btn) {
 };
 function quoteRowIsEmpty(row) {
     if (!row) return true;
+    const productId = row.querySelector('.item-product-id')?.value;
+    const productName = row.querySelector('.item-product-name')?.value;
     const tsVal = row.querySelector('.item-product')?.tomselect?.getValue();
-    const price = parseTrNum(row.querySelector('.item-price')?.value || 0);
-    return !tsVal && !(price > 0);
+    const price = parseTrNum(row.querySelector('.item-price')?.value ?? row.querySelector('.item-price')?.getAttribute('data-raw') ?? 0);
+    return !productId && !productName && !tsVal && !(price > 0);
 }
 function resolveQuoteRowForQuickProduct(rowIndex) {
     const rows = document.querySelectorAll('#items .item-row');
@@ -456,22 +460,78 @@ function resolveQuoteRowForQuickProduct(rowIndex) {
     }
     return row;
 }
-function applyProductToQuoteRow(rowEl, data, text) {
+function applyProductToQuoteRow(rowEl, data) {
     if (!rowEl || !data) return;
-    const id = String(data.id);
-    const price = parseFloat(data.price) || 0;
-    const kdv = parseFloat(data.kdv) ?? 18;
+    const product = window.registerSaleProduct(data);
+    const idInput = rowEl.querySelector('.item-product-id');
+    const nameInput = rowEl.querySelector('.item-product-name');
     const priceEl = rowEl.querySelector('.item-price');
     const kdvEl = rowEl.querySelector('.item-kdv');
     const qtyEl = rowEl.querySelector('.item-qty');
-    if (priceEl) priceEl.value = fmt(price);
-    if (kdvEl) kdvEl.value = kdv;
+    if (idInput) idInput.value = String(product.id);
+    if (nameInput) nameInput.value = '';
+    if (priceEl) {
+        priceEl.value = fmt(product.price);
+        priceEl.setAttribute('data-raw', String(product.price));
+    }
+    if (kdvEl) kdvEl.value = product.kdv ?? 18;
     if (qtyEl && (!qtyEl.value || parseInt(qtyEl.value, 10) < 1)) qtyEl.value = '1';
     const ts = rowEl.querySelector('.item-product')?.tomselect;
     if (ts) {
-        if (!ts.options[id]) ts.addOption({ value: id, text: text });
-        ts.setValue(id, true);
+        if (!ts.options[product.id]) ts.addOption(product);
+        ts.setValue(String(product.id), true);
     }
+}
+function quoteItemHasContent(item) {
+    if (!item || typeof item !== 'object') return false;
+    const name = String(item.productName || '').trim();
+    const price = parseTrNum(item.unitPrice);
+    return !!(item.productId || name || (!isNaN(price) && price > 0));
+}
+function restoreQuoteRow(item) {
+    const rowEl = addQuoteRow(false);
+    if (!rowEl || !item) return;
+    const qtyEl = rowEl.querySelector('.item-qty');
+    const kdvEl = rowEl.querySelector('.item-kdv');
+    const priceEl = rowEl.querySelector('.item-price');
+    const discPct = rowEl.querySelector('.item-disc-pct');
+    const discAmt = rowEl.querySelector('.item-disc-amt');
+    const idInput = rowEl.querySelector('.item-product-id');
+    const nameInput = rowEl.querySelector('.item-product-name');
+    if (qtyEl) qtyEl.value = item.quantity ?? 1;
+    if (kdvEl) kdvEl.value = item.kdvRate ?? 18;
+    if (discPct && item.lineDiscountPercent) discPct.value = item.lineDiscountPercent;
+    if (discAmt && item.lineDiscountAmount) discAmt.value = fmt(item.lineDiscountAmount);
+    if (window.ItemDescriptionLines) ItemDescriptionLines.initRow(rowEl, item);
+    const productId = item.productId ? String(item.productId) : '';
+    const productName = String(item.productName || '').trim();
+    const ts = rowEl.querySelector('.item-product')?.tomselect;
+    if (productId) {
+        let product = window.getSaleProduct(productId);
+        if (!product) {
+            product = window.registerSaleProduct({ id: productId, name: productName || productId, price: parseTrNum(item.unitPrice), kdv: item.kdvRate ?? 18 });
+        }
+        if (idInput) idInput.value = productId;
+        if (nameInput) nameInput.value = '';
+        if (priceEl) {
+            priceEl.value = fmt(parseTrNum(item.unitPrice) || product.price);
+            priceEl.setAttribute('data-raw', String(parseTrNum(item.unitPrice) || product.price));
+        }
+        if (ts) {
+            if (!ts.options[productId]) ts.addOption(product);
+            ts.setValue(productId, true);
+        }
+    } else if (productName && ts) {
+        if (idInput) idInput.value = '';
+        if (nameInput) nameInput.value = productName;
+        if (priceEl) {
+            priceEl.value = fmt(parseTrNum(item.unitPrice));
+            priceEl.setAttribute('data-raw', String(parseTrNum(item.unitPrice)));
+        }
+        ts.addOption({ id: productName, name: productName, label: productName });
+        ts.setValue(productName, true);
+    }
+    updateQuoteTotals();
 }
 let quoteIdx = 0;
 function removeQuoteRow(btn) {
@@ -486,6 +546,31 @@ function removeQuoteRow(btn) {
     reindexQuoteRows();
     updateQuoteTotals();
 }
+function duplicateQuoteRow(btn) {
+    const src = btn.closest('.item-row');
+    if (!src) return;
+    const newRow = addQuoteRow(false);
+    ['.item-price', '.item-qty', '.item-kdv', '.item-disc-pct', '.item-disc-amt'].forEach(function(cls) {
+        const from = src.querySelector(cls), to = newRow.querySelector(cls);
+        if (from && to) {
+            to.value = from.value;
+            if (from.hasAttribute('data-raw')) to.setAttribute('data-raw', from.getAttribute('data-raw'));
+        }
+    });
+    if (window.ItemDescriptionLines) ItemDescriptionLines.duplicateLines(src, newRow);
+    const srcTs = src.querySelector('.item-product')?.tomselect;
+    const newTs = newRow.querySelector('.item-product')?.tomselect;
+    const val = srcTs && srcTs.getValue();
+    if (newTs && val) {
+        const product = window.getSaleProduct ? window.getSaleProduct(val) : null;
+        if (product && !newTs.options[val]) newTs.addOption(product);
+        newTs.setValue(val, true);
+        newRow.querySelector('.item-product-id').value = src.querySelector('.item-product-id').value;
+        newRow.querySelector('.item-product-name').value = src.querySelector('.item-product-name').value;
+    }
+    updateQuoteTotals();
+    newRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
 function reindexQuoteRows() {
     const container = document.getElementById('items');
     const total = container.querySelectorAll('.item-row').length;
@@ -499,10 +584,10 @@ function reindexQuoteRows() {
         const removeBtn = row.querySelector('.btn-remove-row');
         if (removeBtn) removeBtn.style.visibility = total <= 1 ? 'hidden' : '';
     });
-    if (window.quoteProductSelects) {
+    if (window.salesProductSelects) {
         const arr = [];
         container.querySelectorAll('.item-product').forEach((sel, i) => { arr[i] = sel.tomselect; });
-        window.quoteProductSelects = arr;
+        window.salesProductSelects = arr;
     }
 }
 function addQuoteRow(focusNew) {
@@ -520,7 +605,7 @@ function addQuoteRow(focusNew) {
     document.getElementById('items').appendChild(c);
     const rowEl = document.getElementById('items').lastElementChild;
     const sel = rowEl.querySelector('.item-product');
-    initQuoteProductSelect(sel, quoteIdx);
+    initSaleProductSelect(sel, quoteIdx);
     if (window.ItemDescriptionLines) ItemDescriptionLines.initRow(rowEl, null);
     quoteIdx++;
     reindexQuoteRows();
@@ -531,48 +616,6 @@ function addQuoteRow(focusNew) {
         rowEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
     return rowEl;
-}
-function initQuoteProductSelect(sel, rowIdx) {
-    if (!sel || typeof TomSelect === 'undefined') return;
-    window.quoteProductSelects = window.quoteProductSelects || [];
-    const row = sel.closest('.item-row');
-    const ts = new TomSelect(sel, {
-        maxOptions: 100,
-        placeholder: 'Ürün ara veya seçin...',
-        searchField: ['text'],
-        dropdownParent: 'body',
-        onDropdownOpen: function() {
-            const rect = this.control.getBoundingClientRect();
-            const viewportH = window.innerHeight || document.documentElement.clientHeight;
-            if (rect.bottom > viewportH - 220) { this.dropdown.classList.add('dropup'); }
-        },
-        onDropdownClose: function() { this.dropdown.classList.remove('dropup'); },
-        render: {
-            item: function(data, escape) {
-                const p = productsQuoteData.find(x => String(x.id) === String(data.value));
-                const img = p?.image;
-                const imgHtml = img ? '<img src="' + escape(img) + '" alt="" class="w-8 h-8 object-cover rounded shrink-0 mr-2" onerror="this.style.display=\'none\'">' : '';
-                return '<div class="flex items-center gap-2 min-w-0"><span class="shrink-0">' + imgHtml + '</span><span class="truncate">' + escape(data.text) + '</span></div>';
-            },
-            option: function(data, escape) {
-                const p = productsQuoteData.find(x => String(x.id) === String(data.value));
-                const img = p?.image;
-                const imgHtml = img ? '<img src="' + escape(img) + '" alt="" class="w-8 h-8 object-cover rounded shrink-0 mr-2" onerror="this.style.display=\'none\'">' : '';
-                return '<div class="flex items-center gap-2">' + imgHtml + '<span>' + escape(data.text) + '</span></div>';
-            }
-        },
-        onChange: function(v) {
-            if (!v) return;
-            const opt = Array.from(sel.options).find(o => o.value === v);
-            if (opt?.dataset?.price) {
-                const priceNum = parseFloat(opt.dataset.price) || 0;
-                row.querySelector('.item-price').value = fmt(priceNum);
-                row.querySelector('.item-kdv').value = opt.dataset.kdv || 18;
-            }
-            updateQuoteTotals();
-        }
-    });
-    window.quoteProductSelects[rowIdx] = ts;
 }
 document.addEventListener('DOMContentLoaded', function() {
     if (typeof TomSelect === 'undefined') {
@@ -611,6 +654,7 @@ function updateQuoteCustomerInfo(customerId) {
     setRow('Tax', taxParts.length ? taxParts.join(' · ') : null);
 }
 function initQuoteForm() {
+    if (window.seedSaleProducts) window.seedSaleProducts(productsData);
     const customerSel = document.getElementById('customerSelect');
     if (customerSel && typeof TomSelect !== 'undefined') {
         window.customerQuoteTomSelect = new TomSelect(customerSel, {
@@ -621,7 +665,13 @@ function initQuoteForm() {
         });
         setTimeout(function() { updateQuoteCustomerInfo(window.customerQuoteTomSelect?.getValue()); }, 0);
     }
-    addQuoteRow();
+    const itemsToRestore = Array.isArray(oldQuoteItems) ? oldQuoteItems.filter(quoteItemHasContent) : [];
+    if (itemsToRestore.length > 0) {
+        itemsToRestore.forEach(function(item) { restoreQuoteRow(item); });
+    }
+    if (document.querySelectorAll('#items .item-row').length === 0) {
+        addQuoteRow();
+    }
     document.getElementById('quoteForm')?.addEventListener('input', function() {
         updateQuoteTotals();
     });

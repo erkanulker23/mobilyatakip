@@ -114,6 +114,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/stock/{stock}', [StockController::class, 'update'])->name('stock.update');
 
     Route::resource('quotes', QuoteController::class);
+    Route::post('/quotes/actions/bulk-destroy', [QuoteController::class, 'bulkDestroy'])->name('quotes.bulk-destroy');
     Route::get('/quotes/{quote}/print', [QuoteController::class, 'print'])->name('quotes.print');
     Route::get('/quotes/{quote}/email', [QuoteController::class, 'email'])->name('quotes.email');
     Route::post('/quotes/{quote}/send-email', [QuoteController::class, 'sendEmail'])->name('quotes.sendEmail');
