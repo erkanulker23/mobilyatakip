@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class ShippingCompanyPayment extends BaseModel
 {
@@ -27,6 +28,16 @@ class ShippingCompanyPayment extends BaseModel
         'paymentDate' => 'date',
     ];
 
+    protected static function booted(): void
+    {
+        parent::booted();
+
+        static::deleting(function (ShippingCompanyPayment $payment) {
+            $payment->sales()->detach();
+            $payment->serviceTickets()->detach();
+        });
+    }
+
     public function shippingCompany(): BelongsTo
     {
         return $this->belongsTo(ShippingCompany::class, 'shippingCompanyId');
@@ -47,8 +58,28 @@ class ShippingCompanyPayment extends BaseModel
         return $this->belongsTo(Sale::class, 'saleId');
     }
 
+    public function sales(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Sale::class,
+            'shipping_company_payment_sales',
+            'shippingCompanyPaymentId',
+            'saleId',
+        );
+    }
+
     public function serviceTicket(): BelongsTo
     {
         return $this->belongsTo(ServiceTicket::class, 'serviceTicketId');
+    }
+
+    public function serviceTickets(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            ServiceTicket::class,
+            'shipping_company_payment_service_tickets',
+            'shippingCompanyPaymentId',
+            'serviceTicketId',
+        );
     }
 }

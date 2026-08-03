@@ -165,21 +165,7 @@
                         <td class="table-td">{{ $pm->paymentDate?->format('d.m.Y') }}</td>
                         <td class="table-td text-right font-medium text-emerald-600 dark:text-emerald-400">{{ number_format($pm->amount ?? 0, 0, ',', '.') }} ₺</td>
                         <td class="table-td">{{ $pt[$pm->paymentType ?? ''] ?? ucfirst($pm->paymentType ?? '—') }}</td>
-                        <td class="table-td text-sm">
-                            @if($pm->purchase)
-                            <a href="{{ route('purchases.show', $pm->purchase) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">Alış: {{ $pm->purchase->purchaseNumber }}</a>
-                            @elseif($pm->sale)
-                            <a href="{{ route('sales.show', $pm->sale) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">Sipariş: {{ $pm->sale->saleNumber }}</a>
-                            @elseif($pm->serviceTicket)
-                            <a href="{{ route('service-tickets.show', $pm->serviceTicket) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">SSH: {{ $pm->serviceTicket->ticketNumber }}</a>
-                            @elseif($pm->paymentFor)
-                            {{ $pm->paymentFor }}
-                            @elseif($pm->reference)
-                            {{ $pm->reference }}
-                            @else
-                            —
-                            @endif
-                        </td>
+                        <td class="table-td text-sm">@include('partials.shipping-payment-linked-records', ['payment' => $pm])</td>
                         <td class="table-td text-neutral-500 text-sm">{{ Str::limit($pm->notes ?? '—', 30) }}</td>
                         <td class="table-td text-right">@include('partials.action-buttons', ['show' => route('shipping-company-payments.show', $pm), 'edit' => route('shipping-company-payments.edit', $pm)])</td>
                     </tr>

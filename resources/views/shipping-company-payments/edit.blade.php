@@ -35,8 +35,8 @@
             'serviceTickets' => $serviceTickets,
             'linkType' => $linkType,
             'selectedPurchaseId' => $shippingCompanyPayment->purchaseId,
-            'selectedSaleId' => $shippingCompanyPayment->saleId,
-            'selectedServiceTicketId' => $shippingCompanyPayment->serviceTicketId,
+            'selectedSaleIds' => $shippingCompanyPayment->sales->pluck('id')->all(),
+            'selectedServiceTicketIds' => $shippingCompanyPayment->serviceTickets->pluck('id')->all(),
             'selectedPaymentFor' => $shippingCompanyPayment->paymentFor,
         ])
 

@@ -67,7 +67,15 @@ class ShippingCompanyController extends Controller
 
     public function show(ShippingCompany $shippingCompany)
     {
-        $shippingCompany->load(['purchases.supplier', 'payments.purchase', 'payments.sale', 'payments.serviceTicket', 'vehicles']);
+        $shippingCompany->load([
+            'purchases.supplier',
+            'payments.purchase',
+            'payments.sale',
+            'payments.sales.customer',
+            'payments.serviceTicket',
+            'payments.serviceTickets.customer',
+            'vehicles',
+        ]);
         return view('shipping-companies.show', compact('shippingCompany'));
     }
 

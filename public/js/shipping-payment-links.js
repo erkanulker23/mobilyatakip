@@ -3,6 +3,8 @@
         maxOptions: 300,
         searchField: ['text'],
         allowEmptyOption: true,
+        plugins: ['remove_button'],
+        persist: false,
     };
 
     function mountTomSelect(elementId, placeholder) {
@@ -11,13 +13,18 @@
         }
 
         const el = document.getElementById(elementId);
-        if (!el || el.tomselect) {
-            return el?.tomselect ?? null;
+        if (!el) {
+            return null;
+        }
+
+        if (el.tomselect) {
+            el.tomselect.destroy();
         }
 
         return new TomSelect(el, {
             ...tomSelectOptions,
             placeholder: placeholder,
+            maxItems: null,
         });
     }
 
@@ -72,8 +79,8 @@
         const purchaseSelect = document.getElementById('payment-purchase-id');
         const manualInput = document.getElementById('payment-for-manual');
 
-        setFieldName(saleSelect, type === 'sale' ? 'saleId' : '');
-        setFieldName(sshSelect, type === 'service_ticket' ? 'serviceTicketId' : '');
+        setFieldName(saleSelect, type === 'sale' ? 'saleIds[]' : '');
+        setFieldName(sshSelect, type === 'service_ticket' ? 'serviceTicketIds[]' : '');
         toggleRequired(purchaseSelect, type === 'purchase');
         toggleRequired(manualInput, type === 'manual');
 
@@ -85,6 +92,28 @@
             mountTomSelect('payment-service-ticket-id', 'SSH ara veya seçin...');
         }
     }
+
+    window.getShippingPaymentTomSelectValues = function (elementId) {
+        const el = document.getElementById(elementId);
+        if (!el) {
+            return [];
+        }
+
+        if (el.tomselect) {
+            const value = el.tomselect.getValue();
+            if (Array.isArray(value)) {
+                return value.filter(Boolean);
+            }
+
+            return value ? [value] : [];
+        }
+
+        if (el.multiple) {
+            return Array.from(el.selectedOptions).map((option) => option.value).filter(Boolean);
+        }
+
+        return el.value ? [el.value] : [];
+    };
 
     document.addEventListener('DOMContentLoaded', function () {
         const linkSelect = document.getElementById('payment-link-type');

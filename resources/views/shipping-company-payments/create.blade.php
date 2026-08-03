@@ -44,8 +44,8 @@
             'sales' => $sales,
             'serviceTickets' => $serviceTickets,
             'linkType' => $linkType,
-            'preselectedSaleId' => $preselectedSaleId ?? null,
-            'preselectedServiceTicketId' => $preselectedServiceTicketId ?? null,
+            'preselectedSaleIds' => $preselectedSaleIds ?? [],
+            'preselectedServiceTicketIds' => $preselectedServiceTicketIds ?? [],
             'preselectedPurchaseId' => $preselectedPurchaseId ?? null,
         ])
 
@@ -114,16 +114,16 @@ document.addEventListener('DOMContentLoaded', function() {
             if (linkTypeEl?.value) {
                 params.set('linkType', linkTypeEl.value);
             }
-            const saleEl = document.getElementById('payment-sale-id');
-            const saleVal = saleEl?.tomselect?.getValue?.() ?? saleEl?.value;
-            if (saleVal) {
-                params.set('saleId', saleVal);
-            }
-            const sshEl = document.getElementById('payment-service-ticket-id');
-            const sshVal = sshEl?.tomselect?.getValue?.() ?? sshEl?.value;
-            if (sshVal) {
-                params.set('serviceTicketId', sshVal);
-            }
+            const saleVals = window.getShippingPaymentTomSelectValues?.('payment-sale-id') ?? [];
+            params.delete('saleId');
+            params.delete('saleIds');
+            params.delete('saleIds[]');
+            saleVals.forEach(function(id) { params.append('saleIds[]', id); });
+            const sshVals = window.getShippingPaymentTomSelectValues?.('payment-service-ticket-id') ?? [];
+            params.delete('serviceTicketId');
+            params.delete('serviceTicketIds');
+            params.delete('serviceTicketIds[]');
+            sshVals.forEach(function(id) { params.append('serviceTicketIds[]', id); });
             const qs = params.toString();
             window.location = createUrl + (qs ? '?' + qs : '');
         }

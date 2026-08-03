@@ -105,13 +105,30 @@ class DashboardController extends Controller
             ->take(8)
             ->get();
 
-        $finalMeasurementSales = Sale::with(['customer.city', 'customer.district', 'personnel'])
+        $finalMeasurementCount = (int) Sale::query()
+            ->where('isCancelled', false)
+            ->where('needsFinalMeasurement', true)
+            ->count();
+
+        $finalMeasurementSales = Sale::with(['customer', 'personnel'])
             ->where('isCancelled', false)
             ->where('needsFinalMeasurement', true)
             ->orderBy('saleDate')
             ->orderBy('createdAt')
-            ->take(12)
+            ->take(8)
             ->get();
+
+        $upcomingSalesCount = (int) Sale::query()
+            ->where('isCancelled', false)
+            ->whereNotNull('dueDate')
+            ->whereDate('dueDate', '<=', $terminHorizon)
+            ->count();
+
+        $upcomingSshCount = (int) ServiceTicket::query()
+            ->whereNotIn('status', ['tamamlandi', 'iptal'])
+            ->whereNotNull('dueDate')
+            ->whereDate('dueDate', '<=', $terminHorizon)
+            ->count();
 
         $topPersonnel = Sale::query()
             ->join('personnel', 'sales.personnelId', '=', 'personnel.id')
@@ -130,32 +147,36 @@ class DashboardController extends Controller
             ->groupBy('personnel.id', 'personnel.name', 'personnel.title', 'personnel.photoUrl')
             ->orderByDesc('sales_count')
             ->orderByDesc('sales_total')
-            ->take(5)
+            ->take(3)
             ->get();
 
         $employeeOfTheMonth = $topPersonnel->first();
         $employeeOfTheMonthLabel = Carbon::now()->locale('tr')->isoFormat('MMMM YYYY');
 
+        $defaultWorkTab = $urgentDueSales->isNotEmpty() || $upcomingSales->isNotEmpty()
+            ? 'termin'
+            : ($finalMeasurementSales->isNotEmpty() ? 'olcu' : ($upcomingServiceTickets->isNotEmpty() ? 'ssh' : 'termin'));
+
         return view('dashboard.index', compact(
             'stats',
-            'last3Days',
             'monthlySales',
             'monthlyCollected',
             'monthlyReceivable',
             'monthlySalesCount',
-            'lastMonthSales',
-            'lastMonthSalesCount',
             'monthlyChange',
-            'avgOrderValue',
             'totalCustomers',
             'recentSales',
             'upcomingSales',
+            'upcomingSalesCount',
             'upcomingServiceTickets',
+            'upcomingSshCount',
             'finalMeasurementSales',
+            'finalMeasurementCount',
             'urgentDueSales',
             'topPersonnel',
             'employeeOfTheMonth',
             'employeeOfTheMonthLabel',
+            'defaultWorkTab',
         ) + ['terminAlertDays' => self::TERMIN_ALERT_DAYS]);
     }
 

@@ -69,25 +69,45 @@
                 </dd>
             </div>
             @endif
-            @if($shippingCompanyPayment->sale)
-            <div>
-                <dt class="form-label">Ürün teslimatı (sipariş)</dt>
-                <dd class="font-medium">
-                    <a href="{{ route('sales.show', $shippingCompanyPayment->sale) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">{{ $shippingCompanyPayment->sale->saleNumber ?? '—' }}</a>
-                    <span class="text-neutral-500 text-sm">({{ $shippingCompanyPayment->sale->customer?->name ?? '' }})</span>
+            @php
+                $linkedSales = $shippingCompanyPayment->sales->isNotEmpty()
+                    ? $shippingCompanyPayment->sales
+                    : ($shippingCompanyPayment->sale ? collect([$shippingCompanyPayment->sale]) : collect());
+                $linkedTickets = $shippingCompanyPayment->serviceTickets->isNotEmpty()
+                    ? $shippingCompanyPayment->serviceTickets
+                    : ($shippingCompanyPayment->serviceTicket ? collect([$shippingCompanyPayment->serviceTicket]) : collect());
+            @endphp
+            @if($linkedSales->isNotEmpty())
+            <div class="md:col-span-2">
+                <dt class="form-label">Ürün teslimatı (siparişler)</dt>
+                <dd class="font-medium space-y-1">
+                    @foreach($linkedSales as $sale)
+                    <div>
+                        <a href="{{ route('sales.show', $sale) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">{{ $sale->saleNumber ?? '—' }}</a>
+                        @if($sale->customer?->name)
+                        <span class="text-neutral-500 text-sm">({{ $sale->customer->name }})</span>
+                        @endif
+                    </div>
+                    @endforeach
                 </dd>
             </div>
             @endif
-            @if($shippingCompanyPayment->serviceTicket)
-            <div>
-                <dt class="form-label">İlgili SSH</dt>
-                <dd class="font-medium">
-                    <a href="{{ route('service-tickets.show', $shippingCompanyPayment->serviceTicket) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">{{ $shippingCompanyPayment->serviceTicket->ticketNumber ?? '—' }}</a>
-                    <span class="text-neutral-500 text-sm">({{ $shippingCompanyPayment->serviceTicket->customer?->name ?? '' }})</span>
+            @if($linkedTickets->isNotEmpty())
+            <div class="md:col-span-2">
+                <dt class="form-label">İlgili SSH kayıtları</dt>
+                <dd class="font-medium space-y-1">
+                    @foreach($linkedTickets as $ticket)
+                    <div>
+                        <a href="{{ route('service-tickets.show', $ticket) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">{{ $ticket->ticketNumber ?? '—' }}</a>
+                        @if($ticket->customer?->name)
+                        <span class="text-neutral-500 text-sm">({{ $ticket->customer->name }})</span>
+                        @endif
+                    </div>
+                    @endforeach
                 </dd>
             </div>
             @endif
-            @if(!empty($shippingCompanyPayment->paymentFor))
+            @if(!empty($shippingCompanyPayment->paymentFor) && $linkedSales->isEmpty() && $linkedTickets->isEmpty() && !$shippingCompanyPayment->purchase)
             <div>
                 <dt class="form-label">Manuel açıklama</dt>
                 <dd class="font-medium text-neutral-800 dark:text-neutral-200">{{ $shippingCompanyPayment->paymentFor }}</dd>
