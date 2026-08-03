@@ -178,7 +178,10 @@ class ShippingCompanyPaymentController extends Controller
     private function serviceTicketsForSelect(?string $shippingCompanyId = null)
     {
         return ServiceTicket::with(['customer', 'sale'])
-            ->when($shippingCompanyId, fn ($q) => $q->where('shippingCompanyId', $shippingCompanyId))
+            ->whereNotIn('status', ['iptal'])
+            ->when($shippingCompanyId, function ($q) use ($shippingCompanyId) {
+                $q->orderByRaw('CASE WHEN shippingCompanyId = ? THEN 0 ELSE 1 END', [$shippingCompanyId]);
+            })
             ->orderBy('openedAt', 'desc')
             ->orderBy('createdAt', 'desc')
             ->limit(300)
@@ -194,6 +197,12 @@ class ShippingCompanyPaymentController extends Controller
             return 'sale';
         }
         if ($payment->serviceTicketId) {
+            return 'service_ticket';
+        }
+        if ($payment->paymentFor === 'Ürün teslimatı ödemesi') {
+            return 'sale';
+        }
+        if ($payment->paymentFor === 'SSH ödemesi') {
             return 'service_ticket';
         }
         if ($payment->paymentFor) {
@@ -239,6 +248,13 @@ class ShippingCompanyPaymentController extends Controller
             'manual' => $validated['paymentFor'] = trim((string) $request->input('paymentFor', '')) ?: null,
             default => null,
         };
+
+        if ($linkType === 'sale' && empty($validated['saleId'])) {
+            $validated['paymentFor'] = 'Ürün teslimatı ödemesi';
+        }
+        if ($linkType === 'service_ticket' && empty($validated['serviceTicketId'])) {
+            $validated['paymentFor'] = 'SSH ödemesi';
+        }
 
         if ($linkType === 'purchase' && empty($validated['purchaseId'])) {
             throw ValidationException::withMessages(['purchaseId' => 'Alış faturası seçiniz.']);

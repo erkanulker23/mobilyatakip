@@ -12,7 +12,7 @@
         <span class="text-neutral-700 dark:text-neutral-300">Nakliye Ödemesi Yap</span>
     </div>
     <h1 class="page-title">Nakliye Ödemesi Yap</h1>
-    <p class="page-desc">Nakliye firmasına ödeme kaydı — ürün teslimatında sipariş, SSH ödemesinde servis kaydı isteğe bağlı seçilebilir</p>
+    <p class="page-desc">Önce ödeme türünü seçin; ürün teslimatında satış fişi, SSH ödemesinde SSH kaydı isteğe bağlı bağlanabilir</p>
 </div>
 
 @if(session('error'))
@@ -115,12 +115,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 params.set('linkType', linkTypeEl.value);
             }
             const saleEl = document.getElementById('payment-sale-id');
-            if (saleEl?.value) {
-                params.set('saleId', saleEl.value);
+            const saleVal = saleEl?.tomselect?.getValue?.() ?? saleEl?.value;
+            if (saleVal) {
+                params.set('saleId', saleVal);
             }
             const sshEl = document.getElementById('payment-service-ticket-id');
-            if (sshEl?.value) {
-                params.set('serviceTicketId', sshEl.value);
+            const sshVal = sshEl?.tomselect?.getValue?.() ?? sshEl?.value;
+            if (sshVal) {
+                params.set('serviceTicketId', sshVal);
             }
             const qs = params.toString();
             window.location = createUrl + (qs ? '?' + qs : '');
