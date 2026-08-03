@@ -5,7 +5,7 @@
     $currentOrderStatus = \App\Support\SaleDelivery::currentStatus($sale);
     $initialDeliveryStatus = old('deliveryStatus', $currentOrderStatus);
 @endphp
-<div x-data="{
+<div x-data='{
     showCustomerEmail: false,
     showStatusModal: @json(old('deliveryStatus') !== null || $errors->has('deliveredAt')),
     showPaymentModal: @json(session('open_payment_modal') || (old('redirectToSale') && old('redirectToSale') == $sale->id)),
@@ -14,7 +14,7 @@
         this.deliveryStatus = @json($currentOrderStatus);
         this.showStatusModal = true;
     }
-}">
+}'>
 <div class="mb-6">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
