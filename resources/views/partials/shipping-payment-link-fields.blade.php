@@ -7,41 +7,7 @@
     $requireLinkType = $requireLinkType ?? true;
 @endphp
 
-<div
-    class="space-y-4"
-    x-data="{
-        linkType: @json($linkType),
-        saleTs: null,
-        sshTs: null,
-        init() {
-            this.$watch('linkType', (value) => {
-                this.$nextTick(() => this.initTomSelectFor(value));
-            });
-            if (this.linkType) {
-                this.$nextTick(() => this.initTomSelectFor(this.linkType));
-            }
-        },
-        initTomSelectFor(type) {
-            if (typeof TomSelect === 'undefined') return;
-            if (type === 'sale') {
-                this.mountTomSelect('payment-sale-id', 'saleTs', 'Satış fişi ara veya seçin...');
-            }
-            if (type === 'service_ticket') {
-                this.mountTomSelect('payment-service-ticket-id', 'sshTs', 'SSH ara veya seçin...');
-            }
-        },
-        mountTomSelect(elementId, storeKey, placeholder) {
-            const el = document.getElementById(elementId);
-            if (!el || this[storeKey]) return;
-            this[storeKey] = new TomSelect(el, {
-                maxOptions: 300,
-                placeholder,
-                searchField: ['text'],
-                allowEmptyOption: true,
-            });
-        },
-    }"
->
+<div class="space-y-4" x-data="shippingPaymentLinkFields(@json($linkType))">
     <div>
         <label for="payment-link-type" class="form-label">Ödeme türü @if($requireLinkType)<span class="text-red-500">*</span>@endif</label>
         <select id="payment-link-type" name="linkType" x-model="linkType" class="form-select min-h-[44px]" @if($requireLinkType) required @endif>
@@ -108,3 +74,44 @@
         @error('paymentFor')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
     </div>
 </div>
+
+<script>
+function shippingPaymentLinkFields(initialLinkType) {
+    return {
+        linkType: initialLinkType || '',
+        saleTs: null,
+        sshTs: null,
+        init() {
+            this.$watch('linkType', (value) => {
+                this.$nextTick(() => this.initTomSelectFor(value));
+            });
+            if (this.linkType) {
+                this.$nextTick(() => this.initTomSelectFor(this.linkType));
+            }
+        },
+        initTomSelectFor(type) {
+            if (typeof TomSelect === 'undefined') {
+                return;
+            }
+            if (type === 'sale') {
+                this.mountTomSelect('payment-sale-id', 'saleTs', 'Satış fişi ara veya seçin...');
+            }
+            if (type === 'service_ticket') {
+                this.mountTomSelect('payment-service-ticket-id', 'sshTs', 'SSH ara veya seçin...');
+            }
+        },
+        mountTomSelect(elementId, storeKey, placeholder) {
+            const el = document.getElementById(elementId);
+            if (!el || this[storeKey]) {
+                return;
+            }
+            this[storeKey] = new TomSelect(el, {
+                maxOptions: 300,
+                placeholder: placeholder,
+                searchField: ['text'],
+                allowEmptyOption: true,
+            });
+        },
+    };
+}
+</script>
