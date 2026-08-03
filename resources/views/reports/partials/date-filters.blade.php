@@ -1,8 +1,12 @@
 @php
     $years = $years ?? \App\Support\ReportFilters::yearOptions();
     $showYear = $showYear ?? true;
+    $embedded = $embedded ?? false;
+    $showSubmit = $showSubmit ?? ! $embedded;
 @endphp
+@if(! $embedded)
 <form method="get" class="flex flex-wrap gap-4 items-end">
+@endif
     @if($showYear)
     <div class="min-w-[120px]">
         <label class="form-label">Yıl</label>
@@ -28,5 +32,9 @@
         {!! $filter['html'] !!}
     </div>
     @endforeach
+    @if($showSubmit)
     <button type="submit" class="btn-primary">{{ $submitLabel ?? 'Filtrele' }}</button>
+    @endif
+@if(! $embedded)
 </form>
+@endif

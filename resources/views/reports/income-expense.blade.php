@@ -5,7 +5,7 @@
 <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
     <div>
         <h1 class="page-title">Gelir – Gider Raporu</h1>
-        <p class="page-desc">Tarih aralığına göre gelir ve gider özeti — {{ $periodLabel }}</p>
+        <p class="page-desc">Tahakkuk, nakit akışı ve hareket detayları — {{ $periodLabel }}</p>
     </div>
     @include('reports.partials.toolbar', ['printRoute' => 'reports.income-expense.print'])
 </div>
@@ -14,7 +14,12 @@
     @include('reports.partials.date-filters', ['submitLabel' => 'Hesapla'])
 </div>
 
-<div class="card overflow-hidden">
+@include('reports.partials.income-expense-summary-cards')
+
+<div class="card overflow-hidden mb-6">
+    <div class="card-header">Özet tablo</div>
     @include('reports.partials.income-expense-table')
 </div>
+
+@include('reports.partials.income-expense-details')
 @endsection

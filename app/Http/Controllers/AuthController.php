@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -38,6 +39,9 @@ class AuthController extends Controller
         }
 
         Auth::login($user, $request->boolean('remember'));
+        if (Schema::hasColumn($user->getTable(), 'lastLoginAt')) {
+            $user->update(['lastLoginAt' => now()]);
+        }
         $request->session()->regenerate();
         return redirect()->intended(route('dashboard'));
     }

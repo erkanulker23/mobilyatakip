@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\CustomerPayment;
 use App\Models\Expense;
+use App\Models\Personnel;
+use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -108,9 +110,12 @@ class ReportsController extends Controller
             now()->endOfDay(),
         );
 
+        $personnelOptions = $this->salesPersonnelOptions();
+        $filters = $this->salesFilterState($request, $personnelOptions);
+
         return view('reports.sales', array_merge(
-            compact('from', 'to', 'year'),
-            $this->salesData($from, $to),
+            compact('from', 'to', 'year', 'personnelOptions', 'filters'),
+            $this->salesData($from, $to, $request),
         ));
     }
 
@@ -122,9 +127,12 @@ class ReportsController extends Controller
             now()->endOfDay(),
         );
 
+        $personnelOptions = $this->salesPersonnelOptions();
+        $filters = $this->salesFilterState($request, $personnelOptions);
+
         return view('reports.print.sales', array_merge(
-            compact('from', 'to', 'year'),
-            $this->salesData($from, $to),
+            compact('from', 'to', 'year', 'personnelOptions', 'filters'),
+            $this->salesData($from, $to, $request),
         ));
     }
 
@@ -233,26 +241,125 @@ class ReportsController extends Controller
         ));
     }
 
-    /** @return array<string, float> */
+    /** @return array<string, mixed> */
     private function incomeExpenseData(Carbon $from, Carbon $to): array
     {
+        $gelir = (float) Sale::whereBetween('saleDate', [$from, $to])->where('isCancelled', false)->sum('grandTotal');
+        $salesCount = (int) Sale::whereBetween('saleDate', [$from, $to])->where('isCancelled', false)->count();
+
+        $tahsilat = (float) CustomerPayment::whereBetween('paymentDate', [$from, $to])->sum('amount');
+        $gider = (float) Expense::whereBetween('expenseDate', [$from, $to])->sum('amount');
+        $tedarikciOdeme = (float) SupplierPayment::whereBetween('paymentDate', [$from, $to])->sum('amount');
+
+        $alis = (float) Purchase::whereBetween('purchaseDate', [$from, $to])->where('isCancelled', false)->sum('grandTotal');
+        $alisCount = (int) Purchase::whereBetween('purchaseDate', [$from, $to])->where('isCancelled', false)->count();
+
+        $toplamCikis = $gider + $tedarikciOdeme;
+        $netNakit = $tahsilat - $toplamCikis;
+        $donemKar = $gelir - $alis - $gider;
+        $tahsilatOrani = $gelir > 0.005 ? round($tahsilat / $gelir * 100, 1) : null;
+
+        $payments = CustomerPayment::with(['customer', 'sale', 'kasa'])
+            ->whereBetween('paymentDate', [$from, $to])
+            ->orderByDesc('paymentDate')
+            ->orderByDesc('createdAt')
+            ->get();
+
+        $expenses = Expense::with(['kasa'])
+            ->whereBetween('expenseDate', [$from, $to])
+            ->orderByDesc('expenseDate')
+            ->orderByDesc('createdAt')
+            ->get();
+
+        $supplierPayments = SupplierPayment::with(['supplier', 'purchase', 'kasa'])
+            ->whereBetween('paymentDate', [$from, $to])
+            ->orderByDesc('paymentDate')
+            ->orderByDesc('createdAt')
+            ->get();
+
+        $tahsilatByType = $payments
+            ->groupBy(fn (CustomerPayment $p) => $p->paymentType ?: 'diger')
+            ->map(fn ($items, $type) => (object) [
+                'type' => $type,
+                'label' => \App\Support\PaymentType::label($type),
+                'total' => (float) $items->sum('amount'),
+                'count' => $items->count(),
+            ])
+            ->sortByDesc('total')
+            ->values();
+
+        $giderByCategory = $expenses
+            ->groupBy(fn (Expense $e) => filled($e->category) ? $e->category : 'Diğer')
+            ->map(fn ($items, $category) => (object) [
+                'category' => $category,
+                'total' => (float) $items->sum('amount'),
+                'count' => $items->count(),
+            ])
+            ->sortByDesc('total')
+            ->values();
+
+        $tedarikciBySupplier = $supplierPayments
+            ->groupBy(fn (SupplierPayment $p) => $p->supplier?->name ?? '—')
+            ->map(fn ($items, $name) => (object) [
+                'name' => $name,
+                'total' => (float) $items->sum('amount'),
+                'count' => $items->count(),
+            ])
+            ->sortByDesc('total')
+            ->values();
+
         return [
-            'gelir' => (float) Sale::whereBetween('saleDate', [$from, $to])->where('isCancelled', false)->sum('grandTotal'),
-            'tahsilat' => (float) CustomerPayment::whereBetween('paymentDate', [$from, $to])->sum('amount'),
-            'gider' => (float) Expense::whereBetween('expenseDate', [$from, $to])->sum('amount'),
-            'tedarikciOdeme' => (float) SupplierPayment::whereBetween('paymentDate', [$from, $to])->sum('amount'),
+            'gelir' => $gelir,
+            'salesCount' => $salesCount,
+            'tahsilat' => $tahsilat,
+            'gider' => $gider,
+            'tedarikciOdeme' => $tedarikciOdeme,
+            'alis' => $alis,
+            'alisCount' => $alisCount,
+            'toplamCikis' => $toplamCikis,
+            'netNakit' => $netNakit,
+            'donemKar' => $donemKar,
+            'tahsilatOrani' => $tahsilatOrani,
+            'tahsilatByType' => $tahsilatByType,
+            'giderByCategory' => $giderByCategory,
+            'tedarikciBySupplier' => $tedarikciBySupplier,
+            'payments' => $payments,
+            'expenses' => $expenses,
+            'supplierPayments' => $supplierPayments,
         ];
     }
 
     /** @return array<string, mixed> */
-    private function salesData(Carbon $from, Carbon $to): array
+    private function salesData(Carbon $from, Carbon $to, Request $request): array
     {
-        $sales = Sale::with(['customer', 'personnel'])
+        $query = Sale::with(['customer', 'personnel'])
             ->where('isCancelled', false)
-            ->whereBetween('saleDate', [$from, $to])
+            ->whereBetween('saleDate', [$from, $to]);
+
+        if ($request->filled('personnelId')) {
+            if ($request->input('personnelId') === 'none') {
+                $query->whereNull('personnelId');
+            } else {
+                $query->where('personnelId', $request->input('personnelId'));
+            }
+        }
+
+        $sales = $query
             ->orderByDesc('saleDate')
             ->orderByDesc('createdAt')
             ->get();
+
+        if ($request->filled('odeme')) {
+            $sales = $sales->filter(function (Sale $s) use ($request) {
+                $remaining = CustomerBalance::saleRemaining($s);
+
+                return match ($request->input('odeme')) {
+                    'borclu' => $remaining > 0.005,
+                    'borcsuz' => $remaining <= 0.005,
+                    default => true,
+                };
+            })->values();
+        }
 
         return [
             'sales' => $sales,
@@ -262,6 +369,44 @@ class ReportsController extends Controller
                 'paidAmount' => (float) $sales->sum('paidAmount'),
                 'remaining' => (float) $sales->sum(fn (Sale $s) => CustomerBalance::saleRemaining($s)),
             ],
+        ];
+    }
+
+    /** Sistem hesabı bağlı aktif personel */
+    private function salesPersonnelOptions()
+    {
+        return Personnel::query()
+            ->where('isActive', true)
+            ->whereNotNull('userId')
+            ->orderBy('name')
+            ->get();
+    }
+
+    /** @return array{personnelId: ?string, odeme: ?string, label: ?string} */
+    private function salesFilterState(Request $request, $personnelOptions): array
+    {
+        $personnelId = $request->input('personnelId');
+        $odeme = $request->input('odeme');
+
+        $labels = [];
+        if ($personnelId === 'none') {
+            $labels[] = 'Personel atanmamış';
+        } elseif ($personnelId) {
+            $person = $personnelOptions->firstWhere('id', $personnelId)
+                ?? Personnel::find($personnelId);
+            $labels[] = 'Personel: ' . ($person?->name ?? '—');
+        }
+
+        if ($odeme === 'borclu') {
+            $labels[] = 'Borçlular';
+        } elseif ($odeme === 'borcsuz') {
+            $labels[] = 'Borçsuzlar';
+        }
+
+        return [
+            'personnelId' => $personnelId,
+            'odeme' => $odeme,
+            'label' => $labels !== [] ? implode(' · ', $labels) : null,
         ];
     }
 

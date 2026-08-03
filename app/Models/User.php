@@ -27,6 +27,7 @@ class User extends Authenticatable implements CanResetPasswordContract
         'password',
         'role',
         'isActive',
+        'lastLoginAt',
         'photoUrl',
         'notificationsDismissedAt',
     ];
@@ -35,6 +36,7 @@ class User extends Authenticatable implements CanResetPasswordContract
 
     protected $casts = [
         'isActive' => 'boolean',
+        'lastLoginAt' => 'datetime',
         'notificationsDismissedAt' => 'datetime',
     ];
 

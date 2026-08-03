@@ -41,6 +41,7 @@
                     <th class="table-th">E-posta</th>
                     <th class="table-th">Telefon</th>
                     <th class="table-th">Unvan</th>
+                    <th class="table-th">Son giriş</th>
                     <th class="table-th text-right w-40">İşlemler</th>
                 </tr>
             </thead>
@@ -63,6 +64,16 @@
                     <td class="table-td text-neutral-500">{{ $p->email ?? '—' }}</td>
                     <td class="table-td text-neutral-500">{{ $p->phone ?? '—' }}</td>
                     <td class="table-td text-neutral-500">{{ $p->title ?? '—' }}</td>
+                    <td class="table-td text-neutral-500 whitespace-nowrap">
+                        @if($p->user?->lastLoginAt)
+                            <span title="{{ $p->user->lastLoginAt->format('d.m.Y H:i') }}">{{ $p->user->lastLoginAt->locale('tr')->diffForHumans() }}</span>
+                            <span class="block text-xs text-neutral-400">{{ $p->user->lastLoginAt->format('d.m.Y H:i') }}</span>
+                        @elseif($p->userId)
+                            <span class="text-neutral-400">Henüz giriş yok</span>
+                        @else
+                            <span class="text-neutral-400">Sistem hesabı yok</span>
+                        @endif
+                    </td>
                     <td class="table-td">
                         @include('partials.action-buttons', [
                             'show' => route('personnel.show', $p),
@@ -72,7 +83,7 @@
                     </td>
                 </tr>
                 @empty
-                <x-data-table-empty :colspan="5" message="Kayıt bulunamadı." :action-url="route('personnel.create')" action-label="Yeni Personel" />
+                <x-data-table-empty :colspan="6" message="Kayıt bulunamadı." :action-url="route('personnel.create')" action-label="Yeni Personel" />
                 @endforelse
             </tbody>
         </table>
