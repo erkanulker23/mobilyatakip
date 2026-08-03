@@ -1,120 +1,122 @@
 @php $company = \App\Models\Company::first(); @endphp
 <div class="print-document print-document--fit card overflow-hidden print:shadow-none print:border-0" role="document" aria-label="Sevkiyat gönder fişi">
-    <div class="print-doc-inner p-4 md:p-6 lg:p-8">
-        @include('partials.print-brand-header', [
-            'documentTitle' => $documentTitle ?? 'SEVKİYAT FİŞİ',
-            'documentNumber' => $documentNumber,
-            'documentDate' => $documentDate ?? null,
-            'documentSubtitle' => !empty($dueDate) ? 'Teslim: ' . $dueDate->format('d.m.Y') : null,
-        ])
+    <div class="print-fit-target">
+        <div class="print-doc-inner">
+            @include('partials.print-brand-header', [
+                'documentTitle' => $documentTitle ?? 'SEVKİYAT FİŞİ',
+                'documentNumber' => $documentNumber,
+                'documentDate' => $documentDate ?? null,
+                'documentSubtitle' => !empty($dueDate) ? 'Teslim: ' . $dueDate->format('d.m.Y') : null,
+            ])
 
-        @if(!empty($documentNotice))
-        <div class="print-info-banner print-section text-sm text-neutral-800 p-3 mb-4">
-            {!! $documentNotice !!}
-        </div>
-        @endif
-
-        <div class="print-section-lg grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-                <h3 class="text-xs font-semibold text-neutral-500 uppercase mb-2">{{ $partyLabel ?? 'Teslimat Adresi' }}</h3>
-                <p class="font-semibold text-slate-900">{{ $partyName ?? '-' }}</p>
-                @if(!empty($partyAddress))
-                <p class="text-sm text-slate-600 mt-1 whitespace-pre-wrap">{{ $partyAddress }}</p>
-                @else
-                <p class="text-sm text-amber-700 mt-1">Adres tanımlı değil.</p>
-                @endif
-                @if(!empty($partyPhone))<p class="text-sm text-slate-600 mt-1">{{ $partyPhone }}</p>@endif
-                @if(!empty($partyPhone2))<p class="text-sm text-slate-600">{{ $partyPhone2 }}</p>@endif
-                @if(!empty($partyEmail))<p class="text-sm text-slate-600">{{ $partyEmail }}</p>@endif
-            </div>
-            @if(!empty($personnelName) || !empty($items))
-            <div class="md:text-right text-sm text-slate-600 space-y-1">
-                @if(!empty($personnelName))
-                <p>Temsilci: <span class="font-medium text-slate-900">{{ $personnelName }}</span></p>
-                @endif
-                <p>Kalem: <span class="font-medium text-slate-900">{{ count($items ?? []) }}</span></p>
+            @if(!empty($documentNotice))
+            <div class="print-info-banner print-section">
+                {!! $documentNotice !!}
             </div>
             @endif
-        </div>
 
-        <div class="print-section-lg overflow-x-auto">
-            <table class="print-table min-w-full">
-                <thead>
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase w-10">#</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Ürün / Hizmet</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase w-28">Stok Kodu</th>
-                        <th class="px-4 py-3 text-center text-xs font-semibold uppercase w-16">Adet</th>
-                        @if($showCheckColumn ?? (($slipVariant ?? 'shipment') === 'shipment'))
-                        <th class="px-4 py-3 text-center text-xs font-semibold uppercase w-12">✓</th>
-                        @endif
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-200">
-                    @forelse($items ?? [] as $i => $item)
-                    <tr>
-                        <td class="px-4 py-3 text-sm text-slate-600">{{ $i + 1 }}</td>
-                        <td class="px-4 py-3">
-                            <p class="font-medium text-neutral-900">{{ $item['name'] ?? '-' }}</p>
-                            @if(!empty($item['description']))
-                            @include('partials.item-description-list', ['description' => $item['description'], 'listClass' => 'item-description-list list-disc list-inside text-xs text-neutral-500 mt-0.5 space-y-0.5'])
+            <div class="print-meta-grid print-section-lg">
+                <div class="print-card">
+                    <p class="print-label">{{ $partyLabel ?? 'Teslimat Adresi' }}</p>
+                    <p class="print-party-name">{{ $partyName ?? '-' }}</p>
+                    @if(!empty($partyAddress))
+                    <p class="print-muted mt-1 whitespace-pre-wrap">{{ $partyAddress }}</p>
+                    @else
+                    <p class="print-muted mt-1">Adres tanımlı değil.</p>
+                    @endif
+                    @if(!empty($partyPhone))<p class="print-muted mt-1">{{ $partyPhone }}</p>@endif
+                    @if(!empty($partyPhone2))<p class="print-muted">{{ $partyPhone2 }}</p>@endif
+                    @if(!empty($partyEmail))<p class="print-muted">{{ $partyEmail }}</p>@endif
+                </div>
+                @if(!empty($personnelName) || !empty($items))
+                <div class="print-card print-card--meta">
+                    @if(!empty($personnelName))
+                    <p class="print-muted">Temsilci: <span class="font-medium">{{ $personnelName }}</span></p>
+                    @endif
+                    <p class="print-muted mt-1">Kalem: <span class="font-medium">{{ count($items ?? []) }}</span></p>
+                </div>
+                @endif
+            </div>
+
+            <div class="print-section-lg">
+                <table class="print-table">
+                    <thead>
+                        <tr>
+                            <th class="print-col-no text-left">#</th>
+                            <th class="text-left">Ürün / Hizmet</th>
+                            <th class="text-left" style="width:18%">Stok Kodu</th>
+                            <th class="print-col-qty text-center">Adet</th>
+                            @if($showCheckColumn ?? (($slipVariant ?? 'shipment') === 'shipment'))
+                            <th class="text-center" style="width:8%">✓</th>
                             @endif
-                        </td>
-                        <td class="px-4 py-3 text-sm text-slate-600">{{ $item['sku'] ?? '—' }}</td>
-                        <td class="px-4 py-3 text-center font-semibold text-slate-900">{{ $item['quantity'] ?? 0 }}</td>
-                        @if($showCheckColumn ?? (($slipVariant ?? 'shipment') === 'shipment'))
-                        <td class="px-4 py-3 text-center">
-                            <span class="inline-block w-4 h-4 border border-slate-400 rounded-sm"></span>
-                        </td>
-                        @endif
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="{{ ($showCheckColumn ?? (($slipVariant ?? 'shipment') === 'shipment')) ? 5 : 4 }}" class="px-4 py-6 text-center text-neutral-500">Sipariş kalemi yok.</td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        @if(!empty($notes))
-        <div class="print-section mt-4 pt-3 border-t border-neutral-200">
-            <h3 class="text-xs font-semibold text-neutral-500 uppercase mb-1">Sipariş Notları</h3>
-            <p class="text-sm text-neutral-700 whitespace-pre-wrap">{{ $notes }}</p>
-        </div>
-        @endif
-
-        <div class="print-signatures mt-6">
-            @if(($slipVariant ?? 'shipment') === 'shipment')
-            <p class="text-sm text-neutral-700 mb-4">
-                Yukarıda listelenen ürün / hizmetleri <strong>eksiksiz</strong> ve <strong>hasarsız</strong> olarak teslim aldığımı beyan ederim.
-            </p>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                    <p class="text-xs font-semibold text-neutral-500 uppercase mb-8">Sevkiyat Görevlisi</p>
-                    <div class="sig-line">Ad Soyad / İmza</div>
-                    <div class="sig-line mt-10">Tarih</div>
-                </div>
-                <div>
-                    <p class="text-xs font-semibold text-neutral-500 uppercase mb-8">Müşteri (Teslim Alan)</p>
-                    <div class="sig-line">Ad Soyad / İmza</div>
-                    <div class="sig-line mt-10">Tarih</div>
-                </div>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($items ?? [] as $i => $item)
+                        <tr>
+                            <td class="print-col-no print-muted">{{ $i + 1 }}</td>
+                            <td>
+                                <span class="font-medium">{{ $item['name'] ?? '-' }}</span>
+                                @if(!empty($item['description']))
+                                @include('partials.item-description-list', ['description' => $item['description']])
+                                @endif
+                            </td>
+                            <td class="print-muted">{{ $item['sku'] ?? '—' }}</td>
+                            <td class="text-center font-medium">{{ $item['quantity'] ?? 0 }}</td>
+                            @if($showCheckColumn ?? (($slipVariant ?? 'shipment') === 'shipment'))
+                            <td class="text-center">
+                                <span class="inline-block w-4 h-4 border border-neutral-400"></span>
+                            </td>
+                            @endif
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="{{ ($showCheckColumn ?? (($slipVariant ?? 'shipment') === 'shipment')) ? 5 : 4 }}" class="text-center print-muted py-4">Sipariş kalemi yok.</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
-            @else
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                    <p class="text-xs font-semibold text-neutral-500 uppercase mb-8">Atölye Sorumlusu</p>
-                    <div class="sig-line">Ad Soyad / İmza</div>
-                    <div class="sig-line mt-10">Tarih</div>
-                </div>
-                <div>
-                    <p class="text-xs font-semibold text-neutral-500 uppercase mb-8">Kontrol / Onay</p>
-                    <div class="sig-line">Ad Soyad / İmza</div>
-                    <div class="sig-line mt-10">Tarih</div>
-                </div>
+
+            @if(!empty($notes))
+            <div class="print-notes-block print-section">
+                <p class="print-label">Sipariş Notları</p>
+                <p class="whitespace-pre-wrap">{{ $notes }}</p>
             </div>
             @endif
+
+            <div class="print-signatures">
+                @if(($slipVariant ?? 'shipment') === 'shipment')
+                <p class="text-sm mb-4">
+                    Yukarıda listelenen ürün / hizmetleri <strong>eksiksiz</strong> ve <strong>hasarsız</strong> olarak teslim aldığımı beyan ederim.
+                </p>
+                <div class="grid grid-cols-2 gap-8">
+                    <div>
+                        <p class="print-label mb-8">Sevkiyat Görevlisi</p>
+                        <div class="sig-line">Ad Soyad / İmza</div>
+                        <div class="sig-line mt-10">Tarih</div>
+                    </div>
+                    <div>
+                        <p class="print-label mb-8">Müşteri (Teslim Alan)</p>
+                        <div class="sig-line">Ad Soyad / İmza</div>
+                        <div class="sig-line mt-10">Tarih</div>
+                    </div>
+                </div>
+                @else
+                <div class="grid grid-cols-2 gap-8">
+                    <div>
+                        <p class="print-label mb-8">Atölye Sorumlusu</p>
+                        <div class="sig-line">Ad Soyad / İmza</div>
+                        <div class="sig-line mt-10">Tarih</div>
+                    </div>
+                    <div>
+                        <p class="print-label mb-8">Kontrol / Onay</p>
+                        <div class="sig-line">Ad Soyad / İmza</div>
+                        <div class="sig-line mt-10">Tarih</div>
+                    </div>
+                </div>
+                @endif
+            </div>
         </div>
     </div>
 </div>

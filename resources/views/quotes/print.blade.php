@@ -17,15 +17,17 @@
     'partyPhone' => $quote->customer?->phone,
     'partyEmail' => $quote->customer?->email,
     'partyTax' => ($quote->customer?->taxNumber ? $quote->customer->taxNumber . ($quote->customer->taxOffice ? ' / ' . $quote->customer->taxOffice : '') : null),
-    'extraInfo' => '<p class="text-sm text-slate-600">Teklif tarihi: ' . ($quoteIssuedAt?->format('d.m.Y') ?? '-') . '</p>'
-        . '<p class="text-sm font-semibold text-slate-900 mt-1">Son geçerlilik: ' . ($quoteValidUntil?->format('d.m.Y') ?? '-') . '</p>'
-        . '<p class="text-sm text-slate-600 mt-1">Personel: ' . e($quote->personnel?->name ?? '-') . '</p>',
+    'extraInfo' => '<p>Teklif tarihi: ' . ($quoteIssuedAt?->format('d.m.Y') ?? '-') . '</p>'
+        . '<p><strong>Son geçerlilik:</strong> ' . ($quoteValidUntil?->format('d.m.Y') ?? '-') . '</p>'
+        . '<p>Personel: ' . e($quote->personnel?->name ?? '-') . '</p>',
     'items' => $quote->items->map(fn($i) => ['name' => $i->product?->name ?? $i->productName, 'description' => $i->description, 'unitPrice' => $i->unitPrice, 'quantity' => $i->quantity, 'kdvRate' => $i->kdvRate, 'lineTotal' => $i->lineTotal])->toArray(),
     'showKdv' => true,
     'kdvIncluded' => (bool) ($quote->kdvIncluded ?? true),
     'subtotal' => $quote->subtotal,
     'kdvTotal' => $quote->kdvTotal,
-    'discount' => ($quote->generalDiscountPercent ?? 0) > 0 ? $quote->subtotal * ($quote->generalDiscountPercent / 100) : ($quote->generalDiscountAmount ?? 0),
+    'discount' => ($quote->generalDiscountPercent ?? 0) > 0
+        ? round($quote->items->sum(fn ($i) => (float) $i->lineTotal) * (($quote->generalDiscountPercent ?? 0) / 100), 2)
+        : ($quote->generalDiscountAmount ?? 0),
     'grandTotal' => $quote->grandTotal,
     'notes' => $quote->notes,
 ])
