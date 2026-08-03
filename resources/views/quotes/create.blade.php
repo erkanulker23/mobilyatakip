@@ -228,7 +228,7 @@
 
                 <div class="sale-summary-panel" id="quoteTotals">
                     <p class="text-xs uppercase tracking-wider text-neutral-400 mb-3">Teklif Özeti</p>
-                    <div class="sale-summary-row"><span>Ara Toplam</span><strong id="quoteSubtotalBeforeDiscDisplay">0 ₺</strong></div>
+                    <div class="sale-summary-row {{ old('kdvIncluded', '1') == '1' ? 'hidden' : '' }}" id="subtotalSummaryRow"><span>Ara Toplam</span><strong id="quoteSubtotalBeforeDiscDisplay">0 ₺</strong></div>
                     <div id="quoteDiscountPctRow" class="sale-summary-row hidden"><span>İskonto %</span><strong id="quoteDiscountPctDisplay" class="text-amber-300">0 ₺</strong></div>
                     <div id="quoteDiscountAmtRow" class="sale-summary-row hidden"><span>İskonto ₺</span><strong id="quoteDiscountAmtDisplay" class="text-amber-300">0 ₺</strong></div>
                     <div id="quoteGeneralDiscountRow" class="sale-summary-row hidden"><span>Genel İskonto</span><strong id="quoteGeneralDiscountDisplay" class="text-amber-300">0 ₺</strong></div>
@@ -406,8 +406,10 @@ function roundMoney(n) {
 }
 function syncKdvSummaryVisibility() {
     const kdvIncl = document.querySelector('select[name="kdvIncluded"]')?.value === '1';
-    const row = document.getElementById('kdvSummaryRow');
-    if (row) row.classList.toggle('hidden', kdvIncl);
+    ['kdvSummaryRow', 'subtotalSummaryRow'].forEach(function (id) {
+        const row = document.getElementById(id);
+        if (row) row.classList.toggle('hidden', kdvIncl);
+    });
 }
 function updateQuoteTotals() {
     const kdvIncl = document.querySelector('select[name="kdvIncluded"]')?.value === '1';

@@ -33,7 +33,9 @@
 
         {{-- Kalemler Tablosu --}}
         @php
+            $kdvIncludedDoc = $kdvIncluded ?? true;
             $displayKdvDetails = isset($kdvIncluded) ? !($kdvIncluded ?? true) : ($showKdv ?? false);
+            $displaySubtotal = !$kdvIncludedDoc && isset($subtotal);
         @endphp
         <div class="print-section-lg overflow-x-auto -mx-2">
             <table class="print-table min-w-full">
@@ -83,7 +85,7 @@
 
         {{-- Toplamlar --}}
         <div class="print-section mt-4 flex flex-col items-end">
-            @if(isset($subtotal))
+            @if($displaySubtotal)
             <div class="flex justify-end gap-8 text-sm">
                 <span class="text-slate-600">Ara Toplam:</span>
                 <span class="font-medium w-32 text-right">{{ number_format($subtotal ?? 0, 0, ',', '.') }} ₺</span>

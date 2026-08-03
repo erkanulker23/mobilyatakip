@@ -55,10 +55,12 @@
         <td align="right" style="padding: 10px 12px; border-bottom: 1px solid #f1f5f9;">{{ number_format($item->lineTotal ?? 0, 2, ',', '.') }} ₺</td>
     </tr>
     @endforeach
+    @if(!($sale->kdvIncluded ?? true))
     <tr>
         <td colspan="2" align="right" style="padding: 10px 12px; color: #64748b;">Ara Toplam</td>
         <td align="right" style="padding: 10px 12px;">{{ number_format($sale->subtotal ?? 0, 2, ',', '.') }} ₺</td>
     </tr>
+    @endif
     @if(!($sale->kdvIncluded ?? true))
     <tr>
         <td colspan="2" align="right" style="padding: 10px 12px; color: #64748b;">KDV</td>

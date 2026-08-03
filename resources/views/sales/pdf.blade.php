@@ -114,7 +114,7 @@
 
 <div class="totals">
     <table>
-        @if(isset($subtotal))
+        @if(empty($kdvIncluded) && isset($subtotal))
         <tr><td class="muted">Ara Toplam:</td><td style="text-align:right;">{{ number_format($subtotal ?? 0, 0, ',', '.') }} ₺</td></tr>
         @endif
         @if(!empty($showKdv) && empty($kdvIncluded) && isset($kdvTotal))

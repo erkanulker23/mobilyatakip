@@ -284,7 +284,7 @@
 
                 <div class="sale-summary-panel" id="saleTotals">
                     <p class="text-xs uppercase tracking-wider text-neutral-400 mb-3">Sipariş Özeti</p>
-                    <div class="sale-summary-row"><span>Ara Toplam</span><strong id="subtotalBeforeDiscDisplay">0 ₺</strong></div>
+                    <div class="sale-summary-row {{ old('kdvIncluded', $sale->kdvIncluded ?? true) ? 'hidden' : '' }}" id="subtotalSummaryRow"><span>Ara Toplam</span><strong id="subtotalBeforeDiscDisplay">0 ₺</strong></div>
                     <div class="sale-summary-row {{ old('kdvIncluded', $sale->kdvIncluded ?? true) ? 'hidden' : '' }}" id="kdvSummaryRow"><span>KDV Toplam</span><strong id="kdvDisplay">0 ₺</strong></div>
                     <div id="saleDiscountGeneralRow" class="sale-summary-row hidden"><span>İndirim</span><strong id="saleDiscountGeneralDisplay" class="text-amber-300">0 ₺</strong></div>
                     <div class="sale-summary-total">
@@ -633,8 +633,10 @@ function readItemPrice(priceEl) {
 }
 function syncKdvSummaryVisibility() {
     const kdvIncl = document.querySelector('select[name="kdvIncluded"]')?.value === '1';
-    const row = document.getElementById('kdvSummaryRow');
-    if (row) row.classList.toggle('hidden', kdvIncl);
+    ['kdvSummaryRow', 'subtotalSummaryRow'].forEach(function (id) {
+        const row = document.getElementById(id);
+        if (row) row.classList.toggle('hidden', kdvIncl);
+    });
 }
 function updateSaleTotals() {
     const subtotalEl = document.getElementById('subtotalBeforeDiscDisplay');
