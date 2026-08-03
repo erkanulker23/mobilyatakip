@@ -85,6 +85,17 @@ class SaleDelivery
         };
     }
 
+    public static function numberClass(?string $status = null): string
+    {
+        return match ($status) {
+            self::DELIVERED => 'text-indigo-600 dark:text-indigo-400',
+            self::SSH => 'text-amber-600 dark:text-amber-500',
+            self::IN_PRODUCTION => 'text-violet-600 dark:text-violet-400',
+            self::IN_DISCUSSION => 'text-sky-600 dark:text-sky-400',
+            default => 'text-neutral-900 dark:text-neutral-100',
+        };
+    }
+
     public static function syncFromServiceTickets(Sale $sale): void
     {
         if ($sale->isCancelled ?? false) {

@@ -90,14 +90,20 @@
             </thead>
             <tbody>
                 @forelse($sales as $s)
-                @php $saleStatus = \App\Support\CustomerBalance::saleStatus($s); @endphp
+                @php
+                    $saleStatus = \App\Support\CustomerBalance::saleStatus($s);
+                    $orderStatus = \App\Support\SaleDelivery::currentStatus($s);
+                    $saleNumberClass = ($s->isCancelled ?? false)
+                        ? 'text-neutral-500 dark:text-neutral-400 line-through'
+                        : \App\Support\SaleDelivery::numberClass($orderStatus);
+                @endphp
                 <tr class="border-b border-neutral-50 hover:bg-neutral-50/50 transition-colors {{ ($s->isCancelled ?? false) ? 'opacity-60 bg-slate-50' : '' }}">
                     <td class="table-td">
                         <input type="checkbox" name="ids[]" value="{{ $s->id }}" class="sale-row-check rounded border-slate-300 text-green-600 focus:ring-green-500"
                                @change="toggleRow('{{ $s->id }}', $event.target.checked)">
                     </td>
                     <td class="table-td">
-                        <span class="font-medium text-neutral-900">{{ $s->saleNumber }}</span>
+                        <span class="font-medium {{ $saleNumberClass }}">{{ $s->saleNumber }}</span>
                         @if($s->isCancelled ?? false)<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 font-medium">İptal</span>@endif
                         @if($s->needsFinalMeasurement ?? false)<span class="block mt-1">@include('partials.final-measurement-badge', ['sale' => $s])</span>@endif
                     </td>
