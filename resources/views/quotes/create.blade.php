@@ -441,11 +441,20 @@ function updateQuoteTotals() {
         const lineEl = row.querySelector('.item-line-total');
         if (lineEl) lineEl.textContent = fmt(lineTotal) + ' ₺';
     });
-    const generalDisc = roundMoney(subtotal * (genDiscPct / 100) + (isNaN(genDiscAmt) ? 0 : genDiscAmt));
-    const afterDisc = Math.max(0, roundMoney(subtotal - generalDisc));
-    const ratio = subtotal > 0 ? afterDisc / subtotal : 0;
-    const kdvTotal = roundMoney(ratio * lineKdvSum);
-    const grandTotal = roundMoney(afterDisc + kdvTotal);
+    let generalDisc, kdvTotal, grandTotal;
+    if (kdvIncl) {
+        const grossBeforeGeneralDisc = roundMoney(subtotal + lineKdvSum);
+        generalDisc = roundMoney(grossBeforeGeneralDisc * (genDiscPct / 100) + (isNaN(genDiscAmt) ? 0 : genDiscAmt));
+        grandTotal = Math.max(0, roundMoney(grossBeforeGeneralDisc - generalDisc));
+        const ratio = grossBeforeGeneralDisc > 0 ? grandTotal / grossBeforeGeneralDisc : 0;
+        kdvTotal = roundMoney(ratio * lineKdvSum);
+    } else {
+        generalDisc = roundMoney(subtotal * (genDiscPct / 100) + (isNaN(genDiscAmt) ? 0 : genDiscAmt));
+        const afterDisc = Math.max(0, roundMoney(subtotal - generalDisc));
+        const ratio = subtotal > 0 ? afterDisc / subtotal : 0;
+        kdvTotal = roundMoney(ratio * lineKdvSum);
+        grandTotal = roundMoney(afterDisc + kdvTotal);
+    }
     const beforeDiscEl = document.getElementById('quoteSubtotalBeforeDiscDisplay');
     if (beforeDiscEl) {
         beforeDiscEl.textContent = fmt(subtotalBeforeDisc) + ' ₺';

@@ -70,18 +70,13 @@ class CalculationsAndDbTest extends TestCase
         $this->assertGreaterThan(0, (float) $quote->subtotal);
         $this->assertGreaterThan(0, (float) $quote->kdvTotal);
         $this->assertGreaterThan(0, (float) $quote->grandTotal);
-        $generalDisc = (float) $quote->subtotal * 0.10;
-        $afterDisc = (float) $quote->subtotal - $generalDisc;
-        $this->assertEqualsWithDelta(
-            $afterDisc + (float) $quote->kdvTotal,
-            (float) $quote->grandTotal,
-            0.02
-        );
-
         $items = QuoteItem::where('quoteId', $quote->id)->get();
         $this->assertCount(2, $items);
-        $sumLineTotal = $items->sum(fn ($i) => (float) $i->lineTotal);
-        $this->assertGreaterThan(0, $sumLineTotal);
+        $lineGross = $items->sum(fn ($i) => (float) $i->lineTotal);
+        $this->assertGreaterThan(0, $lineGross);
+
+        $expectedGeneralDisc = round($lineGross * 0.10, 2);
+        $this->assertEqualsWithDelta($lineGross - $expectedGeneralDisc, (float) $quote->grandTotal, 0.02);
     }
 
     /** Alış: supplierDiscountRate toplama uygulanıyor ve DB'de doğru */

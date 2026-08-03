@@ -351,11 +351,23 @@ class QuoteController extends Controller
                 'lineTotal' => $lineTotal,
             ]);
         }
-        $generalDisc = round($subtotal * (($quote->generalDiscountPercent ?? 0) / 100) + (float) ($quote->generalDiscountAmount ?? 0), 2);
-        $afterDisc = max(0, round($subtotal - $generalDisc, 2));
-        $ratio = $subtotal > 0 ? $afterDisc / $subtotal : 0;
-        $kdvTotal = round($ratio * $lineKdvSum, 2);
-        $grandTotal = round($afterDisc + $kdvTotal, 2);
+        if ($kdvIncluded) {
+            $grossBeforeGeneralDisc = round($subtotal + $lineKdvSum, 2);
+            $generalDisc = round(
+                $grossBeforeGeneralDisc * (($quote->generalDiscountPercent ?? 0) / 100)
+                + (float) ($quote->generalDiscountAmount ?? 0),
+                2
+            );
+            $grandTotal = max(0, round($grossBeforeGeneralDisc - $generalDisc, 2));
+            $ratio = $grossBeforeGeneralDisc > 0 ? $grandTotal / $grossBeforeGeneralDisc : 0;
+            $kdvTotal = round($ratio * $lineKdvSum, 2);
+        } else {
+            $generalDisc = round($subtotal * (($quote->generalDiscountPercent ?? 0) / 100) + (float) ($quote->generalDiscountAmount ?? 0), 2);
+            $afterDisc = max(0, round($subtotal - $generalDisc, 2));
+            $ratio = $subtotal > 0 ? $afterDisc / $subtotal : 0;
+            $kdvTotal = round($ratio * $lineKdvSum, 2);
+            $grandTotal = round($afterDisc + $kdvTotal, 2);
+        }
         $quote->update(['subtotal' => $subtotal, 'kdvTotal' => $kdvTotal, 'grandTotal' => $grandTotal]);
     }
 }
