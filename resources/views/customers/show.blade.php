@@ -176,14 +176,8 @@
                     <tbody>
                         @foreach($serviceTickets as $ticket)
                         @php
-                            $statusLabels = ['open' => 'Açık', 'in_progress' => 'İşlemde', 'closed' => 'Kapalı', 'cancelled' => 'İptal'];
-                            $statusLabel = $statusLabels[$ticket->status ?? ''] ?? ucfirst($ticket->status ?? '—');
-                            $statusClass = match($ticket->status ?? '') {
-                                'closed' => 'badge-green',
-                                'in_progress' => 'badge-blue',
-                                'cancelled' => 'badge-red',
-                                default => 'badge-amber',
-                            };
+                            $statusLabel = \App\Support\ServiceTicketStatus::label($ticket->status);
+                            $statusClass = \App\Support\ServiceTicketStatus::badgeClass($ticket->status);
                         @endphp
                         <tr class="border-b border-neutral-50 hover:bg-neutral-50/50 transition-colors">
                             <td class="table-td"><a href="{{ route('service-tickets.show', $ticket) }}" class="font-medium text-neutral-900 hover:underline">{{ $ticket->ticketNumber }}</a></td>
@@ -202,20 +196,31 @@
         <div class="card overflow-hidden">
             <div class="card-header flex items-center justify-between">
                 <span>Siparişler (Satışlar)</span>
-                <span class="text-xs font-normal text-neutral-500 dark:text-slate-400">{{ $customer->sales->count() }} satış</span>
+                <span class="text-xs font-normal text-neutral-500 dark:text-slate-400">{{ $customer->sales->where('isCancelled', false)->count() }} satış</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full">
                     <thead><tr class="border-b border-neutral-100 dark:border-slate-700"><th class="table-th">No</th><th class="table-th">Tarih</th><th class="table-th text-right">Tutar</th><th class="table-th text-right">Ödenen</th><th class="table-th text-right">Kalan</th><th class="table-th">Durum</th></tr></thead>
                     <tbody>
                         @forelse($customer->sales->where('isCancelled', false)->take(10) as $s)
-                        @php $saleStatus = \App\Support\CustomerBalance::saleStatus($s); @endphp
+                        @php
+                            $saleStatus = \App\Support\CustomerBalance::saleStatus($s);
+                            $remaining = \App\Support\CustomerBalance::saleRemaining($s);
+                        @endphp
                         <tr class="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
                             <td class="table-td"><a href="{{ route('sales.show', $s) }}" class="font-medium text-emerald-600 dark:text-emerald-400 hover:underline">{{ $s->saleNumber }}</a></td>
                             <td class="table-td">{{ $s->saleDate?->format('d.m.Y') }}</td>
                             <td class="table-td text-right font-medium">{{ number_format($s->grandTotal, 0, ',', '.') }} ₺</td>
                             <td class="table-td text-right text-emerald-600 dark:text-emerald-400">{{ number_format($s->paidAmount ?? 0, 0, ',', '.') }} ₺</td>
-                            <td class="table-td text-right">{{ number_format(\App\Support\CustomerBalance::saleRemaining($s), 0, ',', '.') }} ₺</td>
+                            <td class="table-td text-right">
+                                @if($remaining > 0.005)
+                                    <span class="text-red-600 dark:text-red-400 font-medium">{{ number_format($remaining, 0, ',', '.') }} ₺</span>
+                                @elseif($remaining < -0.005)
+                                    <span class="text-blue-600 dark:text-blue-400 font-medium">{{ number_format(abs($remaining), 0, ',', '.') }} ₺ fazla</span>
+                                @else
+                                    —
+                                @endif
+                            </td>
                             <td class="table-td">@include('partials.payment-status-badge', ['status' => $saleStatus])</td>
                         </tr>
                         @empty

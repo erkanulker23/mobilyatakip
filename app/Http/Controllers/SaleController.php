@@ -231,16 +231,13 @@ class SaleController extends Controller
             $q->whereDate('saleDate', '<=', $request->to);
         }
         if ($request->filled('deliveryStatus')) {
-            if ($request->deliveryStatus === \App\Support\SaleDelivery::FINAL_MEASUREMENT) {
-                $q->where('needsFinalMeasurement', true);
-            } elseif (in_array($request->deliveryStatus, \App\Support\SaleDelivery::statuses(), true)) {
-                $q->where('orderStatus', $request->deliveryStatus);
-            }
+            \App\Support\SaleDelivery::applyDeliveryFilter($q, $request->deliveryStatus);
         }
         if ($request->filled('paymentStatus')) {
             match ($request->paymentStatus) {
                 'borclu' => $q->whereRaw('grandTotal - COALESCE(paidAmount, 0) > 0.005'),
-                'odendi' => $q->whereRaw('grandTotal - COALESCE(paidAmount, 0) <= 0.005 AND grandTotal > 0'),
+                'alacakli' => $q->whereRaw('grandTotal - COALESCE(paidAmount, 0) < -0.005'),
+                'odendi' => $q->whereRaw('ABS(grandTotal - COALESCE(paidAmount, 0)) <= 0.005 AND grandTotal > 0'),
                 default => null,
             };
         }
@@ -259,6 +256,7 @@ class SaleController extends Controller
                 ->count(),
             'finalMeasurement' => (int) Sale::where('isCancelled', false)
                 ->where('needsFinalMeasurement', true)
+                ->pendingDelivery()
                 ->count(),
         ];
 
@@ -418,7 +416,7 @@ class SaleController extends Controller
                 ->orderBy('paymentDate', 'desc')
                 ->get();
         }
-        $saleRemaining = max(0, (float) $sale->grandTotal - (float) ($sale->paidAmount ?? 0));
+        $saleRemaining = \App\Support\CustomerBalance::saleRemaining($sale);
         $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
         $suppliers = Supplier::where('isActive', true)->orderBy('name')->get();
         return view('sales.show', compact('sale', 'unlinkedPayments', 'saleRemaining', 'kasalar', 'suppliers'));
@@ -488,11 +486,15 @@ class SaleController extends Controller
             $sale->update([
                 'orderStatus' => \App\Support\SaleDelivery::DELIVERED,
                 'deliveredAt' => $deliveredAt,
+                'needsFinalMeasurement' => false,
             ]);
             SaleActivity::logStatusChange($sale->fresh(), $fromStatus, \App\Support\SaleDelivery::DELIVERED, $deliveredAt);
             $message = 'Sipariş teslim edildi olarak işaretlendi.';
         } elseif ($status === \App\Support\SaleDelivery::SSH) {
-            $sale->update(['orderStatus' => \App\Support\SaleDelivery::SSH]);
+            $sale->update([
+                'orderStatus' => \App\Support\SaleDelivery::SSH,
+                'deliveredAt' => null,
+            ]);
             SaleActivity::logStatusChange($sale->fresh(), $fromStatus, \App\Support\SaleDelivery::SSH);
             $message = 'Sipariş SSH var olarak işaretlendi.';
         } elseif ($status === \App\Support\SaleDelivery::IN_PRODUCTION) {
@@ -610,7 +612,7 @@ class SaleController extends Controller
         if ($sale->isCancelled) {
             return redirect()->route('sales.show', $sale)->with('error', 'İptal edilmiş satış teslim edildi olarak işaretlenemez.');
         }
-        if ($sale->deliveredAt) {
+        if (\App\Support\SaleDelivery::isDelivered($sale)) {
             return redirect()->route('sales.show', $sale)->with('info', 'Bu satış zaten teslim edildi olarak işaretli.');
         }
         $fromStatus = \App\Support\SaleDelivery::currentStatus($sale);
@@ -618,6 +620,7 @@ class SaleController extends Controller
         $sale->update([
             'orderStatus' => 'delivered',
             'deliveredAt' => $deliveredAt,
+            'needsFinalMeasurement' => false,
         ]);
         SaleActivity::logStatusChange($sale->fresh(), $fromStatus, \App\Support\SaleDelivery::DELIVERED, $deliveredAt);
         return redirect()->route('sales.show', $sale)->with('success', 'Satış teslim edildi olarak işaretlendi.');
@@ -625,7 +628,7 @@ class SaleController extends Controller
 
     public function unmarkDelivered(Sale $sale)
     {
-        if (!$sale->deliveredAt) {
+        if (! \App\Support\SaleDelivery::isDelivered($sale)) {
             return redirect()->route('sales.show', $sale)->with('info', 'Bu satış teslim edildi olarak işaretli değil.');
         }
         $fromStatus = \App\Support\SaleDelivery::currentStatus($sale);

@@ -313,6 +313,7 @@ class ServiceTicketController extends Controller
         $validated['images'] = $images;
 
         $oldProblems = ServiceTicketStatus::normalizeProblems($serviceTicket->reportedProblems ?? []);
+        $oldSaleId = $serviceTicket->saleId;
         $serviceTicket->update($validated);
         $serviceTicket->refresh();
 
@@ -342,14 +343,9 @@ class ServiceTicketController extends Controller
                 'actionDate' => now(),
                 'notes' => 'Durum: ' . ServiceTicketStatus::label($currentStatus),
             ]);
-
-            if ($serviceTicket->saleId) {
-                $sale = Sale::find($serviceTicket->saleId);
-                if ($sale) {
-                    SaleDelivery::syncFromServiceTickets($sale);
-                }
-            }
         }
+
+        $this->syncLinkedSaleDelivery($oldSaleId, $serviceTicket->saleId);
 
         $this->auditService->logUpdate('service_ticket', $serviceTicket->id, [], [
             'ticketNumber' => $serviceTicket->ticketNumber,
@@ -418,6 +414,9 @@ class ServiceTicketController extends Controller
             'ticketNumber' => $serviceTicket->ticketNumber,
             'status' => $newStatus,
         ]);
+
+        $serviceTicket->refresh();
+        $this->syncLinkedSaleDelivery(null, $serviceTicket->saleId);
 
         return back()->with('success', 'Problem durumu güncellendi.');
     }
@@ -572,5 +571,22 @@ class ServiceTicketController extends Controller
         }
 
         return $validated;
+    }
+
+    private function syncLinkedSaleDelivery(?string $oldSaleId, ?string $newSaleId): void
+    {
+        if ($oldSaleId && $oldSaleId !== $newSaleId) {
+            $oldSale = Sale::find($oldSaleId);
+            if ($oldSale) {
+                SaleDelivery::syncFromServiceTickets($oldSale);
+            }
+        }
+
+        if ($newSaleId) {
+            $sale = Sale::find($newSaleId);
+            if ($sale) {
+                SaleDelivery::syncFromServiceTickets($sale);
+            }
+        }
     }
 }

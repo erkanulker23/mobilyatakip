@@ -154,6 +154,7 @@ class PersonnelController extends Controller
         $upcomingDueSales = $personnel->sales()
             ->with('customer')
             ->where('isCancelled', false)
+            ->pendingDelivery()
             ->whereNotNull('dueDate')
             ->whereDate('dueDate', '<=', $terminHorizon)
             ->orderBy('dueDate')

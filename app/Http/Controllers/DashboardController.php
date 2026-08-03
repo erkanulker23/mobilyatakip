@@ -83,7 +83,7 @@ class DashboardController extends Controller
 
         $urgentDueSales = Sale::with('customer')
             ->where('isCancelled', false)
-            ->whereNull('deliveredAt')
+            ->pendingDelivery()
             ->whereNotNull('dueDate')
             ->whereDate('dueDate', '<=', $terminAlertHorizon)
             ->orderBy('dueDate')
@@ -91,6 +91,7 @@ class DashboardController extends Controller
 
         $upcomingSales = Sale::with('customer')
             ->where('isCancelled', false)
+            ->pendingDelivery()
             ->whereNotNull('dueDate')
             ->whereDate('dueDate', '<=', $terminHorizon)
             ->orderBy('dueDate')
@@ -120,6 +121,7 @@ class DashboardController extends Controller
 
         $upcomingSalesCount = (int) Sale::query()
             ->where('isCancelled', false)
+            ->pendingDelivery()
             ->whereNotNull('dueDate')
             ->whereDate('dueDate', '<=', $terminHorizon)
             ->count();

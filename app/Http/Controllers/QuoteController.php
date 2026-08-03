@@ -32,7 +32,11 @@ class QuoteController extends Controller
             });
         }
         if ($request->filled('status')) {
-            $q->where('status', $request->status);
+            if ($request->status === 'taslak') {
+                $q->where('status', 'taslak')->whereNull('convertedSaleId');
+            } else {
+                $q->where('status', $request->status);
+            }
         }
         if ($request->filled('customerId')) {
             $q->where('customerId', $request->customerId);

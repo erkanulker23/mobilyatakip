@@ -137,16 +137,10 @@
             <thead><tr class="border-b border-neutral-100 dark:border-slate-700"><th class="table-th">No</th><th class="table-th">Durum</th><th class="table-th">Tarih</th></tr></thead>
             <tbody>
                 @foreach($serviceTickets->take(5) as $ticket)
-                @php
-                    $statusLabels = ['open' => 'Açık', 'in_progress' => 'İşlemde', 'closed' => 'Kapalı', 'cancelled' => 'İptal'];
-                    $statusLabel = $statusLabels[$ticket->status ?? ''] ?? ucfirst($ticket->status ?? '—');
-                    $statusClass = match($ticket->status ?? '') {
-                        'closed' => 'badge-green',
-                        'in_progress' => 'badge-blue',
-                        'cancelled' => 'badge-red',
-                        default => 'badge-amber',
-                    };
-                @endphp
+                    @php
+                    $statusLabel = \App\Support\ServiceTicketStatus::label($ticket->status);
+                    $statusClass = \App\Support\ServiceTicketStatus::badgeClass($ticket->status);
+                    @endphp
                 <tr class="border-b border-slate-50 dark:border-slate-700/50">
                     <td class="table-td"><a href="{{ route('service-tickets.show', $ticket) }}" class="font-medium text-emerald-600 dark:text-emerald-400 hover:underline">{{ $ticket->ticketNumber }}</a></td>
                     <td class="table-td"><span class="badge {{ $statusClass }}">{{ $statusLabel }}</span></td>

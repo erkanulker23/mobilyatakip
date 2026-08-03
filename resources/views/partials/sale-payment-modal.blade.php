@@ -19,7 +19,7 @@
                 @endif
             </div>
 
-            <div class="p-4 rounded-xl border @php $salePaymentStatus = \App\Support\CustomerBalance::saleStatus($sale); @endphp {{ $salePaymentStatus['key'] === 'borclu' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' : ($salePaymentStatus['key'] === 'alacakli' ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800') }}">
+            <div class="p-4 rounded-xl border @php $salePaymentStatus = \App\Support\CustomerBalance::saleStatus($sale); $canAcceptPayment = $saleRemaining > 0.005; @endphp {{ $salePaymentStatus['key'] === 'borclu' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' : ($salePaymentStatus['key'] === 'alacakli' ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800') }}">
                 <div class="flex items-center justify-between gap-3 mb-3">
                     <span class="text-sm font-medium text-neutral-700 dark:text-slate-200">Sipariş durumu</span>
                     @include('partials.payment-status-badge', ['status' => $salePaymentStatus])
@@ -42,22 +42,22 @@
                 <div>
                     <label class="form-label">Tutar (₺) <span class="text-red-500">*</span></label>
                     <input type="text" inputmode="decimal" name="amount" id="salePaymentAmount" required
-                        value="{{ old('redirectToSale') == $sale->id ? old('amount') : ($saleRemaining > 0 ? money($saleRemaining) : '') }}"
-                        class="form-input min-h-[44px] money-input" placeholder="0" autocomplete="off" @if($saleRemaining <= 0) disabled @endif>
-                    @if($saleRemaining <= 0)
-                    <p class="mt-1 text-xs text-emerald-600">Bu sipariş tamamen ödenmiş.</p>
+                        value="{{ old('redirectToSale') == $sale->id ? old('amount') : ($canAcceptPayment ? money($saleRemaining) : '') }}"
+                        class="form-input min-h-[44px] money-input" placeholder="0" autocomplete="off" @if(!$canAcceptPayment) disabled @endif>
+                    @if(!$canAcceptPayment)
+                    <p class="mt-1 text-xs {{ $salePaymentStatus['key'] === 'alacakli' ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400' }}">{{ $salePaymentStatus['key'] === 'alacakli' ? 'Bu sipariş için fazla ödeme kayıtlı.' : 'Bu sipariş tamamen ödenmiş.' }}</p>
                     @endif
                 </div>
                 <div>
                     <label class="form-label">Tahsilat Tarihi <span class="text-red-500">*</span></label>
-                    <input type="date" name="paymentDate" required value="{{ old('redirectToSale') == $sale->id ? old('paymentDate') : date('Y-m-d') }}" class="form-input min-h-[44px]" max="{{ date('Y-m-d') }}" @if($saleRemaining <= 0) disabled @endif>
+                    <input type="date" name="paymentDate" required value="{{ old('redirectToSale') == $sale->id ? old('paymentDate') : date('Y-m-d') }}" class="form-input min-h-[44px]" max="{{ date('Y-m-d') }}" @if(!$canAcceptPayment) disabled @endif>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="form-label">Ödeme Tipi</label>
-                    <select name="paymentType" class="form-select min-h-[44px]" id="salePaymentType" @if($saleRemaining <= 0) disabled @endif>
+                    <select name="paymentType" class="form-select min-h-[44px]" id="salePaymentType" @if(!$canAcceptPayment) disabled @endif>
                         @php $oldPt = old('redirectToSale') == $sale->id ? old('paymentType') : 'nakit'; @endphp
                         @foreach(\App\Support\PaymentType::CUSTOMER_RECEIVE as $value => $label)
                         <option value="{{ $value }}" {{ $oldPt == $value ? 'selected' : '' }}>{{ $label }}</option>
@@ -70,14 +70,14 @@
                         'paymentTypeId' => 'salePaymentType',
                         'amountId' => 'salePaymentAmount',
                         'selected' => old('redirectToSale') == $sale->id ? old('kasaId') : '',
-                        'disabled' => $saleRemaining <= 0,
+                        'disabled' => !$canAcceptPayment,
                     ])
                 </div>
             </div>
 
             <div id="saleSupplierFieldWrap" class="{{ $oldPt === 'tedarikciye_ode' ? '' : 'hidden' }}">
                 <label class="form-label">Tedarikçi <span class="text-red-500">*</span></label>
-                <select name="supplierId" class="form-select min-h-[44px]" id="saleSupplierSelect" @if($saleRemaining <= 0) disabled @endif>
+                <select name="supplierId" class="form-select min-h-[44px]" id="saleSupplierSelect" @if(!$canAcceptPayment) disabled @endif>
                     <option value="">Tedarikçi seçin</option>
                     @foreach($suppliers as $s)
                     <option value="{{ $s->id }}" {{ old('redirectToSale') == $sale->id && old('supplierId') == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
@@ -87,12 +87,12 @@
 
             <div>
                 <label class="form-label">Referans / Açıklama</label>
-                <input type="text" name="reference" value="{{ old('redirectToSale') == $sale->id ? old('reference') : '' }}" class="form-input min-h-[44px]" placeholder="Havale dekont no, çek no vb." @if($saleRemaining <= 0) disabled @endif>
+                <input type="text" name="reference" value="{{ old('redirectToSale') == $sale->id ? old('reference') : '' }}" class="form-input min-h-[44px]" placeholder="Havale dekont no, çek no vb." @if(!$canAcceptPayment) disabled @endif>
             </div>
 
             <div class="flex gap-3 justify-end pt-2">
                 <button type="button" @click="showPaymentModal = false" class="btn-secondary min-h-[44px]">İptal</button>
-                @if($saleRemaining > 0)
+                @if($canAcceptPayment)
                 <button type="submit" class="btn-primary min-h-[44px] justify-center">Tahsilat Kaydet</button>
                 @endif
             </div>

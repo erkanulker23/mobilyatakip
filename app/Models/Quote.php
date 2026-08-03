@@ -81,4 +81,24 @@ class Quote extends BaseModel
     {
         return $this->belongsTo(Sale::class, 'sourceSaleId');
     }
+
+    public function isConverted(): bool
+    {
+        return $this->convertedSaleId !== null;
+    }
+
+    public function generalDiscountApplied(): float
+    {
+        if ($this->kdvIncluded) {
+            $grossBefore = round((float) $this->items->sum('lineTotal'), 2);
+
+            return max(0, round($grossBefore - (float) $this->grandTotal, 2));
+        }
+
+        return round(
+            (float) $this->subtotal * ((float) ($this->generalDiscountPercent ?? 0) / 100)
+            + (float) ($this->generalDiscountAmount ?? 0),
+            2
+        );
+    }
 }

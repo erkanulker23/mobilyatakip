@@ -41,6 +41,7 @@ class ReportsController extends Controller
 
         $upcomingSalesCount = (int) Sale::query()
             ->where('isCancelled', false)
+            ->pendingDelivery()
             ->whereNotNull('dueDate')
             ->whereDate('dueDate', '<=', $horizon)
             ->count();
@@ -53,6 +54,7 @@ class ReportsController extends Controller
 
         $overdueSalesCount = (int) Sale::query()
             ->where('isCancelled', false)
+            ->pendingDelivery()
             ->whereNotNull('dueDate')
             ->whereDate('dueDate', '<', Carbon::today())
             ->count();
@@ -428,6 +430,7 @@ class ReportsController extends Controller
 
         $salesQuery = Sale::with(['customer.city', 'customer.district', 'personnel'])
             ->where('isCancelled', false)
+            ->pendingDelivery()
             ->whereNotNull('dueDate')
             ->whereDate('dueDate', '<=', $horizon);
 

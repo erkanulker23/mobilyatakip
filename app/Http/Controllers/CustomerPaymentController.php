@@ -10,6 +10,7 @@ use App\Models\Sale;
 use App\Models\Supplier;
 use App\Models\SupplierPayment;
 use App\Services\AuditService;
+use App\Support\CustomerBalance;
 use App\Support\PaymentType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -38,7 +39,7 @@ class CustomerPaymentController extends Controller
             $openSales = Sale::with('customer')
                 ->where('customerId', $customerId)
                 ->where('isCancelled', false)
-                ->whereRaw('(grandTotal - COALESCE(paidAmount, 0)) > 0')
+                ->whereRaw('(grandTotal - COALESCE(paidAmount, 0)) > 0.005')
                 ->orderBy('saleDate', 'desc')
                 ->get();
             // Satış sayfasından saleId ile gelindiyse, o fatura listede yoksa (tam ödenmiş) bile ekle ki ön seçili görünsün
@@ -200,9 +201,9 @@ class CustomerPaymentController extends Controller
                 }
                 return back()->withInput()->with('error', 'Seçilen fatura bu müşteriye ait değil.');
             }
-            $remaining = (float) $sale->grandTotal - (float) ($sale->paidAmount ?? 0);
-            if ($validated['amount'] > $remaining) {
-                $msg = 'Tutar fatura kalanından fazla olamaz. Kalan: ' . number_format($remaining, 2, ',', '.') . ' ₺';
+            $remaining = CustomerBalance::saleRemaining($sale);
+            if ($validated['amount'] > $remaining + 0.005) {
+                $msg = 'Tutar fatura kalanından fazla olamaz. Kalan: ' . number_format(max(0, $remaining), 2, ',', '.') . ' ₺';
                 $response = $redirectBackToSale();
                 if ($response) {
                     return $response->with('error', $msg);
@@ -214,8 +215,10 @@ class CustomerPaymentController extends Controller
         DB::transaction(function () use ($validated, $kasaRequired, $isSupplierPay) {
             $payment = CustomerPayment::create($validated);
             $this->auditService->logCreate('customer_payment', $payment->id, ['amount' => $validated['amount'], 'customerId' => $validated['customerId']]);
-            if (!empty($validated['saleId'])) {
+            if (! empty($validated['saleId'])) {
                 Sale::where('id', $validated['saleId'])->increment('paidAmount', $validated['amount']);
+            } elseif (! $isSupplierPay) {
+                $this->allocateUnlinkedPaymentToOpenSales($validated['customerId'], (float) $validated['amount']);
             }
             $kasaId = $validated['kasaId'] ?? null;
             if ($kasaRequired && $kasaId) {
@@ -290,8 +293,9 @@ class CustomerPaymentController extends Controller
         $suppliers = Supplier::where('isActive', true)->orderBy('name')->get();
         $openSales = Sale::with('customer')
             ->where('customerId', $customerPayment->customerId)
+            ->where('isCancelled', false)
             ->where(function ($q) use ($customerPayment) {
-                $q->whereRaw('(grandTotal - COALESCE(paidAmount, 0)) > 0');
+                $q->whereRaw('(grandTotal - COALESCE(paidAmount, 0)) > 0.005');
                 if ($customerPayment->saleId) {
                     $q->orWhere('id', $customerPayment->saleId);
                 }
@@ -348,8 +352,8 @@ class CustomerPaymentController extends Controller
             }
             $currentPaid = (float) ($sale->paidAmount ?? 0);
             $adjust = ($customerPayment->saleId === $validated['saleId']) ? (float) $customerPayment->amount : 0;
-            $maxAllowed = (float) $sale->grandTotal - $currentPaid + $adjust;
-            if ($validated['amount'] > $maxAllowed) {
+            $maxAllowed = CustomerBalance::saleRemaining($sale) + $adjust;
+            if ($validated['amount'] > $maxAllowed + 0.005) {
                 return back()->withInput()->with('error', 'Tutar fatura kalanından fazla olamaz. İzin verilen: ' . number_format($maxAllowed, 2, ',', '.') . ' ₺');
             }
         }
@@ -494,5 +498,34 @@ class CustomerPaymentController extends Controller
     {
         $customerPayment->load(['customer', 'kasa', 'sale', 'supplier']);
         return view('customer-payments.print', compact('customerPayment'));
+    }
+
+    private function allocateUnlinkedPaymentToOpenSales(string $customerId, float $amount): void
+    {
+        if ($amount <= 0.005) {
+            return;
+        }
+
+        $remaining = $amount;
+        $sales = Sale::where('customerId', $customerId)
+            ->where('isCancelled', false)
+            ->whereRaw('grandTotal - COALESCE(paidAmount, 0) > 0.005')
+            ->orderBy('saleDate')
+            ->orderBy('createdAt')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($sales as $sale) {
+            if ($remaining <= 0.005) {
+                break;
+            }
+            $saleRemaining = CustomerBalance::saleRemaining($sale);
+            if ($saleRemaining <= 0.005) {
+                continue;
+            }
+            $alloc = min($remaining, $saleRemaining);
+            Sale::where('id', $sale->id)->increment('paidAmount', $alloc);
+            $remaining -= $alloc;
+        }
     }
 }

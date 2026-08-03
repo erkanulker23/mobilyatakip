@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\SaleDelivery;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
@@ -111,5 +113,26 @@ class Sale extends BaseModel
     public function hasSupplierEmailSent(): bool
     {
         return $this->activities()->where('type', SaleActivity::TYPE_SUPPLIER_EMAIL_SENT)->exists();
+    }
+
+    /** Termin / yapılacak listeleri: teslim edilmemiş siparişler. */
+    public function scopePendingDelivery(Builder $query): Builder
+    {
+        return $query->where(function (Builder $q) {
+            $q->whereNull('deliveredAt')
+                ->where(function (Builder $inner) {
+                    $inner->whereNull('orderStatus')
+                        ->orWhere('orderStatus', '!=', SaleDelivery::DELIVERED);
+                });
+        });
+    }
+
+    /** Teslim edilmiş siparişler — deliveredAt veya orderStatus ile uyumlu. */
+    public function scopeDelivered(Builder $query): Builder
+    {
+        return $query->where(function (Builder $q) {
+            $q->whereNotNull('deliveredAt')
+                ->orWhere('orderStatus', SaleDelivery::DELIVERED);
+        });
     }
 }

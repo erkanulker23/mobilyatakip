@@ -16,10 +16,12 @@
         <div class="w-full p-4 rounded-lg bg-red-50 border border-red-200 text-red-700">{{ session('error') }}</div>
         @endif
         <div class="flex flex-wrap items-center gap-3">
+            @if(!$quote->convertedSaleId)
             <a href="{{ route('quotes.edit', $quote) }}" class="btn-edit">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                 Düzenle
             </a>
+            @endif
             @if(!$quote->convertedSaleId && ($quote->status ?? '') == 'taslak')
             <form method="POST" action="{{ route('quotes.convert', $quote) }}" class="inline-flex" onsubmit="return confirm('Bu teklifi satışa dönüştürmek istediğinize emin misiniz?');">
                 @csrf
@@ -54,7 +56,7 @@
     'kdvIncluded' => (bool) ($quote->kdvIncluded ?? true),
     'subtotal' => $quote->subtotal,
     'kdvTotal' => $quote->kdvTotal,
-    'discount' => ($quote->generalDiscountPercent ?? 0) > 0 ? $quote->subtotal * ($quote->generalDiscountPercent / 100) : ($quote->generalDiscountAmount ?? 0),
+    'discount' => $quote->generalDiscountApplied(),
     'grandTotal' => $quote->grandTotal,
     'notes' => $quote->notes,
 ])

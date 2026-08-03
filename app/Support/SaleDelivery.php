@@ -71,12 +71,16 @@ class SaleDelivery
             return self::PENDING;
         }
 
+        if (self::isDelivered($sale)) {
+            return self::DELIVERED;
+        }
+
         $status = $sale->orderStatus ?? null;
-        if (in_array($status, self::statuses(), true)) {
+        if (in_array($status, self::statuses(), true) && $status !== self::DELIVERED) {
             return $status;
         }
 
-        return $sale->deliveredAt !== null ? self::DELIVERED : self::PENDING;
+        return self::PENDING;
     }
 
     public static function isDelivered(Sale $sale): bool
@@ -237,7 +241,11 @@ class SaleDelivery
 
         if ($hasOpenTickets) {
             if ($sale->orderStatus !== self::SSH) {
-                $sale->update(['orderStatus' => self::SSH]);
+                $updates = ['orderStatus' => self::SSH];
+                if ($sale->deliveredAt !== null) {
+                    $updates['deliveredAt'] = null;
+                }
+                $sale->update($updates);
             }
 
             return;
@@ -245,8 +253,57 @@ class SaleDelivery
 
         if ($sale->orderStatus === self::SSH) {
             $sale->update([
-                'orderStatus' => $sale->deliveredAt !== null ? self::DELIVERED : self::PENDING,
+                'orderStatus' => self::resolveStatusAfterSsh($sale),
             ]);
+        }
+    }
+
+    public static function resolveStatusAfterSsh(Sale $sale): string
+    {
+        if ($sale->deliveredAt !== null) {
+            return self::DELIVERED;
+        }
+
+        $activity = $sale->activities()
+            ->where('type', \App\Models\SaleActivity::TYPE_STATUS_CHANGED)
+            ->orderByDesc('createdAt')
+            ->get()
+            ->first(fn ($row) => ($row->metadata['toStatus'] ?? null) === self::SSH);
+
+        $from = $activity?->metadata['fromStatus'] ?? null;
+        if ($from && in_array($from, self::statuses(), true) && $from !== self::SSH && $from !== self::DELIVERED) {
+            return $from;
+        }
+
+        return self::PENDING;
+    }
+
+    /** @param  \Illuminate\Database\Eloquent\Builder<\App\Models\Sale>  $query */
+    public static function applyDeliveryFilter($query, string $filter): void
+    {
+        if ($filter === self::FINAL_MEASUREMENT) {
+            $query->where('needsFinalMeasurement', true)->pendingDelivery();
+
+            return;
+        }
+
+        if ($filter === self::DELIVERED) {
+            $query->delivered();
+
+            return;
+        }
+
+        if ($filter === self::PENDING) {
+            $query->pendingDelivery()->where(function ($w) {
+                $w->whereNull('orderStatus')
+                    ->orWhere('orderStatus', self::PENDING);
+            });
+
+            return;
+        }
+
+        if (in_array($filter, self::statuses(), true)) {
+            $query->pendingDelivery()->where('orderStatus', $filter);
         }
     }
 }

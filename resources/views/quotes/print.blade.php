@@ -28,9 +28,7 @@
     'kdvIncluded' => (bool) ($quote->kdvIncluded ?? true),
     'subtotal' => $quote->subtotal,
     'kdvTotal' => $quote->kdvTotal,
-    'discount' => ($quote->generalDiscountPercent ?? 0) > 0
-        ? round($quote->items->sum(fn ($i) => (float) $i->lineTotal) * (($quote->generalDiscountPercent ?? 0) / 100), 2)
-        : ($quote->generalDiscountAmount ?? 0),
+    'discount' => $quote->generalDiscountApplied(),
     'grandTotal' => $quote->grandTotal,
     'notes' => $quote->notes,
 ])

@@ -37,7 +37,7 @@
             <select name="saleId" class="form-select">
                 <option value="">Faturaya bağlama</option>
                 @foreach($openSales as $s)
-                @php $kalan = (float)$s->grandTotal - (float)($s->paidAmount ?? 0); @endphp
+                @php $kalan = \App\Support\CustomerBalance::saleRemaining($s); @endphp
                 <option value="{{ $s->id }}" {{ old('saleId', $customerPayment->saleId) == $s->id ? 'selected' : '' }}>{{ $s->saleNumber }} — Kalan {{ number_format($kalan, 0, ',', '.') }} ₺</option>
                 @endforeach
             </select>

@@ -96,8 +96,18 @@ class ServiceTicketStatus
         };
     }
 
-    public static function isClosed(?string $status): bool
+    public function isClosed(?string $status): bool
     {
         return in_array($status, ['tamamlandi', 'iptal'], true);
+    }
+
+    public static function badgeClass(?string $status): string
+    {
+        return match ($status) {
+            'tamamlandi' => 'badge-green',
+            'devam_ediyor' => 'badge-blue',
+            'iptal' => 'badge-red',
+            default => 'badge-amber',
+        };
     }
 }

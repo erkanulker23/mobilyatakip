@@ -12,6 +12,7 @@ use App\Support\CustomerBalance;
 use App\Rules\TurkishTaxId;
 use App\Rules\UniqueCustomerPhone;
 use App\Support\CustomerPhone;
+use App\Support\ServiceTicketStatus;
 use App\Services\AuditService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -239,23 +240,13 @@ class CustomerController extends Controller
 
         $totalSales = (float) $customer->sales->where('isCancelled', false)->sum('grandTotal');
         $totalPaid = (float) $customer->payments->sum('amount');
-
-        if ($totalSales <= 0.005 && $totalPaid <= 0.005) {
-            $customerBalance = CustomerBalance::customerStatus($totalSales, $totalPaid);
-        } else {
-            $customerBalance = CustomerBalance::statusFromTotals($totalSales, $totalPaid);
-            $customerBalance['amountLabel'] = match ($customerBalance['key']) {
-                'borclu' => 'Kalan borç',
-                'alacakli' => 'Fazla ödeme',
-                default => 'Kalan borç',
-            };
-        }
+        $customerBalance = CustomerBalance::customerStatus($totalSales, $totalPaid);
 
         $stats = [
             'salesCount' => $customer->sales->where('isCancelled', false)->count(),
             'quotesCount' => $customer->quotes->count(),
             'sshCount' => $serviceTickets->count(),
-            'openSshCount' => $serviceTickets->whereNotIn('status', ['closed', 'cancelled'])->count(),
+            'openSshCount' => $serviceTickets->filter(fn ($t) => ! ServiceTicketStatus::isClosed($t->status))->count(),
             'totalSales' => $totalSales,
             'totalPaid' => $totalPaid,
         ];

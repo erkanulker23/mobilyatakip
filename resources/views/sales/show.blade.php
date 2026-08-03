@@ -28,12 +28,12 @@
                 Satış faturası @if($sale->customer)· Müşteri: <a href="{{ route('customers.show', $sale->customer) }}" class="font-medium text-emerald-600 hover:text-emerald-700">{{ $sale->customer->name }}</a>@else· Müşteri: —@endif
                 @if(!($sale->isCancelled ?? false))
                 · @include('partials.payment-status-badge', ['sale' => $sale])
+                <span class="text-neutral-500 text-sm">{{ \App\Support\CustomerBalance::saleStatus($sale)['description'] }}</span>
                 @if(\App\Support\SaleDelivery::currentStatus($sale) !== \App\Support\SaleDelivery::PENDING)
                 · @include('partials.delivery-status-badge', ['sale' => $sale])
-                @if(\App\Support\SaleDelivery::isDelivered($sale))
+                @if(\App\Support\SaleDelivery::isDelivered($sale) && $sale->deliveredAt)
                 <span class="text-neutral-500 text-sm">({{ $sale->deliveredAt->format('d.m.Y') }})</span>
                 @endif
-                <span class="text-neutral-500 text-sm">{{ \App\Support\CustomerBalance::saleStatus($sale)['description'] }}</span>
                 @endif
                 @endif
             </p>
@@ -240,7 +240,7 @@
                     <span class="text-neutral-500">Ödeme durumu</span>
                     @include('partials.payment-status-badge', ['sale' => $sale])
                 </div>
-                @if(\App\Support\SaleDelivery::isDelivered($sale))
+                @if(\App\Support\SaleDelivery::isDelivered($sale) && $sale->deliveredAt)
                 <div class="flex items-center justify-between gap-3">
                     <span class="text-neutral-500">Kayıtlı teslim tarihi</span>
                     <span class="font-medium text-neutral-900 dark:text-neutral-100">{{ $sale->deliveredAt->format('d.m.Y') }}</span>
