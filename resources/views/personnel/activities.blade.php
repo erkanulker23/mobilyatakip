@@ -140,6 +140,16 @@
                         <p class="text-sm text-neutral-800 dark:text-neutral-200 leading-relaxed">
                             {{ $activity['text'] }}
                         </p>
+                        @if(!empty($activity['changes']))
+                        <ul class="mt-2 space-y-1">
+                            @foreach($activity['changes'] as $change)
+                            <li class="text-xs text-neutral-600 dark:text-neutral-400 flex items-start gap-2">
+                                <span class="mt-1.5 w-1 h-1 rounded-full bg-neutral-400 shrink-0"></span>
+                                <span>{{ $change }}</span>
+                            </li>
+                            @endforeach
+                        </ul>
+                        @endif
                         <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
                             <span>{{ $activity['time']->format('d.m.Y H:i') }}</span>
                             <span>{{ $activity['timeAgo'] }}</span>

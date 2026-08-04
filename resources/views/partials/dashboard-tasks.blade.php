@@ -2,13 +2,17 @@
     $currentUserId = (string) auth()->id();
     $initialPersonnelFilter = request('personnelId', '');
     $taskColorPalette = \App\Support\UserTaskColor::PALETTE;
-    $taskColorMapJson = collect($taskColorPalette)->map(function ($c) {
-        return [
+    $taskColorMapJson = collect(\App\Support\UserTaskColor::allowedKeys())->mapWithKeys(function ($key) {
+        $c = \App\Support\UserTaskColor::classes($key);
+
+        return [$key => [
+            'label' => $c['label'],
+            'hint' => $c['hint'] ?? '',
             'bg' => $c['bg'],
             'border' => $c['border'],
             'text' => $c['text'],
             'dot' => $c['dot'],
-        ];
+        ]];
     })->all();
     $taskPersonnelOptions = collect($taskPersonnel ?? [])->map(fn ($p) => [
         'id' => (string) $p->id,
@@ -85,7 +89,7 @@
                                 <div class="task-color-chip text-[10px] leading-tight truncate px-1 py-0.5 rounded border"
                                     :data-task-color="normalizeTaskColor(task.color)"
                                     :class="task.isCompleted ? 'opacity-50 line-through' : ''"
-                                    :title="task.assigneeName ? task.assigneeName + ': ' + task.title : task.title">
+                                    :title="taskCompletionTitle(task)">
                                     <span x-show="task.assigneeName" class="font-semibold" x-text="(task.assigneeName || '').split(' ')[0] + ': '"></span><span x-text="task.title"></span>
                                 </div>
                             </template>
@@ -114,7 +118,9 @@
                             <input type="checkbox" :checked="task.isCompleted" @change="toggleComplete(task)" class="mt-1 rounded border-neutral-300">
                             <div class="min-w-0 flex-1">
                                 <p class="task-color-title text-sm font-medium truncate" :class="task.isCompleted ? 'line-through opacity-60' : ''" x-text="task.title"></p>
-                                <p class="text-[11px] text-neutral-500 mt-0.5 truncate" x-show="task.assigneeName" x-text="task.assigneeName"></p>
+                                <p class="text-[10px] font-semibold uppercase tracking-wide mt-1 opacity-70" x-text="priorityLabel(task.color)"></p>
+                                <p class="text-[11px] text-neutral-500 mt-0.5 truncate" x-show="task.assigneeName && !task.isCompleted" x-text="task.assigneeName"></p>
+                                <p class="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1" x-show="task.isCompleted" x-text="taskCompletionLabel(task)"></p>
                             </div>
                             <button type="button" @click="openEditTask(task)" class="p-1 rounded hover:bg-black/5 text-neutral-400 hover:text-neutral-700 shrink-0" title="Düzenle">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
@@ -156,7 +162,7 @@
                         </div>
 
                         <div class="p-4">
-                            <template x-if="group.openTasks.length === 0">
+                            <template x-if="group.openTasks.length === 0 && group.completedTasks.length === 0">
                                 <p class="text-sm text-neutral-500 text-center py-4">Açık görev yok.</p>
                             </template>
                             <div class="space-y-2" x-show="group.openTasks.length > 0">
@@ -167,7 +173,10 @@
                                             <input type="checkbox" :checked="task.isCompleted" @change="toggleComplete(task)" class="mt-1 rounded border-neutral-300 shrink-0">
                                             <span class="task-color-dot task-color-dot--sm mt-1.5" :data-task-color="normalizeTaskColor(task.color)"></span>
                                             <div class="min-w-0 flex-1">
-                                                <p class="task-color-title text-sm font-medium" :class="task.isCompleted ? 'line-through opacity-60' : ''" x-text="task.title"></p>
+                                                <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                                    <p class="task-color-title text-sm font-medium" :class="task.isCompleted ? 'line-through opacity-60' : ''" x-text="task.title"></p>
+                                                    <span class="text-[10px] font-semibold uppercase tracking-wide opacity-70 shrink-0" x-text="priorityLabel(task.color)"></span>
+                                                </div>
                                                 <p x-show="task.notes" class="text-xs text-neutral-500 mt-1 truncate" x-text="task.notes"></p>
                                                 <p class="text-[11px] mt-1.5 font-medium"
                                                     :class="taskDueClass(task)"
@@ -178,12 +187,16 @@
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                                 </button>
                                                 <div class="relative" x-data="{ open: false }">
-                                                    <button type="button" @click="open = !open" class="p-1 rounded hover:bg-black/5" title="Renk">
-                                                        <span class="task-color-dot" :data-task-color="normalizeTaskColor(task.color)"></span>
+                                                    <button type="button" @click="open = !open" class="inline-flex items-center gap-1 px-1.5 py-1 rounded hover:bg-black/5 text-neutral-500" :title="priorityLabel(task.color)">
+                                                        <span class="task-color-dot task-color-dot--sm" :data-task-color="normalizeTaskColor(task.color)"></span>
+                                                        <span class="text-[10px] font-semibold max-w-[4.5rem] truncate" x-text="priorityLabel(task.color)"></span>
                                                     </button>
-                                                    <div x-show="open" @click.outside="open = false" x-cloak class="absolute right-0 z-10 mt-1 p-2 bg-white dark:bg-neutral-900 rounded-xl shadow-lg border border-neutral-200 dark:border-neutral-700 flex flex-wrap gap-1 w-[140px]">
+                                                    <div x-show="open" @click.outside="open = false" x-cloak class="absolute right-0 z-10 mt-1 p-1.5 bg-white dark:bg-neutral-900 rounded-xl shadow-lg border border-neutral-200 dark:border-neutral-700 w-[9.5rem]">
                                                         @foreach($taskColorPalette as $key => $color)
-                                                        <button type="button" @click='updateColor(task, @json($key)); open = false' class="w-6 h-6 rounded-full {{ $color['dot'] }}"></button>
+                                                        <button type="button" @click='updateColor(task, @json($key)); open = false' class="flex w-full items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 text-left">
+                                                            <span class="w-3 h-3 rounded-full shrink-0 {{ $color['dot'] }}"></span>
+                                                            <span class="text-xs font-medium text-neutral-800 dark:text-neutral-200">{{ $color['label'] }}</span>
+                                                        </button>
                                                         @endforeach
                                                     </div>
                                                 </div>
@@ -191,6 +204,23 @@
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                                 </button>
                                             </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                            <div class="space-y-2" x-show="group.completedTasks.length > 0" :class="group.openTasks.length > 0 ? 'mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800' : ''">
+                                <p class="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 mb-2">Tamamlanan</p>
+                                <template x-for="task in group.completedTasks" :key="'done-' + group.id + '-' + task.id">
+                                    <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 p-3 bg-neutral-50/80 dark:bg-neutral-900/50 opacity-80">
+                                        <div class="flex items-start gap-3">
+                                            <input type="checkbox" :checked="true" @change="toggleComplete(task)" class="mt-1 rounded border-neutral-300 shrink-0">
+                                            <div class="min-w-0 flex-1">
+                                                <p class="text-sm font-medium text-neutral-600 dark:text-neutral-400 line-through" x-text="task.title"></p>
+                                                <p class="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1" x-text="taskCompletionLabel(task)"></p>
+                                            </div>
+                                            <button type="button" @click="openEditTask(task)" class="p-1 rounded hover:bg-black/5 text-neutral-400 hover:text-neutral-700 shrink-0" title="Düzenle">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                            </button>
                                         </div>
                                     </div>
                                 </template>
@@ -228,14 +258,21 @@
                     </div>
                 </div>
                 <div>
-                    <label class="form-label">Renk</label>
-                    <div class="flex flex-wrap gap-2 pt-1">
+                    <label class="form-label">Öncelik</label>
+                    <div class="grid grid-cols-2 gap-2 pt-1">
                         @foreach($taskColorPalette as $key => $color)
                         <button type="button"
                             @click='form.color = @json($key)'
-                            :class='form.color === @json($key) ? "ring-2 ring-offset-1 {{ $color['ring'] }}" : ""'
-                            class="w-8 h-8 rounded-full {{ $color['dot'] }} border-2 border-white dark:border-neutral-900 shadow-sm"
-                            title="{{ $color['label'] }}"></button>
+                            :class='form.color === @json($key) ? "ring-2 {{ $color['ring'] }} border-neutral-900/20 dark:border-neutral-100/30 bg-neutral-50 dark:bg-neutral-800/80" : "border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900"'
+                            class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-shadow">
+                            <span class="w-3.5 h-3.5 rounded-full shrink-0 {{ $color['dot'] }}"></span>
+                            <span class="min-w-0">
+                                <span class="block text-sm font-semibold text-neutral-900 dark:text-neutral-100">{{ $color['label'] }}</span>
+                                @if(!empty($color['hint']))
+                                <span class="block text-[11px] text-neutral-500 dark:text-neutral-400 truncate">{{ $color['hint'] }}</span>
+                                @endif
+                            </span>
+                        </button>
                         @endforeach
                     </div>
                 </div>
@@ -277,14 +314,21 @@
                 </div>
             </div>
             <div>
-                <label class="form-label">Renk</label>
-                <div class="flex flex-wrap gap-2 pt-1">
+                <label class="form-label">Öncelik</label>
+                <div class="grid grid-cols-2 gap-2 pt-1">
                     @foreach($taskColorPalette as $key => $color)
                     <button type="button"
                         @click='editForm.color = @json($key)'
-                        :class='editForm.color === @json($key) ? "ring-2 ring-offset-1 {{ $color['ring'] }}" : ""'
-                        class="w-8 h-8 rounded-full {{ $color['dot'] }} border-2 border-white dark:border-neutral-900 shadow-sm"
-                        title="{{ $color['label'] }}"></button>
+                        :class='editForm.color === @json($key) ? "ring-2 {{ $color['ring'] }} border-neutral-900/20 dark:border-neutral-100/30 bg-neutral-50 dark:bg-neutral-800/80" : "border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900"'
+                        class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-shadow">
+                        <span class="w-3.5 h-3.5 rounded-full shrink-0 {{ $color['dot'] }}"></span>
+                        <span class="min-w-0">
+                            <span class="block text-sm font-semibold text-neutral-900 dark:text-neutral-100">{{ $color['label'] }}</span>
+                            @if(!empty($color['hint']))
+                            <span class="block text-[11px] text-neutral-500 dark:text-neutral-400 truncate">{{ $color['hint'] }}</span>
+                            @endif
+                        </span>
+                    </button>
                     @endforeach
                 </div>
             </div>
@@ -331,10 +375,10 @@ function dashboardTasks() {
         selectedDate: today,
         editingTaskId: null,
         editingTask: null,
-        editForm: { title: '', notes: '', dueDate: '', personnelId: '', color: 'emerald' },
+        editForm: { title: '', notes: '', dueDate: '', personnelId: '', color: 'blue' },
         personnelOptions,
         weekdayLabels: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'],
-        form: { title: '', dueDate: today, color: 'emerald', personnelId: '', notes: '' },
+        form: { title: '', dueDate: today, color: 'blue', personnelId: '', notes: '' },
 
         get monthLabel() {
             const [y, m] = this.currentMonth.split('-').map(Number);
@@ -360,6 +404,11 @@ function dashboardTasks() {
                 return a.dueDate.localeCompare(b.dueDate);
             });
 
+            const sortCompletedTasks = (list) => [...list]
+                .filter(t => t.isCompleted)
+                .sort((a, b) => (b.completedAt || '').localeCompare(a.completedAt || ''))
+                .slice(0, 10);
+
             let people = this.personnelOptions;
             if (this.filterPersonnelId) {
                 people = people.filter(p => p.id === this.filterPersonnelId);
@@ -368,6 +417,7 @@ function dashboardTasks() {
             const groups = people.map(p => ({
                 ...p,
                 openTasks: sortOpenTasks(this.tasks.filter(t => t.personnelId === p.id && !t.isCompleted)),
+                completedTasks: sortCompletedTasks(this.tasks.filter(t => t.personnelId === p.id)),
                 completedCount: this.tasks.filter(t => t.personnelId === p.id && t.isCompleted).length,
             }));
 
@@ -379,6 +429,7 @@ function dashboardTasks() {
                     photoUrl: null,
                     label: 'Atanmamış',
                     openTasks: sortOpenTasks(this.tasks.filter(t => !t.personnelId && !t.isCompleted)),
+                    completedTasks: sortCompletedTasks(this.tasks.filter(t => !t.personnelId)),
                     completedCount: this.tasks.filter(t => !t.personnelId && t.isCompleted).length,
                 });
             }
@@ -423,12 +474,48 @@ function dashboardTasks() {
             return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
         },
 
+        formatCompletionDate(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            if (Number.isNaN(d.getTime())) return '';
+            return d.toLocaleString('tr-TR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+            });
+        },
+
+        taskCompletionLabel(task) {
+            if (!task?.isCompleted) return '';
+            const when = this.formatCompletionDate(task.completedAt);
+            const who = task.completedByName;
+            if (who && when) return who + ' tarafından tamamlandı · ' + when;
+            if (who) return who + ' tarafından tamamlandı';
+            if (when) return 'Tamamlandı · ' + when;
+            return 'Tamamlandı';
+        },
+
+        taskCompletionTitle(task) {
+            let title = task.assigneeName ? task.assigneeName + ': ' + task.title : task.title;
+            if (task.isCompleted) {
+                const completion = this.taskCompletionLabel(task);
+                if (completion) title += ' — ' + completion;
+            }
+            return title;
+        },
+
         colorClasses(color) {
-            return colorMap[color] || colorMap.emerald;
+            return colorMap[color] || colorMap.blue;
         },
 
         normalizeTaskColor(color) {
-            return Object.prototype.hasOwnProperty.call(colorMap, color) ? color : 'emerald';
+            return Object.prototype.hasOwnProperty.call(colorMap, color) ? color : 'blue';
+        },
+
+        priorityLabel(color) {
+            return this.colorClasses(this.normalizeTaskColor(color)).label || 'Normal';
         },
 
         personInitials(name) {
@@ -507,7 +594,7 @@ function dashboardTasks() {
             this.form = {
                 title: '',
                 dueDate: this.selectedDate || today,
-                color: 'emerald',
+                color: 'blue',
                 personnelId: this.filterPersonnelId || '',
                 notes: '',
             };
@@ -519,7 +606,7 @@ function dashboardTasks() {
             this.form = {
                 title: '',
                 dueDate: this.selectedDate || today,
-                color: 'emerald',
+                color: 'blue',
                 personnelId: personnelId === '__unassigned__' ? '' : personnelId,
                 notes: '',
             };
@@ -588,14 +675,14 @@ function dashboardTasks() {
                 notes: task.notes || '',
                 dueDate: task.dueDate || '',
                 personnelId: task.personnelId || '',
-                color: task.color || 'emerald',
+                color: task.color || 'blue',
             };
         },
 
         cancelEdit() {
             this.editingTaskId = null;
             this.editingTask = null;
-            this.editForm = { title: '', notes: '', dueDate: '', personnelId: '', color: 'emerald' };
+            this.editForm = { title: '', notes: '', dueDate: '', personnelId: '', color: 'blue' };
         },
 
         async saveEditTask() {

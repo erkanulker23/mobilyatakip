@@ -17,6 +17,7 @@ class UserTask extends BaseModel
         'color',
         'isCompleted',
         'completedAt',
+        'completedByUserId',
         'sortOrder',
     ];
 
@@ -35,5 +36,10 @@ class UserTask extends BaseModel
     public function personnel(): BelongsTo
     {
         return $this->belongsTo(Personnel::class, 'personnelId');
+    }
+
+    public function completedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'completedByUserId');
     }
 }

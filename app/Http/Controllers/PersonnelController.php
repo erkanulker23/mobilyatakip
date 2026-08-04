@@ -167,6 +167,7 @@ class PersonnelController extends Controller
         $personnelTasks = collect();
         if ($personnel->hasSystemAccess()) {
             $personnelTasks = UserTask::query()
+                ->with('completedByUser:id,name')
                 ->where(function ($q) use ($personnel) {
                     $q->where('personnelId', $personnel->id);
                     if ($personnel->userId) {

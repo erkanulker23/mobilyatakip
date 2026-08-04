@@ -3,7 +3,7 @@
 @section('content')
 <div class="mb-6">
     <h1 class="page-title">Profil Ayarları</h1>
-    <p class="page-desc">Profil resminizi, e-posta adresinizi ve şifrenizi yönetin</p>
+    <p class="page-desc">Profil resminizi, adınızı, e-posta adresinizi ve şifrenizi yönetin</p>
 </div>
 
 @if(session('success'))
@@ -14,7 +14,7 @@
 @endif
 
 <div class="card p-6 max-w-2xl">
-    <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="space-y-6">
+    <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="space-y-6" id="profileUpdateForm">
         @csrf
         @method('PUT')
 
@@ -43,14 +43,14 @@
         </div>
 
         <div>
-            <label class="form-label">Ad Soyad</label>
-            <input type="text" name="name" required value="{{ old('name', $user->name) }}" class="form-input" autocomplete="name">
+            <label class="form-label" for="profileName">Ad Soyad</label>
+            <input type="text" name="name" id="profileName" required value="{{ old('name', $user->name) }}" class="form-input" autocomplete="name">
             @error('name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
 
         <div>
-            <label class="form-label">E-posta</label>
-            <input type="email" name="email" required value="{{ old('email', $user->email) }}" class="form-input" autocomplete="email">
+            <label class="form-label" for="profileEmail">E-posta</label>
+            <input type="email" name="email" id="profileEmail" required value="{{ old('email', $user->email) }}" class="form-input" autocomplete="email">
             @error('email')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
 
@@ -60,35 +60,20 @@
                 <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400">Boş bırakırsanız mevcut şifreniz korunur.</p>
             </div>
             <div>
-                <label class="form-label">Mevcut şifre</label>
-                <input type="password" name="current_password" class="form-input" autocomplete="current-password">
+                <label class="form-label" for="profileCurrentPassword">Mevcut şifre</label>
+                <input type="password" name="current_password" id="profileCurrentPassword" class="form-input" autocomplete="current-password">
                 @error('current_password')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="form-label">Yeni şifre</label>
-                    <input type="password" name="password" class="form-input" autocomplete="new-password">
+                    <label class="form-label" for="profilePassword">Yeni şifre</label>
+                    <input type="password" name="password" id="profilePassword" class="form-input" autocomplete="new-password">
                     @error('password')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
-                    <label class="form-label">Yeni şifre (tekrar)</label>
-                    <input type="password" name="password_confirmation" class="form-input" autocomplete="new-password">
+                    <label class="form-label" for="profilePasswordConfirmation">Yeni şifre (tekrar)</label>
+                    <input type="password" name="password_confirmation" id="profilePasswordConfirmation" class="form-input" autocomplete="new-password">
                 </div>
-            </div>
-        </div>
-
-        <div class="rounded-xl border border-neutral-200 dark:border-slate-700 bg-neutral-50/80 dark:bg-slate-800/40 p-5">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h2 class="text-sm font-semibold text-neutral-900 dark:text-white">Şifremi unuttum</h2>
-                    <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400 leading-relaxed">
-                        Mevcut şifrenizi hatırlamıyorsanız <strong>{{ $user->email }}</strong> adresine sıfırlama bağlantısı gönderebiliriz.
-                    </p>
-                </div>
-                <form method="POST" action="{{ route('profile.password.email') }}" class="shrink-0" onsubmit="return confirm('Şifre sıfırlama bağlantısı e-posta adresinize gönderilsin mi?');">
-                    @csrf
-                    <button type="submit" class="btn-secondary whitespace-nowrap">Sıfırlama bağlantısı gönder</button>
-                </form>
             </div>
         </div>
 
@@ -97,6 +82,21 @@
             <a href="{{ route('dashboard') }}" class="btn-secondary">İptal</a>
         </div>
     </form>
+</div>
+
+<div class="card p-6 max-w-2xl mt-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h2 class="text-sm font-semibold text-neutral-900 dark:text-white">Şifremi unuttum</h2>
+            <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400 leading-relaxed">
+                Mevcut şifrenizi hatırlamıyorsanız <strong>{{ $user->email }}</strong> adresine sıfırlama bağlantısı gönderebiliriz.
+            </p>
+        </div>
+        <form method="POST" action="{{ route('profile.password.email') }}" class="shrink-0" onsubmit="return confirm('Şifre sıfırlama bağlantısı e-posta adresinize gönderilsin mi?');">
+            @csrf
+            <button type="submit" class="btn-secondary whitespace-nowrap">Sıfırlama bağlantısı gönder</button>
+        </form>
+    </div>
 </div>
 
 @if($user->photoUrl)

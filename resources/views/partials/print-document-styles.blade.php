@@ -251,7 +251,89 @@
     color: var(--print-ink) !important;
 }
 
-/* Sipariş özeti — ekranda okunaklı panel */
+/* Sipariş özeti — fiş başlığı altında yatay kartlar */
+@media screen {
+    .print-document .sale-doc-summary {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+    @media (min-width: 640px) {
+        .print-document .sale-doc-summary {
+            grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+        }
+    }
+    .print-document .sale-doc-summary__item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        padding: 0.875rem 1rem;
+        border: 1px solid #e5e5e5;
+        border-radius: 0.75rem;
+        background: linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%);
+        min-height: 4.25rem;
+    }
+    .print-document .sale-doc-summary__label {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #737373 !important;
+        line-height: 1.2;
+    }
+    .print-document .sale-doc-summary__value {
+        margin: 0;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: #171717 !important;
+        line-height: 1.35;
+    }
+    .dark .print-document .sale-doc-summary__item {
+        background: linear-gradient(180deg, #2a2a2a 0%, #262626 100%);
+        border-color: #404040;
+    }
+    .dark .print-document .sale-doc-summary__label {
+        color: #a3a3a3 !important;
+    }
+    .dark .print-document .sale-doc-summary__value {
+        color: #f5f5f5 !important;
+    }
+}
+
+@media print {
+    .print-document .sale-doc-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+        gap: 8px;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--print-border);
+    }
+    .print-document .sale-doc-summary__item {
+        padding: 6px 8px;
+        border: 1px solid var(--print-border);
+        border-radius: 4px;
+        background: var(--print-surface);
+    }
+    .print-document .sale-doc-summary__label {
+        display: block;
+        font-size: 9px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--print-muted) !important;
+        margin-bottom: 2px;
+    }
+    .print-document .sale-doc-summary__value {
+        margin: 0;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--print-ink) !important;
+        line-height: 1.3;
+    }
+}
+
+/* Sipariş özeti — ekranda okunaklı panel (legacy sidebar) */
 @media screen {
     .print-document .sale-doc-meta {
         border: 1px solid #e5e5e5;

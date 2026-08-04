@@ -365,6 +365,19 @@ class SaleController extends Controller
             if (!$sale) {
                 abort(404);
             }
+            $sale->load('items');
+            $oldAudit = [
+                'saleNumber' => $sale->saleNumber,
+                'notes' => $sale->notes,
+                'grandTotal' => round((float) $sale->grandTotal, 2),
+                'customerId' => $sale->customerId,
+                'personnelId' => $sale->personnelId,
+                'dueDate' => $sale->dueDate?->format('Y-m-d'),
+                'saleDate' => $sale->saleDate?->format('Y-m-d'),
+                'needsFinalMeasurement' => (bool) $sale->needsFinalMeasurement,
+                'saleDiscountPercent' => round((float) ($sale->saleDiscountPercent ?? 0), 2),
+                'itemsFingerprint' => $this->saleItemsFingerprint($sale),
+            ];
             $oldCustomerId = $sale->customerId;
             $sale->update([
                 'customerId' => $validated['customerId'],
@@ -395,7 +408,18 @@ class SaleController extends Controller
                     . 'tahsil edilen tutardan (' . number_format($paidAmount, 0, ',', '.') . ' ₺) düşük olamaz.'
                 );
             }
-            $this->auditService->logUpdate('sale', $sale->id, [], ['saleNumber' => $sale->saleNumber]);
+            $this->auditService->logUpdate('sale', $sale->id, $oldAudit, [
+                'saleNumber' => $sale->saleNumber,
+                'notes' => $sale->notes,
+                'grandTotal' => round((float) $sale->grandTotal, 2),
+                'customerId' => $sale->customerId,
+                'personnelId' => $sale->personnelId,
+                'dueDate' => $sale->dueDate?->format('Y-m-d'),
+                'saleDate' => $sale->saleDate?->format('Y-m-d'),
+                'needsFinalMeasurement' => (bool) $sale->needsFinalMeasurement,
+                'saleDiscountPercent' => round((float) ($sale->saleDiscountPercent ?? 0), 2),
+                'itemsChanged' => $oldAudit['itemsFingerprint'] !== $this->saleItemsFingerprint($sale->load('items')),
+            ]);
             return redirect()->route('sales.show', $sale)->with('success', 'Satış güncellendi.');
         } catch (\Throwable $e) {
             return redirect()->back()->withInput()->with('error', $e->getMessage());
@@ -520,6 +544,13 @@ class SaleController extends Controller
             SaleActivity::logStatusChange($sale->fresh(), $fromStatus, \App\Support\SaleDelivery::PENDING);
             $message = 'Sipariş teslim bekliyor olarak güncellendi.';
         }
+
+        $this->auditService->logAction('sale', $sale->id, 'status', [
+            'saleNumber' => $sale->saleNumber,
+            'status' => $status,
+            'statusLabel' => \App\Support\SaleDelivery::label($status),
+            'fromStatusLabel' => \App\Support\SaleDelivery::label($fromStatus),
+        ]);
 
         return redirect()->route('sales.show', $sale)->with('success', $message);
     }
@@ -799,5 +830,20 @@ class SaleController extends Controller
         ]);
 
         return true;
+    }
+
+    private function saleItemsFingerprint(Sale $sale): string
+    {
+        $payload = $sale->items->map(fn ($item) => [
+            (string) ($item->productId ?? ''),
+            (string) ($item->productName ?? ''),
+            (string) ($item->description ?? ''),
+            round((float) ($item->unitPrice ?? 0), 2),
+            (int) ($item->quantity ?? 0),
+            round((float) ($item->lineDiscountPercent ?? 0), 2),
+            round((float) ($item->lineDiscountAmount ?? 0), 2),
+        ])->values()->all();
+
+        return md5(json_encode($payload));
     }
 }

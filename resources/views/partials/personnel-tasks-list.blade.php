@@ -30,7 +30,10 @@
                     <div class="flex items-start gap-3">
                         <span class="mt-1.5 w-2.5 h-2.5 rounded-full shrink-0 {{ $color['dot'] }}"></span>
                         <div class="min-w-0 flex-1">
-                            <p class="text-sm font-medium {{ $color['text'] }}">{{ $task->title }}</p>
+                            <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                <p class="text-sm font-medium {{ $color['text'] }}">{{ $task->title }}</p>
+                                <span class="text-[10px] font-semibold uppercase tracking-wide opacity-70 {{ $color['text'] }}">{{ $color['label'] }}</span>
+                            </div>
                             @if($task->notes)
                             <p class="text-xs text-neutral-600 dark:text-slate-400 mt-1 whitespace-pre-wrap">{{ $task->notes }}</p>
                             @endif
@@ -67,7 +70,13 @@
                         <div class="min-w-0 flex-1">
                             <p class="text-sm font-medium text-neutral-600 dark:text-slate-400 line-through">{{ $task->title }}</p>
                             @if($task->completedAt)
-                            <p class="text-[11px] text-neutral-400 mt-1">Tamamlandı · {{ $task->completedAt->format('d.m.Y H:i') }}</p>
+                            <p class="text-[11px] text-neutral-500 dark:text-slate-400 mt-2">
+                                @if($task->completedByUser)
+                                    {{ $task->completedByUser->name }} tarafından tamamlandı · {{ $task->completedAt->format('d.m.Y H:i') }}
+                                @else
+                                    Tamamlandı · {{ $task->completedAt->format('d.m.Y H:i') }}
+                                @endif
+                            </p>
                             @endif
                         </div>
                     </div>

@@ -365,9 +365,22 @@ class CustomerPaymentController extends Controller
         $newKasaId = $validated['kasaId'] ?? null;
 
         DB::transaction(function () use ($validated, $customerPayment, $oldAmount, $oldSaleId, $newAmount, $newSaleId, $newKasaId, $kasaRequired, $isSupplierPay, $wasSupplierPay) {
-            $oldData = ['amount' => $customerPayment->amount, 'saleId' => $customerPayment->saleId, 'kasaId' => $customerPayment->kasaId, 'paymentType' => $customerPayment->paymentType];
+            $oldData = [
+                'amount' => (float) $customerPayment->amount,
+                'saleId' => $customerPayment->saleId,
+                'saleNumber' => $customerPayment->sale?->saleNumber,
+                'kasaId' => $customerPayment->kasaId,
+                'paymentType' => $customerPayment->paymentType,
+            ];
             $customerPayment->update($validated);
-            $this->auditService->logUpdate('customer_payment', $customerPayment->id, $oldData, ['amount' => $validated['amount'], 'saleId' => $validated['saleId'] ?? null, 'kasaId' => $validated['kasaId'] ?? null, 'paymentType' => $validated['paymentType']]);
+            $newSale = $newSaleId ? Sale::find($newSaleId) : null;
+            $this->auditService->logUpdate('customer_payment', $customerPayment->id, $oldData, [
+                'amount' => (float) $validated['amount'],
+                'saleId' => $validated['saleId'] ?? null,
+                'saleNumber' => $newSale?->saleNumber,
+                'kasaId' => $validated['kasaId'] ?? null,
+                'paymentType' => $validated['paymentType'],
+            ]);
 
             if ($oldSaleId) {
                 Sale::where('id', $oldSaleId)->decrement('paidAmount', $oldAmount);

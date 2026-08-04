@@ -8,13 +8,30 @@
             'documentSubtitle' => $documentSubtitle ?? null,
         ])
 
+        @if(!empty($extraInfoRows))
+        <dl class="sale-doc-summary print-section mb-5">
+            @foreach($extraInfoRows as $row)
+            <div class="sale-doc-summary__item">
+                <dt class="sale-doc-summary__label">{{ $row['label'] }}</dt>
+                <dd class="sale-doc-summary__value">
+                    @if(($row['statusKey'] ?? null) && ($row['label'] ?? '') === 'Ödeme Durumu')
+                        @include('partials.payment-status-badge', ['status' => ['key' => $row['statusKey'], 'label' => $row['value']]])
+                    @else
+                        {{ $row['value'] }}
+                    @endif
+                </dd>
+            </div>
+            @endforeach
+        </dl>
+        @endif
+
         @if(!empty($documentNotice))
         <div class="print-info-banner print-section text-sm text-neutral-800 dark:text-neutral-200 p-3 mb-4">
             {!! $documentNotice !!}
         </div>
         @endif
 
-        <div class="print-section-lg grid grid-cols-1 md:grid-cols-2 gap-6 mb-4 items-start">
+        <div class="print-section-lg grid grid-cols-1 {{ empty($extraInfoRows) && isset($extraInfo) && $extraInfo ? 'md:grid-cols-2' : '' }} gap-6 mb-4 items-start">
             <div class="min-w-0">
                 <h3 class="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase mb-2">{{ $partyLabel ?? 'Alıcı' }}</h3>
                 <p class="font-semibold text-slate-900 dark:text-neutral-100">{{ $partyName ?? '-' }}</p>
@@ -23,24 +40,7 @@
                 @if(isset($partyEmail) && $partyEmail)<p class="text-sm text-slate-600 dark:text-neutral-400">{{ $partyEmail }}</p>@endif
                 @if(isset($partyTax) && $partyTax)<p class="text-sm text-slate-600 dark:text-neutral-400">Vergi: {{ $partyTax }}</p>@endif
             </div>
-            @if(!empty($extraInfoRows))
-            <div class="md:flex md:justify-end">
-                <dl class="sale-doc-meta w-full md:max-w-[17rem]">
-                    @foreach($extraInfoRows as $row)
-                    <div class="sale-doc-meta__item">
-                        <dt class="sale-doc-meta__label">{{ $row['label'] }}</dt>
-                        <dd class="sale-doc-meta__value">
-                            @if(($row['statusKey'] ?? null) && ($row['label'] ?? '') === 'Ödeme Durumu')
-                                @include('partials.payment-status-badge', ['status' => ['key' => $row['statusKey'], 'label' => $row['value']]])
-                            @else
-                                {{ $row['value'] }}
-                            @endif
-                        </dd>
-                    </div>
-                    @endforeach
-                </dl>
-            </div>
-            @elseif(isset($extraInfo) && $extraInfo)
+            @if(empty($extraInfoRows) && isset($extraInfo) && $extraInfo)
             <div class="md:flex md:justify-end">
                 <div class="w-full md:max-w-[17rem]">{!! $extraInfo !!}</div>
             </div>

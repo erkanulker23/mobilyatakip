@@ -29,6 +29,7 @@ class UserTaskController extends Controller
         $query = UserTask::query()->with([
             'user:id,name,role',
             'personnel:id,name,title,userId',
+            'completedByUser:id,name',
         ]);
 
         if ($request->filled('personnelId')) {
@@ -39,7 +40,8 @@ class UserTaskController extends Controller
 
         $query->where(function ($w) use ($monthStart, $monthEnd) {
             $w->whereBetween('dueDate', [$monthStart->toDateString(), $monthEnd->toDateString()])
-                ->orWhere('isCompleted', false);
+                ->orWhere('isCompleted', false)
+                ->orWhereBetween('completedAt', [$monthStart->copy()->startOfDay(), $monthEnd->copy()->endOfDay()]);
         });
 
         $tasks = $query
@@ -105,6 +107,7 @@ class UserTaskController extends Controller
         $task->load([
             'user:id,name,role',
             'personnel:id,name,title,userId',
+            'completedByUser:id,name',
         ]);
 
         return response()->json([
@@ -121,12 +124,18 @@ class UserTaskController extends Controller
             'title' => 'sometimes|required|string|max:255',
             'notes' => 'nullable|string|max:2000',
             'dueDate' => 'nullable|date',
-            'color' => 'nullable|string|in:' . implode(',', UserTaskColor::keys()),
+            'color' => 'nullable|string|in:' . implode(',', UserTaskColor::allowedKeys()),
             'isCompleted' => 'sometimes|boolean',
             'personnelId' => 'nullable|string',
         ]);
 
         $updates = [];
+        $oldAudit = [
+            'title' => $userTask->title,
+            'notes' => $userTask->notes,
+            'dueDate' => $userTask->dueDate?->format('Y-m-d'),
+            'color' => $userTask->color,
+        ];
         if (array_key_exists('title', $validated)) {
             $updates['title'] = trim($validated['title']);
         }
@@ -141,7 +150,13 @@ class UserTaskController extends Controller
         }
         if (array_key_exists('isCompleted', $validated)) {
             $updates['isCompleted'] = (bool) $validated['isCompleted'];
-            $updates['completedAt'] = $validated['isCompleted'] ? ($userTask->completedAt ?? now()) : null;
+            if ($validated['isCompleted']) {
+                $updates['completedAt'] = now();
+                $updates['completedByUserId'] = (string) $request->user()->id;
+            } else {
+                $updates['completedAt'] = null;
+                $updates['completedByUserId'] = null;
+            }
         }
 
         if (array_key_exists('personnelId', $validated)) {
@@ -171,12 +186,18 @@ class UserTaskController extends Controller
         $userTask->load([
             'user:id,name,role',
             'personnel:id,name,title,userId',
+            'completedByUser:id,name',
         ]);
 
         if (array_key_exists('isCompleted', $updates) && $updates['isCompleted']) {
             $this->auditService->logAction('user_task', $userTask->id, 'complete', ['title' => $userTask->title]);
         } elseif ($updates !== []) {
-            $this->auditService->logUpdate('user_task', $userTask->id, [], ['title' => $userTask->title]);
+            $this->auditService->logUpdate('user_task', $userTask->id, $oldAudit, [
+                'title' => $userTask->title,
+                'notes' => $userTask->notes,
+                'dueDate' => $userTask->dueDate?->format('Y-m-d'),
+                'color' => $userTask->color,
+            ]);
         }
 
         return response()->json([
@@ -226,6 +247,8 @@ class UserTaskController extends Controller
             'colorLabel' => $classes['label'] ?? '',
             'isCompleted' => (bool) $task->isCompleted,
             'completedAt' => $task->completedAt?->toIso8601String(),
+            'completedByUserId' => $task->completedByUserId ? (string) $task->completedByUserId : null,
+            'completedByName' => $task->completedByUser?->name,
             'sortOrder' => (int) $task->sortOrder,
         ];
     }

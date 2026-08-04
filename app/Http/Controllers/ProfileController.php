@@ -40,8 +40,10 @@ class ProfileController extends Controller
             'photo.image' => 'Profil resmi geçerli bir görsel dosyası olmalıdır.',
         ]);
 
-        $user->name = $validated['name'];
-        $user->email = $validated['email'];
+        $user->fill([
+            'name' => trim($validated['name']),
+            'email' => trim($validated['email']),
+        ]);
 
         if ($request->hasFile('photo') && Schema::hasColumn('users', 'photoUrl')) {
             $this->removePhotoFile($user);
@@ -53,6 +55,22 @@ class ProfileController extends Controller
         }
 
         $user->save();
+
+        $personnel = $user->personnel;
+        if ($personnel) {
+            $personnelUpdates = [];
+            if ($personnel->name !== $user->name) {
+                $personnelUpdates['name'] = $user->name;
+            }
+            if ($user->email && $personnel->email !== $user->email) {
+                $personnelUpdates['email'] = $user->email;
+            }
+            if ($personnelUpdates !== []) {
+                $personnel->update($personnelUpdates);
+            }
+        }
+
+        Auth::setUser($user->fresh());
 
         return redirect()->route('profile.edit')->with('success', 'Profiliniz güncellendi.');
     }

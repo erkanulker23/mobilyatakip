@@ -66,18 +66,23 @@ class ActivityMessage
 
     public static function from(AuditLog $log): array
     {
+        $rawOld = collect($log->oldValue ?? [])->except('_actorName')->all();
         $rawData = $log->newValue ?? $log->oldValue ?? [];
         $userName = $log->user?->name ?? ($rawData['_actorName'] ?? null);
         $data = collect($rawData)->except('_actorName')->all();
         $entityLabel = self::ENTITIES[$log->entity] ?? ucfirst(str_replace('_', ' ', $log->entity));
-        $detail = self::detail($log->entity, $data);
-        $text = self::buildActionText($log, $entityLabel, $detail, $data);
+        $detail = self::detail($log->entity, array_merge($rawOld, $data));
+        $changes = $log->action === 'update'
+            ? AuditChangeDescriber::describe($log->entity, $rawOld, $data)
+            : [];
+        $text = self::buildActionText($log, $entityLabel, $detail, $data, $changes);
         $displayUser = $userName ?: 'Sistem';
 
         return [
             'id' => $log->id,
             'message' => "{$displayUser} {$text}",
             'text' => $text,
+            'changes' => $changes,
             'user' => $displayUser,
             'url' => self::url($log),
             'tone' => self::tone($log->action),
@@ -86,15 +91,20 @@ class ActivityMessage
         ];
     }
 
-    private static function buildActionText(AuditLog $log, string $entityLabel, string $detail, array $data): string
+    /** @param  list<string>  $changes */
+    private static function buildActionText(AuditLog $log, string $entityLabel, string $detail, array $data, array $changes = []): string
     {
         $action = $log->action;
 
         if ($action === 'status' && ! empty($data['status'])) {
             $statusLabel = $log->entity === 'service_ticket'
                 ? ServiceTicketStatus::label($data['status'])
-                : ($data['statusLabel'] ?? $data['status']);
+                : ($data['statusLabel'] ?? ($log->entity === 'sale' ? SaleDelivery::label($data['status']) : $data['status']));
             $target = trim("{$entityLabel} {$detail}");
+            $fromLabel = $data['fromStatusLabel'] ?? null;
+            if ($fromLabel && $log->entity === 'sale') {
+                return trim("{$target} teslim durumunu güncelledi: {$fromLabel} → {$statusLabel}");
+            }
 
             return trim("{$target} durumunu güncelledi: {$statusLabel}");
         }
@@ -144,6 +154,12 @@ class ActivityMessage
             $extra = $data['summary'] ?? null;
 
             return trim("{$target} kaydını senkronize etti" . ($extra ? " — {$extra}" : ''));
+        }
+
+        if ($action === 'update' && $changes !== []) {
+            $target = trim("{$entityLabel} {$detail}");
+
+            return $target !== '' ? "{$target} üzerinde değişiklik yaptı" : trim("{$entityLabel} kaydında değişiklik yaptı");
         }
 
         $actionLabel = self::ACTIONS[$action] ?? $action;
@@ -232,7 +248,7 @@ class ActivityMessage
             return '';
         }
 
-        $seconds = max(0, now()->diffInSeconds($time));
+        $seconds = (int) $time->diffInSeconds(now(), true);
 
         if ($seconds < 60) {
             return 'Az önce';

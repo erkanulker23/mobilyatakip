@@ -39,13 +39,7 @@
                 <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
                 <span>Müşteri: —</span>
                 @endif
-                @if(!($sale->isCancelled ?? false))
-                <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
-                <span class="inline-flex flex-wrap items-center gap-1.5">
-                    @include('partials.payment-status-badge', ['sale' => $sale])
-                    <span>{{ \App\Support\CustomerBalance::saleStatus($sale)['description'] }}</span>
-                </span>
-                @if(\App\Support\SaleDelivery::currentStatus($sale) !== \App\Support\SaleDelivery::PENDING)
+                @if(!($sale->isCancelled ?? false) && \App\Support\SaleDelivery::currentStatus($sale) !== \App\Support\SaleDelivery::PENDING)
                 <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
                 <span class="inline-flex flex-wrap items-center gap-1.5">
                     @include('partials.delivery-status-badge', ['sale' => $sale])
@@ -53,7 +47,6 @@
                     <span>({{ $sale->deliveredAt->format('d.m.Y') }})</span>
                     @endif
                 </span>
-                @endif
                 @endif
             </div>
         </div>
