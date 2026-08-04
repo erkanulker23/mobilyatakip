@@ -21,6 +21,8 @@
             <h1 class="page-title">Log Hareketleri</h1>
             <p class="page-desc mt-1">
                 {{ $personnel->name }} kullanıcısının sistemde yaptığı işlemler
+                · Son {{ $logKeepLimit }} kayıt gösterilir
+                · {{ $logRetentionDays }} günden eskiler otomatik silinir
                 @if($personnel->user?->lastLoginAt)
                     · Son giriş {{ $personnel->user->lastLoginAt->format('d.m.Y H:i') }}
                 @endif
@@ -46,8 +48,8 @@
 @else
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
     <div class="card p-4">
-        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Toplam kayıt</p>
-        <p class="text-2xl font-semibold text-neutral-900 dark:text-neutral-100 mt-1">{{ number_format($logs->total(), 0, ',', '.') }}</p>
+        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Gösterilen</p>
+        <p class="text-2xl font-semibold text-neutral-900 dark:text-neutral-100 mt-1">{{ number_format($logs->count(), 0, ',', '.') }}<span class="text-sm font-normal text-neutral-400"> / {{ $logKeepLimit }}</span></p>
     </div>
     <div class="card p-4">
         <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Kullanıcı</p>
@@ -97,15 +99,15 @@
 
     <div class="px-4 sm:px-5 py-3 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between gap-3 text-sm text-neutral-500">
         <span>
-            @if($logs->total() === 0)
+            @if($logs->isEmpty())
                 Kayıt bulunamadı
-            @elseif($logs->total() === 1)
+            @elseif($logs->count() === 1)
                 1 hareket
             @else
-                {{ number_format($logs->total(), 0, ',', '.') }} hareket
-                @if($logs->hasPages())
-                    · sayfa {{ $logs->currentPage() }}/{{ $logs->lastPage() }}
-                @endif
+                {{ number_format($logs->count(), 0, ',', '.') }} hareket
+            @endif
+            @if($logs->count() >= $logKeepLimit)
+                · en fazla {{ $logKeepLimit }} kayıt
             @endif
         </span>
         @if($hasFilters)
@@ -113,7 +115,8 @@
         @endif
     </div>
 
-    <div class="divide-y divide-neutral-100 dark:divide-neutral-800">
+    <div class="personnel-log-scroll max-h-[min(70vh,42rem)] overflow-y-auto overscroll-y-contain">
+        <div class="divide-y divide-neutral-100 dark:divide-neutral-800">
         @forelse($logs as $log)
         @php
             $activity = \App\Support\ActivityMessage::from($log);
@@ -179,11 +182,34 @@
             </p>
         </div>
         @endforelse
+        </div>
     </div>
-
-    @if($logs->hasPages())
-    <div class="px-4 sm:px-5 py-3 border-t border-neutral-100 dark:border-neutral-800">{{ $logs->links() }}</div>
-    @endif
 </div>
+
+@push('head')
+<style>
+.personnel-log-scroll {
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: #a3a3a3 transparent;
+}
+.personnel-log-scroll::-webkit-scrollbar {
+    width: 8px;
+}
+.personnel-log-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+.personnel-log-scroll::-webkit-scrollbar-thumb {
+    background: #d4d4d4;
+    border-radius: 9999px;
+}
+.dark .personnel-log-scroll {
+    scrollbar-color: #525252 transparent;
+}
+.dark .personnel-log-scroll::-webkit-scrollbar-thumb {
+    background: #525252;
+}
+</style>
+@endpush
 @endif
 @endsection

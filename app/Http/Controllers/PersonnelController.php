@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Services\AuditLogPruner;
 use App\Models\Personnel;
 use App\Models\UserTask;
 use App\Support\UserTaskCompletion;
@@ -196,9 +197,13 @@ class PersonnelController extends Controller
         $personnel->load('user');
         $viewingOwnProfile = auth()->user()?->personnel?->id === $personnel->id;
 
-        $logs = AuditLog::query()->whereRaw('1 = 0')->paginate(30);
+        $logs = collect();
+        $logRetentionDays = AuditLogPruner::RETENTION_DAYS;
+        $logKeepLimit = AuditLogPruner::KEEP_PER_USER;
 
         if ($personnel->userId) {
+            AuditLogPruner::pruneForUser($personnel->userId);
+
             $query = AuditLog::query()
                 ->where('userId', $personnel->userId)
                 ->orderByDesc('createdAt');
@@ -220,7 +225,7 @@ class PersonnelController extends Controller
                 });
             }
 
-            $logs = $query->paginate(30)->withQueryString();
+            $logs = $query->limit($logKeepLimit)->get();
         }
 
         $entityOptions = ActivityMessage::filterEntityOptions();
@@ -231,7 +236,9 @@ class PersonnelController extends Controller
             'logs',
             'viewingOwnProfile',
             'entityOptions',
-            'actionOptions'
+            'actionOptions',
+            'logRetentionDays',
+            'logKeepLimit'
         ));
     }
 
