@@ -1,6 +1,10 @@
 @extends('layouts.app')
 @section('title', 'Yeni Kasa')
 @section('content')
+@php
+    $selectedType = old('type', \App\Support\KasaType::KASA);
+    $showBankFields = \App\Support\KasaType::showsBankFields($selectedType);
+@endphp
 <div class="mb-6">
     <div class="flex items-center gap-2 text-neutral-500 text-sm mb-1">
         <a href="{{ route('kasa.index') }}" class="hover:text-neutral-900">Kasa</a>
@@ -8,7 +12,7 @@
         <span class="text-neutral-700">Yeni Kasa</span>
     </div>
     <h1 class="page-title">Yeni Kasa</h1>
-    <p class="page-desc">Yeni kasa veya banka hesabı ekleyin</p>
+    <p class="page-desc">Nakit kasa, banka hesabı veya kredi kartı hesabı ekleyin</p>
 </div>
 
 <div class="card p-6 max-w-2xl">
@@ -16,27 +20,29 @@
         @csrf
         <div>
             <label class="form-label">Kasa / Hesap Adı *</label>
-            <input type="text" name="name" required value="{{ old('name') }}" class="form-input" placeholder="Örn: Ana Kasa, İş Bankası">
+            <input type="text" name="name" required value="{{ old('name') }}" class="form-input" placeholder="Örn: Ana Kasa, İş Bankası, Garanti POS">
             @error('name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
         <div>
-            <label class="form-label">Tip</label>
-            <select name="type" class="form-select">
-                <option value="kasa" {{ old('type', 'kasa') == 'kasa' ? 'selected' : '' }}>Kasa</option>
-                <option value="banka" {{ old('type') == 'banka' ? 'selected' : '' }}>Banka</option>
+            <label class="form-label">Tip *</label>
+            <select name="type" class="form-select" id="typeSelect">
+                @foreach(\App\Support\KasaType::labels() as $value => $label)
+                <option value="{{ $value }}" {{ $selectedType === $value ? 'selected' : '' }}>{{ $label }}</option>
+                @endforeach
             </select>
+            @error('type')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
-        <div id="banka-alanlari" class="space-y-5 {{ old('type', 'kasa') == 'banka' ? '' : 'hidden' }}">
+        <div id="banka-alanlari" class="space-y-5 {{ $showBankFields ? '' : 'hidden' }}">
             <div>
-                <label class="form-label">Banka Adı</label>
+                <label class="form-label" id="bankNameLabel">Banka Adı</label>
                 <input type="text" name="bankName" value="{{ old('bankName') }}" class="form-input">
             </div>
-            <div>
+            <div id="iban-field">
                 <label class="form-label">IBAN</label>
                 <input type="text" name="iban" value="{{ old('iban') }}" class="form-input" placeholder="TR00 0000 0000 0000 0000 0000 00">
             </div>
             <div>
-                <label class="form-label">Hesap Numarası</label>
+                <label class="form-label" id="accountNumberLabel">Hesap Numarası</label>
                 <input type="text" name="accountNumber" value="{{ old('accountNumber') }}" class="form-input">
             </div>
         </div>
@@ -53,9 +59,24 @@
     </form>
 </div>
 <script>
-document.querySelector('select[name="type"]').addEventListener('change', function() {
-    const el = document.getElementById('banka-alanlari');
-    el.classList.toggle('hidden', this.value !== 'banka');
-});
+(function () {
+    const typeSelect = document.getElementById('typeSelect');
+    const bankBlock = document.getElementById('banka-alanlari');
+    const bankTypes = @json([\App\Support\KasaType::BANKA, \App\Support\KasaType::KREDI_KARTI]);
+
+    function syncTypeFields() {
+        const type = typeSelect.value;
+        const showBank = bankTypes.includes(type);
+        bankBlock.classList.toggle('hidden', !showBank);
+
+        const isCard = type === @json(\App\Support\KasaType::KREDI_KARTI);
+        document.getElementById('bankNameLabel').textContent = isCard ? 'Kart / Banka Adı' : 'Banka Adı';
+        document.getElementById('accountNumberLabel').textContent = isCard ? 'Kart / Hesap No' : 'Hesap Numarası';
+        document.getElementById('iban-field').classList.toggle('hidden', isCard);
+    }
+
+    typeSelect.addEventListener('change', syncTypeFields);
+    syncTypeFields();
+})();
 </script>
 @endsection

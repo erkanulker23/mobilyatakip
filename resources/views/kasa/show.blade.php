@@ -23,8 +23,8 @@
             </div>
             <div class="flex flex-wrap items-center gap-3">
                 <h1 class="page-title">{{ $kasa->name }}</h1>
-                <span class="inline-flex px-2.5 py-1 text-xs font-medium rounded-lg {{ $kasa->type === 'banka' ? 'bg-sky-50 text-sky-700' : 'bg-emerald-50 text-emerald-700' }}">
-                    {{ $kasa->type === 'banka' ? 'Banka' : 'Kasa' }}
+                <span class="inline-flex px-2.5 py-1 text-xs font-medium rounded-lg {{ \App\Support\KasaType::badgeClasses($kasa->type) }}">
+                    {{ \App\Support\KasaType::label($kasa->type) }}
                 </span>
                 @if(!($kasa->isActive ?? true))
                 <span class="inline-flex px-2.5 py-1 text-xs font-medium rounded-lg bg-neutral-100 text-neutral-600">Pasif</span>
@@ -291,7 +291,7 @@
                         <option value="">Seçin...</option>
                         @foreach($otherKasalar as $ok)
                         <option value="{{ $ok->id }}" {{ old('toKasaId') == $ok->id ? 'selected' : '' }}>
-                            {{ $ok->name }}{{ $ok->bankName ? ' — ' . $ok->bankName : '' }} ({{ $ok->type === 'banka' ? 'Banka' : 'Kasa' }})
+                            {{ $ok->name }}{{ $ok->bankName ? ' — ' . $ok->bankName : '' }} ({{ \App\Support\KasaType::label($ok->type) }})
                         </option>
                         @endforeach
                     </select>

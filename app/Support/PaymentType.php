@@ -61,27 +61,27 @@ class PaymentType
     public static function allowedKasaTypes(string $paymentType): array
     {
         return match ($paymentType) {
-            'nakit' => ['kasa'],
-            'havale' => ['banka'],
-            'kredi_karti' => ['banka', 'kasa'],
+            'nakit' => [KasaType::KASA],
+            'havale' => [KasaType::BANKA],
+            'kredi_karti' => [KasaType::KREDI_KARTI, KasaType::BANKA],
             default => [],
         };
     }
 
     public static function isBankAccount(Kasa $kasa): bool
     {
-        return $kasa->type === 'banka'
+        if ($kasa->type === KasaType::KREDI_KARTI) {
+            return false;
+        }
+
+        return $kasa->type === KasaType::BANKA
             || filled($kasa->iban)
             || filled($kasa->bankName);
     }
 
     public static function kasaTypeLabel(Kasa $kasa): string
     {
-        if ($kasa->type === 'banka' || self::isBankAccount($kasa)) {
-            return 'Banka';
-        }
-
-        return 'Nakit Kasa';
+        return KasaType::label($kasa->type);
     }
 
     public static function kasaFieldLabel(string $paymentType): string
@@ -89,7 +89,7 @@ class PaymentType
         return match ($paymentType) {
             'nakit' => 'Nakit Kasası',
             'havale' => 'Banka Hesabı',
-            'kredi_karti' => 'Banka / POS Hesabı',
+            'kredi_karti' => 'Kredi Kartı Hesabı',
             default => 'Kasa',
         };
     }
@@ -97,9 +97,9 @@ class PaymentType
     public static function kasaMatchesPaymentType(string $paymentType, Kasa $kasa): bool
     {
         return match ($paymentType) {
-            'nakit' => $kasa->type === 'kasa',
-            'havale' => $kasa->type === 'banka' || self::isBankAccount($kasa),
-            'kredi_karti' => in_array($kasa->type, ['banka', 'kasa'], true),
+            'nakit' => $kasa->type === KasaType::KASA,
+            'havale' => $kasa->type === KasaType::BANKA || self::isBankAccount($kasa),
+            'kredi_karti' => in_array($kasa->type, [KasaType::KREDI_KARTI, KasaType::BANKA], true),
             default => true,
         };
     }
@@ -114,7 +114,7 @@ class PaymentType
             return match ($paymentType) {
                 'nakit' => 'Nakit elden ödeme için nakit kasası seçin.',
                 'havale' => 'Havale için banka hesabı seçin.',
-                'kredi_karti' => 'Kredi kartı tahsilatı için banka hesabı seçin.',
+                'kredi_karti' => 'Kredi kartı tahsilatı için kredi kartı veya banka hesabı seçin.',
                 default => 'Bu ödeme tipi için kasa/hesap seçimi zorunludur.',
             };
         }
@@ -128,7 +128,7 @@ class PaymentType
             return match ($paymentType) {
                 'nakit' => 'Nakit elden ödemeler için «Nakit Kasa» tipinde hesap seçin (banka hesabı kullanılamaz).',
                 'havale' => 'Havale için geçerli bir hesap seçin.',
-                'kredi_karti' => 'Kredi kartı tahsilatı için geçerli bir hesap seçin.',
+                'kredi_karti' => 'Kredi kartı tahsilatı için «Kredi Kartı» veya «Banka» tipinde hesap seçin.',
                 default => 'Seçilen hesap bu ödeme tipi için uygun değil.',
             };
         }

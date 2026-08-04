@@ -8,6 +8,7 @@ use App\Models\KasaHareket;
 use App\Models\SupplierPayment;
 use App\Services\AuditService;
 use App\Services\KasaService;
+use App\Support\KasaType;
 use App\Support\PaymentType;
 use Illuminate\Http\Request;
 
@@ -158,14 +159,15 @@ class KasaController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'type' => 'nullable|in:kasa,banka',
+            'type' => KasaType::validationRule(),
             'accountNumber' => 'nullable|string|max:100',
             'iban' => 'nullable|string|max:50',
             'bankName' => 'nullable|string|max:255',
             'openingBalance' => 'nullable|numeric',
             'currency' => 'nullable|string|max:10',
         ]);
-        $validated['type'] = $validated['type'] ?? 'kasa';
+        $validated['type'] = $validated['type'] ?? KasaType::KASA;
+        $validated = $this->normalizeKasaTypeFields($validated);
         $validated['openingBalance'] = (float) ($validated['openingBalance'] ?? 0);
         $validated['currency'] = $validated['currency'] ?? 'TRY';
         $kasa = Kasa::create($validated);
@@ -185,7 +187,7 @@ class KasaController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'type' => 'nullable|in:kasa,banka',
+            'type' => KasaType::validationRule(),
             'accountNumber' => 'nullable|string|max:100',
             'iban' => 'nullable|string|max:50',
             'bankName' => 'nullable|string|max:255',
@@ -193,7 +195,8 @@ class KasaController extends Controller
             'currency' => 'nullable|string|max:10',
             'isActive' => 'nullable|boolean',
         ]);
-        $validated['type'] = $validated['type'] ?? 'kasa';
+        $validated['type'] = $validated['type'] ?? KasaType::KASA;
+        $validated = $this->normalizeKasaTypeFields($validated);
         $validated['openingBalance'] = (float) ($validated['openingBalance'] ?? 0);
         $validated['isActive'] = $request->boolean('isActive');
         $oldData = ['name' => $kasa->name, 'openingBalance' => (float) ($kasa->openingBalance ?? 0)];
@@ -227,6 +230,18 @@ class KasaController extends Controller
         }
 
         return money_parse((string) $raw);
+    }
+
+    /** @param  array<string, mixed>  $validated */
+    private function normalizeKasaTypeFields(array $validated): array
+    {
+        if (($validated['type'] ?? KasaType::KASA) === KasaType::KASA) {
+            $validated['bankName'] = null;
+            $validated['iban'] = null;
+            $validated['accountNumber'] = null;
+        }
+
+        return $validated;
     }
 
     public function destroyMovement(Kasa $kasa, KasaHareket $hareket)

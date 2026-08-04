@@ -1,6 +1,10 @@
 @extends('layouts.app')
 @section('title', 'Düzenle: ' . $kasa->name)
 @section('content')
+@php
+    $selectedType = old('type', $kasa->type ?? \App\Support\KasaType::KASA);
+    $showBankFields = \App\Support\KasaType::showsBankFields($selectedType);
+@endphp
 <div class="mb-6">
     <div class="flex items-center gap-2 text-neutral-500 text-sm mb-1">
         <a href="{{ route('kasa.index') }}" class="hover:text-neutral-900">Kasa</a>
@@ -22,23 +26,25 @@
             @error('name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
         <div>
-            <label class="form-label">Tip</label>
+            <label class="form-label">Tip *</label>
             <select name="type" class="form-select" id="typeSelect">
-                <option value="kasa" {{ old('type', $kasa->type) == 'kasa' ? 'selected' : '' }}>Kasa</option>
-                <option value="banka" {{ old('type', $kasa->type) == 'banka' ? 'selected' : '' }}>Banka</option>
+                @foreach(\App\Support\KasaType::labels() as $value => $label)
+                <option value="{{ $value }}" {{ $selectedType === $value ? 'selected' : '' }}>{{ $label }}</option>
+                @endforeach
             </select>
+            @error('type')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
-        <div id="banka-alanlari" class="space-y-5 {{ old('type', $kasa->type) == 'banka' ? '' : 'hidden' }}">
+        <div id="banka-alanlari" class="space-y-5 {{ $showBankFields ? '' : 'hidden' }}">
             <div>
-                <label class="form-label">Banka Adı</label>
-                <input type="text" name="bankName" value="{{ old('bankName', $kasa->bankName) }}" class="form-input">
+                <label class="form-label" id="bankNameLabel">{{ $selectedType === \App\Support\KasaType::KREDI_KARTI ? 'Kart / Banka Adı' : 'Banka Adı' }}</label>
+                <input type="text" name="bankName" value="{{ old('bankName', $kasa->bankName) }}" class="form-input" placeholder="{{ $selectedType === \App\Support\KasaType::KREDI_KARTI ? 'Örn: Garanti Bonus, İş Bankası POS' : 'Örn: Ziraat Bankası' }}">
             </div>
-            <div>
+            <div id="iban-field">
                 <label class="form-label">IBAN</label>
-                <input type="text" name="iban" value="{{ old('iban', $kasa->iban) }}" class="form-input">
+                <input type="text" name="iban" value="{{ old('iban', $kasa->iban) }}" class="form-input" placeholder="TR00 0000 0000 0000 0000 0000 00">
             </div>
             <div>
-                <label class="form-label">Hesap Numarası</label>
+                <label class="form-label" id="accountNumberLabel">{{ $selectedType === \App\Support\KasaType::KREDI_KARTI ? 'Kart / Hesap No' : 'Hesap Numarası' }}</label>
                 <input type="text" name="accountNumber" value="{{ old('accountNumber', $kasa->accountNumber) }}" class="form-input">
             </div>
         </div>
@@ -59,8 +65,24 @@
     </form>
 </div>
 <script>
-document.getElementById('typeSelect').addEventListener('change', function() {
-    document.getElementById('banka-alanlari').classList.toggle('hidden', this.value !== 'banka');
-});
+(function () {
+    const typeSelect = document.getElementById('typeSelect');
+    const bankBlock = document.getElementById('banka-alanlari');
+    const bankTypes = @json([\App\Support\KasaType::BANKA, \App\Support\KasaType::KREDI_KARTI]);
+
+    function syncTypeFields() {
+        const type = typeSelect.value;
+        const showBank = bankTypes.includes(type);
+        bankBlock.classList.toggle('hidden', !showBank);
+
+        const isCard = type === @json(\App\Support\KasaType::KREDI_KARTI);
+        document.getElementById('bankNameLabel').textContent = isCard ? 'Kart / Banka Adı' : 'Banka Adı';
+        document.getElementById('accountNumberLabel').textContent = isCard ? 'Kart / Hesap No' : 'Hesap Numarası';
+        document.getElementById('iban-field').classList.toggle('hidden', isCard);
+    }
+
+    typeSelect.addEventListener('change', syncTypeFields);
+    syncTypeFields();
+})();
 </script>
 @endsection

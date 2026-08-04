@@ -13,10 +13,10 @@
             empty: 'Havale için banka hesabı tanımlı değil. Kasa menüsünden banka hesabı ve IBAN ekleyin.',
         },
         kredi_karti: {
-            label: 'Banka / POS Hesabı',
-            types: ['banka', 'kasa'],
+            label: 'Kredi Kartı Hesabı',
+            types: ['kredi_karti', 'banka'],
             help: 'Kredi kartı tahsilatı hangi hesaba yansıyacak?',
-            empty: 'Aktif kasa veya banka hesabı yok. Kasa menüsünden hesap ekleyin.',
+            empty: 'Kredi kartı veya banka hesabı tanımlı değil. Kasa menüsünden hesap ekleyin.',
         },
         diger: {
             label: 'Kasa',

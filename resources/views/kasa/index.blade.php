@@ -29,8 +29,9 @@
             <label class="form-label">Tip</label>
             <select name="type" class="form-select">
                 <option value="">Tümü</option>
-                <option value="kasa" {{ request('type') === 'kasa' ? 'selected' : '' }}>Kasa</option>
-                <option value="banka" {{ request('type') === 'banka' ? 'selected' : '' }}>Banka</option>
+                @foreach(\App\Support\KasaType::labels() as $value => $label)
+                <option value="{{ $value }}" {{ request('type') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                @endforeach
             </select>
         </div>
         <div class="flex gap-2">
@@ -61,7 +62,7 @@
                         @if($k->bankName)<span class="block text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ $k->bankName }}</span>@endif
                     </td>
                     <td class="table-td">
-                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-lg {{ $k->type === 'banka' ? 'bg-sky-50 text-sky-700' : 'bg-emerald-50 text-emerald-700' }}">{{ $k->type === 'banka' ? 'Banka' : 'Kasa' }}</span>
+                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-lg {{ \App\Support\KasaType::badgeClasses($k->type) }}">{{ \App\Support\KasaType::label($k->type) }}</span>
                     </td>
                     <td class="table-td text-sm tabular-nums tracking-wide text-neutral-600 dark:text-neutral-300">{{ $k->iban ?? $k->accountNumber ?? '-' }}</td>
                     <td class="table-td text-right font-medium {{ ($k->openingBalance ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600' }}">{{ number_format((float)($k->openingBalance ?? 0), 0, ',', '.') }} ₺</td>
