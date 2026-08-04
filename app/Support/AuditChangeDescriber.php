@@ -125,6 +125,10 @@ class AuditChangeDescriber
 
     private static function phraseChange(string $entity, string $key, string $label, mixed $old, mixed $new): string
     {
+        if ($key === 'itemsChanged') {
+            return $new ? 'sipariş kalemleri güncellendi' : '';
+        }
+
         $oldEmpty = $old === null || $old === '' || $old === false;
         $newEmpty = $new === null || $new === '' || $new === false;
 
@@ -134,14 +138,6 @@ class AuditChangeDescriber
 
         if (! $oldEmpty && $newEmpty) {
             return "{$label} kaldırıldı";
-        }
-
-        if ($key === 'itemsChanged' && $new) {
-            return 'sipariş kalemleri güncellendi';
-        }
-
-        if ($key === 'itemsChanged') {
-            return '';
         }
 
         $from = self::formatValue($entity, $key, $old);

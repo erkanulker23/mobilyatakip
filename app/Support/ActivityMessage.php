@@ -75,6 +75,7 @@ class ActivityMessage
         $changes = $log->action === 'update'
             ? AuditChangeDescriber::describe($log->entity, $rawOld, $data)
             : [];
+        $legacyUpdate = $log->action === 'update' && $changes === [] && self::isLegacyUpdateLog($rawOld, $data);
         $text = self::buildActionText($log, $entityLabel, $detail, $data, $changes);
         $displayUser = $userName ?: 'Sistem';
 
@@ -83,6 +84,7 @@ class ActivityMessage
             'message' => "{$displayUser} {$text}",
             'text' => $text,
             'changes' => $changes,
+            'legacyUpdate' => $legacyUpdate,
             'user' => $displayUser,
             'url' => self::url($log),
             'tone' => self::tone($log->action),
@@ -171,6 +173,19 @@ class ActivityMessage
         }
 
         return trim("{$entityLabel} kaydını {$actionLabel}{$suffix}");
+    }
+
+    /** Eski logUpdate çağrıları yalnızca saleNumber vb. saklıyordu; alan diff'i yok. */
+    private static function isLegacyUpdateLog(array $old, array $new): bool
+    {
+        $trackableOld = collect($old)->except(['saleNumber', 'quoteNumber', 'ticketNumber', 'purchaseNumber', 'name', 'title', '_actorName'])->filter(
+            fn ($value) => $value !== null && $value !== '' && $value !== false
+        );
+        $trackableNew = collect($new)->except(['saleNumber', 'quoteNumber', 'ticketNumber', 'purchaseNumber', 'name', 'title', '_actorName', 'changes'])->filter(
+            fn ($value) => $value !== null && $value !== '' && $value !== false
+        );
+
+        return $trackableOld->isEmpty() && $trackableNew->isEmpty();
     }
 
     private static function detail(string $entity, array $data): string

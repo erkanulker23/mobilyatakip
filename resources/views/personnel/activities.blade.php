@@ -149,6 +149,10 @@
                             </li>
                             @endforeach
                         </ul>
+                        @elseif(!empty($activity['legacyUpdate']))
+                        <p class="mt-2 text-xs text-neutral-500 dark:text-neutral-400 italic">
+                            Bu kayıt eski log formatında tutulmuş; alan bazlı değişiklik detayı saklanmamış. Yeni düzenlemelerden itibaren detay görünür.
+                        </p>
                         @endif
                         <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
                             <span>{{ $activity['time']->format('d.m.Y H:i') }}</span>
