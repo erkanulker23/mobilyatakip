@@ -5,11 +5,12 @@
 @php
     $urgentCount = ($urgentDueSales ?? collect())->count();
     $collectedPct = $monthlySales > 0 ? min(100, round(($monthlyCollected / $monthlySales) * 100)) : 0;
+    $dashboardGreeting = \App\Support\UserGreeting::message();
 @endphp
 
 <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
     <div>
-        <h1 class="page-title">Kontrol Paneli</h1>
+        <h1 class="page-title">{{ $dashboardGreeting }}</h1>
         <p class="page-desc mt-1">Bugün odaklanmanız gereken işler ve özet rakamlar</p>
     </div>
     <div class="flex flex-wrap gap-2">

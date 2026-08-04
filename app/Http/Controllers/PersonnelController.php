@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Personnel;
 use App\Models\UserTask;
 use App\Services\AuditService;
 use App\Services\PersonnelAccessService;
+use App\Support\ActivityMessage;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -181,6 +183,52 @@ class PersonnelController extends Controller
         $viewingOwnProfile = auth()->user()?->personnel?->id === $personnel->id;
 
         return view('personnel.show', compact('personnel', 'sales', 'quotes', 'salesStats', 'viewingOwnProfile', 'upcomingDueSales', 'monthlyPerformance', 'personnelTasks'));
+    }
+
+    public function activities(Request $request, Personnel $personnel)
+    {
+        $this->authorizeView($personnel);
+
+        $personnel->load('user');
+        $viewingOwnProfile = auth()->user()?->personnel?->id === $personnel->id;
+
+        $logs = AuditLog::query()->whereRaw('1 = 0')->paginate(30);
+
+        if ($personnel->userId) {
+            $query = AuditLog::query()
+                ->where('userId', $personnel->userId)
+                ->orderByDesc('createdAt');
+
+            if ($request->filled('entity')) {
+                $query->where('entity', $request->entity);
+            }
+            if ($request->filled('action')) {
+                $query->where('action', $request->action);
+            }
+            if ($request->filled('search')) {
+                $s = $request->search;
+                $query->where(function ($w) use ($s) {
+                    $w->where('entity', 'like', "%{$s}%")
+                        ->orWhere('action', 'like', "%{$s}%")
+                        ->orWhere('entityId', 'like', "%{$s}%")
+                        ->orWhere('oldValue', 'like', "%{$s}%")
+                        ->orWhere('newValue', 'like', "%{$s}%");
+                });
+            }
+
+            $logs = $query->paginate(30)->withQueryString();
+        }
+
+        $entityOptions = ActivityMessage::filterEntityOptions();
+        $actionOptions = ActivityMessage::filterActionOptions();
+
+        return view('personnel.activities', compact(
+            'personnel',
+            'logs',
+            'viewingOwnProfile',
+            'entityOptions',
+            'actionOptions'
+        ));
     }
 
     public function edit(Personnel $personnel)

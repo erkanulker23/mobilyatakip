@@ -5,12 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\Personnel;
 use App\Models\User;
 use App\Models\UserTask;
+use App\Services\AuditService;
 use App\Support\UserTaskColor;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class UserTaskController extends Controller
 {
+    public function __construct(private AuditService $auditService) {}
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -97,6 +100,8 @@ class UserTaskController extends Controller
             'color' => UserTaskColor::normalize($validated['color'] ?? null),
         ]);
 
+        $this->auditService->logCreate('user_task', $task->id, ['title' => $task->title]);
+
         $task->load([
             'user:id,name,role',
             'personnel:id,name,title,userId',
@@ -168,6 +173,12 @@ class UserTaskController extends Controller
             'personnel:id,name,title,userId',
         ]);
 
+        if (array_key_exists('isCompleted', $updates) && $updates['isCompleted']) {
+            $this->auditService->logAction('user_task', $userTask->id, 'complete', ['title' => $userTask->title]);
+        } elseif ($updates !== []) {
+            $this->auditService->logUpdate('user_task', $userTask->id, [], ['title' => $userTask->title]);
+        }
+
         return response()->json([
             'task' => $this->taskPayload($userTask),
             'message' => 'Görev güncellendi.',
@@ -177,7 +188,11 @@ class UserTaskController extends Controller
     public function destroy(UserTask $userTask)
     {
         $this->authorizeTask($userTask);
+        $title = $userTask->title;
+        $taskId = $userTask->id;
         $userTask->delete();
+
+        $this->auditService->logDelete('user_task', $taskId, ['title' => $title]);
 
         return response()->json(['message' => 'Görev silindi.']);
     }

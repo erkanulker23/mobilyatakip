@@ -102,6 +102,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('products', ProductController::class);
     Route::resource('warehouses', \App\Http\Controllers\WarehouseController::class);
     Route::delete('/personnel/{personnel}/resim-sil', [\App\Http\Controllers\PersonnelController::class, 'deletePhoto'])->name('personnel.delete-photo');
+    Route::get('/personnel/{personnel}/log', [\App\Http\Controllers\PersonnelController::class, 'activities'])->name('personnel.activities');
     Route::resource('personnel', \App\Http\Controllers\PersonnelController::class);
     Route::post('/kasa/{kasa}/virman', [KasaController::class, 'transfer'])->name('kasa.transfer');
     Route::post('/kasa/{kasa}/acilis-sifirla', [KasaController::class, 'resetOpeningBalance'])->name('kasa.reset-opening');

@@ -27,6 +27,7 @@ class ActivityMessage
         'stock' => 'Stok',
         'company' => 'Şirket ayarları',
         'xml_feed' => 'XML feed',
+        'user_task' => 'Görev',
     ];
 
     private const ACTIONS = [
@@ -35,10 +36,12 @@ class ActivityMessage
         'delete' => 'sildi',
         'cancel' => 'iptal etti',
         'convert' => 'siparişe dönüştürdü',
+        'convert_to_quote' => 'teklife dönüştürdü',
         'email' => 'e-posta gönderdi',
         'sync' => 'senkronize etti',
         'status' => 'durumu güncelledi',
         'transfer' => 'virman yaptı',
+        'complete' => 'tamamladı',
     ];
 
     private const ROUTES = [
@@ -103,6 +106,24 @@ class ActivityMessage
             return trim("{$quote} kaydını siparişe dönüştürdü" . ($saleNo ? " ({$saleNo})" : ''));
         }
 
+        if ($action === 'convert_to_quote') {
+            $quoteNo = $data['quoteNumber'] ?? '';
+            $sale = trim("sipariş {$detail}");
+
+            return trim("{$sale} kaydını teklife dönüştürdü" . ($quoteNo ? " ({$quoteNo})" : ''));
+        }
+
+        if ($log->entity === 'user_task' && $action === 'complete') {
+            return trim(($detail !== '' ? "\"{$detail}\"" : 'Görev') . ' görevini tamamladı');
+        }
+
+        if ($log->entity === 'user_task') {
+            $title = $detail !== '' ? "\"{$detail}\"" : 'Görev';
+            $actionLabel = self::ACTIONS[$action] ?? $action;
+
+            return trim("{$title} görevini {$actionLabel}");
+        }
+
         if ($action === 'email') {
             $target = trim("{$entityLabel} {$detail}");
 
@@ -144,6 +165,7 @@ class ActivityMessage
             ! empty($data['quoteNumber']) => (string) $data['quoteNumber'],
             ! empty($data['ticketNumber']) => (string) $data['ticketNumber'],
             ! empty($data['name']) => (string) $data['name'],
+            ! empty($data['title']) => (string) $data['title'],
             ! empty($data['description']) && in_array($entity, ['expense'], true) => (string) $data['description'],
             default => '',
         };
@@ -169,7 +191,7 @@ class ActivityMessage
     private static function tone(string $action): string
     {
         return match ($action) {
-            'create', 'convert', 'sync', 'transfer' => 'success',
+            'create', 'convert', 'convert_to_quote', 'sync', 'transfer', 'complete' => 'success',
             'delete', 'cancel' => 'danger',
             'email' => 'info',
             'status' => 'warning',
@@ -232,5 +254,17 @@ class ActivityMessage
         }
 
         return $time->format('d.m.Y H:i');
+    }
+
+    /** @return array<string, string> */
+    public static function filterEntityOptions(): array
+    {
+        return self::ENTITIES;
+    }
+
+    /** @return array<string, string> */
+    public static function filterActionOptions(): array
+    {
+        return self::ACTIONS;
     }
 }

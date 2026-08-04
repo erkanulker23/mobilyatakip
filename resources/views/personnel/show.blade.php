@@ -21,7 +21,20 @@
             </p>
         </div>
         @if(auth()->user()?->isAdmin())
-        <a href="{{ route('personnel.edit', $personnel) }}" class="btn-edit">Düzenle</a>
+        <div class="flex flex-wrap items-center gap-2">
+            @if($personnel->userId)
+            <a href="{{ route('personnel.activities', $personnel) }}" class="btn-secondary">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Log Hareketleri
+            </a>
+            @endif
+            <a href="{{ route('personnel.edit', $personnel) }}" class="btn-edit">Düzenle</a>
+        </div>
+        @elseif($personnel->userId && ($viewingOwnProfile ?? false))
+        <a href="{{ route('personnel.activities', $personnel) }}" class="btn-secondary">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            Log Hareketleri
+        </a>
         @endif
     </div>
 </div>
