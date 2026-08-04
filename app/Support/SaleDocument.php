@@ -119,28 +119,65 @@ class SaleDocument
         return $clean !== '' ? $clean : $trimmed;
     }
 
-    public static function extraInfoRows(Sale $sale): array
+    public static function orderMetaRows(Sale $sale): array
     {
         $rows = [];
 
+        if ($sale->saleDate) {
+            $rows[] = [
+                'key' => 'saleDate',
+                'label' => 'Sipariş Tarihi',
+                'value' => $sale->saleDate->format('d.m.Y'),
+            ];
+        }
         if ($sale->dueDate) {
-            $rows[] = ['label' => 'Tahmini Teslim', 'value' => $sale->dueDate->format('d.m.Y')];
+            $rows[] = [
+                'key' => 'dueDate',
+                'label' => 'Tahmini Termin Tarihi',
+                'value' => $sale->dueDate->format('d.m.Y'),
+            ];
         }
         if ($sale->personnel) {
-            $rows[] = ['label' => 'Satış Temsilcisi', 'value' => $sale->personnel->name];
+            $rows[] = [
+                'key' => 'personnel',
+                'label' => 'Satış Temsilcisi',
+                'value' => $sale->personnel->name,
+            ];
         }
         if ($sale->needsFinalMeasurement ?? false) {
-            $rows[] = ['label' => 'Kesin Ölçü', 'value' => 'Saha ölçüsü alınacak'];
+            $rows[] = [
+                'key' => 'measurement',
+                'label' => 'Kesin Ölçü',
+                'value' => 'Saha ölçüsü alınacak',
+            ];
         }
 
         $paymentStatus = CustomerBalance::saleStatus($sale);
         $rows[] = [
+            'key' => 'payment',
             'label' => 'Ödeme Durumu',
             'value' => $paymentStatus['label'],
             'statusKey' => $paymentStatus['key'],
         ];
 
+        if (! ($sale->isCancelled ?? false)) {
+            $orderStatus = SaleDelivery::currentStatus($sale);
+            if ($orderStatus !== SaleDelivery::PENDING) {
+                $rows[] = [
+                    'key' => 'delivery',
+                    'label' => 'Sipariş Durumu',
+                    'value' => SaleDelivery::label($orderStatus),
+                    'deliveryKey' => $orderStatus,
+                ];
+            }
+        }
+
         return $rows;
+    }
+
+    public static function extraInfoRows(Sale $sale): array
+    {
+        return self::orderMetaRows($sale);
     }
 
     public static function extraInfoHtml(Sale $sale): string

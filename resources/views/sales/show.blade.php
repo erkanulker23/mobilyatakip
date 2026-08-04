@@ -126,7 +126,12 @@
 </div>
 @endif
 
-@include('partials.invoice-document', \App\Support\SaleDocument::invoiceParams($sale))
+@include('partials.sale-order-meta-panel', ['sale' => $sale])
+
+@include('partials.invoice-document', array_merge(
+    \App\Support\SaleDocument::invoiceParams($sale),
+    ['showOrderSummary' => false]
+))
 
 <div class="mt-6">
     @include('partials.drawing-files-display', ['drawingFiles' => $sale->drawingFiles ?? []])

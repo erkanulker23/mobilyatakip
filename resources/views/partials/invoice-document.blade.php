@@ -8,7 +8,7 @@
             'documentSubtitle' => $documentSubtitle ?? null,
         ])
 
-        @if(!empty($extraInfoRows))
+        @if(!empty($extraInfoRows) && ($showOrderSummary ?? true))
         <dl class="sale-doc-summary print-section mb-5">
             @foreach($extraInfoRows as $row)
             <div class="sale-doc-summary__item">
