@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AuditLog;
 use App\Models\Personnel;
 use App\Models\UserTask;
+use App\Support\UserTaskCompletion;
 use App\Services\AuditService;
 use App\Services\PersonnelAccessService;
 use App\Support\ActivityMessage;
@@ -165,6 +166,7 @@ class PersonnelController extends Controller
         $quotes = $personnel->quotes()->with('customer')->orderByDesc('createdAt')->limit(10)->get();
 
         $personnelTasks = collect();
+        $taskCompleterFallback = [];
         if ($personnel->hasSystemAccess()) {
             $personnelTasks = UserTask::query()
                 ->with('completedByUser:id,name')
@@ -179,11 +181,12 @@ class PersonnelController extends Controller
                 ->orderBy('sortOrder')
                 ->orderByDesc('createdAt')
                 ->get();
+            $taskCompleterFallback = UserTaskCompletion::completerNameMap($personnelTasks);
         }
 
         $viewingOwnProfile = auth()->user()?->personnel?->id === $personnel->id;
 
-        return view('personnel.show', compact('personnel', 'sales', 'quotes', 'salesStats', 'viewingOwnProfile', 'upcomingDueSales', 'monthlyPerformance', 'personnelTasks'));
+        return view('personnel.show', compact('personnel', 'sales', 'quotes', 'salesStats', 'viewingOwnProfile', 'upcomingDueSales', 'monthlyPerformance', 'personnelTasks', 'taskCompleterFallback'));
     }
 
     public function activities(Request $request, Personnel $personnel)

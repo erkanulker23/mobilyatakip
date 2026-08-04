@@ -493,7 +493,7 @@ function dashboardTasks() {
             const who = task.completedByName;
             if (who && when) return who + ' tarafından tamamlandı · ' + when;
             if (who) return who + ' tarafından tamamlandı';
-            if (when) return 'Tamamlandı · ' + when;
+            if (when) return 'Tamamlayan bilinmiyor · ' + when;
             return 'Tamamlandı';
         },
 

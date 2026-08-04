@@ -63,18 +63,21 @@
             <h3 class="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-slate-400 mb-3">Tamamlanan görevler</h3>
             <div class="space-y-2">
                 @foreach($doneTasks->take(10) as $task)
-                @php $color = \App\Support\UserTaskColor::classes($task->color); @endphp
+                @php
+                    $color = \App\Support\UserTaskColor::classes($task->color);
+                    $completedByName = \App\Support\UserTaskCompletion::completerName($task, $taskCompleterFallback ?? []);
+                @endphp
                 <div class="rounded-xl border border-neutral-200 dark:border-slate-700 p-3 bg-white/60 dark:bg-slate-900/30 opacity-75">
                     <div class="flex items-start gap-3">
                         <span class="mt-1.5 w-2 h-2 rounded-full shrink-0 {{ $color['dot'] }}"></span>
                         <div class="min-w-0 flex-1">
                             <p class="text-sm font-medium text-neutral-600 dark:text-slate-400 line-through">{{ $task->title }}</p>
                             @if($task->completedAt)
-                            <p class="text-[11px] text-neutral-500 dark:text-slate-400 mt-2">
-                                @if($task->completedByUser)
-                                    {{ $task->completedByUser->name }} tarafından tamamlandı · {{ $task->completedAt->format('d.m.Y H:i') }}
+                            <p class="text-[11px] text-neutral-500 dark:text-slate-400 mt-1">
+                                @if($completedByName)
+                                    {{ $completedByName }} tarafından tamamlandı · {{ $task->completedAt->format('d.m.Y H:i') }}
                                 @else
-                                    Tamamlandı · {{ $task->completedAt->format('d.m.Y H:i') }}
+                                    Tamamlayan bilinmiyor · {{ $task->completedAt->format('d.m.Y H:i') }}
                                 @endif
                             </p>
                             @endif

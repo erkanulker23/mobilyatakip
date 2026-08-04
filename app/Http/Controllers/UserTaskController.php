@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\UserTask;
 use App\Services\AuditService;
 use App\Support\UserTaskColor;
+use App\Support\UserTaskCompletion;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -49,11 +50,12 @@ class UserTaskController extends Controller
             ->orderBy('dueDate')
             ->orderBy('sortOrder')
             ->orderByDesc('createdAt')
-            ->get()
-            ->map(fn (UserTask $task) => $this->taskPayload($task));
+            ->get();
+
+        $completerFallback = UserTaskCompletion::completerNameMap($tasks);
 
         return response()->json([
-            'tasks' => $tasks,
+            'tasks' => $tasks->map(fn (UserTask $task) => $this->taskPayload($task, $completerFallback)),
             'month' => $monthStart->format('Y-m'),
         ]);
     }
@@ -225,11 +227,12 @@ class UserTaskController extends Controller
         }
     }
 
-    private function taskPayload(UserTask $task): array
+    private function taskPayload(UserTask $task, array $completerFallback = []): array
     {
         $color = UserTaskColor::normalize($task->color);
         $classes = UserTaskColor::classes($color);
         $assigneeName = $task->personnel?->name ?? $task->user?->name;
+        $completedByName = UserTaskCompletion::completerName($task, $completerFallback);
 
         return [
             'id' => $task->id,
@@ -248,7 +251,7 @@ class UserTaskController extends Controller
             'isCompleted' => (bool) $task->isCompleted,
             'completedAt' => $task->completedAt?->toIso8601String(),
             'completedByUserId' => $task->completedByUserId ? (string) $task->completedByUserId : null,
-            'completedByName' => $task->completedByUser?->name,
+            'completedByName' => $completedByName,
             'sortOrder' => (int) $task->sortOrder,
         ];
     }
