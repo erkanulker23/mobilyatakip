@@ -2,9 +2,7 @@
 @php
     $openTasks = $personnelTasks->where('isCompleted', false);
     $doneTasks = $personnelTasks->where('isCompleted', true);
-    $tasksCalendarUrl = auth()->user()?->isAdmin() && !($viewingOwnProfile ?? false)
-        ? route('tasks.index', ['personnelId' => $personnel->id])
-        : route('tasks.index');
+    $tasksCalendarUrl = route('tasks.index', ['personnelId' => $personnel->id]);
 @endphp
 <div class="card overflow-hidden mb-6 w-full">
     <div class="px-6 py-4 border-b border-neutral-200 dark:border-slate-700 bg-neutral-50/80 dark:bg-slate-800/40 flex flex-wrap items-center justify-between gap-3">

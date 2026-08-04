@@ -254,6 +254,10 @@ class ShippingCompanyPaymentController extends Controller
 
     private function validatePayment(Request $request, bool $creating): array
     {
+        if ($request->filled('amount')) {
+            $request->merge(['amount' => money_parse($request->input('amount'))]);
+        }
+
         $rules = [
             'linkType' => 'required|in:purchase,sale,service_ticket,manual',
             'purchaseId' => 'nullable|exists:purchases,id',

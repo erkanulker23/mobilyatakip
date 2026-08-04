@@ -1,5 +1,4 @@
 @php
-    $isTaskAdmin = auth()->user()?->isAdmin() ?? false;
     $currentUserId = (string) auth()->id();
     $initialPersonnelFilter = request('personnelId', '');
     $taskColorPalette = \App\Support\UserTaskColor::PALETTE;
@@ -11,75 +10,41 @@
             'dot' => $c['dot'],
         ];
     })->all();
+    $taskPersonnelOptions = collect($taskPersonnel ?? [])->map(fn ($p) => [
+        'id' => (string) $p->id,
+        'name' => $p->name,
+        'title' => $p->title,
+        'label' => $p->name . ($p->title ? ' — ' . $p->title : ''),
+    ])->values()->all();
 @endphp
+
+{{-- Tailwind CDN yalnızca HTML'deki statik sınıfları üretir; görev renkleri JS ile bağlandığı için safelist --}}
+<div class="hidden" aria-hidden="true">
+    @foreach($taskColorPalette as $color)
+    <span class="{{ $color['bg'] }} {{ $color['border'] }} {{ $color['text'] }} {{ $color['dot'] }} {{ $color['ring'] }}"></span>
+    @endforeach
+</div>
 
 <div class="card overflow-hidden mb-8" id="yapilacaklar" x-data="dashboardTasks()" x-init="init()">
     <div class="card-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
             <span class="text-base font-semibold">Yapılacaklar</span>
             <p class="text-xs font-normal text-neutral-500 mt-0.5">
-                @if($isTaskAdmin)
-                    Tüm personelin görevlerini görüntüleyebilir ve yönetebilirsiniz
-                @else
-                    Kişisel görev listeniz ve takvim
-                @endif
+                Tüm personelin görevlerini görüntüleyebilir, atayabilir ve düzenleyebilirsiniz
             </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            @if($isTaskAdmin)
-            <select x-model="filterPersonnelId" @change="loadTasks()" class="form-select text-sm min-h-[36px] py-1.5 max-w-[200px]">
+            <select x-model="filterPersonnelId" @change="loadTasks()" class="form-select text-sm min-h-[36px] py-1.5 max-w-[220px]">
                 <option value="">Tüm personel</option>
                 @foreach($taskPersonnel ?? [] as $person)
                 <option value="{{ $person->id }}">{{ $person->name }}@if($person->title) — {{ $person->title }}@endif</option>
                 @endforeach
             </select>
-            @endif
-            <button type="button" @click="showForm = !showForm" class="btn-primary text-sm min-h-[36px] py-1.5">
+            <button type="button" @click="openCreateModal()" class="btn-primary text-sm min-h-[36px] py-1.5">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 Görev Ekle
             </button>
         </div>
-    </div>
-
-    {{-- Yeni görev formu --}}
-    <div x-show="showForm" x-cloak class="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/80 dark:bg-neutral-900/40">
-        <form @submit.prevent="createTask()" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-            <div class="md:col-span-4">
-                <label class="form-label">Görev *</label>
-                <input type="text" x-model="form.title" required maxlength="255" class="form-input" placeholder="Ne yapılacak?">
-            </div>
-            <div class="md:col-span-2">
-                <label class="form-label">Tarih</label>
-                <input type="date" x-model="form.dueDate" class="form-input">
-            </div>
-            <div class="md:col-span-3">
-                <label class="form-label">Renk</label>
-                <div class="flex flex-wrap gap-1.5 pt-1">
-                    @foreach($taskColorPalette as $key => $color)
-                    <button type="button"
-                        @click="form.color = @json($key)"
-                        :class="form.color === @json($key) ? 'ring-2 ring-offset-1 {{ $color['ring'] }}' : ''"
-                        class="w-7 h-7 rounded-full {{ $color['dot'] }} border-2 border-white dark:border-neutral-900 shadow-sm"
-                        title="{{ $color['label'] }}"></button>
-                    @endforeach
-                </div>
-            </div>
-            @if($isTaskAdmin)
-            <div class="md:col-span-2">
-                <label class="form-label">Personel</label>
-                <select x-model="form.personnelId" class="form-select text-sm">
-                    <option value="">Atanmadı (kendim)</option>
-                    @foreach($taskPersonnel ?? [] as $person)
-                    <option value="{{ $person->id }}">{{ $person->name }}@if($person->title) — {{ $person->title }}@endif</option>
-                    @endforeach
-                </select>
-            </div>
-            @endif
-            <div class="md:col-span-1 flex gap-2">
-                <button type="submit" :disabled="saving" class="btn-primary text-sm w-full justify-center">Ekle</button>
-            </div>
-        </form>
-        <p x-show="formError" x-text="formError" class="mt-2 text-sm text-red-600"></p>
     </div>
 
     <div class="p-5 grid grid-cols-1 xl:grid-cols-5 gap-6">
@@ -122,9 +87,9 @@
                         <div class="mt-1 space-y-0.5 overflow-hidden max-h-[40px]">
                             <template x-for="task in cell.tasks.slice(0, 3)" :key="task.id">
                                 <div class="text-[10px] leading-tight truncate px-1 py-0.5 rounded border"
-                                    :class="colorClasses(task.color).bg + ' ' + colorClasses(task.color).border + ' ' + colorClasses(task.color).text + (task.isCompleted ? ' opacity-50 line-through' : '')"
-                                    :title="isTaskAdmin && task.assigneeName ? task.assigneeName + ': ' + task.title : task.title">
-                                    <span x-show="isTaskAdmin && task.personnelId && task.assigneeName" class="font-semibold" x-text="task.assigneeName.split(' ')[0] + ': '"></span><span x-text="task.title"></span>
+                                    :class="[colorClasses(task.color).bg, colorClasses(task.color).border, colorClasses(task.color).text, task.isCompleted ? 'opacity-50 line-through' : '']"
+                                    :title="task.assigneeName ? task.assigneeName + ': ' + task.title : task.title">
+                                    <span x-show="task.assigneeName" class="font-semibold" x-text="(task.assigneeName || '').split(' ')[0] + ': '"></span><span x-text="task.title"></span>
                                 </div>
                             </template>
                             <p x-show="cell.tasks.length > 3" class="text-[10px] text-neutral-400 px-1" x-text="'+' + (cell.tasks.length - 3)"></p>
@@ -145,17 +110,18 @@
                     </template>
                     <template x-for="task in selectedDayTasks" :key="task.id">
                         <div class="rounded-xl border p-3"
-                            :class="colorClasses(task.color).bg + ' ' + colorClasses(task.color).border">
+                            :class="[colorClasses(task.color).bg, colorClasses(task.color).border]">
                             <div class="flex items-start gap-2">
                                 <input type="checkbox" :checked="task.isCompleted" @change="toggleComplete(task)" class="mt-1 rounded border-neutral-300">
                                 <div class="min-w-0 flex-1">
                                     <p class="text-sm font-medium" :class="[colorClasses(task.color).text, task.isCompleted ? 'line-through opacity-60' : '']" x-text="task.title"></p>
-                                    @if($isTaskAdmin)
                                     <p class="text-[11px] text-neutral-500 mt-0.5" x-show="task.assigneeName" x-text="task.assigneeName + (task.personnelTitle ? ' · ' + task.personnelTitle : '')"></p>
-                                    @endif
                                     <p x-show="task.notes" class="text-xs text-neutral-500 mt-1" x-text="task.notes"></p>
                                 </div>
                                 <div class="flex items-center gap-0.5 shrink-0">
+                                    <button type="button" @click="openEditTask(task)" class="p-1 rounded hover:bg-black/5 text-neutral-400 hover:text-neutral-700" title="Düzenle">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                    </button>
                                     <div class="relative" x-data="{ open: false }">
                                         <button type="button" @click="open = !open" class="p-1 rounded hover:bg-black/5" title="Renk">
                                             <span class="block w-4 h-4 rounded-full" :class="colorClasses(task.color).dot"></span>
@@ -176,22 +142,24 @@
                 </div>
             </div>
 
-            @if($isTaskAdmin)
             <div x-show="teamOpenTasks.length > 0">
-                <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-3">Personel görevleri</h3>
+                <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-3">Atanmış açık görevler</h3>
                 <div class="space-y-2 max-h-[280px] overflow-y-auto pr-1">
                     <template x-for="task in teamOpenTasks" :key="'team-' + task.id">
                         <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 p-3 bg-white dark:bg-neutral-900/40">
                             <div class="flex items-start gap-2">
                                 <input type="checkbox" :checked="task.isCompleted" @change="toggleComplete(task)" class="mt-1 rounded">
                                 <div class="min-w-0 flex-1">
-                                    <p class="text-[11px] font-medium text-neutral-500" x-text="task.assigneeName"></p>
+                                    <p class="text-[11px] font-medium text-neutral-500" x-text="task.assigneeName || 'Atanmadı'"></p>
                                     <div class="flex items-center gap-2 mt-0.5">
                                         <span class="w-2 h-2 rounded-full shrink-0" :class="colorClasses(task.color).dot"></span>
                                         <p class="text-sm font-medium text-neutral-800 dark:text-neutral-200" :class="task.isCompleted ? 'line-through opacity-60' : ''" x-text="task.title"></p>
                                     </div>
                                     <p x-show="task.dueDate" class="text-[11px] text-neutral-500 mt-1" x-text="formatTaskDate(task.dueDate)"></p>
                                 </div>
+                                <button type="button" @click="openEditTask(task)" class="p-1 text-neutral-400 hover:text-neutral-700" title="Düzenle">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                </button>
                                 <button type="button" @click="deleteTask(task)" class="p-1 text-neutral-400 hover:text-red-600">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                 </button>
@@ -200,7 +168,6 @@
                     </template>
                 </div>
             </div>
-            @endif
 
             <div x-show="undatedTasks.length > 0">
                 <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-3">Tarihsiz görevler</h3>
@@ -214,10 +181,11 @@
                                         <span class="w-2 h-2 rounded-full shrink-0" :class="colorClasses(task.color).dot"></span>
                                         <p class="text-sm font-medium text-neutral-800 dark:text-neutral-200" :class="task.isCompleted ? 'line-through opacity-60' : ''" x-text="task.title"></p>
                                     </div>
-                                    @if($isTaskAdmin)
-                                    <p class="text-[11px] text-neutral-500 mt-0.5 ml-4" x-text="task.assigneeName"></p>
-                                    @endif
+                                    <p class="text-[11px] text-neutral-500 mt-0.5 ml-4" x-show="task.assigneeName" x-text="task.assigneeName"></p>
                                 </div>
+                                <button type="button" @click="openEditTask(task)" class="p-1 text-neutral-400 hover:text-neutral-700" title="Düzenle">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                </button>
                                 <button type="button" @click="deleteTask(task)" class="p-1 text-neutral-400 hover:text-red-600">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                 </button>
@@ -225,6 +193,103 @@
                         </div>
                     </template>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Görev ekleme --}}
+    <div x-show="showCreateModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="task-create-title">
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="closeCreateModal()"></div>
+        <div class="relative w-full max-w-lg rounded-2xl bg-white dark:bg-neutral-900 shadow-xl border border-neutral-200 dark:border-neutral-800 p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+            <h3 id="task-create-title" class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Yeni Görev</h3>
+            <form @submit.prevent="createTask()" class="space-y-4">
+                <div>
+                    <label class="form-label">Görev *</label>
+                    <input type="text" x-model="form.title" required maxlength="255" class="form-input" placeholder="Ne yapılacak?" autofocus>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="form-label">Tarih</label>
+                        <input type="date" x-model="form.dueDate" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">Personel</label>
+                        <select x-model="form.personnelId" class="form-select">
+                            <option value="">Atanmadı</option>
+                            <template x-for="person in personnelOptions" :key="person.id">
+                                <option :value="person.id" x-text="person.label"></option>
+                            </template>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Renk</label>
+                    <div class="flex flex-wrap gap-2 pt-1">
+                        @foreach($taskColorPalette as $key => $color)
+                        <button type="button"
+                            @click="form.color = @json($key)"
+                            :class="form.color === @json($key) ? 'ring-2 ring-offset-1 {{ $color['ring'] }}' : ''"
+                            class="w-8 h-8 rounded-full {{ $color['dot'] }} border-2 border-white dark:border-neutral-900 shadow-sm"
+                            title="{{ $color['label'] }}"></button>
+                        @endforeach
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Not</label>
+                    <textarea x-model="form.notes" rows="3" maxlength="2000" class="form-input" placeholder="İsteğe bağlı"></textarea>
+                </div>
+                <p x-show="formError" x-text="formError" class="text-sm text-red-600"></p>
+                <div class="flex gap-2 justify-end pt-1">
+                    <button type="button" @click="closeCreateModal()" class="btn-secondary">İptal</button>
+                    <button type="submit" :disabled="saving" class="btn-primary">Ekle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Görev düzenleme --}}
+    <div x-show="editingTaskId" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="cancelEdit()"></div>
+        <div class="relative w-full max-w-lg rounded-2xl bg-white dark:bg-neutral-900 shadow-xl border border-neutral-200 dark:border-neutral-800 p-5 space-y-4">
+            <h3 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Görevi Düzenle</h3>
+            <div>
+                <label class="form-label">Görev *</label>
+                <input type="text" x-model="editForm.title" maxlength="255" class="form-input">
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="form-label">Tarih</label>
+                    <input type="date" x-model="editForm.dueDate" class="form-input">
+                </div>
+                <div>
+                    <label class="form-label">Personel</label>
+                    <select x-model="editForm.personnelId" class="form-select">
+                        <option value="">Atanmadı</option>
+                        <template x-for="person in personnelOptions" :key="person.id">
+                            <option :value="person.id" x-text="person.label"></option>
+                        </template>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="form-label">Renk</label>
+                <div class="flex flex-wrap gap-2 pt-1">
+                    @foreach($taskColorPalette as $key => $color)
+                    <button type="button"
+                        @click="editForm.color = @json($key)"
+                        :class="editForm.color === @json($key) ? 'ring-2 ring-offset-1 {{ $color['ring'] }}' : ''"
+                        class="w-8 h-8 rounded-full {{ $color['dot'] }} border-2 border-white dark:border-neutral-900 shadow-sm"
+                        title="{{ $color['label'] }}"></button>
+                    @endforeach
+                </div>
+            </div>
+            <div>
+                <label class="form-label">Not</label>
+                <textarea x-model="editForm.notes" rows="3" maxlength="2000" class="form-input" placeholder="İsteğe bağlı"></textarea>
+            </div>
+            <div class="flex gap-2 justify-end pt-1">
+                <button type="button" @click="cancelEdit()" class="btn-secondary">İptal</button>
+                <button type="button" @click="saveEditTask()" :disabled="saving" class="btn-primary">Kaydet</button>
             </div>
         </div>
     </div>
@@ -238,7 +303,7 @@ function dashboardTasks() {
     const apiStore = @json(route('api.user-tasks.store'));
     const apiUpdateBase = @json(url('/api/user-tasks'));
     const currentUserId = @json($currentUserId);
-    const isTaskAdmin = @json($isTaskAdmin);
+    const personnelOptions = @json($taskPersonnelOptions);
 
     function localDateStr(date) {
         const d = date || new Date();
@@ -254,13 +319,17 @@ function dashboardTasks() {
         tasks: [],
         loading: false,
         saving: false,
-        showForm: false,
+        showCreateModal: false,
         formError: '',
         filterPersonnelId: @json($initialPersonnelFilter),
         currentMonth: today.slice(0, 7),
         selectedDate: today,
+        editingTaskId: null,
+        editingTask: null,
+        editForm: { title: '', notes: '', dueDate: '', personnelId: '', color: 'emerald' },
+        personnelOptions,
         weekdayLabels: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'],
-        form: { title: '', dueDate: today, color: 'emerald', personnelId: '' },
+        form: { title: '', dueDate: today, color: 'emerald', personnelId: '', notes: '' },
 
         get monthLabel() {
             const [y, m] = this.currentMonth.split('-').map(Number);
@@ -276,7 +345,6 @@ function dashboardTasks() {
             return this.tasks.filter(t => !t.dueDate && !t.isCompleted);
         },
         get teamOpenTasks() {
-            if (!isTaskAdmin) return [];
             return this.tasks
                 .filter(t => !t.isCompleted && t.personnelId)
                 .sort((a, b) => {
@@ -376,14 +444,38 @@ function dashboardTasks() {
             this.loadTasks();
         },
 
+        openCreateModal() {
+            this.formError = '';
+            this.form = {
+                title: '',
+                dueDate: this.selectedDate || today,
+                color: 'emerald',
+                personnelId: this.filterPersonnelId || '',
+                notes: '',
+            };
+            this.showCreateModal = true;
+        },
+
+        closeCreateModal() {
+            this.showCreateModal = false;
+            this.formError = '';
+        },
+
         async createTask() {
             this.saving = true;
             this.formError = '';
             try {
+                const title = (this.form.title || '').trim();
+                if (!title) {
+                    this.formError = 'Görev başlığı zorunludur.';
+                    this.saving = false;
+                    return;
+                }
                 const body = {
-                    title: this.form.title,
+                    title,
                     dueDate: this.form.dueDate || null,
                     color: this.form.color,
+                    notes: this.form.notes || null,
                 };
                 if (this.form.personnelId) body.personnelId = this.form.personnelId;
                 const res = await fetch(apiStore, {
@@ -403,10 +495,7 @@ function dashboardTasks() {
                     this.selectedDate = data.task.dueDate;
                 }
                 await this.loadTasks();
-                this.form.title = '';
-                this.form.dueDate = this.selectedDate || today;
-                this.form.personnelId = '';
-                this.showForm = false;
+                this.closeCreateModal();
             } catch (e) {
                 this.formError = e.message || 'Görev eklenemedi';
             }
@@ -419,6 +508,41 @@ function dashboardTasks() {
 
         async updateColor(task, color) {
             await this.patchTask(task, { color });
+        },
+
+        openEditTask(task) {
+            this.editingTaskId = task.id;
+            this.editingTask = task;
+            this.editForm = {
+                title: task.title || '',
+                notes: task.notes || '',
+                dueDate: task.dueDate || '',
+                personnelId: task.personnelId || '',
+                color: task.color || 'emerald',
+            };
+        },
+
+        cancelEdit() {
+            this.editingTaskId = null;
+            this.editingTask = null;
+            this.editForm = { title: '', notes: '', dueDate: '', personnelId: '', color: 'emerald' };
+        },
+
+        async saveEditTask() {
+            if (!this.editingTask) return;
+            const title = (this.editForm.title || '').trim();
+            if (!title) {
+                alert('Görev başlığı zorunludur.');
+                return;
+            }
+            await this.patchTask(this.editingTask, {
+                title,
+                notes: this.editForm.notes || null,
+                dueDate: this.editForm.dueDate || null,
+                personnelId: this.editForm.personnelId || null,
+                color: this.editForm.color,
+            });
+            this.cancelEdit();
         },
 
         async patchTask(task, payload) {

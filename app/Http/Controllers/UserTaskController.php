@@ -28,32 +28,16 @@ class UserTaskController extends Controller
             'personnel:id,name,title,userId',
         ]);
 
-        if ($user->isAdmin()) {
-            if ($request->filled('personnelId')) {
-                $query->where('personnelId', $request->personnelId);
-            } elseif ($request->filled('userId')) {
-                $query->where('userId', $request->userId);
-            }
-
-            $query->where(function ($w) use ($monthStart, $monthEnd) {
-                $w->whereBetween('dueDate', [$monthStart->toDateString(), $monthEnd->toDateString()])
-                    ->orWhere('isCompleted', false);
-            });
-        } else {
-            $linkedPersonnelId = $user->personnel?->id;
-
-            $query->where(function ($w) use ($user, $linkedPersonnelId) {
-                $w->where('userId', $user->id);
-                if ($linkedPersonnelId) {
-                    $w->orWhere('personnelId', $linkedPersonnelId);
-                }
-            });
-
-            $query->where(function ($w) use ($monthStart, $monthEnd) {
-                $w->whereBetween('dueDate', [$monthStart->toDateString(), $monthEnd->toDateString()])
-                    ->orWhere('isCompleted', false);
-            });
+        if ($request->filled('personnelId')) {
+            $query->where('personnelId', $request->personnelId);
+        } elseif ($request->filled('userId')) {
+            $query->where('userId', $request->userId);
         }
+
+        $query->where(function ($w) use ($monthStart, $monthEnd) {
+            $w->whereBetween('dueDate', [$monthStart->toDateString(), $monthEnd->toDateString()])
+                ->orWhere('isCompleted', false);
+        });
 
         $tasks = $query
             ->orderBy('isCompleted')
@@ -83,7 +67,7 @@ class UserTaskController extends Controller
         $ownerId = (string) $request->user()->id;
         $personnelId = null;
 
-        if ($request->user()->isAdmin() && ! empty($validated['personnelId'])) {
+        if (! empty($validated['personnelId'])) {
             $personnel = Personnel::query()
                 ->where('id', $validated['personnelId'])
                 ->where('isActive', true)
@@ -155,10 +139,12 @@ class UserTaskController extends Controller
             $updates['completedAt'] = $validated['isCompleted'] ? ($userTask->completedAt ?? now()) : null;
         }
 
-        if ($request->user()->isAdmin() && array_key_exists('personnelId', $validated)) {
+        if (array_key_exists('personnelId', $validated)) {
             if ($validated['personnelId'] === null || $validated['personnelId'] === '') {
                 $updates['personnelId'] = null;
-                $updates['userId'] = (string) $request->user()->id;
+                if (! $request->user()->isAdmin()) {
+                    $updates['userId'] = (string) $request->user()->id;
+                }
             } else {
                 $personnel = Personnel::query()
                     ->where('id', $validated['personnelId'])
@@ -198,16 +184,7 @@ class UserTaskController extends Controller
 
     private function authorizeTask(UserTask $task): void
     {
-        $user = auth()->user();
-        if ($user->isAdmin()) {
-            return;
-        }
-
-        $linkedPersonnelId = $user->personnel?->id;
-        $allowed = (string) $task->userId === (string) $user->id
-            || ($linkedPersonnelId && (string) $task->personnelId === (string) $linkedPersonnelId);
-
-        if (! $allowed) {
+        if (! auth()->check()) {
             abort(403, 'Bu görevi yönetme yetkiniz yok.');
         }
     }

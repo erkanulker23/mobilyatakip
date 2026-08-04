@@ -106,6 +106,10 @@ class KasaController extends Controller
 
     public function transfer(Request $request, Kasa $kasa)
     {
+        if ($request->filled('amount')) {
+            $request->merge(['amount' => money_parse($request->input('amount'))]);
+        }
+
         $validated = $request->validate([
             'toKasaId' => 'required|exists:kasa,id|different:' . $kasa->id,
             'amount' => 'required|numeric|min:0.01',

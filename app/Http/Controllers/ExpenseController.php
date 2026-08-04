@@ -60,24 +60,21 @@ class ExpenseController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->filled('amount')) {
+            $request->merge(['amount' => money_parse($request->input('amount'))]);
+        }
+
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.01',
-            'kdvIncluded' => 'nullable|boolean',
-            'kdvRate' => 'nullable|numeric|min:0|max:100',
             'expenseDate' => 'required|date',
             'description' => 'required|string|max:500',
             'category' => 'nullable|string|max:100',
             'kasaId' => 'nullable|exists:kasa,id',
         ]);
         $validated['createdBy'] = auth()->id() ?: null;
-        $validated['kdvIncluded'] = $request->boolean('kdvIncluded', true);
-        $validated['kdvRate'] = isset($validated['kdvRate']) ? (float) $validated['kdvRate'] : 18;
-        $amount = (float) $validated['amount'];
-        if ($validated['kdvIncluded']) {
-            $validated['kdvAmount'] = round($amount - $amount / (1 + $validated['kdvRate'] / 100), 2);
-        } else {
-            $validated['kdvAmount'] = round($amount * ($validated['kdvRate'] / 100), 2);
-        }
+        $validated['kdvIncluded'] = true;
+        $validated['kdvRate'] = 0;
+        $validated['kdvAmount'] = 0;
         $expense = Expense::create($validated);
         if (!empty($validated['kasaId'])) {
             KasaHareket::create([
@@ -110,24 +107,20 @@ class ExpenseController extends Controller
 
     public function update(Request $request, Expense $expense)
     {
+        if ($request->filled('amount')) {
+            $request->merge(['amount' => money_parse($request->input('amount'))]);
+        }
+
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.01',
-            'kdvIncluded' => 'nullable|boolean',
-            'kdvRate' => 'nullable|numeric|min:0|max:100',
             'expenseDate' => 'required|date',
             'description' => 'required|string|max:500',
             'category' => 'nullable|string|max:100',
             'kasaId' => 'nullable|exists:kasa,id',
         ]);
-        $validated['kdvIncluded'] = $request->boolean('kdvIncluded', true);
-        $validated['kdvRate'] = isset($validated['kdvRate']) ? (float) $validated['kdvRate'] : 18;
-        $amount = (float) $validated['amount'];
-        if ($validated['kdvIncluded']) {
-            $validated['kdvAmount'] = round($amount - $amount / (1 + $validated['kdvRate'] / 100), 2);
-        } else {
-            $validated['kdvAmount'] = round($amount * ($validated['kdvRate'] / 100), 2);
-        }
-
+        $validated['kdvIncluded'] = true;
+        $validated['kdvRate'] = 0;
+        $validated['kdvAmount'] = 0;
         $expense->update($validated);
 
         $hareket = KasaHareket::where('refType', 'expense')->where('refId', $expense->id)->first();

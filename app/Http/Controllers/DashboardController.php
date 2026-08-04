@@ -191,8 +191,6 @@ class DashboardController extends Controller
 
     private function taskPersonnelForCurrentUser()
     {
-        return auth()->user()?->isAdmin()
-            ? \App\Models\Personnel::where('isActive', true)->orderBy('name')->get(['id', 'name', 'title', 'userId'])
-            : collect();
+        return \App\Models\Personnel::where('isActive', true)->orderBy('name')->get(['id', 'name', 'title', 'userId']);
     }
 }

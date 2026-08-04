@@ -42,29 +42,8 @@
       return parseFloat(t);
     }
 
-    var dotCount = (t.match(/\./g) || []).length;
-    if (dotCount > 1) {
+    if (t.indexOf('.') !== -1) {
       return parseFloat(t.replace(/\./g, ''));
-    }
-
-    if (dotCount === 1) {
-      var parts = t.split('.');
-      var intPart = parts[0];
-      var frac = parts[1] || '';
-
-      if (frac === '') return parseFloat(intPart);
-
-      if (frac.length >= 3 && /^0+$/.test(frac)) {
-        return parseFloat(intPart + frac.substring(0, 3));
-      }
-
-      if (frac.length === 3 && /^\d+$/.test(frac)) {
-        return parseFloat(intPart + frac);
-      }
-
-      if (frac.length <= 2 && /^\d+$/.test(frac)) {
-        return parseFloat(intPart + '.' + frac);
-      }
     }
 
     return parseFloat(t);

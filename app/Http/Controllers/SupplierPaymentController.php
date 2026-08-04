@@ -75,6 +75,10 @@ class SupplierPaymentController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->filled('amount')) {
+            $request->merge(['amount' => money_parse($request->input('amount'))]);
+        }
+
         $validated = $request->validate([
             'supplierId' => 'required|exists:suppliers,id',
             'purchaseId' => 'nullable|exists:purchases,id',
@@ -136,6 +140,10 @@ class SupplierPaymentController extends Controller
 
     public function update(Request $request, SupplierPayment $supplierPayment)
     {
+        if ($request->filled('amount')) {
+            $request->merge(['amount' => money_parse($request->input('amount'))]);
+        }
+
         $validated = $request->validate([
             'purchaseId' => 'nullable|exists:purchases,id',
             'amount' => 'required|numeric|min:0.01',

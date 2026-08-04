@@ -86,6 +86,9 @@ class ServiceTicketController extends Controller
                 fn ($p) => trim((string) $p) !== ''
             )),
         ]);
+        if ($request->filled('serviceChargeAmount')) {
+            $request->merge(['serviceChargeAmount' => money_parse($request->input('serviceChargeAmount'))]);
+        }
 
         $rules = [
             'saleId' => 'nullable|exists:sales,id',
@@ -212,6 +215,10 @@ class ServiceTicketController extends Controller
 
     public function update(Request $request, ServiceTicket $serviceTicket)
     {
+        if ($request->filled('serviceChargeAmount')) {
+            $request->merge(['serviceChargeAmount' => money_parse($request->input('serviceChargeAmount'))]);
+        }
+
         $validated = $request->validate([
             'saleId' => 'nullable|exists:sales,id',
             'customerId' => 'required|exists:customers,id',

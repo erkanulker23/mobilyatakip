@@ -96,7 +96,7 @@ class ServiceTicketStatus
         };
     }
 
-    public function isClosed(?string $status): bool
+    public static function isClosed(?string $status): bool
     {
         return in_array($status, ['tamamlandi', 'iptal'], true);
     }
