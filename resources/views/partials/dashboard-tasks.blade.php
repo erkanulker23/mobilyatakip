@@ -183,7 +183,7 @@
                                                     </button>
                                                     <div x-show="open" @click.outside="open = false" x-cloak class="absolute right-0 z-10 mt-1 p-2 bg-white dark:bg-neutral-900 rounded-xl shadow-lg border border-neutral-200 dark:border-neutral-700 flex flex-wrap gap-1 w-[140px]">
                                                         @foreach($taskColorPalette as $key => $color)
-                                                        <button type="button" @click="updateColor(task, @json($key)); open = false" class="w-6 h-6 rounded-full {{ $color['dot'] }}"></button>
+                                                        <button type="button" @click='updateColor(task, @json($key)); open = false' class="w-6 h-6 rounded-full {{ $color['dot'] }}"></button>
                                                         @endforeach
                                                     </div>
                                                 </div>
@@ -232,8 +232,8 @@
                     <div class="flex flex-wrap gap-2 pt-1">
                         @foreach($taskColorPalette as $key => $color)
                         <button type="button"
-                            @click="form.color = @json($key)"
-                            :class="form.color === @json($key) ? 'ring-2 ring-offset-1 {{ $color['ring'] }}' : ''"
+                            @click='form.color = @json($key)'
+                            :class='form.color === @json($key) ? "ring-2 ring-offset-1 {{ $color['ring'] }}" : ""'
                             class="w-8 h-8 rounded-full {{ $color['dot'] }} border-2 border-white dark:border-neutral-900 shadow-sm"
                             title="{{ $color['label'] }}"></button>
                         @endforeach
@@ -281,8 +281,8 @@
                 <div class="flex flex-wrap gap-2 pt-1">
                     @foreach($taskColorPalette as $key => $color)
                     <button type="button"
-                        @click="editForm.color = @json($key)"
-                        :class="editForm.color === @json($key) ? 'ring-2 ring-offset-1 {{ $color['ring'] }}' : ''"
+                        @click='editForm.color = @json($key)'
+                        :class='editForm.color === @json($key) ? "ring-2 ring-offset-1 {{ $color['ring'] }}" : ""'
                         class="w-8 h-8 rounded-full {{ $color['dot'] }} border-2 border-white dark:border-neutral-900 shadow-sm"
                         title="{{ $color['label'] }}"></button>
                     @endforeach
