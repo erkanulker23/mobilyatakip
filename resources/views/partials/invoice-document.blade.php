@@ -14,8 +14,8 @@
         </div>
         @endif
 
-        <div class="print-section-lg grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
+        <div class="print-section-lg grid grid-cols-1 md:grid-cols-2 gap-6 mb-4 items-start">
+            <div class="min-w-0">
                 <h3 class="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase mb-2">{{ $partyLabel ?? 'Alıcı' }}</h3>
                 <p class="font-semibold text-slate-900 dark:text-neutral-100">{{ $partyName ?? '-' }}</p>
                 @if(isset($partyAddress) && $partyAddress)<p class="text-sm text-slate-600 dark:text-neutral-400 mt-0.5 leading-relaxed whitespace-pre-wrap">{{ $partyAddress }}</p>@endif
@@ -23,9 +23,26 @@
                 @if(isset($partyEmail) && $partyEmail)<p class="text-sm text-slate-600 dark:text-neutral-400">{{ $partyEmail }}</p>@endif
                 @if(isset($partyTax) && $partyTax)<p class="text-sm text-slate-600 dark:text-neutral-400">Vergi: {{ $partyTax }}</p>@endif
             </div>
-            @if(isset($extraInfo) && $extraInfo)
-            <div class="md:text-right">
-                {!! $extraInfo !!}
+            @if(!empty($extraInfoRows))
+            <div class="md:flex md:justify-end">
+                <dl class="sale-doc-meta w-full md:max-w-[17rem]">
+                    @foreach($extraInfoRows as $row)
+                    <div class="sale-doc-meta__item">
+                        <dt class="sale-doc-meta__label">{{ $row['label'] }}</dt>
+                        <dd class="sale-doc-meta__value">
+                            @if(($row['statusKey'] ?? null) && ($row['label'] ?? '') === 'Ödeme Durumu')
+                                @include('partials.payment-status-badge', ['status' => ['key' => $row['statusKey'], 'label' => $row['value']]])
+                            @else
+                                {{ $row['value'] }}
+                            @endif
+                        </dd>
+                    </div>
+                    @endforeach
+                </dl>
+            </div>
+            @elseif(isset($extraInfo) && $extraInfo)
+            <div class="md:flex md:justify-end">
+                <div class="w-full md:max-w-[17rem]">{!! $extraInfo !!}</div>
             </div>
             @endif
         </div>

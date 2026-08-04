@@ -53,7 +53,7 @@
                 <label for="customerSearchInput" class="form-label">Ara</label>
                 <div class="relative">
                     <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    <input type="text" name="search" id="customerSearchInput" placeholder="Ad, telefon, e-posta, adres..." value="{{ request('search') }}" class="form-input pl-10 w-full" autocomplete="off">
+                    <input type="text" name="search" id="customerSearchInput" placeholder="Ad, telefon, e-posta, il, ilçe..." value="{{ request('search') }}" class="form-input pl-10 w-full" autocomplete="off">
                 </div>
             </div>
             <div>
@@ -105,7 +105,7 @@
                 <tr class="border-b border-neutral-100 dark:border-neutral-800">
                     <th class="table-th">Müşteri</th>
                     <th class="table-th col-hide-mobile">Telefon</th>
-                    <th class="table-th col-hide-mobile">Adres</th>
+                    <th class="table-th col-hide-mobile">İl / İlçe</th>
                     <th class="table-th col-hide-mobile text-center">Sipariş</th>
                     <th class="table-th">Cari</th>
                     <th class="table-th col-hide-mobile">Kayıt</th>
@@ -118,6 +118,7 @@
                     $cari = \App\Support\CustomerBalance::customerStatus((float) ($c->totalSales ?? 0), (float) ($c->totalPaid ?? 0));
                     $initial = mb_strtoupper(mb_substr($c->name, 0, 1));
                     $avatarHue = crc32($c->name) % 360;
+                    $location = trim(collect([$c->city?->name, $c->district?->name])->filter()->implode(' / '));
                 @endphp
                 <tr class="border-b border-neutral-50 dark:border-neutral-800/60 hover:bg-neutral-50/50 dark:hover:bg-neutral-900/40 transition-colors {{ !($c->isActive ?? true) ? 'opacity-70' : '' }}">
                     <td class="table-td min-w-[10rem]">
@@ -133,8 +134,8 @@
                                 @if($c->phone)
                                     <a href="tel:{{ preg_replace('/\s+/', '', $c->phone) }}" class="block mt-0.5 text-xs text-neutral-500 md:hidden cell-phone">{{ $c->phone }}</a>
                                 @endif
-                                @if($c->full_address)
-                                    <span class="block mt-0.5 text-xs text-neutral-400 truncate md:hidden max-w-[14rem]">{{ $c->full_address }}</span>
+                                @if($location)
+                                    <span class="block mt-0.5 text-xs text-neutral-400 truncate md:hidden max-w-[14rem]">{{ $location }}</span>
                                 @endif
                             </div>
                         </div>
@@ -149,7 +150,7 @@
                             <span class="text-neutral-400">—</span>
                         @endif
                     </td>
-                    <td class="table-td text-neutral-500 dark:text-neutral-400 max-w-xs truncate col-hide-mobile">{{ $c->full_address ?: '—' }}</td>
+                    <td class="table-td text-neutral-500 dark:text-neutral-400 whitespace-nowrap col-hide-mobile">{{ $location ?: '—' }}</td>
                     <td class="table-td text-center text-neutral-600 dark:text-neutral-400 col-hide-mobile">{{ (int) ($c->ordersCount ?? 0) }}</td>
                     <td class="table-td min-w-[6.5rem]">
                         <div class="flex flex-col items-start gap-1">

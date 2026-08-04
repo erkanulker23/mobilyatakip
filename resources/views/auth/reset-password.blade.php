@@ -13,9 +13,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     @include('partials.site-meta', ['company' => $company ?? null, 'pageTitle' => 'Yeni Şifre'])
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>tailwind.config = { darkMode: 'class' };</script>
+    <script>tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Montserrat', 'system-ui', 'sans-serif'] } } } };</script>
+    <style>html, body { font-family: 'Montserrat', system-ui, sans-serif; }</style>
 </head>
 <body class="font-sans antialiased min-h-screen bg-neutral-100 dark:bg-neutral-950 flex items-center justify-center p-4">
     <div class="w-full max-w-[400px]">

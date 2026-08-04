@@ -68,7 +68,9 @@ class CustomerController extends Controller
                     ->orWhere('phone', 'like', "%{$s}%")
                     ->orWhere('phone2', 'like', "%{$s}%")
                     ->orWhere('address', 'like', "%{$s}%")
-                    ->orWhere('taxNumber', 'like', "%{$s}%");
+                    ->orWhere('taxNumber', 'like', "%{$s}%")
+                    ->orWhereHas('city', fn ($c) => $c->where('name', 'like', "%{$s}%"))
+                    ->orWhereHas('district', fn ($d) => $d->where('name', 'like', "%{$s}%"));
             });
         }
 

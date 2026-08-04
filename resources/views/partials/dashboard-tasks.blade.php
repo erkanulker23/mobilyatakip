@@ -19,12 +19,7 @@
     ])->values()->all();
 @endphp
 
-{{-- Tailwind CDN yalnızca HTML'deki statik sınıfları üretir; görev renkleri JS ile bağlandığı için safelist --}}
-<div class="hidden" aria-hidden="true">
-    @foreach($taskColorPalette as $color)
-    <span class="{{ $color['bg'] }} {{ $color['border'] }} {{ $color['text'] }} {{ $color['dot'] }} {{ $color['ring'] }}"></span>
-    @endforeach
-</div>
+@include('partials.task-color-styles')
 
 <div class="card overflow-hidden mb-8" id="yapilacaklar" x-data="dashboardTasks()" x-init="init()">
     <div class="card-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -87,8 +82,9 @@
                             x-text="cell.day"></span>
                         <div class="mt-1 space-y-0.5 overflow-hidden max-h-[44px]">
                             <template x-for="task in cell.tasks.slice(0, 3)" :key="task.id">
-                                <div class="text-[10px] leading-tight truncate px-1 py-0.5 rounded border"
-                                    :class="[colorClasses(task.color).bg, colorClasses(task.color).border, colorClasses(task.color).text, task.isCompleted ? 'opacity-50 line-through' : '']"
+                                <div class="task-color-chip text-[10px] leading-tight truncate px-1 py-0.5 rounded border"
+                                    :data-task-color="normalizeTaskColor(task.color)"
+                                    :class="task.isCompleted ? 'opacity-50 line-through' : ''"
                                     :title="task.assigneeName ? task.assigneeName + ': ' + task.title : task.title">
                                     <span x-show="task.assigneeName" class="font-semibold" x-text="(task.assigneeName || '').split(' ')[0] + ': '"></span><span x-text="task.title"></span>
                                 </div>
@@ -112,12 +108,12 @@
                     <p class="text-sm text-neutral-500 py-2">Bu gün için görev yok.</p>
                 </template>
                 <template x-for="task in selectedDayTasks" :key="'day-' + task.id">
-                    <div class="shrink-0 w-[min(100%,280px)] rounded-xl border p-3"
-                        :class="[colorClasses(task.color).bg, colorClasses(task.color).border]">
+                    <div class="task-color-card shrink-0 w-[min(100%,280px)] rounded-xl border p-3"
+                        :data-task-color="normalizeTaskColor(task.color)">
                         <div class="flex items-start gap-2">
                             <input type="checkbox" :checked="task.isCompleted" @change="toggleComplete(task)" class="mt-1 rounded border-neutral-300">
                             <div class="min-w-0 flex-1">
-                                <p class="text-sm font-medium truncate" :class="[colorClasses(task.color).text, task.isCompleted ? 'line-through opacity-60' : '']" x-text="task.title"></p>
+                                <p class="task-color-title text-sm font-medium truncate" :class="task.isCompleted ? 'line-through opacity-60' : ''" x-text="task.title"></p>
                                 <p class="text-[11px] text-neutral-500 mt-0.5 truncate" x-show="task.assigneeName" x-text="task.assigneeName"></p>
                             </div>
                             <button type="button" @click="openEditTask(task)" class="p-1 rounded hover:bg-black/5 text-neutral-400 hover:text-neutral-700 shrink-0" title="Düzenle">
@@ -165,13 +161,13 @@
                             </template>
                             <div class="space-y-2" x-show="group.openTasks.length > 0">
                                 <template x-for="task in group.openTasks" :key="'person-' + group.id + '-' + task.id">
-                                    <div class="rounded-xl border p-3"
-                                        :class="[colorClasses(task.color).bg, colorClasses(task.color).border]">
+                                    <div class="task-color-card rounded-xl border p-3"
+                                        :data-task-color="normalizeTaskColor(task.color)">
                                         <div class="flex items-start gap-3">
                                             <input type="checkbox" :checked="task.isCompleted" @change="toggleComplete(task)" class="mt-1 rounded border-neutral-300 shrink-0">
-                                            <span class="w-2 h-2 rounded-full shrink-0 mt-1.5" :class="colorClasses(task.color).dot"></span>
+                                            <span class="task-color-dot task-color-dot--sm mt-1.5" :data-task-color="normalizeTaskColor(task.color)"></span>
                                             <div class="min-w-0 flex-1">
-                                                <p class="text-sm font-medium" :class="[colorClasses(task.color).text, task.isCompleted ? 'line-through opacity-60' : '']" x-text="task.title"></p>
+                                                <p class="task-color-title text-sm font-medium" :class="task.isCompleted ? 'line-through opacity-60' : ''" x-text="task.title"></p>
                                                 <p x-show="task.notes" class="text-xs text-neutral-500 mt-1 truncate" x-text="task.notes"></p>
                                                 <p class="text-[11px] mt-1.5 font-medium"
                                                     :class="taskDueClass(task)"
@@ -183,7 +179,7 @@
                                                 </button>
                                                 <div class="relative" x-data="{ open: false }">
                                                     <button type="button" @click="open = !open" class="p-1 rounded hover:bg-black/5" title="Renk">
-                                                        <span class="block w-4 h-4 rounded-full" :class="colorClasses(task.color).dot"></span>
+                                                        <span class="task-color-dot" :data-task-color="normalizeTaskColor(task.color)"></span>
                                                     </button>
                                                     <div x-show="open" @click.outside="open = false" x-cloak class="absolute right-0 z-10 mt-1 p-2 bg-white dark:bg-neutral-900 rounded-xl shadow-lg border border-neutral-200 dark:border-neutral-700 flex flex-wrap gap-1 w-[140px]">
                                                         @foreach($taskColorPalette as $key => $color)
@@ -431,6 +427,10 @@ function dashboardTasks() {
             return colorMap[color] || colorMap.emerald;
         },
 
+        normalizeTaskColor(color) {
+            return Object.prototype.hasOwnProperty.call(colorMap, color) ? color : 'emerald';
+        },
+
         personInitials(name) {
             if (!name) return '?';
             return name.trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase() || '').join('');
@@ -630,7 +630,9 @@ function dashboardTasks() {
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message || 'Güncellenemedi');
                 const idx = this.tasks.findIndex(t => t.id === task.id);
-                if (idx !== -1) this.tasks[idx] = data.task;
+                if (idx !== -1) {
+                    this.tasks = this.tasks.map((t, i) => (i === idx ? data.task : t));
+                }
             } catch (e) {
                 alert(e.message || 'İşlem başarısız');
                 this.loadTasks();

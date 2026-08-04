@@ -118,7 +118,7 @@
 }
 
 .print-brand-name {
-    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    font-family: 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
     font-size: 18px;
     font-weight: 700;
     letter-spacing: 0.04em;
@@ -249,6 +249,85 @@
     font-weight: 600;
     text-align: right;
     color: var(--print-ink) !important;
+}
+
+/* Sipariş özeti — ekranda okunaklı panel */
+@media screen {
+    .print-document .sale-doc-meta {
+        border: 1px solid #e5e5e5;
+        border-radius: 0.75rem;
+        background: #fafafa;
+        overflow: hidden;
+    }
+    .print-document .sale-doc-meta__item {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .print-document .sale-doc-meta__item:last-child {
+        border-bottom: none;
+    }
+    .print-document .sale-doc-meta__label {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #737373 !important;
+    }
+    .print-document .sale-doc-meta__value {
+        margin: 0;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #171717 !important;
+        line-height: 1.35;
+    }
+    .dark .print-document .sale-doc-meta {
+        background: #262626;
+        border-color: #404040;
+    }
+    .dark .print-document .sale-doc-meta__item {
+        border-bottom-color: #404040;
+    }
+    .dark .print-document .sale-doc-meta__label {
+        color: #a3a3a3 !important;
+    }
+    .dark .print-document .sale-doc-meta__value {
+        color: #f5f5f5 !important;
+    }
+}
+
+@media print {
+    .print-document .sale-doc-meta {
+        border: 1px solid var(--print-border);
+        background: var(--print-surface);
+    }
+    .print-document .sale-doc-meta__item {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+        padding: 5px 0;
+        border-bottom: none;
+        font-size: 11px;
+        line-height: 1.35;
+    }
+    .print-document .sale-doc-meta__label {
+        color: var(--print-muted) !important;
+        font-size: 11px;
+        font-weight: 400;
+        text-transform: none;
+        letter-spacing: 0;
+    }
+    .print-document .sale-doc-meta__value {
+        font-size: 11px;
+        font-weight: 600;
+        text-align: right;
+        color: var(--print-ink) !important;
+    }
 }
 
 .print-info-banner {

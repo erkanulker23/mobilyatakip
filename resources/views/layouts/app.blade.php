@@ -41,7 +41,7 @@
     @stack('structured_data')
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3/dist/cdn.min.js"></script>
     <script defer src="{{ route('assets.js', ['file' => 'money.js']) }}?v={{ @filemtime(public_path('js/money.js')) ?: 1 }}"></script>
@@ -55,9 +55,9 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
-                        mono: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
-                        display: ['Cormorant Garamond', 'Georgia', 'serif'],
+                        sans: ['Montserrat', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+                        display: ['Montserrat', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
                     },
                     colors: {
                         primary: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' },
@@ -68,14 +68,14 @@
     </script>
     <style>
         html, body {
-            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
         button, input, select, textarea, table, th, td, nav, label, a, p, span, div, dl, dt, dd {
             font-family: inherit;
         }
-        .brand-logo, .print-brand-name { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; letter-spacing: 0.04em; }
+        .brand-logo, .print-brand-name { font-family: 'Montserrat', system-ui, sans-serif; font-weight: 700; letter-spacing: 0.02em; }
         .brand-logo img { max-height: 2.25rem; width: auto; max-width: 11rem; object-fit: contain; object-position: center center; }
         .nav-link { transition: background .15s, color .15s, border-color .15s; border-left: 3px solid transparent; border-radius: 0; }
         .nav-link:hover { background: #f5f5f5; color: #171717; }

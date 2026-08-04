@@ -21,6 +21,7 @@ class SaleDocument
                 ? $sale->customer->taxNumber . ($sale->customer->taxOffice ? ' / ' . $sale->customer->taxOffice : '')
                 : null),
             'extraInfo' => self::extraInfoHtml($sale),
+            'extraInfoRows' => self::extraInfoRows($sale),
             'items' => collect($sale->items ?? [])->map(fn ($i) => [
                 'name' => $i->productName ?? $i->product?->name ?? '-',
                 'description' => $i->description ?? null,
@@ -118,26 +119,35 @@ class SaleDocument
         return $clean !== '' ? $clean : $trimmed;
     }
 
-    public static function extraInfoHtml(Sale $sale): string
+    public static function extraInfoRows(Sale $sale): array
     {
         $rows = [];
 
         if ($sale->dueDate) {
-            $rows[] = ['Tahmini Teslim', $sale->dueDate->format('d.m.Y')];
+            $rows[] = ['label' => 'Tahmini Teslim', 'value' => $sale->dueDate->format('d.m.Y')];
         }
         if ($sale->personnel) {
-            $rows[] = ['Satış Temsilcisi', $sale->personnel->name];
+            $rows[] = ['label' => 'Satış Temsilcisi', 'value' => $sale->personnel->name];
         }
         if ($sale->needsFinalMeasurement ?? false) {
-            $rows[] = ['Kesin Ölçü', 'Evet — saha ölçüsü alınacak'];
+            $rows[] = ['label' => 'Kesin Ölçü', 'value' => 'Saha ölçüsü alınacak'];
         }
 
         $paymentStatus = CustomerBalance::saleStatus($sale);
-        $rows[] = ['Ödeme Durumu', $paymentStatus['label'] . ' (' . $paymentStatus['description'] . ')'];
+        $rows[] = [
+            'label' => 'Ödeme Durumu',
+            'value' => $paymentStatus['label'],
+            'statusKey' => $paymentStatus['key'],
+        ];
 
+        return $rows;
+    }
+
+    public static function extraInfoHtml(Sale $sale): string
+    {
         $html = '<div class="print-kv-list">';
-        foreach ($rows as [$label, $value]) {
-            $html .= '<div class="print-kv-row"><span class="print-kv-label">' . e($label) . '</span><span class="print-kv-value">' . e($value) . '</span></div>';
+        foreach (self::extraInfoRows($sale) as $row) {
+            $html .= '<div class="print-kv-row"><span class="print-kv-label">' . e($row['label']) . '</span><span class="print-kv-value">' . e($row['value']) . '</span></div>';
         }
 
         return $html . '</div>';

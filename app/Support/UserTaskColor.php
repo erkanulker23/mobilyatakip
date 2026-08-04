@@ -93,4 +93,16 @@ class UserTaskColor
     {
         return self::PALETTE[self::normalize($color)];
     }
+
+    /** Tailwind CDN dinamik sınıfları üretmediği için ekran stilleri (data-task-color). */
+    public const THEME = [
+        'emerald' => ['bg' => '#ecfdf5', 'border' => '#a7f3d0', 'text' => '#064e3b', 'dot' => '#10b981', 'bgDark' => 'rgba(6, 78, 59, 0.4)', 'borderDark' => '#065f46', 'textDark' => '#a7f3d0'],
+        'blue' => ['bg' => '#eff6ff', 'border' => '#bfdbfe', 'text' => '#1e3a8a', 'dot' => '#3b82f6', 'bgDark' => 'rgba(23, 37, 84, 0.45)', 'borderDark' => '#1e40af', 'textDark' => '#bfdbfe'],
+        'amber' => ['bg' => '#fffbeb', 'border' => '#fde68a', 'text' => '#78350f', 'dot' => '#f59e0b', 'bgDark' => 'rgba(69, 26, 3, 0.45)', 'borderDark' => '#92400e', 'textDark' => '#fde68a'],
+        'red' => ['bg' => '#fef2f2', 'border' => '#fecaca', 'text' => '#7f1d1d', 'dot' => '#ef4444', 'bgDark' => 'rgba(69, 10, 10, 0.45)', 'borderDark' => '#991b1b', 'textDark' => '#fecaca'],
+        'purple' => ['bg' => '#faf5ff', 'border' => '#e9d5ff', 'text' => '#581c87', 'dot' => '#a855f7', 'bgDark' => 'rgba(59, 7, 100, 0.45)', 'borderDark' => '#6b21a8', 'textDark' => '#e9d5ff'],
+        'pink' => ['bg' => '#fdf2f8', 'border' => '#fbcfe8', 'text' => '#831843', 'dot' => '#ec4899', 'bgDark' => 'rgba(80, 7, 36, 0.45)', 'borderDark' => '#9d174d', 'textDark' => '#fbcfe8'],
+        'orange' => ['bg' => '#fff7ed', 'border' => '#fed7aa', 'text' => '#7c2d12', 'dot' => '#f97316', 'bgDark' => 'rgba(67, 20, 7, 0.45)', 'borderDark' => '#9a3412', 'textDark' => '#fed7aa'],
+        'slate' => ['bg' => '#fafafa', 'border' => '#e5e5e5', 'text' => '#262626', 'dot' => '#737373', 'bgDark' => 'rgba(23, 23, 23, 0.6)', 'borderDark' => '#404040', 'textDark' => '#e5e5e5'],
+    ];
 }

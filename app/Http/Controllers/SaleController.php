@@ -19,6 +19,7 @@ use App\Services\MailConfigService;
 use App\Services\SaleService;
 use App\Services\StockService;
 use App\Support\SaleDocument;
+use App\Support\SaleDocumentNaming;
 use App\Support\DrawingFiles;
 use App\Support\ItemDescription;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -551,7 +552,7 @@ class SaleController extends Controller
         if ($sale->isCancelled ?? false) {
             abort(404);
         }
-        $filename = 'sevkiyat-' . preg_replace('/[^a-zA-Z0-9\-]/', '-', $sale->saleNumber) . '.pdf';
+        $filename = SaleDocumentNaming::downloadFilename($sale, SaleDocumentNaming::TYPE_SHIPMENT);
         $pdf = Pdf::loadView('sales.shipment-pdf', array_merge(
             SaleDocument::shipmentParams($sale),
             ['company' => \App\Models\Company::first()]
@@ -566,7 +567,7 @@ class SaleController extends Controller
         if (!$sale) {
             abort(404);
         }
-        $filename = 'siparis-' . preg_replace('/[^a-zA-Z0-9\-]/', '-', $sale->saleNumber) . '.pdf';
+        $filename = SaleDocumentNaming::downloadFilename($sale, SaleDocumentNaming::TYPE_ORDER);
         $pdf = Pdf::loadView('sales.pdf', array_merge(compact('sale'), SaleDocument::invoiceParams($sale)))
             ->setPaper('a4');
 
