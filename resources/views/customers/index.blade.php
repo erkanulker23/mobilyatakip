@@ -105,7 +105,8 @@
                 <tr class="border-b border-neutral-100 dark:border-neutral-800">
                     <th class="table-th">Müşteri</th>
                     <th class="table-th col-hide-mobile">Telefon</th>
-                    <th class="table-th col-hide-mobile">İl / İlçe</th>
+                    <th class="table-th col-hide-mobile">İl</th>
+                    <th class="table-th col-hide-mobile">İlçe</th>
                     <th class="table-th col-hide-mobile text-center">Sipariş</th>
                     <th class="table-th">Cari</th>
                     <th class="table-th col-hide-mobile">Kayıt</th>
@@ -118,7 +119,9 @@
                     $cari = \App\Support\CustomerBalance::customerStatus((float) ($c->totalSales ?? 0), (float) ($c->totalPaid ?? 0));
                     $initial = mb_strtoupper(mb_substr($c->name, 0, 1));
                     $avatarHue = crc32($c->name) % 360;
-                    $location = trim(collect([$c->city?->name, $c->district?->name])->filter()->implode(' / '));
+                    $cityName = $c->city?->name;
+                    $districtName = $c->district?->name;
+                    $location = trim(collect([$cityName, $districtName])->filter()->implode(' / '));
                 @endphp
                 <tr class="border-b border-neutral-50 dark:border-neutral-800/60 hover:bg-neutral-50/50 dark:hover:bg-neutral-900/40 transition-colors {{ !($c->isActive ?? true) ? 'opacity-70' : '' }}">
                     <td class="table-td min-w-[10rem]">
@@ -150,7 +153,8 @@
                             <span class="text-neutral-400">—</span>
                         @endif
                     </td>
-                    <td class="table-td text-neutral-500 dark:text-neutral-400 whitespace-nowrap col-hide-mobile">{{ $location ?: '—' }}</td>
+                    <td class="table-td text-neutral-500 dark:text-neutral-400 whitespace-nowrap col-hide-mobile">{{ $cityName ?: '—' }}</td>
+                    <td class="table-td text-neutral-500 dark:text-neutral-400 whitespace-nowrap col-hide-mobile">{{ $districtName ?: '—' }}</td>
                     <td class="table-td text-center text-neutral-600 dark:text-neutral-400 col-hide-mobile">{{ (int) ($c->ordersCount ?? 0) }}</td>
                     <td class="table-td min-w-[6.5rem]">
                         <div class="flex flex-col items-start gap-1">
@@ -173,7 +177,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="px-6 py-16 text-center">
+                    <td colspan="8" class="px-6 py-16 text-center">
                         <div class="mx-auto w-12 h-12 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-4">
                             <svg class="w-6 h-6 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                         </div>
