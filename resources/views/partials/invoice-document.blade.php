@@ -18,7 +18,7 @@
             <div>
                 <h3 class="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase mb-2">{{ $partyLabel ?? 'Alıcı' }}</h3>
                 <p class="font-semibold text-slate-900 dark:text-neutral-100">{{ $partyName ?? '-' }}</p>
-                @if(isset($partyAddress) && $partyAddress)<p class="text-sm page-desc text-slate-600 dark:text-neutral-400">{{ $partyAddress }}</p>@endif
+                @if(isset($partyAddress) && $partyAddress)<p class="text-sm text-slate-600 dark:text-neutral-400 mt-0.5 leading-relaxed whitespace-pre-wrap">{{ $partyAddress }}</p>@endif
                 @if(isset($partyPhone) && $partyPhone)<p class="text-sm text-slate-600 dark:text-neutral-400">{{ $partyPhone }}</p>@endif
                 @if(isset($partyEmail) && $partyEmail)<p class="text-sm text-slate-600 dark:text-neutral-400">{{ $partyEmail }}</p>@endif
                 @if(isset($partyTax) && $partyTax)<p class="text-sm text-slate-600 dark:text-neutral-400">Vergi: {{ $partyTax }}</p>@endif
@@ -61,7 +61,10 @@
                         <td class="px-4 py-3 font-medium text-neutral-900 dark:text-neutral-100">
                             {{ $item['name'] ?? '-' }}
                             @if(!empty($item['description']))
-                                @include('partials.item-description-list', ['description' => $item['description']])
+                                @include('partials.item-description-list', [
+                                    'description' => $item['description'],
+                                    'listClass' => 'item-description-list list-disc list-inside text-xs text-slate-500 dark:text-neutral-400 mt-1 space-y-0.5 pl-0.5',
+                                ])
                             @endif
                         </td>
                         @if(isset($showListPrice) && $showListPrice)
@@ -81,44 +84,44 @@
             </table>
         </div>
 
-        <div class="print-section mt-4 flex flex-col items-end">
+        <div class="print-section mt-4 flex flex-col items-stretch sm:items-end gap-1">
             @if($displaySubtotal)
-            <div class="flex justify-end gap-8 text-sm">
+            <div class="flex justify-between sm:justify-end gap-4 sm:gap-8 text-sm">
                 <span class="text-slate-600 dark:text-neutral-400">Ara Toplam:</span>
-                <span class="font-medium w-32 text-right text-neutral-900 dark:text-neutral-100">{{ number_format($subtotal ?? 0, 0, ',', '.') }} ₺</span>
+                <span class="font-medium sm:w-32 text-right text-neutral-900 dark:text-neutral-100 tabular-nums">{{ number_format($subtotal ?? 0, 0, ',', '.') }} ₺</span>
             </div>
             @endif
             @if($displayKdvDetails && isset($kdvTotal))
-            <div class="flex justify-end gap-8 text-sm mt-1">
+            <div class="flex justify-between sm:justify-end gap-4 sm:gap-8 text-sm">
                 <span class="text-slate-600 dark:text-neutral-400">KDV Toplam:</span>
-                <span class="font-medium w-32 text-right text-neutral-900 dark:text-neutral-100">{{ number_format($kdvTotal ?? 0, 0, ',', '.') }} ₺</span>
+                <span class="font-medium sm:w-32 text-right text-neutral-900 dark:text-neutral-100 tabular-nums">{{ number_format($kdvTotal ?? 0, 0, ',', '.') }} ₺</span>
             </div>
             @endif
             @if(isset($discount) && ($discount ?? 0) > 0)
-            <div class="flex justify-end gap-8 text-sm mt-1">
+            <div class="flex justify-between sm:justify-end gap-4 sm:gap-8 text-sm">
                 <span class="text-slate-600 dark:text-neutral-400">İndirim:</span>
-                <span class="font-medium w-32 text-right text-red-600 dark:text-red-400">-{{ number_format($discount ?? 0, 0, ',', '.') }} ₺</span>
+                <span class="font-medium sm:w-32 text-right text-red-600 dark:text-red-400 tabular-nums">-{{ number_format($discount ?? 0, 0, ',', '.') }} ₺</span>
             </div>
             @endif
-            <div class="flex justify-end gap-8 text-base font-bold mt-3 pt-3 border-t-2 border-neutral-200 dark:border-neutral-700">
+            <div class="flex justify-between sm:justify-end gap-4 sm:gap-8 text-base font-bold mt-2 pt-3 border-t-2 border-neutral-200 dark:border-neutral-700">
                 <span class="text-neutral-900 dark:text-neutral-100">Genel Toplam:</span>
-                <span class="w-32 text-right text-neutral-900 dark:text-neutral-100">{{ number_format($grandTotal ?? 0, 0, ',', '.') }} ₺</span>
+                <span class="sm:w-32 text-right text-neutral-900 dark:text-neutral-100 tabular-nums">{{ number_format($grandTotal ?? 0, 0, ',', '.') }} ₺</span>
             </div>
             @if(isset($paidAmount) && ($paidAmount ?? 0) > 0)
-            <div class="flex justify-end gap-8 text-sm mt-2">
+            <div class="flex justify-between sm:justify-end gap-4 sm:gap-8 text-sm mt-1">
                 <span class="text-slate-600 dark:text-neutral-400">{{ $paidAmountLabel ?? 'Kapora / Ödenen' }}:</span>
-                <span class="font-medium w-32 text-right text-neutral-900 dark:text-neutral-100">{{ number_format($paidAmount ?? 0, 0, ',', '.') }} ₺</span>
+                <span class="font-medium sm:w-32 text-right text-neutral-900 dark:text-neutral-100 tabular-nums">{{ number_format($paidAmount ?? 0, 0, ',', '.') }} ₺</span>
             </div>
-            <div class="flex justify-end gap-8 text-sm mt-1">
+            <div class="flex justify-between sm:justify-end gap-4 sm:gap-8 text-sm">
                 <span class="text-slate-600 dark:text-neutral-400">Kalan:</span>
-                <span class="font-medium w-32 text-right {{ (($grandTotal ?? 0) - ($paidAmount ?? 0)) > 0 ? 'text-red-600 dark:text-red-400' : ((($grandTotal ?? 0) - ($paidAmount ?? 0)) < 0 ? 'amount-negative' : 'text-neutral-500 dark:text-neutral-400') }}">{{ number_format(($grandTotal ?? 0) - ($paidAmount ?? 0), 0, ',', '.') }} ₺</span>
+                <span class="font-medium sm:w-32 text-right tabular-nums {{ (($grandTotal ?? 0) - ($paidAmount ?? 0)) > 0 ? 'text-red-600 dark:text-red-400' : ((($grandTotal ?? 0) - ($paidAmount ?? 0)) < 0 ? 'amount-negative' : 'text-neutral-500 dark:text-neutral-400') }}">{{ number_format(($grandTotal ?? 0) - ($paidAmount ?? 0), 0, ',', '.') }} ₺</span>
             </div>
             @endif
             @if(isset($grandTotal))
             @php $docPaymentStatus = $paymentStatus ?? \App\Support\CustomerBalance::statusFromTotals((float) $grandTotal, (float) ($paidAmount ?? 0)); @endphp
-            <div class="flex justify-end gap-8 text-sm mt-2 items-center">
-                <span class="text-slate-600 dark:text-neutral-400">Durum:</span>
-                <span class="w-32 text-right">@include('partials.payment-status-badge', ['status' => $docPaymentStatus])</span>
+            <div class="flex justify-between sm:justify-end gap-4 sm:gap-8 text-sm mt-1 items-center">
+                <span class="text-slate-600 dark:text-neutral-400 shrink-0">Durum:</span>
+                <span class="sm:w-32 text-right">@include('partials.payment-status-badge', ['status' => $docPaymentStatus])</span>
             </div>
             @endif
         </div>

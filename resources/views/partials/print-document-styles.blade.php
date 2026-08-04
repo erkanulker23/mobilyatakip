@@ -67,23 +67,27 @@
 
 .print-document [class*="text-neutral"],
 .print-document [class*="text-slate"],
-.print-document [class*="text-gray"],
-.print-document [class*="text-emerald"],
-.print-document [class*="text-red"],
-.print-document [class*="text-amber"],
-.print-document [class*="text-green"],
-.print-document .amount-negative {
+.print-document [class*="text-gray"] {
     color: var(--print-ink) !important;
 }
 
 .print-document .print-table tbody [class*="text-neutral"],
 .print-document .print-table tbody [class*="text-slate"],
-.print-document .print-table tbody [class*="text-gray"],
-.print-document .print-table tbody [class*="text-emerald"],
-.print-document .print-table tbody [class*="text-red"],
-.print-document .print-table tbody [class*="text-amber"],
-.print-document .print-table tbody [class*="text-green"] {
+.print-document .print-table tbody [class*="text-gray"] {
     color: var(--print-ink) !important;
+}
+
+.print-document .amount-negative,
+.print-document [class*="text-red-"] {
+    color: #dc2626 !important;
+}
+
+.print-document [class*="text-emerald-"] {
+    color: #047857 !important;
+}
+
+.print-document [class*="text-blue-"] {
+    color: #1d4ed8 !important;
 }
 
 /* ── Kurumsal başlık ── */

@@ -28,17 +28,29 @@
     .dark .print-document .text-black,
     .dark .print-document [class*="text-neutral"],
     .dark .print-document [class*="text-slate"],
+    .dark .print-document [class*="text-gray"],
     .dark .print-document h1,
     .dark .print-document h2,
     .dark .print-document h3,
     .dark .print-document p,
-    .dark .print-document span,
     .dark .print-document td,
     .dark .print-document th,
     .dark .print-document dd,
     .dark .print-document dt,
     .dark .print-document strong {
         color: #171717 !important;
+    }
+    .dark .print-document span:not(.inline-flex) {
+        color: #171717 !important;
+    }
+    .dark .print-document [class*="text-red-"] {
+        color: #dc2626 !important;
+    }
+    .dark .print-document [class*="text-emerald-"] {
+        color: #047857 !important;
+    }
+    .dark .print-document [class*="text-blue-"] {
+        color: #1d4ed8 !important;
     }
     .dark .print-document .page-desc {
         color: #525252 !important;

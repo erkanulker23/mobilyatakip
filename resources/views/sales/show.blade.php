@@ -23,23 +23,46 @@
                 <span>/</span>
                 <span class="text-neutral-700 dark:text-neutral-300">{{ $sale->saleNumber }}</span>
             </div>
-            <h1 class="page-title">{{ $sale->saleNumber }} @if($sale->isCancelled ?? false)<span class="ml-2 text-sm font-normal px-2 py-1 rounded-full bg-red-100 text-red-700">İptal</span>@endif @include('partials.final-measurement-badge', ['sale' => $sale, 'class' => 'align-middle'])</h1>
-            <p class="page-desc">
-                Satış faturası @if($sale->customer)· Müşteri: <a href="{{ route('customers.show', $sale->customer) }}" class="font-medium text-emerald-600 hover:text-emerald-700">{{ $sale->customer->name }}</a>@else· Müşteri: —@endif
+            <h1 class="page-title flex flex-wrap items-center gap-2">
+                {{ $sale->saleNumber }}
+                @if($sale->isCancelled ?? false)
+                <span class="text-sm font-normal px-2.5 py-1 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">İptal</span>
+                @endif
+                @include('partials.final-measurement-badge', ['sale' => $sale])
+            </h1>
+            <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm text-neutral-600 dark:text-neutral-400">
+                <span>Satış faturası</span>
+                @if($sale->customer)
+                <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
+                <span>Müşteri: <a href="{{ route('customers.show', $sale->customer) }}" class="font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300">{{ $sale->customer->name }}</a></span>
+                @else
+                <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
+                <span>Müşteri: —</span>
+                @endif
                 @if(!($sale->isCancelled ?? false))
-                · @include('partials.payment-status-badge', ['sale' => $sale])
-                <span class="text-neutral-500 text-sm">{{ \App\Support\CustomerBalance::saleStatus($sale)['description'] }}</span>
+                <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
+                <span class="inline-flex flex-wrap items-center gap-1.5">
+                    @include('partials.payment-status-badge', ['sale' => $sale])
+                    <span>{{ \App\Support\CustomerBalance::saleStatus($sale)['description'] }}</span>
+                </span>
                 @if(\App\Support\SaleDelivery::currentStatus($sale) !== \App\Support\SaleDelivery::PENDING)
-                · @include('partials.delivery-status-badge', ['sale' => $sale])
-                @if(\App\Support\SaleDelivery::isDelivered($sale) && $sale->deliveredAt)
-                <span class="text-neutral-500 text-sm">({{ $sale->deliveredAt->format('d.m.Y') }})</span>
+                <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
+                <span class="inline-flex flex-wrap items-center gap-1.5">
+                    @include('partials.delivery-status-badge', ['sale' => $sale])
+                    @if(\App\Support\SaleDelivery::isDelivered($sale) && $sale->deliveredAt)
+                    <span>({{ $sale->deliveredAt->format('d.m.Y') }})</span>
+                    @endif
+                </span>
                 @endif
                 @endif
-                @endif
-            </p>
+            </div>
         </div>
         <div class="flex flex-wrap items-center gap-2">
             @if(!($sale->isCancelled ?? false))
+            <a href="{{ route('sales.edit', $sale) }}" class="btn-edit text-sm">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                Düzenle
+            </a>
             <a href="{{ route('sales.workshop.koltuk', $sale) }}" target="_blank" class="btn-secondary text-sm">
                 Koltuk Atölye Fişi Çıkar
             </a>
@@ -76,7 +99,6 @@
             </form>
             @endif
             @include('partials.action-buttons', [
-                'edit' => !($sale->isCancelled ?? false) ? route('sales.edit', $sale) : null,
                 'destroy' => route('sales.destroy', $sale),
             ])
         </div>
@@ -86,9 +108,9 @@
 @if(!($sale->isCancelled ?? false))
 @php $suppliersWithEmail = $sale->getSuppliersWithEmail(); $showPrompt = session('show_supplier_email_prompt') || (!$sale->hasSupplierEmailSent() && $suppliersWithEmail->isNotEmpty()); @endphp
 @if($showPrompt && $suppliersWithEmail->isNotEmpty())
-<div class="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200">
-    <p class="text-emerald-800 font-medium mb-2">Faturada bulunan ürünlerin tedarikçisine sipariş maili gönderilsin mi?</p>
-    <p class="text-sm text-emerald-700 mb-3">Bu satıştaki ürünlerin tedarikçilerine ({{ $suppliersWithEmail->pluck('name')->join(', ') }}) sipariş e-postası gönderebilirsiniz.</p>
+<div class="mb-6 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
+    <p class="text-emerald-800 dark:text-emerald-200 font-medium mb-2">Faturada bulunan ürünlerin tedarikçisine sipariş maili gönderilsin mi?</p>
+    <p class="text-sm text-emerald-700 dark:text-emerald-300/90 mb-3">Bu satıştaki ürünlerin tedarikçilerine ({{ $suppliersWithEmail->pluck('name')->join(', ') }}) sipariş e-postası gönderebilirsiniz.</p>
     <form method="POST" action="{{ route('sales.send-supplier-email', $sale) }}" class="inline">
         @csrf
         <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium">Tedarikçiye Sipariş Maili Gönder</button>
@@ -147,24 +169,25 @@
     $timeline = $paymentEntries->concat($unlinkedEntries)->concat($activityEntries)->concat($legacyStatusEntries)->sortByDesc('sortAt')->values();
 @endphp
 @if($timeline->isNotEmpty())
-<div class="mt-8 card p-6">
-    <h2 class="text-lg font-semibold text-slate-900 dark:text-neutral-100 mb-4">Zaman çizelgesi</h2>
+<div class="mt-8 card overflow-hidden">
+    <div class="card-header">Zaman çizelgesi</div>
+    <div class="p-5 sm:p-6">
     <div class="relative space-y-0">
         @foreach($timeline as $entry)
         <div class="flex gap-4 pb-6 last:pb-0">
             <div class="flex flex-col items-center">
                 @if($entry->type === 'payment')
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">💰</span>
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">💰</span>
                 @else
                 @php $activity = $entry->activity; @endphp
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full
-                    @if($activity->type === 'created') bg-slate-200 text-neutral-700
+                    @if($activity->type === 'created') bg-slate-200 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200
                     @elseif($activity->type === 'status_changed') bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300
-                    @elseif($activity->type === 'supplier_email_sent') bg-blue-100 text-blue-700
-                    @elseif($activity->type === 'supplier_email_read') bg-amber-100 text-amber-700
-                    @elseif($activity->type === 'supplier_email_replied') bg-emerald-100 text-emerald-700
-                    @elseif($activity->type === 'customer_email_sent') bg-indigo-100 text-indigo-700
-                    @else bg-slate-100 text-slate-600 @endif">
+                    @elseif($activity->type === 'supplier_email_sent') bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300
+                    @elseif($activity->type === 'supplier_email_read') bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300
+                    @elseif($activity->type === 'supplier_email_replied') bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300
+                    @elseif($activity->type === 'customer_email_sent') bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300
+                    @else bg-slate-100 text-slate-600 dark:bg-neutral-800 dark:text-neutral-300 @endif">
                     @if($activity->type === 'created') 📋
                     @elseif($activity->type === 'status_changed') 📦
                     @elseif($activity->type === 'supplier_email_sent') ✉️
@@ -187,7 +210,7 @@
                     <span class="text-slate-600 dark:text-neutral-400 font-normal">({{ $pt[$p->paymentType ?? ''] }})</span>
                     @endif
                     @if(!$isLinked)
-                    <span class="ml-1 text-amber-600 text-sm font-normal">— Faturaya bağlı değil</span>
+                    <span class="ml-1 text-amber-600 dark:text-amber-400 text-sm font-normal">— Faturaya bağlı değil</span>
                     @endif
                 </p>
                 <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{{ $p->paymentDate?->format('d.m.Y H:i') ?? '—' }}</p>
@@ -195,9 +218,9 @@
                 @php $activity = $entry->activity; @endphp
                 <p class="font-medium text-neutral-900 dark:text-neutral-100">{{ $activity->description }}</p>
                 @if($activity->metadata && isset($activity->metadata['suppliers']))
-                <p class="text-sm page-desc">
+                <p class="text-sm text-neutral-600 dark:text-neutral-400 mt-1 break-words">
                     @foreach($activity->metadata['suppliers'] as $s)
-                    <span class="inline-block mr-2">{{ $s['name'] }} &lt;{{ $s['email'] }}&gt;</span>
+                    <span class="inline-block mr-2 mb-1">{{ $s['name'] }} &lt;{{ $s['email'] }}&gt;</span>
                     @endforeach
                 </p>
                 @endif
@@ -207,12 +230,12 @@
                     <form method="POST" action="{{ route('sales.activity', $sale) }}" class="inline">
                         @csrf
                         <input type="hidden" name="type" value="supplier_email_read">
-                        <button type="submit" class="text-sm px-3 py-1.5 rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 font-medium">Okundu işaretle</button>
+                        <button type="submit" class="text-sm px-3 py-1.5 rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:hover:bg-amber-900/50 font-medium">Okundu işaretle</button>
                     </form>
                     <form method="POST" action="{{ route('sales.activity', $sale) }}" class="inline">
                         @csrf
                         <input type="hidden" name="type" value="supplier_email_replied">
-                        <button type="submit" class="text-sm px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-800 hover:bg-emerald-200 font-medium">Cevaplandı işaretle</button>
+                        <button type="submit" class="text-sm px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-800 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:hover:bg-emerald-900/50 font-medium">Cevaplandı işaretle</button>
                     </form>
                 </div>
                 @endif
@@ -220,6 +243,7 @@
             </div>
         </div>
         @endforeach
+    </div>
     </div>
 </div>
 @endif
@@ -237,23 +261,23 @@
             @csrf
             <div class="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-100 dark:border-neutral-700 text-sm space-y-2">
                 <div class="flex items-center justify-between gap-3">
-                    <span class="text-neutral-500">Ödeme durumu</span>
+                    <span class="text-neutral-500 dark:text-neutral-400">Ödeme durumu</span>
                     @include('partials.payment-status-badge', ['sale' => $sale])
                 </div>
                 @if(\App\Support\SaleDelivery::isDelivered($sale) && $sale->deliveredAt)
                 <div class="flex items-center justify-between gap-3">
-                    <span class="text-neutral-500">Kayıtlı teslim tarihi</span>
+                    <span class="text-neutral-500 dark:text-neutral-400">Kayıtlı teslim tarihi</span>
                     <span class="font-medium text-neutral-900 dark:text-neutral-100">{{ $sale->deliveredAt->format('d.m.Y') }}</span>
                 </div>
                 @endif
                 @if($sale->serviceTickets->isNotEmpty())
                 <div class="flex items-start justify-between gap-3">
-                    <span class="text-neutral-500 shrink-0">SSH kayıtları</span>
+                    <span class="text-neutral-500 dark:text-neutral-400 shrink-0">SSH kayıtları</span>
                     <div class="text-right space-y-1">
                         @foreach($sale->serviceTickets as $ticket)
                         <div>
-                            <a href="{{ route('service-tickets.show', $ticket) }}" class="font-medium text-emerald-600 hover:text-emerald-700">{{ $ticket->ticketNumber }}</a>
-                            <span class="text-neutral-500">· {{ \App\Support\ServiceTicketStatus::label($ticket->status) }}</span>
+                            <a href="{{ route('service-tickets.show', $ticket) }}" class="font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300">{{ $ticket->ticketNumber }}</a>
+                            <span class="text-neutral-500 dark:text-neutral-400">· {{ \App\Support\ServiceTicketStatus::label($ticket->status) }}</span>
                         </div>
                         @endforeach
                     </div>
@@ -304,7 +328,7 @@
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showCustomerEmail = false"></div>
     <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-neutral-200 dark:border-slate-700 overflow-hidden">
         <div class="px-5 pt-5 pb-1">
-            <h2 id="customer-email-title" class="text-lg font-semibold text-neutral-900">Müşteriye Mail Gönder</h2>
+            <h2 id="customer-email-title" class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Müşteriye Mail Gönder</h2>
             <p class="mt-1 text-sm text-neutral-500 dark:text-slate-400">{{ $sale->saleNumber }} numaralı satış fişi e-posta ile gönderilecek.</p>
         </div>
         <form method="POST" action="{{ route('sales.send-customer-email', $sale) }}" class="p-5 space-y-4">
@@ -313,7 +337,7 @@
                 <label class="form-label">Alıcı e-posta</label>
                 <input type="email" name="email" value="{{ $sale->customer?->email }}" required class="form-input min-h-[44px]" placeholder="ornek@email.com">
                 @if(!$sale->customer?->email)
-                <p class="mt-1 text-xs text-amber-600">Müşteri kartında e-posta yok, lütfen bir adres girin.</p>
+                <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">Müşteri kartında e-posta yok, lütfen bir adres girin.</p>
                 @endif
             </div>
             <div>

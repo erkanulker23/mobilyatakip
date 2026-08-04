@@ -3,7 +3,7 @@
 @section('content')
 <div class="mb-6">
     <h1 class="page-title">Yapılacak Listesi</h1>
-    <p class="page-desc">Tüm personelin görevlerini takvimde görün, atayın ve düzenleyin</p>
+    <p class="page-desc">Takvimde tüm görevleri görün; altta her personelin açık görevleri ayrı satırda listelenir</p>
 </div>
 
 @include('partials.dashboard-tasks')
