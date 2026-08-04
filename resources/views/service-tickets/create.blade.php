@@ -99,10 +99,10 @@
             @error('notes')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
         <div>
-            <label class="form-label">Termin Tarihi</label>
+            <label class="form-label">Açılacak Servis Tarihi</label>
             <input type="date" name="dueDate" value="{{ old('dueDate') }}" class="form-input">
             @error('dueDate')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-            <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400">Planlanan müdahale tarihi. Kontrol panelinde yaklaşan SSH olarak listelenir.</p>
+            <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400">Servisin açılacağı planlanan tarih. Kontrol panelinde yaklaşan SSH olarak listelenir.</p>
         </div>
         <div>
             <label class="form-label">Resimler</label>

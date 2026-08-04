@@ -72,7 +72,7 @@
             <textarea name="description" rows="3" class="form-input form-textarea">{{ old('description', $serviceTicket->description) }}</textarea>
         </div>
         <div>
-            <label class="form-label">Termin Tarihi</label>
+            <label class="form-label">Açılacak Servis Tarihi</label>
             <input type="date" name="dueDate" value="{{ old('dueDate', $serviceTicket->dueDate?->format('Y-m-d')) }}" class="form-input">
             @error('dueDate')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
