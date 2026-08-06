@@ -27,6 +27,12 @@
     </div>
 </div>
 
+@if(empty($productionStagesReady))
+<div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
+    Üretim aşaması kayıtları henüz aktif değil. Aşama ve eksiklik eklemek için sistem yöneticisinin migration çalıştırması gerekiyor.
+</div>
+@endif
+
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div class="lg:col-span-2 space-y-6">
         <div class="card p-6">
@@ -127,6 +133,7 @@
         <div class="card p-6">
             <h2 class="font-semibold text-neutral-900 dark:text-white mb-1">Kayıt Ekle</h2>
             <p class="text-xs text-neutral-500 mb-4">Üretim aşaması veya eksik/yanlış parça bildirimi</p>
+            @if(!empty($productionStagesReady))
             <form method="POST" action="{{ route('workshop.store-stage', $sale) }}" class="space-y-4">
                 @csrf
                 <div>
@@ -150,6 +157,9 @@
                 </div>
                 <button type="submit" class="btn-primary w-full justify-center">Kaydet</button>
             </form>
+            @else
+            <p class="text-sm text-neutral-500">Migration tamamlanana kadar kayıt eklenemez.</p>
+            @endif
         </div>
     </div>
 </div>

@@ -24,6 +24,12 @@
     </div>
 </div>
 
+@if(empty($productionStagesReady))
+<div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
+    Üretim aşaması kayıtları henüz aktif değil. Sistem yöneticisinin <code class="text-xs">php artisan migrate --force</code> çalıştırması gerekiyor.
+</div>
+@endif
+
 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
     <div class="card p-5">
         <p class="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Üretimde</p>

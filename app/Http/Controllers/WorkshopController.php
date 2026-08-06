@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Sale;
 use App\Models\SaleProductionStage;
 use App\Support\SaleDelivery;
+use App\Support\SaleProductionStageSchema;
 use Illuminate\Http\Request;
 
 class WorkshopController extends Controller
@@ -13,13 +14,14 @@ class WorkshopController extends Controller
     {
         $q = Sale::query()
             ->with(['customer', 'personnel'])
-            ->withCount('productionStages')
             ->where('isCancelled', false)
             ->where('orderStatus', SaleDelivery::IN_PRODUCTION)
             ->whereNull('deliveredAt')
             ->orderByRaw('CASE WHEN dueDate IS NULL THEN 1 ELSE 0 END')
             ->orderBy('dueDate')
             ->orderByDesc('saleDate');
+
+        SaleProductionStageSchema::applyCounts($q);
 
         if ($request->filled('search')) {
             $s = $request->search;
@@ -43,19 +45,30 @@ class WorkshopController extends Controller
             'customer.district',
             'personnel',
             'items.product',
-            'productionStages.user',
-            'productionStages.completedByUser',
         ]);
+
+        if (SaleProductionStageSchema::isReady()) {
+            $sale->load([
+                'productionStages.user',
+                'productionStages.completedByUser',
+            ]);
+        } else {
+            $sale->setRelation('productionStages', collect());
+        }
 
         $backUrl = auth()->user()?->isWorkshop() && auth()->user()?->personnel
             ? route('personnel.show', auth()->user()->personnel)
             : route('workshop.index');
 
-        return view('workshop.show', compact('sale', 'backUrl'));
+        $productionStagesReady = SaleProductionStageSchema::isReady();
+
+        return view('workshop.show', compact('sale', 'backUrl', 'productionStagesReady'));
     }
 
     public function storeStage(Request $request, Sale $sale)
     {
+        SaleProductionStageSchema::abortIfNotReady();
+
         $this->authorizeProductionSale($sale);
 
         $validated = $request->validate([
@@ -80,6 +93,8 @@ class WorkshopController extends Controller
 
     public function completeStage(Request $request, SaleProductionStage $stage)
     {
+        SaleProductionStageSchema::abortIfNotReady();
+
         $stage->load('sale');
         $this->authorizeProductionSale($stage->sale);
 

@@ -14,6 +14,7 @@ use App\Services\PersonnelAccessService;
 use App\Support\ActivityMessage;
 use App\Support\PersonnelCategory;
 use App\Support\SaleDelivery;
+use App\Support\SaleProductionStageSchema;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -384,19 +385,17 @@ class PersonnelController extends Controller
     {
         $terminHorizon = Carbon::today()->addDays(14);
 
-        $productionSales = Sale::query()
+        $productionSalesQuery = Sale::query()
             ->with(['customer', 'personnel'])
-            ->withCount([
-                'productionStages',
-                'productionStages as open_stages_count' => fn ($q) => $q->where('isCompleted', false),
-                'productionStages as open_deficiencies_count' => fn ($q) => $q->where('type', 'eksiklik')->where('isCompleted', false),
-            ])
             ->where('isCancelled', false)
             ->where('orderStatus', SaleDelivery::IN_PRODUCTION)
             ->whereNull('deliveredAt')
             ->orderByRaw('CASE WHEN dueDate IS NULL THEN 1 ELSE 0 END')
-            ->orderBy('dueDate')
-            ->get();
+            ->orderBy('dueDate');
+
+        SaleProductionStageSchema::applyCounts($productionSalesQuery, detailed: true);
+
+        $productionSales = $productionSalesQuery->get();
 
         $upcomingDueSales = Sale::query()
             ->with('customer')
@@ -446,6 +445,8 @@ class PersonnelController extends Controller
 
         $viewingOwnProfile = auth()->user()?->personnel?->id === $personnel->id;
 
+        $productionStagesReady = SaleProductionStageSchema::isReady();
+
         return view('personnel.show-workshop', compact(
             'personnel',
             'productionSales',
@@ -455,6 +456,7 @@ class PersonnelController extends Controller
             'viewingOwnProfile',
             'personnelTasks',
             'taskCompleterFallback',
+            'productionStagesReady',
         ));
     }
 
