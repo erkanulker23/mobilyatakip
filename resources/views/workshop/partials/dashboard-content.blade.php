@@ -125,7 +125,7 @@
     <div class="card overflow-hidden">
         <div class="px-6 py-4 border-b border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/30">
             <h2 class="text-lg font-semibold text-neutral-900 dark:text-white">Termin Tarihi Yaklaşanlar</h2>
-            <p class="text-sm text-neutral-600 dark:text-slate-400 mt-1">14 gün içinde termin gelen üretim siparişleri</p>
+            <p class="text-sm text-neutral-600 dark:text-slate-400 mt-1">14 gün içinde termin gelen siparişler (üretimde olanlara not ekleyebilirsiniz)</p>
         </div>
         <div class="overflow-x-auto">
             @if($upcomingDueSales->isEmpty())
@@ -136,16 +136,24 @@
                     <tr class="border-b border-neutral-100 dark:border-slate-700">
                         <th class="table-th">Sipariş</th>
                         @if(empty($hideCommercialData))<th class="table-th">Müşteri</th>@endif
+                        <th class="table-th">Durum</th>
                         <th class="table-th">Termin</th>
                         <th class="table-th"></th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-neutral-100 dark:divide-slate-700">
                     @foreach($upcomingDueSales as $sale)
-                    @php $daysLeft = $sale->dueDate ? (int) now()->startOfDay()->diffInDays($sale->dueDate, false) : null; @endphp
+                    @php
+                        $daysLeft = $sale->dueDate ? (int) now()->startOfDay()->diffInDays($sale->dueDate, false) : null;
+                        $orderStatus = SaleDelivery::currentStatus($sale);
+                        $inProduction = $orderStatus === SaleDelivery::IN_PRODUCTION;
+                    @endphp
                     <tr>
                         <td class="table-td font-medium">{{ $sale->saleNumber }}</td>
                         @if(empty($hideCommercialData))<td class="table-td">{{ $sale->customer?->name ?? '—' }}</td>@endif
+                        <td class="table-td">
+                            <span class="badge {{ $inProduction ? 'badge-blue' : 'badge-neutral' }}">{{ SaleDelivery::label($orderStatus) }}</span>
+                        </td>
                         <td class="table-td {{ $daysLeft !== null && $daysLeft < 0 ? 'text-red-600 font-medium' : ($daysLeft !== null && $daysLeft <= 3 ? 'text-amber-600 font-medium' : '') }}">
                             {{ $sale->dueDate?->format('d.m.Y') }}
                             @if($daysLeft !== null && $daysLeft < 0)
@@ -157,7 +165,11 @@
                             @endif
                         </td>
                         <td class="table-td text-right">
+                            @if($inProduction)
                             <a href="{{ route('workshop.show', $sale) }}" class="text-sm text-emerald-600 hover:text-emerald-700 font-medium">Aç</a>
+                            @else
+                            <span class="text-xs text-neutral-400">Üretimde değil</span>
+                            @endif
                         </td>
                     </tr>
                     @endforeach

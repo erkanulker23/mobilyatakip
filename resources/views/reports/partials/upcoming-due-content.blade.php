@@ -3,7 +3,7 @@
     $forShipment = $forShipment ?? false;
     $hideCommercialData = $hideCommercialData ?? false;
     $today = now()->startOfDay();
-    $salesColspan = ($hideCommercialData ? 4 : 7) + ($forShipment || $hideCommercialData ? 0 : 2) + ($print ? 0 : 1);
+    $salesColspan = ($hideCommercialData ? 5 : 7) + ($forShipment || $hideCommercialData ? 0 : 2) + ($print ? 0 : 1);
     $sshColspan = ($hideCommercialData ? 4 : 7) + ($print ? 0 : 1);
 @endphp
 
@@ -23,6 +23,9 @@
                     <th class="table-th">İlçe</th>
                     @endif
                     <th class="table-th">Termin</th>
+                    @if($hideCommercialData)
+                    <th class="table-th">Durum</th>
+                    @endif
                     <th class="table-th">Kalan Gün</th>
                     @if(!$forShipment && !$hideCommercialData)
                     <th class="table-th text-right">Tutar</th>
@@ -37,6 +40,8 @@
                     $daysLeft = $s->dueDate ? $today->diffInDays($s->dueDate, false) : null;
                     $rowClass = $daysLeft !== null && $daysLeft < 0 ? 'text-red-600' : ($daysLeft !== null && $daysLeft <= 3 ? 'text-amber-700' : 'text-slate-600');
                     $remaining = \App\Support\CustomerBalance::saleRemaining($s);
+                    $orderStatus = \App\Support\SaleDelivery::currentStatus($s);
+                    $inProduction = $orderStatus === \App\Support\SaleDelivery::IN_PRODUCTION;
                 @endphp
                 <tr>
                     <td class="table-td font-medium text-neutral-900">{{ $s->saleNumber }}</td>
@@ -47,6 +52,11 @@
                     <td class="table-td">{{ $s->customer?->district?->name ?? '—' }}</td>
                     @endif
                     <td class="table-td {{ $rowClass }}">{{ $s->dueDate?->format('d.m.Y') ?? '—' }}</td>
+                    @if($hideCommercialData)
+                    <td class="table-td">
+                        <span class="badge {{ $inProduction ? 'badge-blue' : 'badge-neutral' }}">{{ \App\Support\SaleDelivery::label($orderStatus) }}</span>
+                    </td>
+                    @endif
                     <td class="table-td {{ $rowClass }}">
                         @if($daysLeft === null)—
                         @elseif($daysLeft < 0){{ abs($daysLeft) }} gün gecikti
@@ -67,7 +77,11 @@
                     @if(!$print)
                     <td class="table-td">
                         @if($hideCommercialData)
-                        <a href="{{ route('workshop.show', $s) }}" class="text-primary-600 hover:underline text-sm">Detay</a>
+                            @if($inProduction)
+                            <a href="{{ route('workshop.show', $s) }}" class="text-primary-600 hover:underline text-sm">Detay</a>
+                            @else
+                            <span class="text-xs text-neutral-400">Henüz üretimde değil</span>
+                            @endif
                         @else
                         <a href="{{ route('sales.show', $s) }}" class="text-primary-600 hover:underline text-sm">Detay</a>
                         @endif

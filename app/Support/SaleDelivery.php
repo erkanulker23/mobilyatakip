@@ -306,4 +306,16 @@ class SaleDelivery
             $query->pendingDelivery()->where('orderStatus', $filter);
         }
     }
+
+    /** Termin yaklaşan siparişler — teslim edilmemiş, termin tarihi olan. */
+    public static function upcomingDueQuery(int $days): \Illuminate\Database\Eloquent\Builder
+    {
+        $horizon = \Carbon\Carbon::today()->addDays($days);
+
+        return \App\Models\Sale::query()
+            ->where('isCancelled', false)
+            ->pendingDelivery()
+            ->whereNotNull('dueDate')
+            ->whereDate('dueDate', '<=', $horizon);
+    }
 }

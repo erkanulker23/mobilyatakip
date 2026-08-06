@@ -7,7 +7,7 @@
         <h1 class="page-title">Termin Tarihi Yaklaşanlar</h1>
         <p class="page-desc">
             @if(!empty($hideCommercialData))
-            Üretimdeki siparişler — önümüzdeki {{ $days }} gün içinde termin tarihi gelenler
+            Teslim edilmemiş siparişler — önümüzdeki {{ $days }} gün içinde termin tarihi gelenler
             @else
             Önümüzdeki {{ $days }} gün içinde termin tarihi gelen sipariş ve SSH formları
             @endif

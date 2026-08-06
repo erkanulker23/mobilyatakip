@@ -27,13 +27,8 @@ final class WorkshopDashboard
 
         $productionSales = $productionSalesQuery->get();
 
-        $upcomingDueSales = Sale::query()
+        $upcomingDueSales = SaleDelivery::upcomingDueQuery(14)
             ->with('customer')
-            ->where('isCancelled', false)
-            ->where('orderStatus', SaleDelivery::IN_PRODUCTION)
-            ->whereNull('deliveredAt')
-            ->whereNotNull('dueDate')
-            ->whereDate('dueDate', '<=', $terminHorizon)
             ->orderBy('dueDate')
             ->get();
 
