@@ -128,6 +128,8 @@
 
 @include('partials.sale-order-meta-panel', ['sale' => $sale])
 
+@include('partials.sale-workshop-panel', ['sale' => $sale, 'productionStages' => $productionStages ?? collect()])
+
 @include('partials.invoice-document', array_merge(
     \App\Support\SaleDocument::invoiceParams($sale),
     ['showOrderSummary' => false]
@@ -181,6 +183,7 @@
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full
                     @if($activity->type === 'created') bg-slate-200 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200
                     @elseif($activity->type === 'status_changed') bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300
+                    @elseif($activity->type === 'workshop_completed') bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300
                     @elseif($activity->type === 'supplier_email_sent') bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300
                     @elseif($activity->type === 'supplier_email_read') bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300
                     @elseif($activity->type === 'supplier_email_replied') bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300
@@ -188,6 +191,7 @@
                     @else bg-slate-100 text-slate-600 dark:bg-neutral-800 dark:text-neutral-300 @endif">
                     @if($activity->type === 'created') 📋
                     @elseif($activity->type === 'status_changed') 📦
+                    @elseif($activity->type === 'workshop_completed') 🏭
                     @elseif($activity->type === 'supplier_email_sent') ✉️
                     @elseif($activity->type === 'supplier_email_read') 👁️
                     @elseif($activity->type === 'supplier_email_replied') ↩️

@@ -23,6 +23,14 @@
         <div class="flex flex-wrap gap-2">
             <a href="{{ route('sales.workshop.mobilya', $sale) }}" target="_blank" class="btn-secondary text-sm">Atölye Fişi</a>
             <a href="{{ route('sales.workshop.koltuk', $sale) }}" target="_blank" class="btn-secondary text-sm">Koltuk Fişi</a>
+            @if($status === SaleDelivery::IN_PRODUCTION)
+            <form method="POST" action="{{ route('workshop.complete-production', $sale) }}" onsubmit="return confirm('Sipariş atölyeden çıktı olarak işaretlenecek. Onaylıyor musunuz?');">
+                @csrf
+                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-[0.625rem] hover:bg-emerald-700 font-medium text-sm transition-colors">
+                    Üretim Bitti — Atölyeden Çıktı
+                </button>
+            </form>
+            @endif
         </div>
     </div>
 </div>
@@ -30,6 +38,12 @@
 @if(empty($productionStagesReady))
 <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
     Üretim aşaması kayıtları henüz aktif değil. Aşama ve eksiklik eklemek için sistem yöneticisinin migration çalıştırması gerekiyor.
+</div>
+@endif
+
+@if($status === SaleDelivery::IN_PRODUCTION && ($openDeficienciesCount ?? 0) > 0)
+<div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
+    Bu siparişte <strong>{{ $openDeficienciesCount }}</strong> açık eksiklik/yanlış parça kaydı var. Giderildikten sonra veya bilerek devam ederek üretimi bitirebilirsiniz.
 </div>
 @endif
 
@@ -132,7 +146,7 @@
 
         <div class="card p-6">
             <h2 class="font-semibold text-neutral-900 dark:text-white mb-1">Kayıt Ekle</h2>
-            <p class="text-xs text-neutral-500 mb-4">Üretim aşaması veya eksik/yanlış parça bildirimi</p>
+            <p class="text-xs text-neutral-500 mb-4">Üretim aşaması, eksik parça veya yanlış ürün bildirimi</p>
             @if(!empty($productionStagesReady))
             <form method="POST" action="{{ route('workshop.store-stage', $sale) }}" class="space-y-4">
                 @csrf
@@ -161,6 +175,17 @@
             <p class="text-sm text-neutral-500">Migration tamamlanana kadar kayıt eklenemez.</p>
             @endif
         </div>
+
+        @if($status === SaleDelivery::IN_PRODUCTION)
+        <div class="card p-6 border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/40 dark:bg-emerald-950/20">
+            <h2 class="font-semibold text-neutral-900 dark:text-white mb-1">Üretim Tamamlandı</h2>
+            <p class="text-xs text-neutral-600 dark:text-neutral-400 mb-4">Sipariş atölyeden çıktığında durum <strong>Teslim bekliyor</strong> olur; ofis teslimat planlayabilir.</p>
+            <form method="POST" action="{{ route('workshop.complete-production', $sale) }}" onsubmit="return confirm('Sipariş atölyeden çıktı olarak işaretlenecek. Emin misiniz?');">
+                @csrf
+                <button type="submit" class="btn-primary w-full justify-center bg-emerald-600 hover:bg-emerald-700 border-emerald-600">Atölyeden Çıktı — Üretim Bitti</button>
+            </form>
+        </div>
+        @endif
     </div>
 </div>
 <script>

@@ -444,7 +444,16 @@ class SaleController extends Controller
         $saleRemaining = \App\Support\CustomerBalance::saleRemaining($sale);
         $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
         $suppliers = Supplier::where('isActive', true)->orderBy('name')->get();
-        return view('sales.show', compact('sale', 'unlinkedPayments', 'saleRemaining', 'kasalar', 'suppliers'));
+
+        $productionStages = collect();
+        if (\App\Support\SaleProductionStageSchema::isReady()) {
+            $productionStages = $sale->productionStages()
+                ->with(['user', 'completedByUser'])
+                ->orderByDesc('actionDate')
+                ->get();
+        }
+
+        return view('sales.show', compact('sale', 'unlinkedPayments', 'saleRemaining', 'kasalar', 'suppliers', 'productionStages'));
     }
 
     public function print(Sale $sale)
@@ -530,6 +539,7 @@ class SaleController extends Controller
             $sale->update([
                 'orderStatus' => \App\Support\SaleDelivery::IN_PRODUCTION,
                 'deliveredAt' => null,
+                'workshopCompletedAt' => null,
             ]);
             SaleActivity::logStatusChange($sale->fresh(), $fromStatus, \App\Support\SaleDelivery::IN_PRODUCTION);
             $message = 'Sipariş üretimde olarak işaretlendi.';

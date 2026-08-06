@@ -15,6 +15,8 @@ class SaleActivity extends BaseModel
     const TYPE_CUSTOMER_EMAIL_SENT = 'customer_email_sent';
     const TYPE_STATUS_CHANGED = 'status_changed';
 
+    const TYPE_WORKSHOP_COMPLETED = 'workshop_completed';
+
     protected $fillable = [
         'saleId',
         'type',
@@ -59,6 +61,23 @@ class SaleActivity extends BaseModel
                 'fromStatus' => $fromStatus,
                 'toStatus' => $toStatus,
                 'deliveredAt' => $deliveredAt ? \Carbon\Carbon::parse($deliveredAt)->toIso8601String() : null,
+            ],
+        ]);
+    }
+
+    public static function logWorkshopCompleted(Sale $sale, ?string $fromStatus, ?\App\Models\User $user): void
+    {
+        $userName = $user?->name ?? 'Atölye';
+
+        self::create([
+            'saleId' => $sale->id,
+            'type' => self::TYPE_WORKSHOP_COMPLETED,
+            'description' => "Atölye üretimi tamamlandı — sipariş atölyeden çıktı ({$userName})",
+            'metadata' => [
+                'fromStatus' => $fromStatus,
+                'toStatus' => \App\Support\SaleDelivery::PENDING,
+                'userId' => $user?->id,
+                'userName' => $userName,
             ],
         ]);
     }

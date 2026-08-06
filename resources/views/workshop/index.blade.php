@@ -33,6 +33,7 @@
                     <th class="table-th">Termin</th>
                     @if(empty($hideCommercialData))<th class="table-th">Satış Temsilcisi</th>@endif
                     <th class="table-th">Kayıt</th>
+                    <th class="table-th">Eksiklik</th>
                     <th class="table-th"></th>
                 </tr>
             </thead>
@@ -60,13 +61,20 @@
                         <span class="text-neutral-400 text-sm">Kayıt yok</span>
                         @endif
                     </td>
+                    <td class="table-td">
+                        @if(($sale->open_deficiencies_count ?? 0) > 0)
+                        <span class="badge badge-amber">{{ $sale->open_deficiencies_count }} açık</span>
+                        @else
+                        <span class="text-neutral-400 text-sm">—</span>
+                        @endif
+                    </td>
                     <td class="table-td text-right">
                         <a href="{{ route('workshop.show', $sale) }}" class="btn-view text-sm py-2 px-3">Detay</a>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="table-td text-center text-neutral-500 py-12">Üretimde sipariş bulunmuyor.</td>
+                    <td colspan="7" class="table-td text-center text-neutral-500 py-12">Üretimde sipariş bulunmuyor.</td>
                 </tr>
                 @endforelse
             </tbody>

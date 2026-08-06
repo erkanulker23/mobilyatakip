@@ -76,6 +76,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/atolye', [\App\Http\Controllers\WorkshopController::class, 'index'])->name('workshop.index');
     Route::get('/atolye/{sale}', [\App\Http\Controllers\WorkshopController::class, 'show'])->name('workshop.show');
     Route::post('/atolye/{sale}/asama', [\App\Http\Controllers\WorkshopController::class, 'storeStage'])->name('workshop.store-stage');
+    Route::post('/atolye/{sale}/bitti', [\App\Http\Controllers\WorkshopController::class, 'completeProduction'])->name('workshop.complete-production');
     Route::post('/atolye/asama/{stage}/yapildi', [\App\Http\Controllers\WorkshopController::class, 'completeStage'])->name('workshop.complete-stage');
 
     Route::get('/company-logo', function () {

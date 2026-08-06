@@ -152,6 +152,13 @@ class SaleDocument
                 'value' => $sale->dueDate->format('d.m.Y'),
             ];
         }
+        if ($sale->workshopCompletedAt) {
+            $rows[] = [
+                'key' => 'workshopCompleted',
+                'label' => 'Atölyeden Çıkış',
+                'value' => $sale->workshopCompletedAt->format('d.m.Y H:i'),
+            ];
+        }
         if ($sale->personnel) {
             $rows[] = [
                 'key' => 'personnel',

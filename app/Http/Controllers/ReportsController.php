@@ -434,6 +434,10 @@ class ReportsController extends Controller
             ->whereNotNull('dueDate')
             ->whereDate('dueDate', '<=', $horizon);
 
+        if ($request->user()?->hideCommercialData()) {
+            $salesQuery->where('orderStatus', \App\Support\SaleDelivery::IN_PRODUCTION);
+        }
+
         if ($request->filled('personnelId')) {
             if ($request->input('personnelId') === 'none') {
                 $salesQuery->whereNull('personnelId');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Sale;
+use App\Models\SaleActivity;
 use App\Models\SaleProductionStage;
 use App\Support\SaleDelivery;
 use App\Support\SaleProductionStageSchema;
@@ -21,7 +22,7 @@ class WorkshopController extends Controller
             ->orderBy('dueDate')
             ->orderByDesc('saleDate');
 
-        SaleProductionStageSchema::applyCounts($q);
+        SaleProductionStageSchema::applyCounts($q, detailed: true);
 
         if ($request->filled('search')) {
             $s = $request->search;
@@ -62,7 +63,19 @@ class WorkshopController extends Controller
 
         $productionStagesReady = SaleProductionStageSchema::isReady();
 
-        return view('workshop.show', compact('sale', 'backUrl', 'productionStagesReady'));
+        $openDeficienciesCount = $productionStagesReady
+            ? $sale->productionStages
+                ->where('type', SaleProductionStage::TYPE_DEFICIENCY)
+                ->where('isCompleted', false)
+                ->count()
+            : 0;
+
+        return view('workshop.show', compact(
+            'sale',
+            'backUrl',
+            'productionStagesReady',
+            'openDeficienciesCount',
+        ));
     }
 
     public function storeStage(Request $request, Sale $sale)
@@ -109,6 +122,26 @@ class WorkshopController extends Controller
         ]);
 
         return back()->with('success', 'Kayıt yapıldı olarak işaretlendi.');
+    }
+
+    public function completeProduction(Request $request, Sale $sale)
+    {
+        $this->authorizeProductionSale($sale);
+
+        $fromStatus = SaleDelivery::currentStatus($sale);
+
+        $sale->update([
+            'orderStatus' => SaleDelivery::PENDING,
+            'workshopCompletedAt' => now(),
+        ]);
+
+        SaleActivity::logWorkshopCompleted($sale->fresh(), $fromStatus, $request->user());
+
+        $redirect = auth()->user()?->isWorkshop() && auth()->user()?->personnel
+            ? route('personnel.show', auth()->user()->personnel)
+            : route('workshop.index');
+
+        return redirect($redirect)->with('success', 'Sipariş atölyeden çıktı. Durum: Teslim bekliyor.');
     }
 
     private function authorizeProductionSale(Sale $sale): void
