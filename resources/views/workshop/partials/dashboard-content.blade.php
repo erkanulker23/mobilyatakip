@@ -49,7 +49,7 @@
 
 <div x-data="{ tab: @json($defaultTab) }">
 <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-6">
-    <button type="button" @click="tab = 'uretim'" class="card p-4 text-left transition-all hover:shadow-md {{ $workshopStats->productionCount > 0 ? 'ring-1 ring-violet-200 dark:ring-violet-800/50' : '' }}">
+    <div class="card p-4 {{ $workshopStats->productionCount > 0 ? 'ring-1 ring-violet-200 dark:ring-violet-800/50' : '' }}">
         <div class="flex items-center justify-between gap-2">
             <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Üretimde</p>
             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
@@ -58,9 +58,9 @@
         </div>
         <p class="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white mt-2">{{ $workshopStats->productionCount }}</p>
         <p class="text-xs text-neutral-500 mt-1">Not ve eksiklik eklenebilir</p>
-    </button>
+    </div>
 
-    <button type="button" @click="tab = 'termin'" class="card p-4 text-left transition-all hover:shadow-md {{ ($workshopStats->overdueCount ?? 0) > 0 ? 'ring-1 ring-red-200 dark:ring-red-800/50' : (($urgentTerminCount ?? 0) > 0 ? 'ring-1 ring-amber-200 dark:ring-amber-800/50' : '') }}">
+    <div class="card p-4 {{ ($workshopStats->overdueCount ?? 0) > 0 ? 'ring-1 ring-red-200 dark:ring-red-800/50' : (($urgentTerminCount ?? 0) > 0 ? 'ring-1 ring-amber-200 dark:ring-amber-800/50' : '') }}">
         <div class="flex items-center justify-between gap-2">
             <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Termin ({{ $terminDays }} gün)</p>
             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
@@ -77,9 +77,9 @@
             {{ $upcomingInProductionCount ?? 0 }} tanesi üretimde
             @endif
         </p>
-    </button>
+    </div>
 
-    <button type="button" @click="tab = 'ssh'" class="card p-4 text-left transition-all hover:shadow-md {{ $workshopStats->openSshCount > 0 ? 'ring-1 ring-orange-200 dark:ring-orange-800/50' : '' }}">
+    <div class="card p-4 {{ $workshopStats->openSshCount > 0 ? 'ring-1 ring-orange-200 dark:ring-orange-800/50' : '' }}">
         <div class="flex items-center justify-between gap-2">
             <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Açık SSH</p>
             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">
@@ -88,7 +88,7 @@
         </div>
         <p class="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white mt-2">{{ $workshopStats->openSshCount }}</p>
         <p class="text-xs text-neutral-500 mt-1">Açık servis kaydı</p>
-    </button>
+    </div>
 
     <div class="card p-4 border-red-200/80 dark:border-red-900/40 bg-red-50/40 dark:bg-red-950/20">
         <div class="flex items-center justify-between gap-2">
