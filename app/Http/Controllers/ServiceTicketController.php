@@ -68,8 +68,12 @@ class ServiceTicketController extends Controller
         return view('service-tickets.print', compact('serviceTicket'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
+        if ($request->user()?->isWorkshop()) {
+            abort(403, 'Bu işlem için yetkiniz yok.');
+        }
+
         $customers = Customer::with(['city', 'district'])->where('isActive', true)->orderBy('name')->get();
         $selectedCustomerId = old('customerId', request('customerId'));
         $selectedSaleId = old('saleId', request('saleId'));
@@ -80,6 +84,10 @@ class ServiceTicketController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->user()?->isWorkshop()) {
+            abort(403, 'Bu işlem için yetkiniz yok.');
+        }
+
         $request->merge([
             'problems' => array_values(array_filter(
                 (array) $request->input('problems', []),
@@ -215,6 +223,10 @@ class ServiceTicketController extends Controller
 
     public function update(Request $request, ServiceTicket $serviceTicket)
     {
+        if ($request->user()?->hideCommercialData()) {
+            return $this->updateForWorkshop($request, $serviceTicket);
+        }
+
         if ($request->filled('serviceChargeAmount')) {
             $request->merge(['serviceChargeAmount' => money_parse($request->input('serviceChargeAmount'))]);
         }
@@ -365,6 +377,40 @@ class ServiceTicketController extends Controller
         if ($currentStatus === 'tamamlandi' && $oldStatus !== 'tamamlandi') {
             $message = 'SSH kaydı kapatıldı.';
         }
+
+        return redirect()->route('service-tickets.show', $serviceTicket)->with('success', $message);
+    }
+
+    private function updateForWorkshop(Request $request, ServiceTicket $serviceTicket)
+    {
+        $validated = $request->validate([
+            'newStages' => 'nullable|array',
+            'newStages.*' => 'nullable|string|max:1000',
+        ]);
+
+        $newStages = collect($validated['newStages'] ?? [])
+            ->map(fn ($note) => trim((string) $note))
+            ->filter()
+            ->values()
+            ->all();
+
+        foreach ($newStages as $stageNote) {
+            ServiceTicketDetail::create([
+                'ticketId' => $serviceTicket->id,
+                'userId' => auth()->id() ?: null,
+                'action' => 'asama',
+                'actionDate' => now(),
+                'notes' => $stageNote,
+            ]);
+        }
+
+        if ($newStages !== [] && ($serviceTicket->status ?? 'acildi') === 'acildi') {
+            $serviceTicket->update(['status' => 'devam_ediyor']);
+        }
+
+        $message = $newStages !== []
+            ? count($newStages) . ' aşama eklendi.'
+            : 'Kayıt güncellendi.';
 
         return redirect()->route('service-tickets.show', $serviceTicket)->with('success', $message);
     }

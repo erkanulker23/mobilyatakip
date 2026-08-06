@@ -76,6 +76,11 @@ class Sale extends BaseModel
         return $this->hasMany(SaleItem::class, 'saleId');
     }
 
+    public function productionStages(): HasMany
+    {
+        return $this->hasMany(SaleProductionStage::class, 'saleId')->orderByDesc('actionDate');
+    }
+
     public function serviceTickets(): HasMany
     {
         return $this->hasMany(ServiceTicket::class, 'saleId');

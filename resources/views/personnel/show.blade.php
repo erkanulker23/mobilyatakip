@@ -55,7 +55,7 @@
             <div><dt class="text-neutral-500">E-posta</dt><dd class="font-medium text-neutral-900 dark:text-white">{{ $personnel->email ?: '—' }}</dd></div>
             <div><dt class="text-neutral-500">Telefon</dt><dd class="font-medium text-neutral-900 dark:text-white">{{ $personnel->phone ?: '—' }}</dd></div>
             <div><dt class="text-neutral-500">Unvan</dt><dd class="font-medium text-neutral-900 dark:text-white">{{ $personnel->title ?: '—' }}</dd></div>
-            <div><dt class="text-neutral-500">Kategori</dt><dd class="font-medium text-neutral-900 dark:text-white">{{ $personnel->category ?: '—' }}</dd></div>
+            <div><dt class="text-neutral-500">Kategori</dt><dd class="font-medium text-neutral-900 dark:text-white">{{ \App\Support\PersonnelCategory::label($personnel->category) }}</dd></div>
             @if(auth()->user()?->isAdmin())
             <div class="pt-2 border-t border-neutral-100 dark:border-slate-700">
                 <dt class="text-neutral-500">Sistem erişimi</dt>

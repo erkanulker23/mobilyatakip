@@ -12,6 +12,7 @@
             @endif
         </p>
     </div>
+    @if(empty($hideCommercialData))
     @include('reports.partials.toolbar', [
         'printRoute' => 'reports.upcoming-due.print',
         'extraLinks' => [[
@@ -22,6 +23,7 @@
             'rel' => 'noopener',
         ]],
     ])
+    @endif
 </div>
 
 <div class="card p-6 mb-6">
@@ -34,7 +36,9 @@
                 @endforeach
             </select>
         </div>
+        @if(empty($hideCommercialData))
         @include('reports.partials.sales-filters', ['showOdemeFilter' => false])
+        @endif
         <div class="flex gap-2">
             <button type="submit" class="btn-primary">Filtrele</button>
             <a href="{{ route('reports.upcoming-due') }}" class="btn-secondary">Temizle</a>

@@ -6,10 +6,12 @@
         <h1 class="page-title">Servis Kayıtları (SSH)</h1>
         <p class="page-desc">Servis ve garanti takibi</p>
     </div>
+    @if(empty($hideCommercialData))
     <a href="{{ route('service-tickets.create') }}" class="btn-primary">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
         Yeni Servis Kaydı
     </a>
+    @endif
 </div>
 
 @if(session('success'))
@@ -23,9 +25,10 @@
     <div class="p-4 border-b border-neutral-100">
         <form method="GET" class="flex flex-wrap gap-4 items-end">
         <div class="min-w-[180px] flex-1">
-            <label class="form-label">Ara (no, müşteri, sorun)</label>
+            <label class="form-label">Ara (no{{ empty($hideCommercialData) ? ', müşteri' : '' }}, sorun)</label>
             <input type="text" name="search" placeholder="Ara..." value="{{ request('search') }}" class="form-input">
         </div>
+        @if(empty($hideCommercialData))
         <div class="min-w-[160px]">
             <label class="form-label">Müşteri</label>
             <select name="customerId" class="form-select">
@@ -35,6 +38,7 @@
                 @endforeach
             </select>
         </div>
+        @endif
         <div class="min-w-[140px]">
             <label class="form-label">Durum</label>
             <select name="status" class="form-select">
@@ -65,7 +69,7 @@
                 <tr>
                     <th class="table-th">No</th>
                     <th class="table-th">Satış</th>
-                    <th class="table-th">Müşteri</th>
+                    @if(empty($hideCommercialData))<th class="table-th">Müşteri</th>@endif
                     <th class="table-th">Problemler</th>
                     <th class="table-th">Sevkiyatçı</th>
                     <th class="table-th">Durum</th>
@@ -86,7 +90,7 @@
                 <tr class="hover:bg-slate-50 transition-colors">
                     <td class="table-td"><a href="{{ route('service-tickets.show', $t) }}" class="font-medium text-neutral-900 hover:underline">{{ $t->ticketNumber }}</a></td>
                     <td class="table-td text-slate-600">{{ $t->sale?->saleNumber ?? '—' }}</td>
-                    <td class="table-td text-slate-600">{{ $t->customer?->name ?? '—' }}</td>
+                    @if(empty($hideCommercialData))<td class="table-td text-slate-600">{{ $t->customer?->name ?? '—' }}</td>@endif
                     <td class="table-td text-slate-600">
                         <span class="block">{{ Str::limit($problems[0]['description'] ?? '—', 28) }}</span>
                         <span class="text-xs text-neutral-500">{{ \App\Support\ServiceTicketStatus::problemSummary($problems) }}</span>
@@ -108,8 +112,8 @@
                         @include('partials.action-buttons', [
                             'show' => route('service-tickets.show', $t),
                             'edit' => route('service-tickets.edit', $t),
-                            'print' => route('service-tickets.print', $t),
-                            'destroy' => route('service-tickets.destroy', $t),
+                            'print' => empty($hideCommercialData) ? route('service-tickets.print', $t) : null,
+                            'destroy' => empty($hideCommercialData) ? route('service-tickets.destroy', $t) : null,
                         ])
                     </td>
                 </tr>

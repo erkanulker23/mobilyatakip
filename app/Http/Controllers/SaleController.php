@@ -488,7 +488,11 @@ class SaleController extends Controller
             abort(404);
         }
 
-        return view('sales.workshop', compact('sale', 'variant'));
+        $slipParams = auth()->user()?->hideCommercialData()
+            ? \App\Support\SaleDocument::slipParamsForWorkshopStaff($sale, $variant)
+            : \App\Support\SaleDocument::slipParams($sale, $variant);
+
+        return view('sales.workshop', compact('sale', 'variant', 'slipParams'));
     }
 
     public function updateStatus(Request $request, Sale $sale)

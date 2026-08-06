@@ -97,6 +97,27 @@ class User extends Authenticatable implements CanResetPasswordContract
         return $this->role === 'admin';
     }
 
+    public function personnelCategory(): ?string
+    {
+        return $this->personnel?->category;
+    }
+
+    public function isWorkshop(): bool
+    {
+        return $this->personnelCategory() === \App\Support\PersonnelCategory::ATOLYE;
+    }
+
+    /** Atölye personeli: fiyat, müşteri, tahsilat vb. görmez. */
+    public function hideCommercialData(): bool
+    {
+        return $this->isWorkshop() && ! $this->isAdmin();
+    }
+
+    public function isArchitect(): bool
+    {
+        return $this->personnelCategory() === \App\Support\PersonnelCategory::MIMAR;
+    }
+
     public function auditLogs(): HasMany
     {
         return $this->hasMany(AuditLog::class, 'userId');

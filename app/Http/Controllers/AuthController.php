@@ -43,7 +43,14 @@ class AuthController extends Controller
             $user->update(['lastLoginAt' => now()]);
         }
         $request->session()->regenerate();
-        return redirect()->intended(route('dashboard'));
+
+        $intended = $user->isWorkshop() && $user->personnel
+            ? route('personnel.show', $user->personnel)
+            : ($user->isWorkshop()
+                ? route('workshop.index')
+                : route('dashboard'));
+
+        return redirect()->intended($intended);
     }
 
     public function logout(Request $request)

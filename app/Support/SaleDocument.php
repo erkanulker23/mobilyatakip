@@ -90,6 +90,21 @@ class SaleDocument
         ];
     }
 
+    /** Atölye personeli için müşteri/iletişim bilgisi gizlenmiş fiş. */
+    public static function slipParamsForWorkshopStaff(Sale $sale, string $variant = 'mobilya'): array
+    {
+        $params = self::slipParams($sale, $variant);
+        $params['partyLabel'] = 'Sipariş';
+        $params['partyName'] = $sale->saleNumber;
+        $params['partyAddress'] = null;
+        $params['partyPhone'] = null;
+        $params['partyPhone2'] = null;
+        $params['partyEmail'] = null;
+        $params['personnelName'] = null;
+
+        return $params;
+    }
+
     /** @deprecated Use slipParams($sale, 'shipment') */
     public static function shipmentParams(Sale $sale): array
     {

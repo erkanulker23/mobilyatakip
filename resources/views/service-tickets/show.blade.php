@@ -25,9 +25,11 @@
         <p class="page-desc">{{ ServiceTicketStatus::problemSummary($problems) }}</p>
     </div>
     <div class="flex flex-wrap items-center gap-2">
+        @if(empty($hideCommercialData))
         <a href="{{ route('service-tickets.print', $serviceTicket) }}" target="_blank" rel="noopener" class="btn-print">Sevkiyat Formu Yazdır</a>
+        @endif
         <a href="{{ route('service-tickets.edit', $serviceTicket) }}" class="btn-edit">Düzenle</a>
-        @if($serviceTicket->saleId && $serviceTicket->sale)
+        @if(empty($hideCommercialData) && $serviceTicket->saleId && $serviceTicket->sale)
         <a href="{{ route('sales.show', $serviceTicket->sale) }}" class="btn-secondary">Satış Detayı</a>
         @endif
     </div>
@@ -126,18 +128,26 @@
             <div class="card-header">Servis Bilgileri</div>
             <div class="p-5">
                 <dl class="space-y-3 text-sm">
-                    @if($serviceTicket->customer)
+                    @if(empty($hideCommercialData) && $serviceTicket->customer)
                     <div><dt class="form-label">Müşteri</dt><dd class="font-medium"><a href="{{ route('customers.show', $serviceTicket->customer) }}" class="hover:underline">{{ $serviceTicket->customer->name }}</a></dd></div>
                     <div><dt class="form-label">Telefon</dt><dd>{{ $serviceTicket->customer->phone ?: '—' }}</dd></div>
                     <div><dt class="form-label">Adres</dt><dd class="whitespace-pre-wrap">{{ $serviceTicket->customer->full_address ?: '—' }}</dd></div>
                     @endif
                     @if($serviceTicket->sale)
-                    <div><dt class="form-label">Satış</dt><dd class="font-medium"><a href="{{ route('sales.show', $serviceTicket->sale) }}" class="hover:underline">{{ $serviceTicket->sale->saleNumber }}</a></dd></div>
+                    <div><dt class="form-label">Satış</dt><dd class="font-medium">
+                        @if(empty($hideCommercialData))
+                        <a href="{{ route('sales.show', $serviceTicket->sale) }}" class="hover:underline">{{ $serviceTicket->sale->saleNumber }}</a>
+                        @else
+                        {{ $serviceTicket->sale->saleNumber }}
+                        @endif
+                    </dd></div>
                     @endif
+                    @if(empty($hideCommercialData))
                     <div><dt class="form-label">Garanti</dt><dd>{{ $serviceTicket->underWarranty ? 'Evet' : 'Hayır' }}</dd></div>
                     <div><dt class="form-label">Teknisyen</dt><dd>{{ $serviceTicket->assignedUser?->name ?? '—' }}</dd></div>
                     @if($serviceTicket->serviceChargeAmount)
                     <div><dt class="form-label">Servis Ücreti</dt><dd class="font-semibold">₺{{ number_format($serviceTicket->serviceChargeAmount, 0, ',', '.') }}</dd></div>
+                    @endif
                     @endif
                     <div><dt class="form-label">Açılış</dt><dd>{{ $serviceTicket->openedAt?->format('d.m.Y H:i') ?? '—' }}</dd></div>
                     @if($serviceTicket->dueDate)
@@ -152,6 +162,7 @@
             </div>
         </div>
 
+        @if(empty($hideCommercialData))
         <div class="card overflow-hidden">
             <div class="card-header">Sevkiyatçı</div>
             <div class="p-5">
@@ -164,6 +175,7 @@
                 <a href="{{ route('service-tickets.print', $serviceTicket) }}" target="_blank" class="btn-print w-full justify-center mt-4">Sevkiyat Formu Yazdır</a>
             </div>
         </div>
+        @endif
 
         @if($serviceTicket->notes)
         <div class="card overflow-hidden">

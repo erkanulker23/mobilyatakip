@@ -35,6 +35,10 @@ class AppServiceProvider extends ServiceProvider
             return "<?php echo \\App\\Support\\Money::format($expression); ?>";
         });
 
+        View::composer('*', function ($view): void {
+            $view->with('hideCommercialData', auth()->user()?->hideCommercialData() ?? false);
+        });
+
         View::composer('layouts.app', function ($view) {
             if (! auth()->check()) {
                 $view->with('recentActivities', collect());

@@ -335,6 +335,7 @@
                 @endif
             </div>
             {{-- Global arama --}}
+            @if(empty($hideCommercialData))
             <div class="flex-1 flex justify-center min-w-0">
                 <form action="{{ route('customers.index') }}" method="GET" class="relative w-full max-w-lg hidden sm:block">
                     <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -342,8 +343,12 @@
                     <kbd class="hidden md:inline-flex absolute right-3 top-1/2 -translate-y-1/2 items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-neutral-400 bg-white border border-neutral-200 rounded">⌘K</kbd>
                 </form>
             </div>
+            @else
+            <div class="flex-1"></div>
+            @endif
             <div class="flex items-center gap-1 shrink-0 ml-auto">
                 {{-- Bildirim --}}
+                @if(empty($hideCommercialData))
                 <div class="relative" x-data="{ open: false }" @click.outside="open = false">
                     <button type="button" @click="open = !open" class="flex items-center justify-center w-11 h-11 rounded-xl text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors touch-manipulation" aria-label="Bildirimler" :aria-expanded="open">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
@@ -431,6 +436,7 @@
                         </div>
                     </div>
                 </div>
+                @endif
                 {{-- Tema (açık/koyu) --}}
                 <button type="button" @click="dark = !dark; document.documentElement.classList.toggle('dark', dark); localStorage.setItem('theme-dark', dark ? '1' : '0')" class="flex items-center justify-center w-11 h-11 rounded-xl text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors touch-manipulation" aria-label="Tema değiştir">
                     <svg x-show="!dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
@@ -450,6 +456,27 @@
                 </a>
             </div>
             <nav class="flex-1 px-3 py-4 overflow-y-auto" aria-label="Ana menü">
+                @php $isWorkshopUser = auth()->user()?->isWorkshop() && !auth()->user()?->isAdmin(); @endphp
+
+                @if($isWorkshopUser)
+                @php $workshopHome = auth()->user()?->personnel ? route('personnel.show', auth()->user()->personnel) : route('workshop.index'); @endphp
+                <a href="{{ $workshopHome }}" class="nav-link flex items-center gap-3 px-3 py-2 text-sm {{ request()->routeIs('workshop.*') || (request()->routeIs('personnel.show') && request()->route('personnel')?->id === auth()->user()?->personnel?->id) ? 'active' : '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                    Atölyem
+                </a>
+                <a href="{{ route('reports.upcoming-due') }}" class="nav-link flex items-center gap-3 px-3 py-2 text-sm {{ request()->routeIs('reports.upcoming-due*') ? 'active' : '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    Termin Yaklaşanlar
+                </a>
+                <a href="{{ route('service-tickets.index') }}" class="nav-link flex items-center gap-3 px-3 py-2 text-sm {{ request()->routeIs('service-tickets.*') ? 'active' : '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    SSH'lar
+                </a>
+                <a href="{{ route('tasks.index') }}" class="nav-link flex items-center gap-3 px-3 py-2 text-sm {{ request()->routeIs('tasks.*') ? 'active' : '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                    Yapılacak Listesi
+                </a>
+                @else
                 <a href="{{ route('dashboard') }}" class="nav-link flex items-center gap-3 px-3 py-2 text-sm {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z"></path></svg>
                     Kontrol Paneli
@@ -481,9 +508,11 @@
                 <a href="{{ route('expenses.index') }}" class="nav-link flex items-center gap-3 px-3 py-2 text-sm {{ request()->routeIs('expenses.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"></path></svg>Giderler</a>
                 <p class="px-3 pt-5 pb-1 text-[10px] font-medium text-neutral-400 uppercase tracking-widest">Raporlar</p>
                 <a href="{{ route('reports.index') }}" class="nav-link flex items-center gap-3 px-3 py-2 text-sm {{ request()->routeIs('reports.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>Raporlar</a>
+                <a href="{{ route('workshop.index') }}" class="nav-link flex items-center gap-3 px-3 py-2 text-sm {{ request()->routeIs('workshop.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>Atölye</a>
                 <p class="px-3 pt-5 pb-1 text-[10px] font-medium text-neutral-400 uppercase tracking-widest">Sistem</p>
+                @endif
                 @php $linkedPersonnel = auth()->user()?->personnel; @endphp
-                @if($linkedPersonnel && !auth()->user()?->isAdmin())
+                @if($linkedPersonnel && !auth()->user()?->isAdmin() && !($isWorkshopUser ?? false))
                 <a href="{{ route('personnel.show', $linkedPersonnel) }}" class="nav-link flex items-center gap-3 px-3 py-2 text-sm {{ request()->routeIs('personnel.show') && request()->route('personnel')?->id === $linkedPersonnel->id ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>Siparişlerim</a>
                 @else
                 <a href="{{ route('personnel.index') }}" class="nav-link flex items-center gap-3 px-3 py-2 text-sm {{ request()->routeIs('personnel.*') ? 'active' : '' }}"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>Personel</a>

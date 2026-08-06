@@ -1,9 +1,10 @@
 @php
     $print = $print ?? false;
     $forShipment = $forShipment ?? false;
+    $hideCommercialData = $hideCommercialData ?? false;
     $today = now()->startOfDay();
-    $salesColspan = 7 + ($forShipment ? 0 : 2) + ($print ? 0 : 1);
-    $sshColspan = 7 + ($print ? 0 : 1);
+    $salesColspan = ($hideCommercialData ? 4 : 7) + ($forShipment || $hideCommercialData ? 0 : 2) + ($print ? 0 : 1);
+    $sshColspan = ($hideCommercialData ? 4 : 7) + ($print ? 0 : 1);
 @endphp
 
 <div class="{{ $print ? 'print-section-lg mb-4' : 'card overflow-hidden mb-6' }}">
@@ -15,13 +16,15 @@
             <thead class="{{ $print ? '' : 'bg-slate-50 border-b border-neutral-200' }}">
                 <tr>
                     <th class="table-th">Sipariş</th>
+                    @if(!$hideCommercialData)
                     <th class="table-th">Müşteri</th>
                     <th class="table-th">Satışı Yapan</th>
                     <th class="table-th">İl</th>
                     <th class="table-th">İlçe</th>
+                    @endif
                     <th class="table-th">Termin</th>
                     <th class="table-th">Kalan Gün</th>
-                    @if(!$forShipment)
+                    @if(!$forShipment && !$hideCommercialData)
                     <th class="table-th text-right">Tutar</th>
                     <th class="table-th text-right">Kalan Bakiye</th>
                     @endif
@@ -37,10 +40,12 @@
                 @endphp
                 <tr>
                     <td class="table-td font-medium text-neutral-900">{{ $s->saleNumber }}</td>
+                    @if(!$hideCommercialData)
                     <td class="table-td">{{ $s->customer?->name ?? '—' }}</td>
                     <td class="table-td text-neutral-600">{{ $s->personnel?->name ?? '—' }}</td>
                     <td class="table-td">{{ $s->customer?->city?->name ?? '—' }}</td>
                     <td class="table-td">{{ $s->customer?->district?->name ?? '—' }}</td>
+                    @endif
                     <td class="table-td {{ $rowClass }}">{{ $s->dueDate?->format('d.m.Y') ?? '—' }}</td>
                     <td class="table-td {{ $rowClass }}">
                         @if($daysLeft === null)—
@@ -49,7 +54,7 @@
                         @else{{ $daysLeft }} gün
                         @endif
                     </td>
-                    @if(!$forShipment)
+                    @if(!$forShipment && !$hideCommercialData)
                     <td class="table-td text-right font-medium">{{ number_format($s->grandTotal ?? 0, 0, ',', '.') }} ₺</td>
                     <td class="table-td text-right font-medium {{ $remaining > 0 ? 'text-red-600' : 'text-neutral-400' }}">
                         @if($remaining > 0)
@@ -60,7 +65,13 @@
                     </td>
                     @endif
                     @if(!$print)
-                    <td class="table-td"><a href="{{ route('sales.show', $s) }}" class="text-primary-600 hover:underline text-sm">Detay</a></td>
+                    <td class="table-td">
+                        @if($hideCommercialData)
+                        <a href="{{ route('workshop.show', $s) }}" class="text-primary-600 hover:underline text-sm">Detay</a>
+                        @else
+                        <a href="{{ route('sales.show', $s) }}" class="text-primary-600 hover:underline text-sm">Detay</a>
+                        @endif
+                    </td>
                     @endif
                 </tr>
                 @empty
@@ -80,9 +91,11 @@
             <thead class="{{ $print ? '' : 'bg-slate-50 border-b border-neutral-200' }}">
                 <tr>
                     <th class="table-th">Form No</th>
+                    @if(!$hideCommercialData)
                     <th class="table-th">Müşteri</th>
                     <th class="table-th">İl</th>
                     <th class="table-th">İlçe</th>
+                    @endif
                     <th class="table-th">Sipariş</th>
                     <th class="table-th">Termin</th>
                     <th class="table-th">Durum</th>
@@ -94,9 +107,11 @@
                 @php $daysLeft = $t->dueDate ? $today->diffInDays($t->dueDate, false) : null; @endphp
                 <tr>
                     <td class="table-td font-medium">{{ $t->ticketNumber }}</td>
+                    @if(!$hideCommercialData)
                     <td class="table-td">{{ $t->customer?->name ?? '—' }}</td>
                     <td class="table-td">{{ $t->customer?->city?->name ?? '—' }}</td>
                     <td class="table-td">{{ $t->customer?->district?->name ?? '—' }}</td>
+                    @endif
                     <td class="table-td">{{ $t->sale?->saleNumber ?? '—' }}</td>
                     <td class="table-td">{{ $t->dueDate?->format('d.m.Y') ?? '—' }}@if($daysLeft !== null && $daysLeft < 0) <span class="text-red-600">(gecikti)</span>@endif</td>
                     <td class="table-td">{{ ucfirst($t->status ?? '—') }}</td>

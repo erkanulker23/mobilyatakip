@@ -25,6 +25,9 @@
     <p class="page-desc">{{ $serviceTicket->ticketNumber }}</p>
 </div>
 
+@if(!empty($hideCommercialData))
+@include('service-tickets.partials.edit-workshop', ['serviceTicket' => $serviceTicket])
+@else
 <div class="card p-6 max-w-3xl">
     <form method="POST" action="{{ route('service-tickets.update', $serviceTicket) }}" enctype="multipart/form-data" class="space-y-5">
         @csrf @method('PUT')
@@ -210,7 +213,9 @@
         </div>
     </form>
 </div>
+@endif
 <script>
+@if(empty($hideCommercialData))
 document.getElementById('saleSelect')?.addEventListener('change', function() {
     const opt = this.selectedOptions[0];
     const customerId = opt?.dataset?.customer;
@@ -269,5 +274,6 @@ document.getElementById('closeTicketCheckbox')?.addEventListener('change', funct
         statusSelect.value = 'tamamlandi';
     }
 });
+@endif
 </script>
 @endsection

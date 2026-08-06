@@ -1,0 +1,28 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('sale_production_stages', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('saleId', 36)->index();
+            $table->string('userId', 36)->nullable()->index();
+            $table->string('type', 20)->default('asama');
+            $table->text('notes');
+            $table->timestamp('actionDate')->useCurrent();
+            $table->timestamp('createdAt')->useCurrent();
+
+            $table->index(['saleId', 'actionDate']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('sale_production_stages');
+    }
+};

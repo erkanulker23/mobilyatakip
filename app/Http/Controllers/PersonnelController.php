@@ -5,15 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\AuditLog;
 use App\Services\AuditLogPruner;
 use App\Models\Personnel;
+use App\Models\Sale;
+use App\Models\ServiceTicket;
 use App\Models\UserTask;
 use App\Support\UserTaskCompletion;
 use App\Services\AuditService;
 use App\Services\PersonnelAccessService;
 use App\Support\ActivityMessage;
+use App\Support\PersonnelCategory;
+use App\Support\SaleDelivery;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class PersonnelController extends Controller
 {
@@ -48,9 +53,14 @@ class PersonnelController extends Controller
         if ($request->filled('isActive')) {
             $q->where('isActive', $request->boolean('isActive'));
         }
+        if ($request->filled('category')) {
+            $q->where('category', $request->category);
+        }
         $personnel = $q->paginate(20)->withQueryString();
 
-        return view('personnel.index', compact('personnel'));
+        $categoryOptions = PersonnelCategory::options();
+
+        return view('personnel.index', compact('personnel', 'categoryOptions'));
     }
 
     public function create()
@@ -60,8 +70,9 @@ class PersonnelController extends Controller
         }
 
         $personnel = new Personnel;
+        $categoryOptions = PersonnelCategory::options();
 
-        return view('personnel.create', compact('personnel'));
+        return view('personnel.create', compact('personnel', 'categoryOptions'));
     }
 
     public function store(Request $request)
@@ -75,7 +86,7 @@ class PersonnelController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'nullable|email',
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
-            'category' => 'nullable|string|max:100',
+            'category' => ['nullable', 'string', Rule::in(PersonnelCategory::values())],
             'title' => 'nullable|string|max:255',
             'photo' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:2048',
         ];
@@ -114,6 +125,10 @@ class PersonnelController extends Controller
         $this->authorizeView($personnel);
 
         $personnel->load('user');
+
+        if ($personnel->category === PersonnelCategory::ATOLYE) {
+            return $this->showWorkshopPersonnel($personnel);
+        }
 
         $salesQuery = $personnel->sales()->with('customer')->orderByDesc('saleDate')->orderByDesc('createdAt');
 
@@ -246,8 +261,9 @@ class PersonnelController extends Controller
     {
         $this->authorizeManage($personnel);
         $personnel->load('user');
+        $categoryOptions = PersonnelCategory::options();
 
-        return view('personnel.edit', compact('personnel'));
+        return view('personnel.edit', compact('personnel', 'categoryOptions'));
     }
 
     public function update(Request $request, Personnel $personnel)
@@ -259,7 +275,7 @@ class PersonnelController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'nullable|email|max:100',
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
-            'category' => 'nullable|string|max:100',
+            'category' => ['nullable', 'string', Rule::in(PersonnelCategory::values())],
             'title' => 'nullable|string|max:100',
             'isActive' => 'nullable|boolean',
             'photo' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:2048',
@@ -362,6 +378,84 @@ class PersonnelController extends Controller
         }
 
         return round((($current - $previous) / $previous) * 100, 1);
+    }
+
+    private function showWorkshopPersonnel(Personnel $personnel)
+    {
+        $terminHorizon = Carbon::today()->addDays(14);
+
+        $productionSales = Sale::query()
+            ->with(['customer', 'personnel'])
+            ->withCount([
+                'productionStages',
+                'productionStages as open_stages_count' => fn ($q) => $q->where('isCompleted', false),
+                'productionStages as open_deficiencies_count' => fn ($q) => $q->where('type', 'eksiklik')->where('isCompleted', false),
+            ])
+            ->where('isCancelled', false)
+            ->where('orderStatus', SaleDelivery::IN_PRODUCTION)
+            ->whereNull('deliveredAt')
+            ->orderByRaw('CASE WHEN dueDate IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('dueDate')
+            ->get();
+
+        $upcomingDueSales = Sale::query()
+            ->with('customer')
+            ->where('isCancelled', false)
+            ->where('orderStatus', SaleDelivery::IN_PRODUCTION)
+            ->whereNull('deliveredAt')
+            ->whereNotNull('dueDate')
+            ->whereDate('dueDate', '<=', $terminHorizon)
+            ->orderBy('dueDate')
+            ->get();
+
+        $openServiceTickets = ServiceTicket::query()
+            ->with(['customer', 'sale'])
+            ->whereNotIn('status', ['tamamlandi', 'iptal'])
+            ->orderByRaw('CASE WHEN dueDate IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('dueDate')
+            ->orderByDesc('createdAt')
+            ->limit(20)
+            ->get();
+
+        $workshopStats = (object) [
+            'productionCount' => $productionSales->count(),
+            'upcomingTerminCount' => $upcomingDueSales->count(),
+            'overdueCount' => $upcomingDueSales->filter(fn (Sale $s) => $s->dueDate && $s->dueDate->isPast() && ! $s->dueDate->isToday())->count(),
+            'openSshCount' => ServiceTicket::query()->whereNotIn('status', ['tamamlandi', 'iptal'])->count(),
+            'openDeficienciesCount' => (int) $productionSales->sum('open_deficiencies_count'),
+        ];
+
+        $personnelTasks = collect();
+        $taskCompleterFallback = [];
+        if ($personnel->hasSystemAccess()) {
+            $personnelTasks = UserTask::query()
+                ->with('completedByUser:id,name')
+                ->where(function ($q) use ($personnel) {
+                    $q->where('personnelId', $personnel->id);
+                    if ($personnel->userId) {
+                        $q->orWhere('userId', $personnel->userId);
+                    }
+                })
+                ->orderBy('isCompleted')
+                ->orderByRaw('dueDate IS NULL, dueDate ASC')
+                ->orderBy('sortOrder')
+                ->orderByDesc('createdAt')
+                ->get();
+            $taskCompleterFallback = UserTaskCompletion::completerNameMap($personnelTasks);
+        }
+
+        $viewingOwnProfile = auth()->user()?->personnel?->id === $personnel->id;
+
+        return view('personnel.show-workshop', compact(
+            'personnel',
+            'productionSales',
+            'upcomingDueSales',
+            'openServiceTickets',
+            'workshopStats',
+            'viewingOwnProfile',
+            'personnelTasks',
+            'taskCompleterFallback',
+        ));
     }
 
     private function authorizeView(Personnel $personnel): void

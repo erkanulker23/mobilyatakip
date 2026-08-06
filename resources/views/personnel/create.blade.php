@@ -50,7 +50,12 @@
             </div>
             <div>
                 <label class="form-label">Kategori</label>
-                <input type="text" name="category" value="{{ old('category') }}" class="form-input" placeholder="Örn: Satış, Teknik">
+                <select name="category" class="form-select">
+                    <option value="">— Seçiniz —</option>
+                    @foreach($categoryOptions as $value => $label)
+                    <option value="{{ $value }}" {{ old('category') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
                 @error('category')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
         </div>

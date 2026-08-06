@@ -20,6 +20,15 @@
                 <input type="text" name="search" placeholder="Ara..." value="{{ request('search') }}" class="form-input">
             </div>
             <div class="min-w-[140px]">
+                <label class="form-label">Kategori</label>
+                <select name="category" class="form-select">
+                    <option value="">Tümü</option>
+                    @foreach($categoryOptions as $value => $label)
+                    <option value="{{ $value }}" {{ request('category') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="min-w-[140px]">
                 <label class="form-label">Durum</label>
                 <select name="isActive" class="form-select">
                     <option value="">Tümü</option>
@@ -41,6 +50,7 @@
                     <th class="table-th">E-posta</th>
                     <th class="table-th">Telefon</th>
                     <th class="table-th">Unvan</th>
+                    <th class="table-th">Kategori</th>
                     <th class="table-th">Son giriş</th>
                     <th class="table-th text-right w-40">İşlemler</th>
                 </tr>
@@ -64,6 +74,7 @@
                     <td class="table-td text-neutral-500">{{ $p->email ?? '—' }}</td>
                     <td class="table-td text-neutral-500">{{ $p->phone ?? '—' }}</td>
                     <td class="table-td text-neutral-500">{{ $p->title ?? '—' }}</td>
+                    <td class="table-td text-neutral-500">{{ \App\Support\PersonnelCategory::label($p->category) }}</td>
                     <td class="table-td text-neutral-500 whitespace-nowrap">
                         @if($p->user?->lastLoginAt)
                             <span title="{{ $p->user->lastLoginAt->format('d.m.Y H:i') }}">{{ $p->user->lastLoginAt->locale('tr')->diffForHumans() }}</span>
