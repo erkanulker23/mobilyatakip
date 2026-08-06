@@ -22,7 +22,12 @@
             <h1 class="page-title mb-0">{{ $serviceTicket->ticketNumber }}</h1>
             <span class="badge {{ $statusClass }}">{{ ServiceTicketStatus::label($status) }}</span>
         </div>
-        <p class="page-desc">{{ ServiceTicketStatus::problemSummary($problems) }}</p>
+        <p class="page-desc">
+            {{ ServiceTicketStatus::problemSummary($problems) }}
+            @if($showCustomerNames && $serviceTicket->customer?->name)
+            · {{ $serviceTicket->customer->name }}
+            @endif
+        </p>
     </div>
     <div class="flex flex-wrap items-center gap-2">
         @if(empty($hideCommercialData))
@@ -128,10 +133,18 @@
             <div class="card-header">Servis Bilgileri</div>
             <div class="p-5">
                 <dl class="space-y-3 text-sm">
-                    @if(empty($hideCommercialData) && $serviceTicket->customer)
-                    <div><dt class="form-label">Müşteri</dt><dd class="font-medium"><a href="{{ route('customers.show', $serviceTicket->customer) }}" class="hover:underline">{{ $serviceTicket->customer->name }}</a></dd></div>
+                    @if($showCustomerNames && $serviceTicket->customer)
+                    <div><dt class="form-label">Müşteri</dt><dd class="font-medium">
+                        @if(empty($hideCommercialData))
+                        <a href="{{ route('customers.show', $serviceTicket->customer) }}" class="hover:underline">{{ $serviceTicket->customer->name }}</a>
+                        @else
+                        {{ $serviceTicket->customer->name }}
+                        @endif
+                    </dd></div>
+                    @if(empty($hideCommercialData))
                     <div><dt class="form-label">Telefon</dt><dd>{{ $serviceTicket->customer->phone ?: '—' }}</dd></div>
                     <div><dt class="form-label">Adres</dt><dd class="whitespace-pre-wrap">{{ $serviceTicket->customer->full_address ?: '—' }}</dd></div>
+                    @endif
                     @endif
                     @if($serviceTicket->sale)
                     <div><dt class="form-label">Satış</dt><dd class="font-medium">

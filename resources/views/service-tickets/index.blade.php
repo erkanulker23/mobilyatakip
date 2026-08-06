@@ -9,7 +9,7 @@
     $activeTickets = $tickets->filter(fn ($ticket) => ($ticket->status ?? 'acildi') !== 'tamamlandi');
     $completedTickets = $tickets->filter(fn ($ticket) => ($ticket->status ?? '') === 'tamamlandi');
 
-    $colspan = empty($hideCommercialData) ? 8 : 7;
+    $colspan = ($showCustomerNames ?? !($hideCommercialData ?? false)) ? 8 : 7;
 @endphp
 
 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
@@ -36,7 +36,7 @@
     <div class="p-4 border-b border-neutral-100 dark:border-neutral-800">
         <form method="GET" class="flex flex-wrap gap-4 items-end">
         <div class="min-w-[180px] flex-1">
-            <label class="form-label">Ara (no{{ empty($hideCommercialData) ? ', müşteri' : '' }}, sorun)</label>
+            <label class="form-label">Ara (no{{ ($showCustomerNames ?? false) ? ', müşteri' : '' }}, sorun)</label>
             <input type="text" name="search" placeholder="Ara..." value="{{ request('search') }}" class="form-input">
         </div>
         @if(empty($hideCommercialData))
@@ -114,7 +114,7 @@
                     <tr>
                         <th class="table-th">No</th>
                         <th class="table-th">Satış</th>
-                        @if(empty($hideCommercialData))<th class="table-th">Müşteri</th>@endif
+                        @if($showCustomerNames)<th class="table-th">Müşteri</th>@endif
                         <th class="table-th">Problemler</th>
                         <th class="table-th">Sevkiyatçı</th>
                         <th class="table-th">Durum</th>

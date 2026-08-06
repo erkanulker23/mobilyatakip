@@ -13,7 +13,7 @@
         <a href="{{ route('service-tickets.show', $ticket) }}" class="font-medium text-neutral-900 dark:text-neutral-100 hover:underline">{{ $ticket->ticketNumber }}</a>
     </td>
     <td class="table-td text-slate-600 dark:text-neutral-400">{{ $ticket->sale?->saleNumber ?? '—' }}</td>
-    @if(empty($hideCommercialData))
+    @if($showCustomerNames)
     <td class="table-td text-slate-600 dark:text-neutral-400">{{ $ticket->customer?->name ?? '—' }}</td>
     @endif
     <td class="table-td text-slate-600 dark:text-neutral-400">

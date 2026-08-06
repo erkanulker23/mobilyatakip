@@ -3,8 +3,15 @@
     $forShipment = $forShipment ?? false;
     $hideCommercialData = $hideCommercialData ?? false;
     $showCustomerNames = $showCustomerNames ?? ! $hideCommercialData;
+    $showSalesPersonnel = $showSalesPersonnel ?? ! $hideCommercialData;
     $today = now()->startOfDay();
-    $workshopSalesCols = $showCustomerNames ? 6 : 5;
+    $workshopSalesCols = 5;
+    if ($showCustomerNames) {
+        $workshopSalesCols++;
+    }
+    if ($showSalesPersonnel) {
+        $workshopSalesCols++;
+    }
     $workshopSshCols = $showCustomerNames ? 6 : 5;
     $salesColspan = ($hideCommercialData ? $workshopSalesCols : 7) + ($forShipment || $hideCommercialData ? 0 : 2) + ($print ? 0 : 1);
     $sshColspan = ($hideCommercialData ? $workshopSshCols : 7) + ($print ? 0 : 1);
@@ -24,8 +31,13 @@
                     <th class="table-th">Satışı Yapan</th>
                     <th class="table-th">İl</th>
                     <th class="table-th">İlçe</th>
-                    @elseif($showCustomerNames)
+                    @elseif($showCustomerNames || $showSalesPersonnel)
+                    @if($showCustomerNames)
                     <th class="table-th">Müşteri</th>
+                    @endif
+                    @if($showSalesPersonnel)
+                    <th class="table-th">Satışı Yapan</th>
+                    @endif
                     @endif
                     <th class="table-th">Termin</th>
                     @if($hideCommercialData)
@@ -55,8 +67,13 @@
                     <td class="table-td text-neutral-600">{{ $s->personnel?->name ?? '—' }}</td>
                     <td class="table-td">{{ $s->customer?->city?->name ?? '—' }}</td>
                     <td class="table-td">{{ $s->customer?->district?->name ?? '—' }}</td>
-                    @elseif($showCustomerNames)
+                    @elseif($showCustomerNames || $showSalesPersonnel)
+                    @if($showCustomerNames)
                     <td class="table-td">{{ $s->customer?->name ?? '—' }}</td>
+                    @endif
+                    @if($showSalesPersonnel)
+                    <td class="table-td text-neutral-600">{{ $s->personnel?->name ?? '—' }}</td>
+                    @endif
                     @endif
                     <td class="table-td {{ $rowClass }}">{{ $s->dueDate?->format('d.m.Y') ?? '—' }}</td>
                     @if($hideCommercialData)

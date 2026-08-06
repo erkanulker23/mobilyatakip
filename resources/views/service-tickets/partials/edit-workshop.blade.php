@@ -11,10 +11,14 @@
     <form method="POST" action="{{ route('service-tickets.update', $serviceTicket) }}" class="space-y-5">
         @csrf @method('PUT')
 
-        @if($serviceTicket->sale)
-        <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 p-4 text-sm">
-            <span class="text-neutral-500">İlgili sipariş:</span>
-            <span class="font-medium text-neutral-900 dark:text-white ml-1">{{ $serviceTicket->sale->saleNumber }}</span>
+        @if($serviceTicket->sale || ($showCustomerNames && $serviceTicket->customer))
+        <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 p-4 text-sm space-y-1">
+            @if($serviceTicket->sale)
+            <p><span class="text-neutral-500">İlgili sipariş:</span> <span class="font-medium text-neutral-900 dark:text-white">{{ $serviceTicket->sale->saleNumber }}</span></p>
+            @endif
+            @if($showCustomerNames && $serviceTicket->customer)
+            <p><span class="text-neutral-500">Müşteri:</span> <span class="font-medium text-neutral-900 dark:text-white">{{ $serviceTicket->customer->name }}</span></p>
+            @endif
         </div>
         @endif
 

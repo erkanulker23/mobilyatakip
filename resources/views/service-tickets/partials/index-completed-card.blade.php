@@ -21,7 +21,7 @@
                 <a href="{{ route('service-tickets.show', $ticket) }}" class="font-semibold text-neutral-900 dark:text-neutral-100 hover:text-emerald-700 dark:hover:text-emerald-300 truncate block">
                     {{ $ticket->ticketNumber }}
                 </a>
-                @if(empty($hideCommercialData) && $ticket->customer)
+                @if($showCustomerNames && $ticket->customer)
                 <p class="mt-0.5 text-sm text-neutral-600 dark:text-neutral-400 truncate">{{ $ticket->customer->name }}</p>
                 @endif
             </div>

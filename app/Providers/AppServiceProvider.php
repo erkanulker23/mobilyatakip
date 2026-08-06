@@ -39,6 +39,7 @@ class AppServiceProvider extends ServiceProvider
             $user = auth()->user();
             $view->with('hideCommercialData', $user?->hideCommercialData() ?? false);
             $view->with('showCustomerNames', $user?->canSeeCustomerNames() ?? false);
+            $view->with('showSalesPersonnel', $user?->canSeeSalesPersonnel() ?? false);
         });
 
         View::composer('layouts.app', function ($view) {

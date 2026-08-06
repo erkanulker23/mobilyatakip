@@ -118,6 +118,11 @@ class User extends Authenticatable implements CanResetPasswordContract
         return ! $this->hideCommercialData() || $this->isWorkshop();
     }
 
+    public function canSeeSalesPersonnel(): bool
+    {
+        return ! $this->hideCommercialData() || $this->isWorkshop();
+    }
+
     public function isArchitect(): bool
     {
         return $this->personnelCategory() === \App\Support\PersonnelCategory::MIMAR;

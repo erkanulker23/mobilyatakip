@@ -27,12 +27,27 @@ final class WorkshopDashboard
 
         SaleProductionStageSchema::applyCounts($productionSalesQuery, detailed: true);
 
-        $productionSales = $productionSalesQuery->get();
+        $productionSales = $productionSalesQuery->get()
+            ->sortBy([
+                fn (Sale $sale) => -((int) ($sale->open_deficiencies_count ?? 0)),
+                fn (Sale $sale) => $sale->dueDate?->timestamp ?? PHP_INT_MAX,
+            ])
+            ->values();
 
         $upcomingDueSales = SaleDelivery::upcomingDueQuery(self::TERMIN_HORIZON_DAYS)
-            ->with('customer')
+            ->with(['customer', 'personnel'])
             ->orderBy('dueDate')
             ->get();
+
+        $today = Carbon::today();
+        $urgentTerminCount = $upcomingDueSales->filter(function (Sale $sale) use ($today) {
+            if (! $sale->dueDate) {
+                return false;
+            }
+            $daysLeft = (int) $today->diffInDays($sale->dueDate, false);
+
+            return $daysLeft <= 3;
+        })->count();
 
         $upcomingInProductionCount = $upcomingDueSales
             ->filter(fn (Sale $s) => SaleDelivery::currentStatus($s) === SaleDelivery::IN_PRODUCTION)
@@ -88,6 +103,8 @@ final class WorkshopDashboard
             'productionStagesReady' => SaleProductionStageSchema::isReady(),
             'terminDays' => self::TERMIN_HORIZON_DAYS,
             'upcomingInProductionCount' => $upcomingInProductionCount,
+            'urgentTerminCount' => $urgentTerminCount,
+            'terminAlertDays' => 3,
         ];
     }
 }
