@@ -2,9 +2,12 @@
     $print = $print ?? false;
     $forShipment = $forShipment ?? false;
     $hideCommercialData = $hideCommercialData ?? false;
+    $showCustomerNames = $showCustomerNames ?? ! $hideCommercialData;
     $today = now()->startOfDay();
-    $salesColspan = ($hideCommercialData ? 5 : 7) + ($forShipment || $hideCommercialData ? 0 : 2) + ($print ? 0 : 1);
-    $sshColspan = ($hideCommercialData ? 4 : 7) + ($print ? 0 : 1);
+    $workshopSalesCols = $showCustomerNames ? 6 : 5;
+    $workshopSshCols = $showCustomerNames ? 6 : 5;
+    $salesColspan = ($hideCommercialData ? $workshopSalesCols : 7) + ($forShipment || $hideCommercialData ? 0 : 2) + ($print ? 0 : 1);
+    $sshColspan = ($hideCommercialData ? $workshopSshCols : 7) + ($print ? 0 : 1);
 @endphp
 
 <div class="{{ $print ? 'print-section-lg mb-4' : 'card overflow-hidden mb-6' }}">
@@ -21,6 +24,8 @@
                     <th class="table-th">Satışı Yapan</th>
                     <th class="table-th">İl</th>
                     <th class="table-th">İlçe</th>
+                    @elseif($showCustomerNames)
+                    <th class="table-th">Müşteri</th>
                     @endif
                     <th class="table-th">Termin</th>
                     @if($hideCommercialData)
@@ -50,6 +55,8 @@
                     <td class="table-td text-neutral-600">{{ $s->personnel?->name ?? '—' }}</td>
                     <td class="table-td">{{ $s->customer?->city?->name ?? '—' }}</td>
                     <td class="table-td">{{ $s->customer?->district?->name ?? '—' }}</td>
+                    @elseif($showCustomerNames)
+                    <td class="table-td">{{ $s->customer?->name ?? '—' }}</td>
                     @endif
                     <td class="table-td {{ $rowClass }}">{{ $s->dueDate?->format('d.m.Y') ?? '—' }}</td>
                     @if($hideCommercialData)
@@ -109,6 +116,8 @@
                     <th class="table-th">Müşteri</th>
                     <th class="table-th">İl</th>
                     <th class="table-th">İlçe</th>
+                    @elseif($showCustomerNames)
+                    <th class="table-th">Müşteri</th>
                     @endif
                     <th class="table-th">Sipariş</th>
                     <th class="table-th">Termin</th>
@@ -125,6 +134,8 @@
                     <td class="table-td">{{ $t->customer?->name ?? '—' }}</td>
                     <td class="table-td">{{ $t->customer?->city?->name ?? '—' }}</td>
                     <td class="table-td">{{ $t->customer?->district?->name ?? '—' }}</td>
+                    @elseif($showCustomerNames)
+                    <td class="table-td">{{ $t->customer?->name ?? '—' }}</td>
                     @endif
                     <td class="table-td">{{ $t->sale?->saleNumber ?? '—' }}</td>
                     <td class="table-td">{{ $t->dueDate?->format('d.m.Y') ?? '—' }}@if($daysLeft !== null && $daysLeft < 0) <span class="text-red-600">(gecikti)</span>@endif</td>

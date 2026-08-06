@@ -75,7 +75,7 @@
             <thead>
                 <tr class="border-b border-neutral-100 dark:border-slate-700">
                     <th class="table-th">Sipariş No</th>
-                    @if(empty($hideCommercialData))<th class="table-th">Müşteri</th>@endif
+                    @if($showCustomerNames)<th class="table-th">Müşteri</th>@endif
                     <th class="table-th">Termin</th>
                     <th class="table-th">Kayıt</th>
                     <th class="table-th">Eksiklik</th>
@@ -87,7 +87,7 @@
                 @php $termin = SaleDelivery::terminListMeta($sale); @endphp
                 <tr class="hover:bg-neutral-50/50 dark:hover:bg-slate-800/40">
                     <td class="table-td font-medium text-neutral-900 dark:text-white">{{ $sale->saleNumber }}</td>
-                    @if(empty($hideCommercialData))<td class="table-td">{{ $sale->customer?->name ?? '—' }}</td>@endif
+                    @if($showCustomerNames)<td class="table-td">{{ $sale->customer?->name ?? '—' }}</td>@endif
                     <td class="table-td">
                         @if($sale->dueDate)
                         <span class="{{ $termin['class'] ?? '' }}">{{ $sale->dueDate->format('d.m.Y') }}</span>
@@ -138,7 +138,7 @@
                 <thead>
                     <tr class="border-b border-neutral-100 dark:border-slate-700">
                         <th class="table-th">Sipariş</th>
-                        @if(empty($hideCommercialData))<th class="table-th">Müşteri</th>@endif
+                        @if($showCustomerNames)<th class="table-th">Müşteri</th>@endif
                         <th class="table-th">Durum</th>
                         <th class="table-th">Termin</th>
                         <th class="table-th"></th>
@@ -153,7 +153,7 @@
                     @endphp
                     <tr>
                         <td class="table-td font-medium">{{ $sale->saleNumber }}</td>
-                        @if(empty($hideCommercialData))<td class="table-td">{{ $sale->customer?->name ?? '—' }}</td>@endif
+                        @if($showCustomerNames)<td class="table-td">{{ $sale->customer?->name ?? '—' }}</td>@endif
                         <td class="table-td">
                             <span class="badge {{ $inProduction ? 'badge-blue' : 'badge-neutral' }}">{{ SaleDelivery::label($orderStatus) }}</span>
                         </td>
@@ -195,7 +195,7 @@
                 <thead>
                     <tr class="border-b border-neutral-100 dark:border-slate-700">
                         <th class="table-th">No</th>
-                        @if(empty($hideCommercialData))<th class="table-th">Müşteri</th>@endif
+                        @if($showCustomerNames)<th class="table-th">Müşteri</th>@endif
                         <th class="table-th">Sipariş</th>
                         <th class="table-th">Durum</th>
                         <th class="table-th">Termin</th>
@@ -206,7 +206,7 @@
                     @foreach($openServiceTickets as $ticket)
                     <tr>
                         <td class="table-td font-medium">{{ $ticket->ticketNumber }}</td>
-                        @if(empty($hideCommercialData))<td class="table-td">{{ $ticket->customer?->name ?? '—' }}</td>@endif
+                        @if($showCustomerNames)<td class="table-td">{{ $ticket->customer?->name ?? '—' }}</td>@endif
                         <td class="table-td">{{ $ticket->sale?->saleNumber ?? '—' }}</td>
                         <td class="table-td">
                             <span class="badge badge-amber">{{ ServiceTicketStatus::label($ticket->status ?? 'acildi') }}</span>

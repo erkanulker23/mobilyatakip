@@ -1,6 +1,17 @@
 @extends('layouts.app')
 @section('title', 'SSH - Servis Kayıtları')
 @section('content')
+@php
+    $statusFilter = request('status');
+    $showCompletedOnly = $statusFilter === 'tamamlandi';
+    $showActiveOnly = in_array($statusFilter, ['acildi', 'devam_ediyor', 'iptal'], true);
+
+    $activeTickets = $tickets->filter(fn ($ticket) => ($ticket->status ?? 'acildi') !== 'tamamlandi');
+    $completedTickets = $tickets->filter(fn ($ticket) => ($ticket->status ?? '') === 'tamamlandi');
+
+    $colspan = empty($hideCommercialData) ? 8 : 7;
+@endphp
+
 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
     <div>
         <h1 class="page-title">Servis Kayıtları (SSH)</h1>
@@ -22,7 +33,7 @@
 @endif
 
 <div class="card overflow-hidden">
-    <div class="p-4 border-b border-neutral-100">
+    <div class="p-4 border-b border-neutral-100 dark:border-neutral-800">
         <form method="GET" class="flex flex-wrap gap-4 items-end">
         <div class="min-w-[180px] flex-1">
             <label class="form-label">Ara (no{{ empty($hideCommercialData) ? ', müşteri' : '' }}, sorun)</label>
@@ -63,66 +74,87 @@
         </div>
     </form>
     </div>
-    <div class="overflow-x-auto">
-        <table class="min-w-full">
-            <thead>
-                <tr>
-                    <th class="table-th">No</th>
-                    <th class="table-th">Satış</th>
-                    @if(empty($hideCommercialData))<th class="table-th">Müşteri</th>@endif
-                    <th class="table-th">Problemler</th>
-                    <th class="table-th">Sevkiyatçı</th>
-                    <th class="table-th">Durum</th>
-                    <th class="table-th">Tarih</th>
-                    <th class="table-th text-center w-40">İşlem</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-200">
-                @forelse($tickets as $t)
-                @php
-                    $problems = \App\Support\ServiceTicketStatus::normalizeProblems($t->reportedProblems ?? []);
-                    if ($problems === [] && $t->issueType) {
-                        $problems = [['description' => $t->issueType, 'status' => 'bekliyor']];
-                    }
-                    $status = $t->status ?? 'acildi';
-                    $statusClass = $status === 'tamamlandi' ? 'badge-green' : ($status === 'devam_ediyor' ? 'badge-amber' : ($status === 'iptal' ? 'badge-dark' : 'badge-blue'));
-                @endphp
-                <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="table-td"><a href="{{ route('service-tickets.show', $t) }}" class="font-medium text-neutral-900 hover:underline">{{ $t->ticketNumber }}</a></td>
-                    <td class="table-td text-slate-600">{{ $t->sale?->saleNumber ?? '—' }}</td>
-                    @if(empty($hideCommercialData))<td class="table-td text-slate-600">{{ $t->customer?->name ?? '—' }}</td>@endif
-                    <td class="table-td text-slate-600">
-                        <span class="block">{{ Str::limit($problems[0]['description'] ?? '—', 28) }}</span>
-                        <span class="text-xs text-neutral-500">{{ \App\Support\ServiceTicketStatus::problemSummary($problems) }}</span>
-                    </td>
-                    <td class="table-td text-slate-600">{{ $t->assignedDriverName ?: '—' }}</td>
-                    <td class="table-td">
-                        <form method="POST" action="{{ route('service-tickets.update-status', $t) }}" class="inline">
-                            @csrf
-                            @method('PATCH')
-                            <select name="status" class="form-select text-xs py-1.5 px-2 min-w-[8.5rem] max-w-[10rem]" onchange="this.form.submit()">
-                                @foreach(\App\Support\ServiceTicketStatus::STATUSES as $value => $label)
-                                <option value="{{ $value }}" {{ $status === $value ? 'selected' : '' }}>{{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </form>
-                    </td>
-                    <td class="table-td text-slate-600">{{ $t->createdAt?->format('d.m.Y') ?? '—' }}</td>
-                    <td class="table-td">
-                        @include('partials.action-buttons', [
-                            'show' => route('service-tickets.show', $t),
-                            'edit' => route('service-tickets.edit', $t),
-                            'print' => empty($hideCommercialData) ? route('service-tickets.print', $t) : null,
-                            'destroy' => empty($hideCommercialData) ? route('service-tickets.destroy', $t) : null,
-                        ])
-                    </td>
-                </tr>
-                @empty
-                <tr><td colspan="8" class="px-6 py-12 text-center text-neutral-500">Kayıt bulunamadı.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-    <div class="px-6 py-3 border-t border-neutral-200">{{ $tickets->links() }}</div>
+
+    @if($showCompletedOnly)
+        @if($completedTickets->isEmpty())
+        <div class="px-6 py-16 text-center">
+            <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300">
+                <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <p class="mt-4 text-neutral-500">Tamamlanan kayıt bulunamadı.</p>
+        </div>
+        @else
+        <div class="px-4 py-4 sm:px-6 border-b border-neutral-100 dark:border-neutral-800 bg-emerald-50/50 dark:bg-emerald-950/20">
+            <div class="flex items-center gap-2">
+                <svg class="h-5 w-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <h2 class="text-sm font-semibold text-emerald-900 dark:text-emerald-200">Tamamlanan SSH Kayıtları</h2>
+                <span class="text-xs font-medium text-emerald-700/80 dark:text-emerald-400/80">({{ $completedTickets->count() }})</span>
+            </div>
+        </div>
+        <div class="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 bg-neutral-50/50 dark:bg-neutral-950/30">
+            @foreach($completedTickets as $ticket)
+                @include('service-tickets.partials.index-completed-card', ['ticket' => $ticket])
+            @endforeach
+        </div>
+        @endif
+    @else
+        @if($activeTickets->isNotEmpty() || ($showActiveOnly && $tickets->isNotEmpty()))
+        @if(!$showActiveOnly && $completedTickets->isNotEmpty())
+        <div class="px-4 py-3 sm:px-6 bg-white dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800">
+            <h2 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Açık Kayıtlar</h2>
+        </div>
+        @endif
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead>
+                    <tr>
+                        <th class="table-th">No</th>
+                        <th class="table-th">Satış</th>
+                        @if(empty($hideCommercialData))<th class="table-th">Müşteri</th>@endif
+                        <th class="table-th">Problemler</th>
+                        <th class="table-th">Sevkiyatçı</th>
+                        <th class="table-th">Durum</th>
+                        <th class="table-th">Tarih</th>
+                        <th class="table-th text-center w-40">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 dark:divide-neutral-800">
+                    @forelse($activeTickets as $ticket)
+                        @include('service-tickets.partials.index-row', ['ticket' => $ticket])
+                    @empty
+                        <tr><td colspan="{{ $colspan }}" class="px-6 py-12 text-center text-neutral-500">Kayıt bulunamadı.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        @elseif($tickets->isEmpty())
+        <div class="px-6 py-12 text-center text-neutral-500">Kayıt bulunamadı.</div>
+        @endif
+
+        @if(!$showActiveOnly && $completedTickets->isNotEmpty())
+        <div class="border-t border-neutral-200 dark:border-neutral-800">
+            <div class="px-4 py-3 sm:px-6 bg-emerald-50/60 dark:bg-emerald-950/20 border-b border-emerald-100 dark:border-emerald-900/30">
+                <div class="flex items-center gap-2">
+                    <svg class="h-5 w-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <h2 class="text-sm font-semibold text-emerald-900 dark:text-emerald-200">Tamamlanan Kayıtlar</h2>
+                    <span class="text-xs font-medium text-emerald-700/80 dark:text-emerald-400/80">({{ $completedTickets->count() }})</span>
+                </div>
+            </div>
+            <div class="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 bg-neutral-50/50 dark:bg-neutral-950/30">
+                @foreach($completedTickets as $ticket)
+                    @include('service-tickets.partials.index-completed-card', ['ticket' => $ticket])
+                @endforeach
+            </div>
+        </div>
+        @endif
+    @endif
+
+    <div class="px-6 py-3 border-t border-neutral-200 dark:border-neutral-800">{{ $tickets->links() }}</div>
 </div>
 @endsection

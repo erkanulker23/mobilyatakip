@@ -19,7 +19,7 @@
     <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
             <h1 class="page-title">{{ $sale->saleNumber }}</h1>
-            <p class="page-desc">{{ SaleDelivery::label($status) }}@if(empty($hideCommercialData) && $sale->customer?->name) · {{ $sale->customer->name }}@endif</p>
+            <p class="page-desc">{{ SaleDelivery::label($status) }}@if($showCustomerNames && $sale->customer?->name) · {{ $sale->customer->name }}@endif</p>
         </div>
         <div class="flex flex-wrap gap-2">
             <a href="{{ route('sales.workshop.mobilya', $sale) }}" target="_blank" class="btn-secondary text-sm">Atölye Fişi</a>
@@ -183,7 +183,7 @@
         <div class="card p-6">
             <h2 class="font-semibold text-neutral-900 dark:text-white mb-4">Sipariş Bilgileri</h2>
             <dl class="space-y-3 text-sm">
-                @if(empty($hideCommercialData))
+                @if($showCustomerNames)
                 <div><dt class="text-neutral-500">Müşteri</dt><dd class="font-medium">{{ $sale->customer?->name ?? '—' }}</dd></div>
                 @endif
                 <div><dt class="text-neutral-500">Sipariş No</dt><dd class="font-medium">{{ $sale->saleNumber }}</dd></div>

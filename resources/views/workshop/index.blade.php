@@ -29,7 +29,7 @@
             <thead>
                 <tr class="border-b border-neutral-100 dark:border-neutral-800">
                     <th class="table-th">Sipariş No</th>
-                    @if(empty($hideCommercialData))<th class="table-th">Müşteri</th>@endif
+                    @if($showCustomerNames)<th class="table-th">Müşteri</th>@endif
                     <th class="table-th">Termin</th>
                     @if(empty($hideCommercialData))<th class="table-th">Satış Temsilcisi</th>@endif
                     <th class="table-th">Kayıt</th>
@@ -42,7 +42,7 @@
                 @php $termin = \App\Support\SaleDelivery::terminListMeta($sale); @endphp
                 <tr class="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30">
                     <td class="table-td font-medium text-neutral-900 dark:text-white">{{ $sale->saleNumber }}</td>
-                    @if(empty($hideCommercialData))<td class="table-td">{{ $sale->customer?->name ?? '—' }}</td>@endif
+                    @if($showCustomerNames)<td class="table-td">{{ $sale->customer?->name ?? '—' }}</td>@endif
                     <td class="table-td">
                         @if($sale->dueDate)
                         <span class="{{ $termin['class'] ?? '' }}">{{ $sale->dueDate->format('d.m.Y') }}</span>

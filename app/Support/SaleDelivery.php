@@ -6,6 +6,9 @@ use App\Models\Sale;
 
 class SaleDelivery
 {
+    /** @var array<int, string> */
+    private const CLOSED_SERVICE_TICKET_STATUSES = ['tamamlandi', 'iptal'];
+
     public const PENDING = 'pending';
 
     public const DELIVERED = 'delivered';
@@ -65,10 +68,27 @@ class SaleDelivery
         return 'in:' . implode(',', self::statuses());
     }
 
+    public static function hasOpenServiceTickets(Sale $sale): bool
+    {
+        if ($sale->relationLoaded('serviceTickets')) {
+            return $sale->serviceTickets->contains(
+                fn ($ticket) => ! ServiceTicketStatus::isClosed($ticket->status)
+            );
+        }
+
+        return $sale->serviceTickets()
+            ->whereNotIn('status', self::CLOSED_SERVICE_TICKET_STATUSES)
+            ->exists();
+    }
+
     public static function currentStatus(Sale $sale): string
     {
         if ($sale->isCancelled ?? false) {
             return self::PENDING;
+        }
+
+        if (self::hasOpenServiceTickets($sale)) {
+            return self::SSH;
         }
 
         if (self::isDelivered($sale)) {
@@ -235,9 +255,7 @@ class SaleDelivery
             return;
         }
 
-        $hasOpenTickets = $sale->serviceTickets()
-            ->whereNotIn('status', ['tamamlandi', 'iptal'])
-            ->exists();
+        $hasOpenTickets = self::hasOpenServiceTickets($sale);
 
         if ($hasOpenTickets) {
             if ($sale->orderStatus !== self::SSH) {
