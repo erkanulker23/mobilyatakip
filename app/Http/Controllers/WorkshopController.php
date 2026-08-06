@@ -63,6 +63,7 @@ class WorkshopController extends Controller
             $sale->load([
                 'productionStages.user',
                 'productionStages.completedByUser',
+                'productionStages.saleItem.product',
             ]);
         } else {
             $sale->setRelation('productionStages', collect());
@@ -98,10 +99,19 @@ class WorkshopController extends Controller
         $validated = $request->validate([
             'type' => 'required|in:asama,eksiklik',
             'notes' => 'required|string|max:2000',
+            'saleItemId' => 'nullable|string|exists:sale_items,id',
         ]);
+
+        if (! empty($validated['saleItemId'])) {
+            $belongsToSale = $sale->items()->where('id', $validated['saleItemId'])->exists();
+            if (! $belongsToSale) {
+                return back()->withInput()->withErrors(['saleItemId' => 'Seçilen ürün bu siparişe ait değil.']);
+            }
+        }
 
         SaleProductionStage::create([
             'saleId' => $sale->id,
+            'saleItemId' => $validated['saleItemId'] ?? null,
             'userId' => $request->user()?->id,
             'type' => $validated['type'],
             'notes' => $validated['notes'],

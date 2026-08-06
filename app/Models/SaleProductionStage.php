@@ -16,6 +16,7 @@ class SaleProductionStage extends BaseModel
 
     protected $fillable = [
         'saleId',
+        'saleItemId',
         'userId',
         'type',
         'notes',
@@ -49,6 +50,20 @@ class SaleProductionStage extends BaseModel
     public function sale(): BelongsTo
     {
         return $this->belongsTo(Sale::class, 'saleId');
+    }
+
+    public function saleItem(): BelongsTo
+    {
+        return $this->belongsTo(SaleItem::class, 'saleItemId');
+    }
+
+    public function productLabel(): ?string
+    {
+        if ($this->relationLoaded('saleItem') && $this->saleItem) {
+            return $this->saleItem->productName ?? $this->saleItem->product?->name;
+        }
+
+        return null;
     }
 
     public function user(): BelongsTo

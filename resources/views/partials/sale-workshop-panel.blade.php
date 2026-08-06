@@ -38,6 +38,9 @@
                     <span class="badge {{ $stage->type === SaleProductionStage::TYPE_DEFICIENCY ? 'badge-amber' : 'badge-blue' }}">
                         {{ SaleProductionStage::typeLabel($stage->type) }}
                     </span>
+                    @if($stage->productLabel())
+                    <span class="badge badge-neutral">{{ $stage->productLabel() }}</span>
+                    @endif
                     @if($stage->isCompleted)
                     <span class="badge badge-green">Giderildi</span>
                     @else

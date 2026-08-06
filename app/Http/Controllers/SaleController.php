@@ -448,7 +448,7 @@ class SaleController extends Controller
         $productionStages = collect();
         if (\App\Support\SaleProductionStageSchema::isReady()) {
             $productionStages = $sale->productionStages()
-                ->with(['user', 'completedByUser'])
+                ->with(['user', 'completedByUser', 'saleItem.product'])
                 ->orderByDesc('actionDate')
                 ->get();
         }
