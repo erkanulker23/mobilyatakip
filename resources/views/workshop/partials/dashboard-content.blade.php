@@ -13,7 +13,7 @@
             </div>
             @endif
             <h1 class="page-title">{{ ($viewingOwnProfile ?? true) ? 'Atölyem' : $personnel->name . ' — Atölye' }}</h1>
-            <p class="page-desc">Üretimdeki siparişler, termin takibi ve SSH kayıtları</p>
+            <p class="page-desc">Üretimde olan siparişleri yönetin; termin yaklaşan tüm siparişleri takip edin</p>
         </div>
         @if(auth()->user()?->isAdmin())
         <a href="{{ route('personnel.edit', $personnel) }}" class="btn-edit">Düzenle</a>
@@ -31,16 +31,19 @@
     <div class="card p-5">
         <p class="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Üretimde</p>
         <p class="mt-2 text-3xl font-bold text-neutral-900 dark:text-white">{{ $workshopStats->productionCount }}</p>
-        <p class="mt-1 text-xs text-neutral-500">Atölyedeki sipariş</p>
+        <p class="mt-1 text-xs text-neutral-500">Sadece üretimde olan</p>
     </div>
     <div class="card p-5 border-amber-200/80 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-950/20">
         <p class="text-[11px] font-semibold uppercase tracking-wider text-amber-700/80 dark:text-amber-300/80">Termin Yaklaşan</p>
         <p class="mt-2 text-3xl font-bold text-amber-800 dark:text-amber-200">{{ $workshopStats->upcomingTerminCount }}</p>
         <p class="mt-1 text-xs text-amber-700/70 dark:text-amber-400/70">
             @if($workshopStats->overdueCount > 0)
-            {{ $workshopStats->overdueCount }} gecikmiş
+            {{ $workshopStats->overdueCount }} gecikmiş · {{ $terminDays ?? 14 }} gün
             @else
-            14 gün içinde
+            Tüm siparişler · {{ $terminDays ?? 14 }} gün
+            @endif
+            @if(($upcomingInProductionCount ?? 0) > 0)
+            <span class="block mt-0.5">{{ $upcomingInProductionCount }} tanesi üretimde</span>
             @endif
         </p>
     </div>
@@ -60,9 +63,9 @@
     <div class="px-6 py-4 border-b border-neutral-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
         <div>
             <h2 class="text-lg font-semibold text-neutral-900 dark:text-white">Üretimdeki Siparişler</h2>
-            <p class="text-sm text-neutral-500 dark:text-slate-400 mt-1">Aşama ekleyin, eksik/yanlış parça bildirin veya üretimi bitirin</p>
+            <p class="text-sm text-neutral-500 dark:text-slate-400 mt-1">Yalnızca durumu <strong>Üretimde</strong> olan siparişler — not, eksiklik ve üretim bitirme</p>
         </div>
-        <a href="{{ route('reports.upcoming-due') }}" class="text-sm font-medium text-emerald-600 hover:text-emerald-700">Termin raporu →</a>
+        <a href="{{ route('reports.upcoming-due', ['days' => $terminDays ?? 14]) }}" class="text-sm font-medium text-emerald-600 hover:text-emerald-700">Tüm terminler →</a>
     </div>
     <div class="overflow-x-auto">
         @if($productionSales->isEmpty())
@@ -124,8 +127,8 @@
 <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
     <div class="card overflow-hidden">
         <div class="px-6 py-4 border-b border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/30">
-            <h2 class="text-lg font-semibold text-neutral-900 dark:text-white">Termin Tarihi Yaklaşanlar</h2>
-            <p class="text-sm text-neutral-600 dark:text-slate-400 mt-1">14 gün içinde termin gelen siparişler (üretimde olanlara not ekleyebilirsiniz)</p>
+            <h2 class="text-lg font-semibold text-neutral-900 dark:text-white">Termin Tarihi Yaklaşanlar ({{ $upcomingDueSales->count() }})</h2>
+            <p class="text-sm text-neutral-600 dark:text-slate-400 mt-1">Teslim edilmemiş <strong>tüm</strong> siparişler ({{ $terminDays ?? 14 }} gün) — not eklemek için siparişin üretimde olması gerekir</p>
         </div>
         <div class="overflow-x-auto">
             @if($upcomingDueSales->isEmpty())

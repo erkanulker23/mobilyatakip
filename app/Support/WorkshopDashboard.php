@@ -10,10 +10,12 @@ use Carbon\Carbon;
 
 final class WorkshopDashboard
 {
+    public const TERMIN_HORIZON_DAYS = 14;
+
     /** @return array<string, mixed> */
     public static function viewData(Personnel $personnel): array
     {
-        $terminHorizon = Carbon::today()->addDays(14);
+        $terminHorizon = Carbon::today()->addDays(self::TERMIN_HORIZON_DAYS);
 
         $productionSalesQuery = Sale::query()
             ->with(['customer', 'personnel'])
@@ -27,10 +29,14 @@ final class WorkshopDashboard
 
         $productionSales = $productionSalesQuery->get();
 
-        $upcomingDueSales = SaleDelivery::upcomingDueQuery(14)
+        $upcomingDueSales = SaleDelivery::upcomingDueQuery(self::TERMIN_HORIZON_DAYS)
             ->with('customer')
             ->orderBy('dueDate')
             ->get();
+
+        $upcomingInProductionCount = $upcomingDueSales
+            ->filter(fn (Sale $s) => SaleDelivery::currentStatus($s) === SaleDelivery::IN_PRODUCTION)
+            ->count();
 
         $openServiceTickets = ServiceTicket::query()
             ->with(['customer', 'sale'])
@@ -80,6 +86,8 @@ final class WorkshopDashboard
             'personnelTasks' => $personnelTasks,
             'taskCompleterFallback' => $taskCompleterFallback,
             'productionStagesReady' => SaleProductionStageSchema::isReady(),
+            'terminDays' => self::TERMIN_HORIZON_DAYS,
+            'upcomingInProductionCount' => $upcomingInProductionCount,
         ];
     }
 }
