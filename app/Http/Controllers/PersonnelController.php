@@ -15,6 +15,7 @@ use App\Support\ActivityMessage;
 use App\Support\PersonnelCategory;
 use App\Support\SaleDelivery;
 use App\Support\SaleProductionStageSchema;
+use App\Support\WorkshopDashboard;
 use App\Support\WorkshopUser;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -32,6 +33,10 @@ class PersonnelController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+        if ($user && $user->isWorkshop() && ! $user->isAdmin()) {
+            return redirect()->route('workshop.dashboard');
+        }
+
         if ($user && ! $user->isAdmin()) {
             $linked = $user->personnel;
             if ($linked) {
@@ -124,12 +129,20 @@ class PersonnelController extends Controller
 
     public function show(Personnel $personnel)
     {
+        if (auth()->user()?->isWorkshop() && ! auth()->user()?->isAdmin()) {
+            return redirect()->route('workshop.dashboard');
+        }
+
         $this->authorizeView($personnel);
 
         $personnel->load('user');
 
         if (WorkshopUser::isWorkshopCategory($personnel->category)) {
-            return $this->showWorkshopPersonnel($personnel);
+            if (auth()->user()?->isWorkshop() && ! auth()->user()?->isAdmin()) {
+                return redirect()->route('workshop.dashboard');
+            }
+
+            return view('personnel.show-workshop', WorkshopDashboard::viewData($personnel));
         }
 
         $salesQuery = $personnel->sales()->with('customer')->orderByDesc('saleDate')->orderByDesc('createdAt');
@@ -380,85 +393,6 @@ class PersonnelController extends Controller
         }
 
         return round((($current - $previous) / $previous) * 100, 1);
-    }
-
-    private function showWorkshopPersonnel(Personnel $personnel)
-    {
-        $terminHorizon = Carbon::today()->addDays(14);
-
-        $productionSalesQuery = Sale::query()
-            ->with(['customer', 'personnel'])
-            ->where('isCancelled', false)
-            ->where('orderStatus', SaleDelivery::IN_PRODUCTION)
-            ->whereNull('deliveredAt')
-            ->orderByRaw('CASE WHEN dueDate IS NULL THEN 1 ELSE 0 END')
-            ->orderBy('dueDate');
-
-        SaleProductionStageSchema::applyCounts($productionSalesQuery, detailed: true);
-
-        $productionSales = $productionSalesQuery->get();
-
-        $upcomingDueSales = Sale::query()
-            ->with('customer')
-            ->where('isCancelled', false)
-            ->where('orderStatus', SaleDelivery::IN_PRODUCTION)
-            ->whereNull('deliveredAt')
-            ->whereNotNull('dueDate')
-            ->whereDate('dueDate', '<=', $terminHorizon)
-            ->orderBy('dueDate')
-            ->get();
-
-        $openServiceTickets = ServiceTicket::query()
-            ->with(['customer', 'sale'])
-            ->whereNotIn('status', ['tamamlandi', 'iptal'])
-            ->orderByRaw('CASE WHEN dueDate IS NULL THEN 1 ELSE 0 END')
-            ->orderBy('dueDate')
-            ->orderByDesc('createdAt')
-            ->limit(20)
-            ->get();
-
-        $workshopStats = (object) [
-            'productionCount' => $productionSales->count(),
-            'upcomingTerminCount' => $upcomingDueSales->count(),
-            'overdueCount' => $upcomingDueSales->filter(fn (Sale $s) => $s->dueDate && $s->dueDate->isPast() && ! $s->dueDate->isToday())->count(),
-            'openSshCount' => ServiceTicket::query()->whereNotIn('status', ['tamamlandi', 'iptal'])->count(),
-            'openDeficienciesCount' => (int) $productionSales->sum('open_deficiencies_count'),
-        ];
-
-        $personnelTasks = collect();
-        $taskCompleterFallback = [];
-        if ($personnel->hasSystemAccess()) {
-            $personnelTasks = UserTask::query()
-                ->with('completedByUser:id,name')
-                ->where(function ($q) use ($personnel) {
-                    $q->where('personnelId', $personnel->id);
-                    if ($personnel->userId) {
-                        $q->orWhere('userId', $personnel->userId);
-                    }
-                })
-                ->orderBy('isCompleted')
-                ->orderByRaw('dueDate IS NULL, dueDate ASC')
-                ->orderBy('sortOrder')
-                ->orderByDesc('createdAt')
-                ->get();
-            $taskCompleterFallback = UserTaskCompletion::completerNameMap($personnelTasks);
-        }
-
-        $viewingOwnProfile = auth()->user()?->personnel?->id === $personnel->id;
-
-        $productionStagesReady = SaleProductionStageSchema::isReady();
-
-        return view('personnel.show-workshop', compact(
-            'personnel',
-            'productionSales',
-            'upcomingDueSales',
-            'openServiceTickets',
-            'workshopStats',
-            'viewingOwnProfile',
-            'personnelTasks',
-            'taskCompleterFallback',
-            'productionStagesReady',
-        ));
     }
 
     private function authorizeView(Personnel $personnel): void

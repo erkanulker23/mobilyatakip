@@ -22,12 +22,7 @@ class DashboardController extends Controller
     public function index()
     {
         if (auth()->user()?->isWorkshop() && ! auth()->user()?->isAdmin()) {
-            $personnel = auth()->user()?->personnel;
-            if ($personnel) {
-                return redirect()->route('personnel.show', $personnel);
-            }
-
-            return redirect()->route('workshop.index');
+            return redirect()->route('workshop.dashboard');
         }
 
         $stats = [

@@ -21,11 +21,7 @@ final class WorkshopUser
 
     public static function homeUrl(User $user): string
     {
-        if ($user->personnel) {
-            return route('personnel.show', $user->personnel);
-        }
-
-        return route('workshop.index');
+        return route('workshop.dashboard');
     }
 
     /** @return list<string> */
@@ -84,12 +80,6 @@ final class WorkshopUser
 
                 return true;
             }
-        }
-
-        if ($routeName === 'personnel.show') {
-            return $personnel
-                && $user->personnel
-                && (string) $personnel->id === (string) $user->personnel->id;
         }
 
         return false;

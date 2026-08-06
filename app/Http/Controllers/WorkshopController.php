@@ -7,10 +7,21 @@ use App\Models\SaleActivity;
 use App\Models\SaleProductionStage;
 use App\Support\SaleDelivery;
 use App\Support\SaleProductionStageSchema;
+use App\Support\WorkshopDashboard;
 use Illuminate\Http\Request;
 
 class WorkshopController extends Controller
 {
+    public function dashboard(Request $request)
+    {
+        $personnel = $request->user()?->personnel;
+        if (! $personnel || ! $request->user()?->isWorkshop()) {
+            abort(403, 'Bu sayfaya erişim yetkiniz yok.');
+        }
+
+        return view('workshop.dashboard', WorkshopDashboard::viewData($personnel));
+    }
+
     public function index(Request $request)
     {
         $q = Sale::query()
@@ -57,8 +68,8 @@ class WorkshopController extends Controller
             $sale->setRelation('productionStages', collect());
         }
 
-        $backUrl = auth()->user()?->isWorkshop() && auth()->user()?->personnel
-            ? route('personnel.show', auth()->user()->personnel)
+        $backUrl = auth()->user()?->isWorkshop() && ! auth()->user()?->isAdmin()
+            ? route('workshop.dashboard')
             : route('workshop.index');
 
         $productionStagesReady = SaleProductionStageSchema::isReady();
@@ -137,8 +148,8 @@ class WorkshopController extends Controller
 
         SaleActivity::logWorkshopCompleted($sale->fresh(), $fromStatus, $request->user());
 
-        $redirect = auth()->user()?->isWorkshop() && auth()->user()?->personnel
-            ? route('personnel.show', auth()->user()->personnel)
+        $redirect = auth()->user()?->isWorkshop() && ! auth()->user()?->isAdmin()
+            ? route('workshop.dashboard')
             : route('workshop.index');
 
         return redirect($redirect)->with('success', 'Sipariş atölyeden çıktı. Durum: Teslim bekliyor.');

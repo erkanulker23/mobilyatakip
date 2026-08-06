@@ -73,11 +73,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/bildirimler/temizle', [\App\Http\Controllers\NotificationController::class, 'dismiss'])->name('notifications.dismiss');
     Route::get('/yapilacaklar', [DashboardController::class, 'tasks'])->name('tasks.index');
 
+    Route::get('/atolyem', [\App\Http\Controllers\WorkshopController::class, 'dashboard'])->name('workshop.dashboard');
     Route::get('/atolye', [\App\Http\Controllers\WorkshopController::class, 'index'])->name('workshop.index');
-    Route::get('/atolye/{sale}', [\App\Http\Controllers\WorkshopController::class, 'show'])->name('workshop.show');
-    Route::post('/atolye/{sale}/asama', [\App\Http\Controllers\WorkshopController::class, 'storeStage'])->name('workshop.store-stage');
-    Route::post('/atolye/{sale}/bitti', [\App\Http\Controllers\WorkshopController::class, 'completeProduction'])->name('workshop.complete-production');
     Route::post('/atolye/asama/{stage}/yapildi', [\App\Http\Controllers\WorkshopController::class, 'completeStage'])->name('workshop.complete-stage');
+    Route::post('/atolye/{sale}/bitti', [\App\Http\Controllers\WorkshopController::class, 'completeProduction'])->name('workshop.complete-production');
+    Route::post('/atolye/{sale}/asama', [\App\Http\Controllers\WorkshopController::class, 'storeStage'])->name('workshop.store-stage');
+    Route::get('/atolye/{sale}', [\App\Http\Controllers\WorkshopController::class, 'show'])->name('workshop.show');
 
     Route::get('/company-logo', function () {
         $company = Company::first();
