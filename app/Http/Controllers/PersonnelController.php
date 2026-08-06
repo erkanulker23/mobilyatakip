@@ -15,6 +15,7 @@ use App\Support\ActivityMessage;
 use App\Support\PersonnelCategory;
 use App\Support\SaleDelivery;
 use App\Support\SaleProductionStageSchema;
+use App\Support\WorkshopUser;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -127,7 +128,7 @@ class PersonnelController extends Controller
 
         $personnel->load('user');
 
-        if ($personnel->category === PersonnelCategory::ATOLYE) {
+        if (WorkshopUser::isWorkshopCategory($personnel->category)) {
             return $this->showWorkshopPersonnel($personnel);
         }
 

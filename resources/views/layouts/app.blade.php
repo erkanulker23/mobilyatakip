@@ -447,7 +447,9 @@
         <div x-show="sidebarOpen" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" @click="sidebarOpen = false" class="fixed inset-0 bg-black/40 z-40 lg:hidden backdrop-blur-sm"></div>
         <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'" class="fixed lg:static inset-y-0 left-0 w-64 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 flex flex-col shrink-0 z-40 transform transition-transform duration-200 ease-out border-r border-neutral-200 dark:border-neutral-800 pb-[env(safe-area-inset-bottom)] lg:pb-0">
             <div class="h-16 flex items-center justify-center px-4 border-b border-neutral-200 dark:border-neutral-800 shrink-0">
-                <a href="{{ route('dashboard') }}" class="brand-logo flex items-center justify-center w-full min-w-0" title="{{ \App\Support\CompanyBranding::siteName($company) }}">
+                @php $isWorkshopUser = auth()->user()?->isWorkshop() && !auth()->user()?->isAdmin(); @endphp
+                @php $workshopHome = auth()->user()?->personnel ? route('personnel.show', auth()->user()->personnel) : route('workshop.index'); @endphp
+                <a href="{{ $isWorkshopUser ? $workshopHome : route('dashboard') }}" class="brand-logo flex items-center justify-center w-full min-w-0" title="{{ \App\Support\CompanyBranding::siteName($company) }}">
                     @if($company?->logoUrl)
                         <img src="{{ $company->logoDisplayUrl() }}" alt="{{ $company->appName ?? $company->name ?? 'Logo' }}">
                     @else
@@ -456,10 +458,8 @@
                 </a>
             </div>
             <nav class="flex-1 px-3 py-4 overflow-y-auto" aria-label="Ana menü">
-                @php $isWorkshopUser = auth()->user()?->isWorkshop() && !auth()->user()?->isAdmin(); @endphp
 
                 @if($isWorkshopUser)
-                @php $workshopHome = auth()->user()?->personnel ? route('personnel.show', auth()->user()->personnel) : route('workshop.index'); @endphp
                 <a href="{{ $workshopHome }}" class="nav-link flex items-center gap-3 px-3 py-2 text-sm {{ request()->routeIs('workshop.*') || (request()->routeIs('personnel.show') && request()->route('personnel')?->id === auth()->user()?->personnel?->id) ? 'active' : '' }}">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
                     Atölyem

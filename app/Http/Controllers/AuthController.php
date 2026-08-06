@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Company;
 use App\Models\User;
+use App\Support\WorkshopUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
@@ -44,13 +45,11 @@ class AuthController extends Controller
         }
         $request->session()->regenerate();
 
-        $intended = $user->isWorkshop() && $user->personnel
-            ? route('personnel.show', $user->personnel)
-            : ($user->isWorkshop()
-                ? route('workshop.index')
-                : route('dashboard'));
+        if ($user->isWorkshop() && ! $user->isAdmin()) {
+            return redirect(WorkshopUser::homeUrl($user));
+        }
 
-        return redirect()->intended($intended);
+        return redirect()->intended(route('dashboard'));
     }
 
     public function logout(Request $request)

@@ -48,7 +48,18 @@ Route::get('/media/{path}', function (string $path) {
     ]);
 })->where('path', '.*')->name('storage.file');
 
-Route::get('/', fn () => auth()->check() ? redirect()->route('dashboard') : redirect()->route('login'));
+Route::get('/', function () {
+    if (! auth()->check()) {
+        return redirect()->route('login');
+    }
+
+    $user = auth()->user();
+    if ($user->isWorkshop() && ! $user->isAdmin()) {
+        return redirect(\App\Support\WorkshopUser::homeUrl($user));
+    }
+
+    return redirect()->route('dashboard');
+});
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login')->middleware('guest');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 Route::get('/sifremi-unuttum', [\App\Http\Controllers\PasswordResetController::class, 'showForgotForm'])->name('password.request')->middleware('guest');

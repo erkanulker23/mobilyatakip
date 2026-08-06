@@ -104,7 +104,7 @@ class User extends Authenticatable implements CanResetPasswordContract
 
     public function isWorkshop(): bool
     {
-        return $this->personnelCategory() === \App\Support\PersonnelCategory::ATOLYE;
+        return \App\Support\WorkshopUser::isWorkshopCategory($this->personnelCategory());
     }
 
     /** Atölye personeli: fiyat, müşteri, tahsilat vb. görmez. */
