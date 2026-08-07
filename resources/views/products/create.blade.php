@@ -6,19 +6,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const supplierSel = document.querySelector('select[name="supplierId"]');
     const netPriceInp = document.querySelector('input[name="netPurchasePrice"]');
     const unitPriceInp = document.querySelector('input[name="unitPrice"]');
+    const calcBtn = document.getElementById('calcUnitPriceBtn');
     if (!supplierSel || !netPriceInp || !unitPriceInp) return;
+
     const supplierMargins = @json($suppliers->pluck('marginPercent', 'id'));
+    const parsePrice = window.parseLinePrice || window.parseMoney || parseFloat;
+
     function calcUnitPrice() {
         const supplierId = supplierSel.value;
         const margin = supplierMargins[supplierId];
-        const net = (window.parseMoney || parseFloat)(netPriceInp.value) || 0;
-        if (!supplierId || !margin || margin <= 0 || net <= 0) return;
+        const net = parsePrice(netPriceInp.value) || 0;
+        if (!supplierId || !margin || margin <= 0 || net <= 0) {
+            alert('Marjdan hesaplamak için tedarikçi seçin ve net alış fiyatı girin.');
+            return;
+        }
         const salePrice = Math.round((net * 100 / margin) * 100) / 100;
-        unitPriceInp.value = (window.fmtMoney || String)(salePrice, 2);
+        unitPriceInp.value = String(salePrice);
         if (window.formatMoneyInput) window.formatMoneyInput(unitPriceInp);
     }
-    supplierSel.addEventListener('change', calcUnitPrice);
-    netPriceInp.addEventListener('input', calcUnitPrice);
+
+    calcBtn?.addEventListener('click', calcUnitPrice);
 });
 </script>
 @endpush
@@ -66,21 +73,22 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div>
                 <label class="form-label">Net Alış Fiyatı (₺)</label>
-                <input type="text" inputmode="decimal" name="netPurchasePrice" value="{{ old('netPurchasePrice') !== null && old('netPurchasePrice') !== '' ? money(money_parse(old('netPurchasePrice')), 2) : '' }}" class="form-input money-input" placeholder="0" autocomplete="off" data-money-decimals="2">
-                <p class="mt-1 text-xs text-neutral-500">Tedarikçi marjı varsa satış fiyatı otomatik hesaplanır</p>
+                <input type="text" inputmode="decimal" name="netPurchasePrice" value="{{ old('netPurchasePrice') !== null && old('netPurchasePrice') !== '' ? money(money_parse(old('netPurchasePrice')), 2) : '' }}" class="form-input money-input product-price" placeholder="0" autocomplete="off" data-money-decimals="2" data-money-format="blur">
+                <div class="mt-2 flex flex-wrap items-center gap-2">
+                    <button type="button" id="calcUnitPriceBtn" class="text-sm font-medium px-3 py-1.5 rounded-lg border border-neutral-200 text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800">
+                        Marjdan satış fiyatı hesapla
+                    </button>
+                    <span class="text-xs text-neutral-500">Satış fiyatını elle girebilirsiniz</span>
+                </div>
                 @error('netPurchasePrice')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
                 <label class="form-label">Satış Fiyatı (₺) *</label>
-                <input type="text" inputmode="decimal" name="unitPrice" required value="{{ old('unitPrice') !== null && old('unitPrice') !== '' ? money(money_parse(old('unitPrice')), 2) : '' }}" class="form-input money-input" placeholder="0" autocomplete="off" data-money-decimals="2">
+                <input type="text" inputmode="decimal" name="unitPrice" required value="{{ old('unitPrice') !== null && old('unitPrice') !== '' ? money(money_parse(old('unitPrice')), 2) : '' }}" class="form-input money-input product-price" placeholder="0" autocomplete="off" data-money-decimals="2" data-money-format="blur">
+                <p class="mt-1 text-xs text-neutral-500">Örn: 25000 veya 25.000</p>
                 @error('unitPrice')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-            </div>
-            <div>
-                <label class="form-label">KDV Oranı (%)</label>
-                <input type="number" step="0.01" min="0" max="100" name="kdvRate" value="{{ old('kdvRate', 10) }}" class="form-input" placeholder="10">
-                @error('kdvRate')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
             <div>
                 <label class="form-label">Min. Stok Seviyesi</label>

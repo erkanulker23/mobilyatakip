@@ -10,6 +10,7 @@ use App\Models\Stock;
 use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Services\AuditService;
+use App\Support\ProductDuplicate;
 use App\Support\ProductImages;
 use App\Support\ProductSelect;
 use Illuminate\Http\Request;
@@ -66,7 +67,13 @@ class ProductController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json(['message' => collect($e->errors())->flatten()->first()], 422);
         }
-        $validated['kdvRate'] = $validated['kdvRate'] ?? 10;
+
+        $duplicateMessage = ProductDuplicate::message($validated['name']);
+        if ($duplicateMessage) {
+            return response()->json(['message' => $duplicateMessage], 422);
+        }
+
+        $validated['kdvRate'] = $validated['kdvRate'] ?? 0;
         $product = Product::create([
             'name' => $validated['name'],
             'unitPrice' => (float) $validated['unitPrice'],
@@ -125,7 +132,12 @@ class ProductController extends Controller
             'images' => 'nullable|array',
             'images.*' => 'image|mimes:jpeg,jpg,png,gif,webp|max:5120',
         ]);
-        $validated['kdvRate'] = $validated['kdvRate'] ?? 10;
+
+        if ($message = ProductDuplicate::message($validated['name'], $validated['sku'] ?? null)) {
+            return back()->withInput()->withErrors(['name' => $message]);
+        }
+
+        $validated['kdvRate'] = $validated['kdvRate'] ?? 0;
         unset($validated['images']);
         $validated['images'] = $this->storeUploadedImages($request);
         if ($request->hasFile('images') && $validated['images'] === []) {
@@ -166,6 +178,11 @@ class ProductController extends Controller
             'remove_images' => 'nullable|array',
             'remove_images.*' => 'string',
         ]);
+
+        if ($message = ProductDuplicate::message($validated['name'], $validated['sku'] ?? null, $product->id)) {
+            return back()->withInput()->withErrors(['name' => $message]);
+        }
+
         $validated['isActive'] = $request->boolean('isActive');
         unset($validated['images'], $validated['remove_images']);
         if ($request->hasFile('images')) {

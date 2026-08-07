@@ -6,7 +6,7 @@
 
   var MONEY_NAMES = /^(amount|depositAmount|serviceChargeAmount|openingBalance|unitPrice|netPurchasePrice|grandTotalOverride|generalDiscountAmount|minPrice|maxPrice)$/;
   var MONEY_NESTED = /\[(unitPrice|listPrice|lineDiscountAmount)\]$/;
-  var LINE_PRICE_CLASS = /item-price|item-listprice|item-disc-amt/;
+    var LINE_PRICE_CLASS = /item-price|item-listprice|item-disc-amt|product-price/;
 
   function decimalsFor(el) {
     var d = el.getAttribute('data-money-decimals');
