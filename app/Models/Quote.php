@@ -36,6 +36,7 @@ class Quote extends BaseModel
         'convertedSaleId',
         'sourceSaleId',
         'personnelId',
+        'createdBy',
         'customerSource',
     ];
 
@@ -60,6 +61,11 @@ class Quote extends BaseModel
     public function personnel(): BelongsTo
     {
         return $this->belongsTo(Personnel::class, 'personnelId');
+    }
+
+    public function createdByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'createdBy');
     }
 
     public function items(): HasMany

@@ -24,39 +24,84 @@ class WorkshopController extends Controller
 
     public function index(Request $request)
     {
-        $q = Sale::query()
-            ->with(['customer', 'personnel'])
-            ->where('isCancelled', false)
-            ->where('orderStatus', SaleDelivery::IN_PRODUCTION)
-            ->whereNull('deliveredAt')
-            ->orderByRaw('CASE WHEN dueDate IS NULL THEN 1 ELSE 0 END')
-            ->orderBy('dueDate')
-            ->orderByDesc('saleDate');
+        $scope = $request->input('scope', 'uretim');
+        if (! in_array($scope, ['uretim', 'tumu', 'tamamlanan'], true)) {
+            $scope = 'uretim';
+        }
 
-        SaleProductionStageSchema::applyCounts($q, detailed: true);
+        $relations = [
+            'customer.city',
+            'customer.district',
+            'personnel',
+            'items.product',
+        ];
+
+        if (SaleProductionStageSchema::isReady()) {
+            $relations['productionStages'] = fn ($q) => $q->with(['user', 'completedByUser', 'saleItem.product']);
+        }
+
+        $q = Sale::query()
+            ->with($relations)
+            ->where('isCancelled', false);
+
+        if (SaleProductionStageSchema::isReady()) {
+            SaleProductionStageSchema::applyCounts($q, detailed: true);
+        }
+
+        match ($scope) {
+            'tamamlanan' => $q->whereNotNull('workshopCompletedAt')
+                ->orderByDesc('workshopCompletedAt'),
+            'tumu' => $q->where(function ($w) {
+                $w->where('orderStatus', SaleDelivery::IN_PRODUCTION)
+                    ->orWhereNotNull('workshopCompletedAt');
+                if (SaleProductionStageSchema::isReady()) {
+                    $w->orWhereHas('productionStages');
+                }
+            })
+                ->orderByRaw('CASE WHEN orderStatus = ? AND deliveredAt IS NULL THEN 0 ELSE 1 END', [SaleDelivery::IN_PRODUCTION])
+                ->orderByDesc('workshopCompletedAt')
+                ->orderByRaw('CASE WHEN dueDate IS NULL THEN 1 ELSE 0 END')
+                ->orderBy('dueDate'),
+            default => $q->where('orderStatus', SaleDelivery::IN_PRODUCTION)
+                ->whereNull('deliveredAt')
+                ->orderByRaw('CASE WHEN dueDate IS NULL THEN 1 ELSE 0 END')
+                ->orderBy('dueDate')
+                ->orderByDesc('saleDate'),
+        };
 
         if ($request->filled('search')) {
             $s = $request->search;
             $q->where(function ($w) use ($s) {
                 $w->where('saleNumber', 'like', "%{$s}%")
                     ->orWhereHas('customer', fn ($c) => $c->where('name', 'like', "%{$s}%"));
+                if (SaleProductionStageSchema::isReady()) {
+                    $w->orWhereHas('productionStages', fn ($st) => $st->where('notes', 'like', "%{$s}%"));
+                }
             });
         }
 
-        $sales = $q->paginate(20)->withQueryString();
+        if ($request->filled('type') && SaleProductionStageSchema::isReady()) {
+            $type = $request->type;
+            if (in_array($type, [SaleProductionStage::TYPE_STAGE, SaleProductionStage::TYPE_DEFICIENCY], true)) {
+                $q->whereHas('productionStages', fn ($st) => $st->where('type', $type));
+            }
+        }
 
-        return view('workshop.index', compact('sales'));
+        $sales = $q->paginate(10)->withQueryString();
+        $productionStagesReady = SaleProductionStageSchema::isReady();
+
+        return view('workshop.index', compact('sales', 'scope', 'productionStagesReady'));
     }
 
-    public function show(Sale $sale)
+    public function show(Request $request, Sale $sale)
     {
-        $this->authorizeProductionSale($sale);
+        $this->authorizeWorkshopSaleView($sale);
 
         $sale->load([
             'customer.city',
             'customer.district',
             'personnel',
-            'items.product',
+            'items.product.supplier',
         ]);
 
         if (SaleProductionStageSchema::isReady()) {
@@ -69,11 +114,17 @@ class WorkshopController extends Controller
             $sale->setRelation('productionStages', collect());
         }
 
-        $backUrl = auth()->user()?->isWorkshop() && ! auth()->user()?->isAdmin()
-            ? route('workshop.dashboard')
-            : route('workshop.index');
+        $backUrl = match ($request->query('from')) {
+            'termin' => route('reports.upcoming-due', ['days' => max(1, min(90, (int) $request->query('days', 14)))]),
+            default => auth()->user()?->isWorkshop() && ! auth()->user()?->isAdmin()
+                ? route('workshop.dashboard')
+                : route('workshop.index'),
+        };
 
         $productionStagesReady = SaleProductionStageSchema::isReady();
+        $orderStatus = SaleDelivery::currentStatus($sale);
+        $canEditProduction = $orderStatus === SaleDelivery::IN_PRODUCTION
+            && (auth()->user()?->isAdmin() || auth()->user()?->isWorkshop());
 
         $openDeficienciesCount = $productionStagesReady
             ? $sale->productionStages
@@ -87,6 +138,8 @@ class WorkshopController extends Controller
             'backUrl',
             'productionStagesReady',
             'openDeficienciesCount',
+            'canEditProduction',
+            'orderStatus',
         ));
     }
 
@@ -163,6 +216,25 @@ class WorkshopController extends Controller
             : route('workshop.index');
 
         return redirect($redirect)->with('success', 'Sipariş atölyeden çıktı. Durum: Teslim bekliyor.');
+    }
+
+    private function authorizeWorkshopSaleView(Sale $sale): void
+    {
+        if ($sale->isCancelled) {
+            abort(404);
+        }
+
+        if (auth()->user()?->isAdmin()) {
+            return;
+        }
+
+        if (! auth()->user()?->isWorkshop()) {
+            abort(403, 'Bu sayfaya erişim yetkiniz yok.');
+        }
+
+        if (SaleDelivery::isDelivered($sale)) {
+            abort(403, 'Teslim edilmiş sipariş görüntülenemez.');
+        }
     }
 
     private function authorizeProductionSale(Sale $sale): void

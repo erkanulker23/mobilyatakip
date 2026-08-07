@@ -7,12 +7,21 @@
         $problems = [['description' => $serviceTicket->issueType, 'status' => 'bekliyor']];
     }
 @endphp
-<div class="card p-6 max-w-3xl">
+<div class="max-w-3xl space-y-5">
+    @include('service-tickets.partials.workshop-finished', ['serviceTicket' => $serviceTicket])
+
+<div class="card p-6">
     <form method="POST" action="{{ route('service-tickets.update', $serviceTicket) }}" class="space-y-5">
         @csrf @method('PUT')
 
-        @if($serviceTicket->sale || ($showCustomerNames && $serviceTicket->customer))
+        @if($serviceTicket->sale || ($showCustomerNames && $serviceTicket->customer) || $serviceTicket->openingDetail?->user || $serviceTicket->closedByUserName())
         <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 p-4 text-sm space-y-1">
+            @if($serviceTicket->openingDetail?->user)
+            <p><span class="text-neutral-500">Açan:</span> <span class="font-medium text-neutral-900 dark:text-white">{{ $serviceTicket->openingDetail->user->name }}</span></p>
+            @endif
+            @if($closedBy = $serviceTicket->closedByUserName())
+            <p><span class="text-neutral-500">Kapatan:</span> <span class="font-medium text-neutral-900 dark:text-white">{{ $closedBy }}</span></p>
+            @endif
             @if($serviceTicket->sale)
             <p><span class="text-neutral-500">İlgili sipariş:</span> <span class="font-medium text-neutral-900 dark:text-white">{{ $serviceTicket->sale->saleNumber }}</span></p>
             @endif
@@ -84,6 +93,7 @@
             <a href="{{ route('service-tickets.show', $serviceTicket) }}" class="btn-secondary">Geri</a>
         </div>
     </form>
+</div>
 </div>
 <script>
 document.getElementById('addStageBtn')?.addEventListener('click', function () {

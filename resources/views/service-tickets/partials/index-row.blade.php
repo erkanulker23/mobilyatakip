@@ -21,6 +21,8 @@
         <span class="text-xs text-neutral-500 dark:text-neutral-500">{{ ServiceTicketStatus::problemSummary($problems) }}</span>
     </td>
     <td class="table-td text-slate-600 dark:text-neutral-400">{{ $ticket->assignedDriverName ?: '—' }}</td>
+    <td class="table-td text-slate-600 dark:text-neutral-400">{{ $ticket->openingDetail?->user?->name ?? '—' }}</td>
+    <td class="table-td text-slate-600 dark:text-neutral-400">{{ $ticket->closedByUserName() ?? '—' }}</td>
     <td class="table-td">
         <form method="POST" action="{{ route('service-tickets.update-status', $ticket) }}" class="inline">
             @csrf

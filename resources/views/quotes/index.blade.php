@@ -80,7 +80,7 @@
                     </th>
                     <th class="table-th">No</th>
                     <th class="table-th">Müşteri</th>
-                    <th class="table-th">Teklifi Hazırlayan</th>
+                        <th class="table-th">Oluşturan</th>
                     <th class="table-th">Tarih</th>
                     <th class="table-th text-right">Toplam</th>
                     <th class="table-th">Durum</th>
@@ -100,7 +100,7 @@
                         <span class="font-medium text-neutral-900">{{ $q->quoteNumber }}</span>
                     </td>
                     <td class="table-td">{{ $q->customer?->name ?? '-' }}</td>
-                    <td class="table-td text-neutral-600">{{ $q->personnel?->name ?? '—' }}</td>
+                    <td class="table-td text-neutral-600">{{ \App\Support\QuoteCreator::displayNameForQuote($q, $creatorFallbackMap ?? []) ?? '—' }}</td>
                     <td class="table-td">{{ $q->createdAt?->format('d.m.Y') ?? '-' }}</td>
                     <td class="table-td text-right font-medium text-neutral-900">{{ number_format($q->grandTotal ?? 0, 0, ',', '.') }} ₺</td>
                     <td class="table-td">

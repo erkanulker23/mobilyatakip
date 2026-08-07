@@ -280,6 +280,7 @@ class SaleService
                 'grandTotal' => $sale->grandTotal,
                 'drawingFiles' => $sale->drawingFiles,
                 'sourceSaleId' => $sale->id,
+                'createdBy' => auth()->id() ?: null,
             ]);
 
             foreach ($sale->items as $item) {

@@ -101,11 +101,7 @@
                     @if(!$print)
                     <td class="table-td">
                         @if($hideCommercialData)
-                            @if($inProduction)
-                            <a href="{{ route('workshop.show', $s) }}" class="text-primary-600 hover:underline text-sm">Detay</a>
-                            @else
-                            <span class="text-xs text-neutral-400">Henüz üretimde değil</span>
-                            @endif
+                            <a href="{{ route('workshop.show', ['sale' => $s, 'from' => 'termin', 'days' => $days ?? 14]) }}" class="text-primary-600 hover:underline text-sm">Detay</a>
                         @else
                         <a href="{{ route('sales.show', $s) }}" class="text-primary-600 hover:underline text-sm">Detay</a>
                         @endif

@@ -9,7 +9,7 @@
     $activeTickets = $tickets->filter(fn ($ticket) => ($ticket->status ?? 'acildi') !== 'tamamlandi');
     $completedTickets = $tickets->filter(fn ($ticket) => ($ticket->status ?? '') === 'tamamlandi');
 
-    $colspan = ($showCustomerNames ?? !($hideCommercialData ?? false)) ? 8 : 7;
+    $colspan = ($showCustomerNames ?? !($hideCommercialData ?? false)) ? 10 : 9;
 @endphp
 
 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
@@ -117,6 +117,8 @@
                         @if($showCustomerNames)<th class="table-th">Müşteri</th>@endif
                         <th class="table-th">Problemler</th>
                         <th class="table-th">Sevkiyatçı</th>
+                        <th class="table-th">Açan</th>
+                        <th class="table-th">Kapatan</th>
                         <th class="table-th">Durum</th>
                         <th class="table-th">Tarih</th>
                         <th class="table-th text-center w-40">İşlem</th>

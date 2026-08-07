@@ -46,9 +46,15 @@
 @if(session('error'))
 <div class="mb-4 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">{{ session('error') }}</div>
 @endif
+@if(session('info'))
+<div class="mb-4 p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-sm">{{ session('info') }}</div>
+@endif
 
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
     <div class="xl:col-span-2 space-y-5">
+        @if(!empty($hideCommercialData))
+            @include('service-tickets.partials.workshop-finished', ['serviceTicket' => $serviceTicket])
+        @endif
         <div class="card overflow-hidden">
             <div class="card-header">Müşteri Problemleri</div>
             <div class="divide-y divide-neutral-100">
@@ -161,6 +167,10 @@
                     @if($serviceTicket->serviceChargeAmount)
                     <div><dt class="form-label">Servis Ücreti</dt><dd class="font-semibold">₺{{ number_format($serviceTicket->serviceChargeAmount, 0, ',', '.') }}</dd></div>
                     @endif
+                    @endif
+                    <div><dt class="form-label">Açan</dt><dd class="font-medium">{{ $serviceTicket->openingDetail?->user?->name ?? '—' }}</dd></div>
+                    @if($closedBy = $serviceTicket->closedByUserName())
+                    <div><dt class="form-label">Kapatan</dt><dd class="font-medium">{{ $closedBy }}</dd></div>
                     @endif
                     <div><dt class="form-label">Açılış</dt><dd>{{ $serviceTicket->openedAt?->format('d.m.Y H:i') ?? '—' }}</dd></div>
                     @if($serviceTicket->dueDate)

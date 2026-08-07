@@ -17,6 +17,10 @@ class ServiceTicketStatus
         'duzeltilemedi' => 'Düzeltilemedi',
     ];
 
+    public const ACTION_WORKSHOP_FINISHED = 'atolyede_is_bitti';
+
+    public const WORKSHOP_FINISHED_NOTE = 'Atölyede iş bitti';
+
     public static function label(?string $status): string
     {
         return self::STATUSES[$status ?? ''] ?? ucfirst(str_replace('_', ' ', $status ?? '—'));
@@ -89,6 +93,7 @@ class ServiceTicketStatus
         return match ($action) {
             'acildi' => 'Kayıt açıldı',
             'asama' => 'Aşama eklendi',
+            self::ACTION_WORKSHOP_FINISHED => 'Atölyede iş bitti',
             'problem_durumu' => 'Problem durumu güncellendi',
             'durum_guncelleme' => 'Durum güncellendi',
             'kapatildi' => 'SSH kapatıldı',

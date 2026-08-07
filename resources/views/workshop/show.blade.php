@@ -5,14 +5,16 @@
     use App\Support\SaleDelivery;
     use App\Models\SaleProductionStage;
 
-    $status = SaleDelivery::currentStatus($sale);
+    $orderStatus = $orderStatus ?? SaleDelivery::currentStatus($sale);
+    $status = $orderStatus;
+    $canEditProduction = $canEditProduction ?? ($status === SaleDelivery::IN_PRODUCTION);
     $termin = SaleDelivery::terminListMeta($sale);
     $backUrl = $backUrl ?? route('workshop.index');
     $defaultNoteType = !empty($hideCommercialData) ? SaleProductionStage::TYPE_DEFICIENCY : old('type', SaleProductionStage::TYPE_DEFICIENCY);
 @endphp
 <div class="mb-6">
     <nav class="flex items-center gap-2 text-neutral-500 text-sm mb-1">
-        <a href="{{ $backUrl }}" class="hover:text-neutral-900 dark:hover:text-white">Atölye</a>
+        <a href="{{ $backUrl }}" class="hover:text-neutral-900 dark:hover:text-white">{{ str_contains($backUrl, 'termin-yaklasan') ? 'Termin Raporu' : 'Atölye' }}</a>
         <span>/</span>
         <span class="text-neutral-700 dark:text-neutral-300">{{ $sale->saleNumber }}</span>
     </nav>
@@ -24,7 +26,7 @@
         <div class="flex flex-wrap gap-2">
             <a href="{{ route('sales.workshop.mobilya', $sale) }}" target="_blank" class="btn-secondary text-sm">Atölye Fişi</a>
             <a href="{{ route('sales.workshop.koltuk', $sale) }}" target="_blank" class="btn-secondary text-sm">Koltuk Fişi</a>
-            @if($status === SaleDelivery::IN_PRODUCTION)
+            @if($canEditProduction)
             <form method="POST" action="{{ route('workshop.complete-production', $sale) }}" onsubmit="return confirm('Sipariş atölyeden çıktı olarak işaretlenecek. Onaylıyor musunuz?');">
                 @csrf
                 <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-[0.625rem] hover:bg-emerald-700 font-medium text-sm transition-colors">
@@ -36,11 +38,17 @@
     </div>
 </div>
 
+@if(! $canEditProduction)
+<div class="mb-6 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900/40 dark:text-neutral-300">
+    Bu sipariş henüz <strong>üretimde değil</strong>. Ürün listesi ve sipariş bilgilerini görüntüleyebilirsiniz; not eklemek için siparişin üretime alınması gerekir.
+</div>
+@endif
+
 @if(empty($productionStagesReady))
 <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
     Not ekleme henüz aktif değil. Sistem yöneticisinin <code class="text-xs">php artisan migrate --force</code> çalıştırması gerekiyor.
 </div>
-@elseif($status === SaleDelivery::IN_PRODUCTION)
+@elseif($canEditProduction)
 <div class="card p-6 mb-6 border-amber-200/80 dark:border-amber-900/40 bg-amber-50/30 dark:bg-amber-950/20">
     <h2 class="font-semibold text-neutral-900 dark:text-white mb-1">Atölye Notu / Eksiklik Bildir</h2>
     <p class="text-sm text-neutral-600 dark:text-neutral-400 mb-4">Eksik, yanlış veya hatalı gelen parçaları veya üretim durumunu buradan kaydedin.</p>
@@ -89,7 +97,7 @@
 </div>
 @endif
 
-@if($status === SaleDelivery::IN_PRODUCTION && ($openDeficienciesCount ?? 0) > 0)
+@if($canEditProduction && ($openDeficienciesCount ?? 0) > 0)
 <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
     Bu siparişte <strong>{{ $openDeficienciesCount }}</strong> açık eksiklik/yanlış parça kaydı var.
 </div>
@@ -104,21 +112,28 @@
                     <thead>
                         <tr class="border-b border-neutral-100 dark:border-neutral-800">
                             <th class="table-th">Ürün</th>
+                            <th class="table-th">Kod</th>
                             <th class="table-th">Adet</th>
-                            <th class="table-th">Açıklama</th>
-                            @if(!empty($productionStagesReady) && $status === SaleDelivery::IN_PRODUCTION)
+                            <th class="table-th">Kalem Açıklaması</th>
+                            <th class="table-th">Ürün Detayı</th>
+                            @if(!empty($productionStagesReady) && $canEditProduction)
                             <th class="table-th text-right">Not</th>
                             @endif
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-neutral-100 dark:divide-neutral-800">
                         @forelse($sale->items as $item)
-                        @php $itemName = $item->productName ?? $item->product?->name ?? 'Ürün'; @endphp
+                        @php
+                            $itemName = $item->productName ?? $item->product?->name ?? 'Ürün';
+                            $itemDetail = trim((string) ($item->product?->description ?? ''));
+                        @endphp
                         <tr>
                             <td class="table-td font-medium">{{ $itemName }}</td>
+                            <td class="table-td text-sm text-neutral-500">{{ $item->product?->sku ?: '—' }}</td>
                             <td class="table-td">{{ $item->quantity }}</td>
-                            <td class="table-td text-sm text-neutral-600 dark:text-neutral-400">{{ $item->description ?: '—' }}</td>
-                            @if(!empty($productionStagesReady) && $status === SaleDelivery::IN_PRODUCTION)
+                            <td class="table-td text-sm text-neutral-600 dark:text-neutral-400 whitespace-pre-wrap">{{ $item->description ?: '—' }}</td>
+                            <td class="table-td text-sm text-neutral-600 dark:text-neutral-400 whitespace-pre-wrap">{{ $itemDetail !== '' ? $itemDetail : '—' }}</td>
+                            @if(!empty($productionStagesReady) && $canEditProduction)
                             <td class="table-td text-right">
                                 <button type="button" class="item-note-btn text-sm font-medium text-amber-700 hover:text-amber-800 dark:text-amber-300 dark:hover:text-amber-200" data-item-id="{{ $item->id }}" data-item-name="{{ $itemName }}">
                                     Eksiklik bildir
@@ -127,7 +142,7 @@
                             @endif
                         </tr>
                         @empty
-                        <tr><td colspan="4" class="table-td text-neutral-500">Kalem yok</td></tr>
+                        <tr><td colspan="{{ (!empty($productionStagesReady) && $canEditProduction) ? 6 : 5 }}" class="table-td text-neutral-500">Kalem yok</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -141,38 +156,7 @@
             @else
             <div class="space-y-4">
                 @foreach($sale->productionStages as $stage)
-                @php $productLabel = $stage->productLabel(); @endphp
-                <div class="border rounded-xl p-4 {{ $stage->isCompleted ? 'border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/30 dark:bg-emerald-950/20 opacity-80' : 'border-neutral-100 dark:border-neutral-800' }}">
-                    <div class="flex flex-wrap items-start justify-between gap-3 mb-2">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <span class="badge {{ $stage->type === SaleProductionStage::TYPE_DEFICIENCY ? 'badge-amber' : 'badge-blue' }}">
-                                {{ SaleProductionStage::typeLabel($stage->type) }}
-                            </span>
-                            @if($productLabel)
-                            <span class="badge badge-neutral">{{ $productLabel }}</span>
-                            @endif
-                            @if($stage->isCompleted)
-                            <span class="badge badge-green">Giderildi</span>
-                            @endif
-                            <span class="text-xs text-neutral-500">{{ $stage->actionDate?->format('d.m.Y H:i') }}</span>
-                            @if($stage->user)
-                            <span class="text-xs text-neutral-500">· {{ $stage->user->name }}</span>
-                            @endif
-                        </div>
-                        @if(! $stage->isCompleted)
-                        <form method="POST" action="{{ route('workshop.complete-stage', $stage) }}">
-                            @csrf
-                            <button type="submit" class="text-sm font-medium px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">Giderildi</button>
-                        </form>
-                        @endif
-                    </div>
-                    <p class="text-sm text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap {{ $stage->isCompleted ? 'line-through opacity-70' : '' }}">{{ $stage->notes }}</p>
-                    @if($stage->isCompleted && $stage->completedAt)
-                    <p class="text-xs text-emerald-700 dark:text-emerald-400 mt-2">
-                        {{ $stage->completedByUser?->name ?? 'Atölye' }} · {{ $stage->completedAt->format('d.m.Y H:i') }}
-                    </p>
-                    @endif
-                </div>
+                @include('workshop.partials.production-stage-item', ['stage' => $stage, 'showActions' => $canEditProduction ?? false])
                 @endforeach
             </div>
             @endif
@@ -185,7 +169,14 @@
             <dl class="space-y-3 text-sm">
                 @if($showCustomerNames)
                 <div><dt class="text-neutral-500">Müşteri</dt><dd class="font-medium">{{ $sale->customer?->name ?? '—' }}</dd></div>
+                @if($sale->customer)
+                <div><dt class="text-neutral-500">İl / İlçe</dt><dd>{{ trim(($sale->customer->city?->name ?? '') . ' / ' . ($sale->customer->district?->name ?? ''), ' /') ?: '—' }}</dd></div>
+                @if($sale->customer->full_address ?? $sale->customer->address ?? null)
+                <div><dt class="text-neutral-500">Adres</dt><dd class="whitespace-pre-wrap">{{ $sale->customer->full_address ?? $sale->customer->address }}</dd></div>
                 @endif
+                @endif
+                @endif
+                <div><dt class="text-neutral-500">Durum</dt><dd><span class="badge badge-blue">{{ SaleDelivery::label($orderStatus) }}</span></dd></div>
                 <div><dt class="text-neutral-500">Sipariş No</dt><dd class="font-medium">{{ $sale->saleNumber }}</dd></div>
                 <div><dt class="text-neutral-500">Termin</dt>
                     <dd class="font-medium">
@@ -197,17 +188,17 @@
                         @else — @endif
                     </dd>
                 </div>
-                @if(empty($hideCommercialData))
+                @if($showSalesPersonnel)
                 <div><dt class="text-neutral-500">Satış Temsilcisi</dt><dd class="font-medium">{{ $sale->personnel?->name ?? '—' }}</dd></div>
                 @endif
                 <div><dt class="text-neutral-500">Satış Tarihi</dt><dd class="font-medium">{{ $sale->saleDate?->format('d.m.Y') ?? '—' }}</dd></div>
-                @if($sale->notes && empty($hideCommercialData))
-                <div><dt class="text-neutral-500">Notlar</dt><dd class="font-medium whitespace-pre-wrap">{{ $sale->notes }}</dd></div>
+                @if($sale->notes && ($showCustomerNames || empty($hideCommercialData)))
+                <div><dt class="text-neutral-500">Sipariş Notları</dt><dd class="font-medium whitespace-pre-wrap">{{ $sale->notes }}</dd></div>
                 @endif
             </dl>
         </div>
 
-        @if($status === SaleDelivery::IN_PRODUCTION)
+        @if($canEditProduction)
         <div class="card p-6 border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/40 dark:bg-emerald-950/20">
             <h2 class="font-semibold text-neutral-900 dark:text-white mb-1">Üretim Tamamlandı</h2>
             <p class="text-xs text-neutral-600 dark:text-neutral-400 mb-4">Sipariş atölyeden çıktığında durum <strong>Teslim bekliyor</strong> olur.</p>

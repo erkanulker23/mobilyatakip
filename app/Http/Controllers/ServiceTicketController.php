@@ -26,7 +26,13 @@ class ServiceTicketController extends Controller
 
     public function index(Request $request)
     {
-        $q = ServiceTicket::with(['sale', 'customer'])->orderBy('createdAt', 'desc');
+        $q = ServiceTicket::with([
+            'sale',
+            'customer',
+            'openingDetail.user',
+            'closingDetail.user',
+            'legacyClosingDetail.user',
+        ])->orderBy('createdAt', 'desc');
         if ($request->filled('search')) {
             $s = $request->search;
             $q->where(function ($w) use ($s) {
@@ -56,7 +62,19 @@ class ServiceTicketController extends Controller
 
     public function show(ServiceTicket $serviceTicket)
     {
-        $serviceTicket->load(['sale', 'customer.city', 'customer.district', 'assignedUser', 'shippingCompany', 'shippingVehicle', 'details.user']);
+        $serviceTicket->load([
+            'sale',
+            'customer.city',
+            'customer.district',
+            'assignedUser',
+            'shippingCompany',
+            'shippingVehicle',
+            'openingDetail.user',
+            'closingDetail.user',
+            'legacyClosingDetail.user',
+            'workshopFinishedDetail.user',
+            'details.user',
+        ]);
 
         return view('service-tickets.show', compact('serviceTicket'));
     }
@@ -213,7 +231,15 @@ class ServiceTicketController extends Controller
 
     public function edit(ServiceTicket $serviceTicket)
     {
-        $serviceTicket->load(['sale.customer', 'customer', 'details.user']);
+        $serviceTicket->load([
+            'sale.customer',
+            'customer',
+            'openingDetail.user',
+            'closingDetail.user',
+            'legacyClosingDetail.user',
+            'workshopFinishedDetail.user',
+            'details.user',
+        ]);
         $sales = Sale::with('customer')->orderBy('createdAt', 'desc')->take(100)->get();
         $users = User::where('isActive', true)->orderBy('name')->get();
         $shippingFormData = $this->shippingFormData();
@@ -358,7 +384,7 @@ class ServiceTicketController extends Controller
             ServiceTicketDetail::create([
                 'ticketId' => $serviceTicket->id,
                 'userId' => auth()->id() ?: null,
-                'action' => $currentStatus === 'tamamlandi' ? 'kapatildi' : 'durum_guncelleme',
+                'action' => ServiceTicketStatus::isClosed($currentStatus) ? 'kapatildi' : 'durum_guncelleme',
                 'actionDate' => now(),
                 'notes' => 'Durum: ' . ServiceTicketStatus::label($currentStatus),
             ]);
@@ -386,7 +412,19 @@ class ServiceTicketController extends Controller
         $validated = $request->validate([
             'newStages' => 'nullable|array',
             'newStages.*' => 'nullable|string|max:1000',
+            'markWorkshopFinished' => 'nullable|boolean',
+            'workshopFinishedNotes' => 'nullable|string|max:1000',
         ]);
+
+        if ($request->boolean('markWorkshopFinished')) {
+            $result = $this->addWorkshopFinishedStage(
+                $serviceTicket,
+                $validated['workshopFinishedNotes'] ?? null
+            );
+            if ($result instanceof \Illuminate\Http\RedirectResponse) {
+                return $result;
+            }
+        }
 
         $newStages = collect($validated['newStages'] ?? [])
             ->map(fn ($note) => trim((string) $note))
@@ -412,7 +450,76 @@ class ServiceTicketController extends Controller
             ? count($newStages) . ' aşama eklendi.'
             : 'Kayıt güncellendi.';
 
+        if ($request->boolean('markWorkshopFinished')) {
+            $message = 'Atölyede iş bitti aşaması eklendi.';
+            if ($newStages !== []) {
+                $message .= ' ' . count($newStages) . ' ek aşama da kaydedildi.';
+            }
+        }
+
         return redirect()->route('service-tickets.show', $serviceTicket)->with('success', $message);
+    }
+
+    public function markWorkshopFinished(Request $request, ServiceTicket $serviceTicket)
+    {
+        $this->authorizeWorkshopStage($request);
+
+        $validated = $request->validate([
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $result = $this->addWorkshopFinishedStage($serviceTicket, $validated['notes'] ?? null);
+        if ($result instanceof \Illuminate\Http\RedirectResponse) {
+            return $result;
+        }
+
+        return redirect()
+            ->route('service-tickets.show', $serviceTicket)
+            ->with('success', 'Atölyede iş bitti aşaması eklendi.');
+    }
+
+    private function authorizeWorkshopStage(Request $request): void
+    {
+        $user = $request->user();
+        if (! $user || (! $user->isWorkshop() && ! $user->isAdmin())) {
+            abort(403, 'Bu işlem için yetkiniz yok.');
+        }
+    }
+
+    private function addWorkshopFinishedStage(ServiceTicket $serviceTicket, ?string $notes = null): ?\Illuminate\Http\RedirectResponse
+    {
+        if (ServiceTicketStatus::isClosed($serviceTicket->status ?? '')) {
+            return redirect()
+                ->back()
+                ->with('error', 'Kapalı servis kayıtlarına aşama eklenemez.');
+        }
+
+        if ($serviceTicket->isWorkshopFinished()) {
+            return redirect()
+                ->back()
+                ->with('info', 'Bu kayıt için atölyede iş bitti aşaması zaten eklenmiş.');
+        }
+
+        $note = trim((string) $notes);
+        if ($note === '') {
+            $note = ServiceTicketStatus::WORKSHOP_FINISHED_NOTE;
+        }
+
+        DB::transaction(function () use ($serviceTicket, $note) {
+            ServiceTicketDetail::create([
+                'ticketId' => $serviceTicket->id,
+                'userId' => auth()->id() ?: null,
+                'action' => ServiceTicketStatus::ACTION_WORKSHOP_FINISHED,
+                'actionDate' => now(),
+                'notes' => $note,
+            ]);
+
+            if (($serviceTicket->status ?? 'acildi') === 'acildi') {
+                $serviceTicket->update(['status' => 'devam_ediyor']);
+            }
+        });
+
+        return null;
     }
 
     public function updateProblemStatus(Request $request, ServiceTicket $serviceTicket)
@@ -442,12 +549,13 @@ class ServiceTicketController extends Controller
 
         $allFixed = collect($problems)->every(fn ($p) => $p['status'] === 'duzeltildi');
         $closedAt = $serviceTicket->closedAt;
+        $wasClosed = ServiceTicketStatus::isClosed($serviceTicket->status ?? '');
         if ($allFixed) {
             $ticketStatus = 'tamamlandi';
             $closedAt = $closedAt ?? now();
         }
 
-        DB::transaction(function () use ($serviceTicket, $problems, $ticketStatus, $closedAt, $index, $newStatus) {
+        DB::transaction(function () use ($serviceTicket, $problems, $ticketStatus, $closedAt, $index, $newStatus, $wasClosed) {
             $serviceTicket->update([
                 'reportedProblems' => $problems,
                 'status' => $ticketStatus,
@@ -461,6 +569,16 @@ class ServiceTicketController extends Controller
                 'actionDate' => now(),
                 'notes' => ($index + 1) . '. problem: ' . ServiceTicketStatus::problemLabel($newStatus) . ' — ' . $problems[$index]['description'],
             ]);
+
+            if ($ticketStatus === 'tamamlandi' && ! $wasClosed) {
+                ServiceTicketDetail::create([
+                    'ticketId' => $serviceTicket->id,
+                    'userId' => auth()->id() ?: null,
+                    'action' => 'kapatildi',
+                    'actionDate' => now(),
+                    'notes' => 'Durum: ' . ServiceTicketStatus::label($ticketStatus),
+                ]);
+            }
         });
 
         $this->auditService->logAction('service_ticket', $serviceTicket->id, 'status', [
@@ -481,6 +599,7 @@ class ServiceTicketController extends Controller
         ]);
 
         $status = $validated['status'];
+        $oldStatus = $serviceTicket->status ?? 'acildi';
         $updates = ['status' => $status];
 
         if ($status === 'tamamlandi') {
@@ -491,13 +610,15 @@ class ServiceTicketController extends Controller
 
         $serviceTicket->update($updates);
 
-        ServiceTicketDetail::create([
-            'ticketId' => $serviceTicket->id,
-            'userId' => auth()->id() ?: null,
-            'action' => 'durum_guncelleme',
-            'actionDate' => now(),
-            'notes' => 'Durum: ' . ServiceTicketStatus::label($status),
-        ]);
+        if ($oldStatus !== $status) {
+            ServiceTicketDetail::create([
+                'ticketId' => $serviceTicket->id,
+                'userId' => auth()->id() ?: null,
+                'action' => ServiceTicketStatus::isClosed($status) ? 'kapatildi' : 'durum_guncelleme',
+                'actionDate' => now(),
+                'notes' => 'Durum: ' . ServiceTicketStatus::label($status),
+            ]);
+        }
 
         $this->auditService->logAction('service_ticket', $serviceTicket->id, 'status', [
             'ticketNumber' => $serviceTicket->ticketNumber,

@@ -47,9 +47,22 @@
 </div>
 @endif
 
-<div x-data="{ tab: @json($defaultTab) }">
+<div x-data="{
+    tab: @json($defaultTab),
+    goToTab(name) {
+        this.tab = name;
+        this.$nextTick(() => document.getElementById('atolyem-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    },
+    init() {
+        const hash = window.location.hash.replace('#', '');
+        if (['uretim', 'termin', 'ssh'].includes(hash)) {
+            this.tab = hash;
+            this.$nextTick(() => document.getElementById('atolyem-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+        }
+    },
+}">
 <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-6">
-    <div class="card p-4 {{ $workshopStats->productionCount > 0 ? 'ring-1 ring-violet-200 dark:ring-violet-800/50' : '' }}">
+    <button type="button" @click="goToTab('uretim')" class="card p-4 text-left w-full transition-all hover:shadow-md cursor-pointer {{ $workshopStats->productionCount > 0 ? 'ring-1 ring-violet-200 dark:ring-violet-800/50' : '' }}">
         <div class="flex items-center justify-between gap-2">
             <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Üretimde</p>
             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
@@ -58,9 +71,9 @@
         </div>
         <p class="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white mt-2">{{ $workshopStats->productionCount }}</p>
         <p class="text-xs text-neutral-500 mt-1">Not ve eksiklik eklenebilir</p>
-    </div>
+    </button>
 
-    <div class="card p-4 {{ ($workshopStats->overdueCount ?? 0) > 0 ? 'ring-1 ring-red-200 dark:ring-red-800/50' : (($urgentTerminCount ?? 0) > 0 ? 'ring-1 ring-amber-200 dark:ring-amber-800/50' : '') }}">
+    <button type="button" @click="goToTab('termin')" class="card p-4 text-left w-full transition-all hover:shadow-md cursor-pointer {{ ($workshopStats->overdueCount ?? 0) > 0 ? 'ring-1 ring-red-200 dark:ring-red-800/50' : (($urgentTerminCount ?? 0) > 0 ? 'ring-1 ring-amber-200 dark:ring-amber-800/50' : '') }}">
         <div class="flex items-center justify-between gap-2">
             <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Termin ({{ $terminDays }} gün)</p>
             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
@@ -77,9 +90,9 @@
             {{ $upcomingInProductionCount ?? 0 }} tanesi üretimde
             @endif
         </p>
-    </div>
+    </button>
 
-    <div class="card p-4 {{ $workshopStats->openSshCount > 0 ? 'ring-1 ring-orange-200 dark:ring-orange-800/50' : '' }}">
+    <button type="button" @click="goToTab('ssh')" class="card p-4 text-left w-full transition-all hover:shadow-md cursor-pointer {{ $workshopStats->openSshCount > 0 ? 'ring-1 ring-orange-200 dark:ring-orange-800/50' : '' }}">
         <div class="flex items-center justify-between gap-2">
             <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Açık SSH</p>
             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">
@@ -88,9 +101,9 @@
         </div>
         <p class="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white mt-2">{{ $workshopStats->openSshCount }}</p>
         <p class="text-xs text-neutral-500 mt-1">Açık servis kaydı</p>
-    </div>
+    </button>
 
-    <div class="card p-4 border-red-200/80 dark:border-red-900/40 bg-red-50/40 dark:bg-red-950/20">
+    <button type="button" @click="goToTab('uretim')" class="card p-4 text-left w-full transition-all hover:shadow-md cursor-pointer border-red-200/80 dark:border-red-900/40 bg-red-50/40 dark:bg-red-950/20">
         <div class="flex items-center justify-between gap-2">
             <p class="text-xs font-medium text-red-700/80 dark:text-red-300/80 uppercase tracking-wide">Açık Eksiklik</p>
             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
@@ -99,25 +112,25 @@
         </div>
         <p class="text-2xl sm:text-3xl font-bold text-red-800 dark:text-red-200 mt-2">{{ $workshopStats->openDeficienciesCount }}</p>
         <p class="text-xs text-red-700/70 dark:text-red-400/70 mt-1">Çözülmemiş parça sorunu</p>
-    </div>
+    </button>
 </div>
 
-<div class="card overflow-hidden mb-6">
+<div id="atolyem-list" class="card overflow-hidden mb-6 scroll-mt-24">
     <div class="px-4 sm:px-6 py-4 border-b border-neutral-200 dark:border-slate-700 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex flex-wrap gap-1.5">
-            <button type="button" @click="tab = 'uretim'" :class="tab === 'uretim' ? 'bg-neutral-900 text-white dark:bg-emerald-600' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+            <button type="button" @click="goToTab('uretim')" :class="tab === 'uretim' ? 'bg-neutral-900 text-white dark:bg-emerald-600' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors">
                 Üretimde
                 @if($productionSales->isNotEmpty())
                 <span class="ml-1 opacity-80">({{ $productionSales->count() }})</span>
                 @endif
             </button>
-            <button type="button" @click="tab = 'termin'" :class="tab === 'termin' ? 'bg-neutral-900 text-white dark:bg-emerald-600' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+            <button type="button" @click="goToTab('termin')" :class="tab === 'termin' ? 'bg-neutral-900 text-white dark:bg-emerald-600' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors">
                 Termin
                 @if($upcomingDueSales->isNotEmpty())
                 <span class="ml-1 opacity-80">({{ $upcomingDueSales->count() }})</span>
                 @endif
             </button>
-            <button type="button" @click="tab = 'ssh'" :class="tab === 'ssh' ? 'bg-neutral-900 text-white dark:bg-emerald-600' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+            <button type="button" @click="goToTab('ssh')" :class="tab === 'ssh' ? 'bg-neutral-900 text-white dark:bg-emerald-600' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors">
                 SSH
                 @if($openServiceTickets->isNotEmpty())
                 <span class="ml-1 opacity-80">({{ $openServiceTickets->count() }})</span>
@@ -242,7 +255,7 @@
                 @if($inProduction)
                 <a href="{{ route('workshop.show', $sale) }}" class="btn-view w-full sm:w-auto justify-center shrink-0">Aç</a>
                 @else
-                <span class="inline-flex items-center justify-center px-4 py-2.5 text-sm text-neutral-400 bg-neutral-50 dark:bg-neutral-900 rounded-[0.625rem] shrink-0">Henüz üretimde değil</span>
+                <a href="{{ route('workshop.show', ['sale' => $sale, 'from' => 'termin', 'days' => $terminDays ?? 14]) }}" class="btn-secondary w-full sm:w-auto justify-center shrink-0 text-sm py-2.5">Detay</a>
                 @endif
             </div>
         </div>

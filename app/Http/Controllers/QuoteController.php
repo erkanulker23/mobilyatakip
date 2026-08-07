@@ -11,6 +11,7 @@ use App\Services\SaleService;
 use App\Services\AuditService;
 use App\Support\DrawingFiles;
 use App\Support\ItemDescription;
+use App\Support\QuoteCreator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -23,7 +24,7 @@ class QuoteController extends Controller
 
     public function index(Request $request)
     {
-        $q = Quote::with(['customer', 'personnel', 'convertedSale'])->orderBy('createdAt', 'desc');
+        $q = Quote::with(['customer', 'personnel', 'createdByUser.personnel', 'convertedSale'])->orderBy('createdAt', 'desc');
         if ($request->filled('search')) {
             $s = $request->search;
             $q->where(function ($w) use ($s) {
@@ -54,8 +55,9 @@ class QuoteController extends Controller
         $customers = Customer::orderBy('name')->get();
         $personnel = Personnel::where('isActive', true)->orderBy('name')->get();
         $quoteIds = $quotes->getCollection()->filter(fn ($q) => ! $q->convertedSaleId)->pluck('id')->values()->all();
+        $creatorFallbackMap = QuoteCreator::creatorNameMapFromAudit($quotes->getCollection());
 
-        return view('quotes.index', compact('quotes', 'customers', 'personnel', 'quoteIds'));
+        return view('quotes.index', compact('quotes', 'customers', 'personnel', 'quoteIds', 'creatorFallbackMap'));
     }
 
     public function bulkDestroy(Request $request)
@@ -143,6 +145,7 @@ class QuoteController extends Controller
                 'validUntil' => $validated['validUntil'] ?? null,
                 'notes' => $validated['notes'] ?? null,
                 'personnelId' => $validated['personnelId'] ?? null,
+                'createdBy' => auth()->id() ?: null,
                 'subtotal' => 0,
                 'kdvTotal' => 0,
                 'grandTotal' => 0,
@@ -168,14 +171,14 @@ class QuoteController extends Controller
 
     public function show(Quote $quote)
     {
-        $quote->load(['customer', 'personnel', 'items.product']);
+        $quote->load(['customer', 'personnel', 'createdByUser.personnel', 'items.product']);
 
         return view('quotes.show', compact('quote'));
     }
 
     public function print(Quote $quote)
     {
-        $quote->load(['customer', 'personnel', 'items.product']);
+        $quote->load(['customer', 'personnel', 'createdByUser.personnel', 'items.product']);
 
         return view('quotes.print', compact('quote'));
     }

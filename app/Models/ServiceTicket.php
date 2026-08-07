@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Support\ServiceTicketStatus;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ServiceTicket extends BaseModel
 {
@@ -70,5 +72,70 @@ class ServiceTicket extends BaseModel
     public function details(): HasMany
     {
         return $this->hasMany(ServiceTicketDetail::class, 'ticketId');
+    }
+
+    /** Kaydı açan kullanıcı (ilk "acildi" işlem kaydı). */
+    public function openingDetail(): HasOne
+    {
+        return $this->hasOne(ServiceTicketDetail::class, 'ticketId')
+            ->ofMany(
+                ['actionDate' => 'min'],
+                fn ($query) => $query->where('action', 'acildi')
+            );
+    }
+
+    /** Kaydı kapatan kullanıcı (son "kapatildi" işlem kaydı). */
+    public function closingDetail(): HasOne
+    {
+        return $this->hasOne(ServiceTicketDetail::class, 'ticketId')
+            ->ofMany(
+                ['actionDate' => 'max'],
+                fn ($query) => $query->where('action', 'kapatildi')
+            );
+    }
+
+    /** Son "atölyede iş bitti" kaydı. */
+    public function workshopFinishedDetail(): HasOne
+    {
+        return $this->hasOne(ServiceTicketDetail::class, 'ticketId')
+            ->ofMany(
+                ['actionDate' => 'max'],
+                fn ($query) => $query->where('action', ServiceTicketStatus::ACTION_WORKSHOP_FINISHED)
+            );
+    }
+
+    public function isWorkshopFinished(): bool
+    {
+        if ($this->relationLoaded('workshopFinishedDetail')) {
+            return $this->workshopFinishedDetail !== null;
+        }
+
+        return $this->details()
+            ->where('action', ServiceTicketStatus::ACTION_WORKSHOP_FINISHED)
+            ->exists();
+    }
+
+    /** Eski kayıtlar: listeden durum değiştirilerek kapatıldığında oluşan kayıt. */
+    public function legacyClosingDetail(): HasOne
+    {
+        return $this->hasOne(ServiceTicketDetail::class, 'ticketId')
+            ->ofMany(
+                ['actionDate' => 'max'],
+                fn ($query) => $query->where('action', 'durum_guncelleme')
+                    ->where(function ($q) {
+                        $q->where('notes', 'Durum: Tamamlandı')
+                            ->orWhere('notes', 'Durum: İptal');
+                    })
+            );
+    }
+
+    public function closedByUserName(): ?string
+    {
+        if (! ServiceTicketStatus::isClosed($this->status ?? '')) {
+            return null;
+        }
+
+        return $this->closingDetail?->user?->name
+            ?? $this->legacyClosingDetail?->user?->name;
     }
 }

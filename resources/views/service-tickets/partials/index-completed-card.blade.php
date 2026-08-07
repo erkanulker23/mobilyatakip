@@ -40,6 +40,14 @@
 
     <dl class="mt-4 pl-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
         <div>
+            <dt class="text-neutral-500 dark:text-neutral-500">Açan</dt>
+            <dd class="font-medium text-neutral-800 dark:text-neutral-200 mt-0.5">{{ $ticket->openingDetail?->user?->name ?? '—' }}</dd>
+        </div>
+        <div>
+            <dt class="text-neutral-500 dark:text-neutral-500">Kapatan</dt>
+            <dd class="font-medium text-neutral-800 dark:text-neutral-200 mt-0.5">{{ $ticket->closedByUserName() ?? '—' }}</dd>
+        </div>
+        <div>
             <dt class="text-neutral-500 dark:text-neutral-500">Satış</dt>
             <dd class="font-medium text-neutral-800 dark:text-neutral-200 mt-0.5">{{ $ticket->sale?->saleNumber ?? '—' }}</dd>
         </div>

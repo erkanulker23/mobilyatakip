@@ -166,6 +166,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('service-tickets', ServiceTicketController::class)->parameters(['service-tickets' => 'serviceTicket']);
     Route::post('/service-tickets/{serviceTicket}/problem-status', [ServiceTicketController::class, 'updateProblemStatus'])->name('service-tickets.problem-status');
     Route::patch('/service-tickets/{serviceTicket}/status', [ServiceTicketController::class, 'updateStatus'])->name('service-tickets.update-status');
+    Route::post('/service-tickets/{serviceTicket}/workshop-finished', [ServiceTicketController::class, 'markWorkshopFinished'])->name('service-tickets.workshop-finished');
     Route::get('/service-tickets/{serviceTicket}/print', [ServiceTicketController::class, 'print'])->name('service-tickets.print');
 
     Route::get('/odeme-al', [\App\Http\Controllers\CustomerPaymentController::class, 'create'])->name('customer-payments.create');
