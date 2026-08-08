@@ -75,7 +75,6 @@
         <div class="card p-4 border-emerald-100 bg-emerald-50/40">
             <p class="text-xs font-medium text-emerald-700 uppercase tracking-wide">Toplam giriş</p>
             <p class="mt-1 text-xl font-bold tabular-nums text-emerald-700">+{{ number_format($summary['totalIn'], 0, ',', '.') }} ₺</p>
-            <p class="mt-1 text-xs text-neutral-500">Tahsilat ve virman girişleri</p>
         </div>
         <div class="card p-4 border-rose-100 bg-rose-50/40">
             <p class="text-xs font-medium text-rose-700 uppercase tracking-wide">Toplam çıkış</p>
@@ -205,9 +204,8 @@
                                 }
 
                                 $tutar = (float) ($h->amount ?? 0);
-                                $isExpenseReversal = KasaMovement::isExpenseReversal($h);
                             @endphp
-                            <tr class="hover:bg-neutral-50/70 transition-colors {{ $isExpenseReversal ? 'opacity-75' : '' }}">
+                            <tr class="hover:bg-neutral-50/70 transition-colors">
                                 <td class="table-td whitespace-nowrap text-neutral-600">{{ $h->movementDate?->format('d.m.Y') }}</td>
                                 <td class="table-td">
                                     <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border {{ KasaMovement::toneClasses($badge['tone']) }}">
@@ -231,7 +229,7 @@
                                     @endif
                                 </td>
                                 <td class="table-td text-neutral-600 max-w-xs truncate" title="{{ $h->description }}">{{ $h->description ?: '—' }}</td>
-                                <td class="table-td text-right whitespace-nowrap font-semibold tabular-nums {{ $isExpenseReversal ? 'text-neutral-500' : ($tutar >= 0 ? 'text-emerald-600' : 'text-rose-600') }}">
+                                <td class="table-td text-right whitespace-nowrap font-semibold tabular-nums {{ $tutar >= 0 ? 'text-emerald-600' : 'text-rose-600' }}">
                                     {{ $tutar >= 0 ? '+' : '' }}{{ number_format($tutar, 0, ',', '.') }} ₺
                                 </td>
                                 <td class="table-td text-right">

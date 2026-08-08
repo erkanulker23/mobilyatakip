@@ -13,15 +13,10 @@ class KasaService
     public function summary(Kasa $kasa): array
     {
         $opening = (float) ($kasa->openingBalance ?? 0);
-        $netMovements = (float) $kasa->hareketler()->sum('amount');
-        $totalIn = (float) $kasa->hareketler()
-            ->where('amount', '>', 0)
-            ->where(function ($q) {
-                $q->whereNull('description')
-                    ->orWhere('description', 'not like', 'Gider iptal%');
-            })
-            ->sum('amount');
-        $totalOut = abs((float) $kasa->hareketler()->where('amount', '<', 0)->sum('amount'));
+        $ledger = $kasa->hareketler()->ledger();
+        $netMovements = (float) (clone $ledger)->sum('amount');
+        $totalIn = (float) (clone $ledger)->where('amount', '>', 0)->sum('amount');
+        $totalOut = abs((float) (clone $ledger)->where('amount', '<', 0)->sum('amount'));
 
         return [
             'opening' => $opening,
@@ -29,7 +24,7 @@ class KasaService
             'totalOut' => $totalOut,
             'netMovements' => $netMovements,
             'current' => $opening + $netMovements,
-            'count' => (int) $kasa->hareketler()->count(),
+            'count' => (int) (clone $ledger)->count(),
         ];
     }
 

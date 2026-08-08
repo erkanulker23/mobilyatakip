@@ -21,7 +21,9 @@ class KasaController extends Controller
 
     public function index(Request $request)
     {
-        $q = Kasa::query()->withSum('hareketler', 'amount')->orderBy('name');
+        $q = Kasa::query()
+            ->withSum(['hareketler as ledger_sum_amount' => fn ($h) => $h->ledger()], 'amount')
+            ->orderBy('name');
         if ($request->filled('search')) {
             $s = $request->search;
             $q->where(function ($w) use ($s) {
@@ -46,6 +48,7 @@ class KasaController extends Controller
         $hareketlerToplam = $summary['netMovements'];
 
         $q = $kasa->hareketler()
+            ->ledger()
             ->with(['fromKasa', 'toKasa'])
             ->orderBy('movementDate', 'desc')
             ->orderBy('createdAt', 'desc');

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class KasaHareket extends BaseModel
@@ -44,5 +45,14 @@ class KasaHareket extends BaseModel
     public function createdByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'createdBy');
+    }
+
+    /** Kasa defterinde gösterilecek gerçek hareketler (gider iptal artıkları hariç). */
+    public function scopeLedger(Builder $query): Builder
+    {
+        return $query->where(function (Builder $q) {
+            $q->whereNull('description')
+                ->orWhere('description', 'not like', 'Gider iptal%');
+        });
     }
 }

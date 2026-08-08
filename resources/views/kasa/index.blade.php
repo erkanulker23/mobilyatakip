@@ -66,7 +66,7 @@
                     </td>
                     <td class="table-td text-sm tabular-nums tracking-wide text-neutral-600 dark:text-neutral-300">{{ $k->iban ?? $k->accountNumber ?? '-' }}</td>
                     <td class="table-td text-right font-medium {{ ($k->openingBalance ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600' }}">{{ number_format((float)($k->openingBalance ?? 0), 0, ',', '.') }} ₺</td>
-                    @php $guncelBakiye = (float)($k->openingBalance ?? 0) + (float)($k->hareketler_sum_amount ?? 0); @endphp
+                    @php $guncelBakiye = (float)($k->openingBalance ?? 0) + (float)($k->ledger_sum_amount ?? 0); @endphp
                     <td class="table-td text-right font-semibold {{ $guncelBakiye >= 0 ? 'text-emerald-600' : 'text-red-600' }}">{{ number_format($guncelBakiye, 0, ',', '.') }} ₺</td>
                     <td class="table-td">
                         @include('partials.action-buttons', [
