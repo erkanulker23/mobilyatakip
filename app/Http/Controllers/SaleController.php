@@ -458,19 +458,44 @@ class SaleController extends Controller
         $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
         $suppliers = Supplier::where('isActive', true)->orderBy('name')->get();
 
+        $productionStagesReady = \App\Support\SaleProductionStageSchema::isReady();
         $productionStages = collect();
-        if (\App\Support\SaleProductionStageSchema::isReady()) {
+        $openDeficienciesCount = 0;
+        $canEditProduction = false;
+
+        if ($productionStagesReady) {
+            $sale->load(['items.product']);
             $productionStages = $sale->productionStages()
                 ->with(['user', 'completedByUser', 'saleItem.product'])
                 ->orderByDesc('actionDate')
                 ->get();
+
+            $orderStatus = \App\Support\SaleDelivery::currentStatus($sale);
+            $canEditProduction = ! ($sale->isCancelled ?? false)
+                && $orderStatus === \App\Support\SaleDelivery::IN_PRODUCTION;
+
+            $openDeficienciesCount = $productionStages
+                ->where('type', \App\Models\SaleProductionStage::TYPE_DEFICIENCY)
+                ->where('isCompleted', false)
+                ->count();
         }
 
         $customerLedger = $sale->customer
             ? CustomerLedger::detailData($sale->customer)
             : null;
 
-        return view('sales.show', compact('sale', 'unlinkedPayments', 'saleRemaining', 'kasalar', 'suppliers', 'productionStages', 'customerLedger'));
+        return view('sales.show', compact(
+            'sale',
+            'unlinkedPayments',
+            'saleRemaining',
+            'kasalar',
+            'suppliers',
+            'productionStages',
+            'productionStagesReady',
+            'canEditProduction',
+            'openDeficienciesCount',
+            'customerLedger',
+        ));
     }
 
     public function print(Sale $sale)

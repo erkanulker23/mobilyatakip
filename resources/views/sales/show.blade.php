@@ -131,8 +131,6 @@
 
 @include('partials.sale-order-meta-panel', ['sale' => $sale])
 
-@include('partials.sale-workshop-panel', ['sale' => $sale, 'productionStages' => $productionStages ?? collect()])
-
 @include('partials.invoice-document', array_merge(
     \App\Support\SaleDocument::invoiceParams($sale),
     ['showOrderSummary' => false]
@@ -260,6 +258,14 @@
     </div>
 </div>
 @endif
+
+@include('partials.sale-workshop-panel', [
+    'sale' => $sale,
+    'productionStages' => $productionStages ?? collect(),
+    'productionStagesReady' => $productionStagesReady ?? false,
+    'canEditProduction' => $canEditProduction ?? false,
+    'openDeficienciesCount' => $openDeficienciesCount ?? 0,
+])
 
 {{-- Sipariş durumu güncelle --}}
 @if(!($sale->isCancelled ?? false))

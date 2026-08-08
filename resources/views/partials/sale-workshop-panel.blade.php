@@ -4,10 +4,14 @@
     use App\Support\SaleProductionStageSchema;
 
     $productionStages = $productionStages ?? collect();
-    $showPanel = SaleProductionStageSchema::isReady()
+    $productionStagesReady = $productionStagesReady ?? SaleProductionStageSchema::isReady();
+    $canEditProduction = $canEditProduction ?? false;
+    $openDeficienciesCount = $openDeficienciesCount ?? 0;
+    $showPanel = $productionStagesReady
         && ($productionStages->isNotEmpty()
             || $sale->workshopCompletedAt
-            || SaleDelivery::currentStatus($sale) === SaleDelivery::IN_PRODUCTION);
+            || SaleDelivery::currentStatus($sale) === SaleDelivery::IN_PRODUCTION
+            || $canEditProduction);
 @endphp
 
 @if($showPanel)
@@ -17,7 +21,7 @@
             <h2 class="text-lg font-semibold text-neutral-900 dark:text-white">Atölye Takibi</h2>
             <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Üretim aşamaları ve eksiklik kayıtları</p>
         </div>
-        @if(SaleDelivery::currentStatus($sale) === SaleDelivery::IN_PRODUCTION)
+        @if(SaleDelivery::currentStatus($sale) === SaleDelivery::IN_PRODUCTION && auth()->user()?->isWorkshop())
         <a href="{{ route('workshop.show', $sale) }}" class="btn-secondary text-sm">Atölye Detayı</a>
         @endif
     </div>
@@ -28,33 +32,28 @@
         </div>
         @endif
 
+        @if($canEditProduction && $openDeficienciesCount > 0)
+        <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
+            Bu siparişte <strong>{{ $openDeficienciesCount }}</strong> açık eksiklik kaydı var.
+        </div>
+        @endif
+
         @if($productionStages->isEmpty())
         <p class="text-sm text-neutral-500">Henüz atölye kaydı yok.</p>
         @else
         <div class="space-y-3">
             @foreach($productionStages as $stage)
-            <div class="border rounded-xl p-4 {{ $stage->isCompleted ? 'border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/20 dark:bg-emerald-950/10' : 'border-neutral-100 dark:border-neutral-800' }}">
-                <div class="flex flex-wrap items-center gap-2 mb-2">
-                    <span class="badge {{ $stage->type === SaleProductionStage::TYPE_DEFICIENCY ? 'badge-amber' : 'badge-blue' }}">
-                        {{ SaleProductionStage::typeLabel($stage->type) }}
-                    </span>
-                    @if($stage->productLabel())
-                    <span class="badge badge-neutral">{{ $stage->productLabel() }}</span>
-                    @endif
-                    @if($stage->isCompleted)
-                    <span class="badge badge-green">Giderildi</span>
-                    @else
-                    <span class="badge badge-red">Açık</span>
-                    @endif
-                    <span class="text-xs text-neutral-500">{{ $stage->actionDate?->format('d.m.Y H:i') }}</span>
-                    @if($stage->user)
-                    <span class="text-xs text-neutral-500">· {{ $stage->user->name }}</span>
-                    @endif
-                </div>
-                <p class="text-sm text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap">{{ $stage->notes }}</p>
-            </div>
+            @include('workshop.partials.production-stage-item', ['stage' => $stage, 'showActions' => $canEditProduction])
             @endforeach
         </div>
+        @endif
+
+        @if($canEditProduction)
+        @include('partials.sale-production-stage-form', ['sale' => $sale, 'formId' => 'saleWorkshopNoteForm'])
+        @elseif(SaleDelivery::currentStatus($sale) !== SaleDelivery::IN_PRODUCTION && !($sale->isCancelled ?? false))
+        <p class="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-800 text-sm text-neutral-500">
+            Aşama eklemek için sipariş durumunun <strong>Üretimde</strong> olması gerekir.
+        </p>
         @endif
     </div>
 </div>

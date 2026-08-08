@@ -173,9 +173,7 @@ class WorkshopController extends Controller
 
         $label = SaleProductionStage::typeLabel($validated['type']);
 
-        return redirect()
-            ->route('workshop.show', $sale)
-            ->with('success', "{$label} kaydı eklendi.");
+        return back()->with('success', "{$label} kaydı eklendi.");
     }
 
     public function completeStage(Request $request, SaleProductionStage $stage)
