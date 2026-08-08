@@ -106,7 +106,7 @@
             @else
             <div class="space-y-4">
                 @foreach($sale->productionStages as $stage)
-                @include('workshop.partials.production-stage-item', ['stage' => $stage, 'showActions' => $canAddProductionStage ?? false])
+                @include('workshop.partials.production-stage-item', ['stage' => $stage])
                 @endforeach
             </div>
             @endif

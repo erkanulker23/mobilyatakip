@@ -705,6 +705,11 @@
 }
 
 @media print {
+    .sale-personnel-notes-panel,
+    #atolye-takibi {
+        display: none !important;
+    }
+
     .print-document {
         border: none !important;
         box-shadow: none !important;
@@ -808,5 +813,10 @@
         background: #fff !important;
         border: 1px solid var(--print-border-strong) !important;
         color: var(--print-ink) !important;
+    }
+
+    .sale-personnel-notes-panel,
+    #atolye-takibi {
+        display: none !important;
     }
 }

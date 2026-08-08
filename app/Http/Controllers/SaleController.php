@@ -466,7 +466,7 @@ class SaleController extends Controller
         if ($productionStagesReady) {
             $sale->load(['items.product']);
             $productionStages = $sale->productionStages()
-                ->with(['user', 'completedByUser', 'saleItem.product'])
+                ->with(['user.personnel', 'completedByUser', 'saleItem.product'])
                 ->orderByDesc('actionDate')
                 ->get();
 

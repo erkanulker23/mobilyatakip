@@ -158,6 +158,24 @@ class User extends Authenticatable implements CanResetPasswordContract
         return StorageUrl::url($this->photoUrl);
     }
 
+    /** Kullanıcı veya bağlı personel kartındaki profil fotoğrafı. */
+    public function avatarDisplayUrl(): ?string
+    {
+        if ($url = $this->photoDisplayUrl()) {
+            return $url;
+        }
+
+        $personnel = $this->relationLoaded('personnel')
+            ? $this->personnel
+            : $this->personnel()->first(['photoUrl']);
+
+        if ($personnel?->photoUrl) {
+            return StorageUrl::url($personnel->photoUrl);
+        }
+
+        return null;
+    }
+
     public function initials(): string
     {
         $initials = collect(explode(' ', $this->name ?? 'K'))

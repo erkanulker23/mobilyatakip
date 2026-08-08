@@ -312,7 +312,7 @@
         .dark .pagination-btn-active { background: #059669; border-color: #059669; color: #fff; }
         .dark .pagination-btn-disabled { background: #171717; color: #737373; }
         @media print {
-            .no-print, aside, nav, header { display: none !important; }
+            .no-print, aside, nav, header, #atolye-takibi, .sale-personnel-notes-panel { display: none !important; }
             main { padding: 0 !important; overflow: visible !important; }
             @include('partials.print-document-styles')
         }

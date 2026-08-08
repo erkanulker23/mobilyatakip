@@ -37,7 +37,7 @@ class WorkshopController extends Controller
         ];
 
         if (SaleProductionStageSchema::isReady()) {
-            $relations['productionStages'] = fn ($q) => $q->with(['user', 'completedByUser', 'saleItem.product']);
+            $relations['productionStages'] = fn ($q) => $q->with(['user.personnel', 'completedByUser', 'saleItem.product']);
         }
 
         $q = Sale::query()
@@ -106,7 +106,7 @@ class WorkshopController extends Controller
 
         if (SaleProductionStageSchema::isReady()) {
             $sale->load([
-                'productionStages.user',
+                'productionStages.user.personnel',
                 'productionStages.completedByUser',
                 'productionStages.saleItem.product',
             ]);
@@ -176,6 +176,35 @@ class WorkshopController extends Controller
         return back()->with('success', 'Not eklendi.');
     }
 
+    public function updateStage(Request $request, SaleProductionStage $stage)
+    {
+        SaleProductionStageSchema::abortIfNotReady();
+
+        $stage->load('sale');
+        $this->authorizeStageOwner($stage);
+
+        $validated = $request->validate([
+            'notes' => 'required|string|max:2000',
+        ]);
+
+        $stage->update([
+            'notes' => $validated['notes'],
+        ]);
+
+        return back()->with('success', 'Not güncellendi.');
+    }
+
+    public function destroyStage(SaleProductionStage $stage)
+    {
+        SaleProductionStageSchema::abortIfNotReady();
+
+        $stage->load('sale');
+        $this->authorizeStageOwner($stage);
+        $stage->delete();
+
+        return back()->with('success', 'Not silindi.');
+    }
+
     public function completeStage(Request $request, SaleProductionStage $stage)
     {
         SaleProductionStageSchema::abortIfNotReady();
@@ -239,6 +268,20 @@ class WorkshopController extends Controller
     {
         if ($sale->isCancelled) {
             abort(404);
+        }
+    }
+
+    private function authorizeStageOwner(SaleProductionStage $stage): void
+    {
+        $this->authorizeStageMutation($stage->sale);
+
+        $user = auth()->user();
+        if ($user?->isAdmin()) {
+            return;
+        }
+
+        if ((string) $stage->userId !== (string) $user?->id) {
+            abort(403, 'Bu notu yalnızca ekleyen kişi veya yönetici düzenleyebilir.');
         }
     }
 
