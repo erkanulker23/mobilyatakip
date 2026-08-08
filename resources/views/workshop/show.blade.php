@@ -7,6 +7,7 @@
 
     $orderStatus = $orderStatus ?? SaleDelivery::currentStatus($sale);
     $status = $orderStatus;
+    $canAddProductionStage = $canAddProductionStage ?? ! ($sale->isCancelled ?? false);
     $canEditProduction = $canEditProduction ?? ($status === SaleDelivery::IN_PRODUCTION);
     $termin = SaleDelivery::terminListMeta($sale);
     $backUrl = $backUrl ?? route('workshop.index');
@@ -38,9 +39,13 @@
     </div>
 </div>
 
-@if(! $canEditProduction)
+@if(! $canAddProductionStage)
 <div class="mb-6 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900/40 dark:text-neutral-300">
-    Bu sipariş henüz <strong>üretimde değil</strong>. Ürün listesi ve sipariş bilgilerini görüntüleyebilirsiniz; not eklemek için siparişin üretime alınması gerekir.
+    Bu sipariş iptal edilmiş; yeni aşama eklenemez.
+</div>
+@elseif(! $canEditProduction)
+<div class="mb-6 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900/40 dark:text-neutral-300">
+    Bu sipariş henüz <strong>üretimde değil</strong>. Yine de aşama ve eksiklik kaydı ekleyebilirsiniz; üretim tamamlama işlemi sipariş üretime alındığında kullanılabilir.
 </div>
 @endif
 
@@ -48,13 +53,13 @@
 <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
     Not ekleme henüz aktif değil. Sistem yöneticisinin <code class="text-xs">php artisan migrate --force</code> çalıştırması gerekiyor.
 </div>
-@elseif($canEditProduction)
+@elseif($canAddProductionStage)
 <div class="card p-6 mb-6 border-amber-200/80 dark:border-amber-900/40 bg-amber-50/30 dark:bg-amber-950/20">
     @include('partials.sale-production-stage-form', ['sale' => $sale, 'formId' => 'workshopNoteForm', 'defaultNoteType' => $defaultNoteType, 'compact' => true])
 </div>
 @endif
 
-@if($canEditProduction && ($openDeficienciesCount ?? 0) > 0)
+@if($canAddProductionStage && ($openDeficienciesCount ?? 0) > 0)
 <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
     Bu siparişte <strong>{{ $openDeficienciesCount }}</strong> açık eksiklik/yanlış parça kaydı var.
 </div>
@@ -73,7 +78,7 @@
                             <th class="table-th">Adet</th>
                             <th class="table-th">Kalem Açıklaması</th>
                             <th class="table-th">Ürün Detayı</th>
-                            @if(!empty($productionStagesReady) && $canEditProduction)
+                            @if(!empty($productionStagesReady) && $canAddProductionStage)
                             <th class="table-th text-right">Not</th>
                             @endif
                         </tr>
@@ -90,7 +95,7 @@
                             <td class="table-td">{{ $item->quantity }}</td>
                             <td class="table-td text-sm text-neutral-600 dark:text-neutral-400 whitespace-pre-wrap">{{ $item->description ?: '—' }}</td>
                             <td class="table-td text-sm text-neutral-600 dark:text-neutral-400 whitespace-pre-wrap">{{ $itemDetail !== '' ? $itemDetail : '—' }}</td>
-                            @if(!empty($productionStagesReady) && $canEditProduction)
+                            @if(!empty($productionStagesReady) && $canAddProductionStage)
                             <td class="table-td text-right">
                                 <button type="button" class="item-note-btn text-sm font-medium text-amber-700 hover:text-amber-800 dark:text-amber-300 dark:hover:text-amber-200" data-item-id="{{ $item->id }}" data-item-name="{{ $itemName }}">
                                     Eksiklik bildir
@@ -99,7 +104,7 @@
                             @endif
                         </tr>
                         @empty
-                        <tr><td colspan="{{ (!empty($productionStagesReady) && $canEditProduction) ? 6 : 5 }}" class="table-td text-neutral-500">Kalem yok</td></tr>
+                        <tr><td colspan="{{ (!empty($productionStagesReady) && $canAddProductionStage) ? 6 : 5 }}" class="table-td text-neutral-500">Kalem yok</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -113,7 +118,7 @@
             @else
             <div class="space-y-4">
                 @foreach($sale->productionStages as $stage)
-                @include('workshop.partials.production-stage-item', ['stage' => $stage, 'showActions' => $canEditProduction ?? false])
+                @include('workshop.partials.production-stage-item', ['stage' => $stage, 'showActions' => $canAddProductionStage ?? false])
                 @endforeach
             </div>
             @endif

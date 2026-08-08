@@ -123,6 +123,7 @@ class WorkshopController extends Controller
 
         $productionStagesReady = SaleProductionStageSchema::isReady();
         $orderStatus = SaleDelivery::currentStatus($sale);
+        $canAddProductionStage = ! $sale->isCancelled;
         $canEditProduction = $orderStatus === SaleDelivery::IN_PRODUCTION
             && (auth()->user()?->isAdmin() || auth()->user()?->isWorkshop());
 
@@ -138,6 +139,7 @@ class WorkshopController extends Controller
             'backUrl',
             'productionStagesReady',
             'openDeficienciesCount',
+            'canAddProductionStage',
             'canEditProduction',
             'orderStatus',
         ));
@@ -147,7 +149,7 @@ class WorkshopController extends Controller
     {
         SaleProductionStageSchema::abortIfNotReady();
 
-        $this->authorizeProductionSale($sale);
+        $this->authorizeStageMutation($sale);
 
         $validated = $request->validate([
             'type' => 'required|in:asama,eksiklik',
@@ -181,7 +183,7 @@ class WorkshopController extends Controller
         SaleProductionStageSchema::abortIfNotReady();
 
         $stage->load('sale');
-        $this->authorizeProductionSale($stage->sale);
+        $this->authorizeStageMutation($stage->sale);
 
         if ($stage->isCompleted) {
             return back()->with('info', 'Bu kayıt zaten tamamlanmış.');
@@ -232,6 +234,13 @@ class WorkshopController extends Controller
 
         if (SaleDelivery::isDelivered($sale)) {
             abort(403, 'Teslim edilmiş sipariş görüntülenemez.');
+        }
+    }
+
+    private function authorizeStageMutation(Sale $sale): void
+    {
+        if ($sale->isCancelled) {
+            abort(404);
         }
     }
 

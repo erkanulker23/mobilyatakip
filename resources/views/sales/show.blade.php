@@ -263,7 +263,7 @@
     'sale' => $sale,
     'productionStages' => $productionStages ?? collect(),
     'productionStagesReady' => $productionStagesReady ?? false,
-    'canEditProduction' => $canEditProduction ?? false,
+    'canAddProductionStage' => $canAddProductionStage ?? false,
     'openDeficienciesCount' => $openDeficienciesCount ?? 0,
 ])
 

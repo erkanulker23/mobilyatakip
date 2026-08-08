@@ -461,7 +461,7 @@ class SaleController extends Controller
         $productionStagesReady = \App\Support\SaleProductionStageSchema::isReady();
         $productionStages = collect();
         $openDeficienciesCount = 0;
-        $canEditProduction = false;
+        $canAddProductionStage = ! ($sale->isCancelled ?? false);
 
         if ($productionStagesReady) {
             $sale->load(['items.product']);
@@ -469,10 +469,6 @@ class SaleController extends Controller
                 ->with(['user', 'completedByUser', 'saleItem.product'])
                 ->orderByDesc('actionDate')
                 ->get();
-
-            $orderStatus = \App\Support\SaleDelivery::currentStatus($sale);
-            $canEditProduction = ! ($sale->isCancelled ?? false)
-                && $orderStatus === \App\Support\SaleDelivery::IN_PRODUCTION;
 
             $openDeficienciesCount = $productionStages
                 ->where('type', \App\Models\SaleProductionStage::TYPE_DEFICIENCY)
@@ -492,7 +488,7 @@ class SaleController extends Controller
             'suppliers',
             'productionStages',
             'productionStagesReady',
-            'canEditProduction',
+            'canAddProductionStage',
             'openDeficienciesCount',
             'customerLedger',
         ));
