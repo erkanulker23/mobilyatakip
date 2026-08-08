@@ -14,7 +14,13 @@ class KasaService
     {
         $opening = (float) ($kasa->openingBalance ?? 0);
         $netMovements = (float) $kasa->hareketler()->sum('amount');
-        $totalIn = (float) $kasa->hareketler()->where('amount', '>', 0)->sum('amount');
+        $totalIn = (float) $kasa->hareketler()
+            ->where('amount', '>', 0)
+            ->where(function ($q) {
+                $q->whereNull('description')
+                    ->orWhere('description', 'not like', 'Gider iptal%');
+            })
+            ->sum('amount');
         $totalOut = abs((float) $kasa->hareketler()->where('amount', '<', 0)->sum('amount'));
 
         return [

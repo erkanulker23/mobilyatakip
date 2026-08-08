@@ -6,9 +6,18 @@ use App\Models\KasaHareket;
 
 class KasaMovement
 {
+    public static function isExpenseReversal(KasaHareket $h): bool
+    {
+        return str_starts_with((string) ($h->description ?? ''), 'Gider iptal');
+    }
+
     /** @return array{label: string, tone: string, icon: string} */
     public static function typeBadge(KasaHareket $h): array
     {
+        if (self::isExpenseReversal($h)) {
+            return ['label' => 'Gider iptali', 'tone' => 'slate', 'icon' => '↩'];
+        }
+
         if ($h->refType === 'kasa_transfer' || in_array($h->type, ['virman_cikis', 'virman_giris'], true)) {
             return ['label' => 'Virman', 'tone' => 'indigo', 'icon' => '↔'];
         }

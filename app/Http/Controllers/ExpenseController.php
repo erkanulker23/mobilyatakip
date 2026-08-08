@@ -76,18 +76,7 @@ class ExpenseController extends Controller
         $validated['kdvRate'] = 0;
         $validated['kdvAmount'] = 0;
         $expense = Expense::create($validated);
-        if (!empty($validated['kasaId'])) {
-            KasaHareket::create([
-                'kasaId' => $validated['kasaId'],
-                'type' => 'cikis',
-                'amount' => -(float) $validated['amount'],
-                'movementDate' => $validated['expenseDate'],
-                'description' => 'Gider - ' . ($validated['category'] ? $validated['category'] . ': ' : '') . ($validated['description'] ?? ''),
-                'createdBy' => auth()->id() ?: null,
-                'refType' => 'expense',
-                'refId' => $expense->id,
-            ]);
-        }
+        $this->syncExpenseKasaMovement($expense, $validated);
         $this->auditService->logCreate('expense', $expense->id, ['amount' => $validated['amount'], 'description' => $validated['description']]);
         return redirect()->route('expenses.show', $expense)->with('success', 'Gider kaydedildi.');
     }
@@ -123,30 +112,7 @@ class ExpenseController extends Controller
         $validated['kdvAmount'] = 0;
         $expense->update($validated);
 
-        $hareket = KasaHareket::where('refType', 'expense')->where('refId', $expense->id)->first();
-        if ($hareket) {
-            KasaHareket::create([
-                'kasaId' => $hareket->kasaId,
-                'type' => 'giris',
-                'amount' => abs((float) $hareket->amount),
-                'movementDate' => $validated['expenseDate'],
-                'description' => 'Gider iptal - ' . ($expense->category ? $expense->category . ': ' : '') . $expense->description,
-                'createdBy' => auth()->id() ?: null,
-            ]);
-            $hareket->delete();
-        }
-        if (!empty($validated['kasaId'])) {
-            KasaHareket::create([
-                'kasaId' => $validated['kasaId'],
-                'type' => 'cikis',
-                'amount' => -(float) $validated['amount'],
-                'movementDate' => $validated['expenseDate'],
-                'description' => 'Gider - ' . ($validated['category'] ? $validated['category'] . ': ' : '') . ($validated['description'] ?? ''),
-                'createdBy' => auth()->id() ?: null,
-                'refType' => 'expense',
-                'refId' => $expense->id,
-            ]);
-        }
+        $this->syncExpenseKasaMovement($expense, $validated);
 
         $this->auditService->logUpdate('expense', $expense->id, [], [
             'amount' => $validated['amount'],
@@ -158,20 +124,41 @@ class ExpenseController extends Controller
 
     public function destroy(Expense $expense)
     {
-        $hareket = KasaHareket::where('refType', 'expense')->where('refId', $expense->id)->first();
-        if ($hareket) {
-            KasaHareket::create([
-                'kasaId' => $hareket->kasaId,
-                'type' => 'giris',
-                'amount' => abs((float) $hareket->amount),
-                'movementDate' => now(),
-                'description' => 'Gider iptal - ' . ($expense->category ? $expense->category . ': ' : '') . $expense->description,
-                'createdBy' => auth()->id() ?: null,
-            ]);
-            $hareket->delete();
-        }
+        KasaHareket::where('refType', 'expense')->where('refId', $expense->id)->delete();
         $this->auditService->logDelete('expense', $expense->id, ['amount' => (float) $expense->amount, 'description' => $expense->description]);
         $expense->delete();
         return redirect()->route('expenses.index')->with('success', 'Gider silindi.');
+    }
+
+    /** @param  array<string, mixed>  $validated */
+    private function syncExpenseKasaMovement(Expense $expense, array $validated): void
+    {
+        $hareket = KasaHareket::where('refType', 'expense')->where('refId', $expense->id)->first();
+        $description = 'Gider - ' . ($validated['category'] ? $validated['category'] . ': ' : '') . ($validated['description'] ?? '');
+
+        if (empty($validated['kasaId'])) {
+            $hareket?->delete();
+
+            return;
+        }
+
+        $payload = [
+            'kasaId' => $validated['kasaId'],
+            'type' => 'cikis',
+            'amount' => -(float) $validated['amount'],
+            'movementDate' => $validated['expenseDate'],
+            'description' => $description,
+            'createdBy' => auth()->id() ?: null,
+            'refType' => 'expense',
+            'refId' => $expense->id,
+        ];
+
+        if ($hareket) {
+            $hareket->update($payload);
+
+            return;
+        }
+
+        KasaHareket::create($payload);
     }
 }
