@@ -51,15 +51,16 @@
         <p class="text-xs text-neutral-400 mt-1">Stok uyarıları</p>
     </a>
     @php
-        $otRate = $onTimeDelivery['rate'] ?? null;
-        $otTotal = $onTimeDelivery['totalCount'] ?? 0;
+        $otRate = $deliveryScore['rate'] ?? null;
+        $otTotal = $deliveryScore['totalCount'] ?? 0;
+        $otOverdue = $deliveryScore['overduePendingCount'] ?? 0;
         $otClass = $otRate === null
             ? 'text-neutral-900 dark:text-neutral-100'
             : ($otRate >= 90 ? 'text-emerald-600' : ($otRate >= 70 ? 'text-amber-600' : 'text-red-600'));
         $otRing = $otRate !== null && $otRate < 70 ? 'ring-1 ring-red-200 dark:ring-red-800/60' : ($otRate !== null && $otRate < 90 ? 'ring-1 ring-amber-200 dark:ring-amber-800/60' : '');
     @endphp
     <div class="card p-4 {{ $otRing }}">
-        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Zamanında teslimat</p>
+        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Teslimat skoru</p>
         <p class="text-xl sm:text-2xl font-semibold {{ $otClass }} mt-1 tabular-nums">
             @if($otRate !== null)
                 %{{ number_format($otRate, $otRate == (int) $otRate ? 0 : 1, ',', '.') }}
@@ -68,12 +69,15 @@
             @endif
         </p>
         @if($otTotal > 0)
-            <p class="text-xs text-neutral-400 mt-1">{{ $onTimeDelivery['onTimeCount'] }}/{{ $otTotal }} bu ay (terminli)</p>
-            @if(($onTimeDeliveryAllTime['totalCount'] ?? 0) > 0 && ($onTimeDeliveryAllTime['rate'] ?? null) !== null)
-                <p class="text-xs text-neutral-400">Genel: %{{ number_format($onTimeDeliveryAllTime['rate'], $onTimeDeliveryAllTime['rate'] == (int) $onTimeDeliveryAllTime['rate'] ? 0 : 1, ',', '.') }}</p>
+            <p class="text-xs text-neutral-400 mt-1">{{ $deliveryScore['onTimeCount'] }}/{{ $otTotal }} zamanında</p>
+            @if($otOverdue > 0)
+                <p class="text-xs text-red-600 font-medium mt-0.5">{{ $otOverdue }} termin geçti, teslim yok</p>
+            @endif
+            @if(($deliveryScoreThisMonth['totalCount'] ?? 0) > 0 && ($deliveryScoreThisMonth['rate'] ?? null) !== null)
+                <p class="text-xs text-neutral-400">Bu ay termin: %{{ number_format($deliveryScoreThisMonth['rate'], $deliveryScoreThisMonth['rate'] == (int) $deliveryScoreThisMonth['rate'] ? 0 : 1, ',', '.') }}</p>
             @endif
         @else
-            <p class="text-xs text-neutral-400 mt-1">Bu ay terminli teslim yok</p>
+            <p class="text-xs text-neutral-400 mt-1">Değerlendirilecek termin yok</p>
         @endif
     </div>
 </div>

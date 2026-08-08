@@ -338,25 +338,40 @@ class SaleDelivery
     }
 
     /**
-     * Zamanında teslimat oranı — termin tarihi olan teslim edilmiş siparişler.
+     * Teslimat skoru — termin tarihi olan siparişlerde zamanında teslim performansı.
      *
-     * @return array{rate: ?float, onTimeCount: int, lateCount: int, totalCount: int}
+     * Termin günü gelmiş veya teslim edilmiş siparişler değerlendirilir.
+     * Zamanında: termin gününde/öncesinde teslim veya termin henüz gelmemiş bekleyen sipariş.
+     * Gecikmeli: termin sonrası teslim veya termin geçmiş hâlâ teslim edilmemiş sipariş.
+     *
+     * @return array{rate: ?float, onTimeCount: int, lateCount: int, totalCount: int, overduePendingCount: int}
      */
-    public static function onTimeDeliveryStats(?\Carbon\CarbonInterface $from = null, ?\Carbon\CarbonInterface $to = null): array
+    public static function deliveryScoreStats(?\Carbon\CarbonInterface $from = null, ?\Carbon\CarbonInterface $to = null): array
     {
-        $query = Sale::query()
+        $today = \Carbon\Carbon::today()->toDateString();
+
+        $base = Sale::query()
             ->where('isCancelled', false)
-            ->whereNotNull('deliveredAt')
             ->whereNotNull('dueDate');
 
         if ($from) {
-            $query->whereDate('deliveredAt', '>=', $from);
+            $base->whereDate('dueDate', '>=', $from);
         }
         if ($to) {
-            $query->whereDate('deliveredAt', '<=', $to);
+            $base->whereDate('dueDate', '<=', $to);
         }
 
-        $total = (int) (clone $query)->count();
+        $eligible = (clone $base)->where(function ($q) use ($today) {
+            $q->whereNotNull('deliveredAt')
+                ->orWhereDate('dueDate', '<=', $today);
+        });
+
+        $total = (int) (clone $eligible)->count();
+
+        $overduePending = (int) (clone $base)
+            ->pendingDelivery()
+            ->whereDate('dueDate', '<', $today)
+            ->count();
 
         if ($total === 0) {
             return [
@@ -364,18 +379,32 @@ class SaleDelivery
                 'onTimeCount' => 0,
                 'lateCount' => 0,
                 'totalCount' => 0,
+                'overduePendingCount' => $overduePending,
             ];
         }
 
-        $onTime = (int) (clone $query)
-            ->whereRaw('DATE(deliveredAt) <= DATE(dueDate)')
-            ->count();
+        $onTime = (int) (clone $eligible)->where(function ($q) use ($today) {
+            $q->where(function ($delivered) {
+                $delivered->whereNotNull('deliveredAt')
+                    ->whereRaw('DATE(deliveredAt) <= DATE(dueDate)');
+            })->orWhere(function ($pending) use ($today) {
+                $pending->pendingDelivery()
+                    ->whereDate('dueDate', '>=', $today);
+            });
+        })->count();
 
         return [
             'rate' => round($onTime / $total * 100, 1),
             'onTimeCount' => $onTime,
             'lateCount' => $total - $onTime,
             'totalCount' => $total,
+            'overduePendingCount' => $overduePending,
         ];
+    }
+
+    /** @deprecated Use deliveryScoreStats() */
+    public static function onTimeDeliveryStats(?\Carbon\CarbonInterface $from = null, ?\Carbon\CarbonInterface $to = null): array
+    {
+        return self::deliveryScoreStats($from, $to);
     }
 }

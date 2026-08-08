@@ -160,8 +160,8 @@ class DashboardController extends Controller
         $employeeOfTheMonth = $topPersonnel->first();
         $employeeOfTheMonthLabel = Carbon::now()->locale('tr')->isoFormat('MMMM YYYY');
 
-        $onTimeDelivery = SaleDelivery::onTimeDeliveryStats($monthStart, $monthEnd);
-        $onTimeDeliveryAllTime = SaleDelivery::onTimeDeliveryStats();
+        $deliveryScore = SaleDelivery::deliveryScoreStats();
+        $deliveryScoreThisMonth = SaleDelivery::deliveryScoreStats($monthStart, $monthEnd);
 
         $defaultWorkTab = $urgentDueSales->isNotEmpty() || $upcomingSales->isNotEmpty()
             ? 'termin'
@@ -187,8 +187,8 @@ class DashboardController extends Controller
             'employeeOfTheMonth',
             'employeeOfTheMonthLabel',
             'defaultWorkTab',
-            'onTimeDelivery',
-            'onTimeDeliveryAllTime',
+            'deliveryScore',
+            'deliveryScoreThisMonth',
         ) + ['terminAlertDays' => self::TERMIN_ALERT_DAYS]);
     }
 
