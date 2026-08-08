@@ -61,6 +61,25 @@ class DashboardController extends Controller
             ->where('amount', '>', 0)
             ->sum('amount');
 
+        $weekStart = Carbon::now()->startOfWeek();
+        $weekEnd = Carbon::now()->endOfWeek();
+
+        $weekSalesBase = Sale::query()
+            ->where('isCancelled', false)
+            ->whereBetween('saleDate', [$weekStart->toDateString(), $weekEnd->toDateString()]);
+
+        $weekSalesCount = (int) (clone $weekSalesBase)->count();
+        $weekSalesTotal = (float) (clone $weekSalesBase)->sum('grandTotal');
+
+        $weekKasaInflow = (float) KasaHareket::query()
+            ->ledger()
+            ->where('refType', 'customer_payment')
+            ->whereBetween('movementDate', [$weekStart->toDateString(), $weekEnd->toDateString()])
+            ->where('amount', '>', 0)
+            ->sum('amount');
+
+        $weekRangeLabel = $weekStart->locale('tr')->isoFormat('D MMM') . ' – ' . $weekEnd->locale('tr')->isoFormat('D MMM');
+
         $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
         $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
 
@@ -209,6 +228,12 @@ class DashboardController extends Controller
             'todaySalesCount',
             'todaySalesTotal',
             'todayKasaInflow',
+            'weekSalesCount',
+            'weekSalesTotal',
+            'weekKasaInflow',
+            'weekStart',
+            'weekEnd',
+            'weekRangeLabel',
         ) + ['terminAlertDays' => self::TERMIN_ALERT_DAYS]);
     }
 
