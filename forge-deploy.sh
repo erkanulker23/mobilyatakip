@@ -35,6 +35,7 @@ fi
 npm run build
 
 # 5. Cache (config/route/view — veritabanına dokunmaz)
+php artisan optimize:clear
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache

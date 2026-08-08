@@ -76,8 +76,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/atolyem', [\App\Http\Controllers\WorkshopController::class, 'dashboard'])->name('workshop.dashboard');
     Route::get('/atolye', [\App\Http\Controllers\WorkshopController::class, 'index'])->name('workshop.index');
     Route::post('/atolye/asama/{stage}/yapildi', [\App\Http\Controllers\WorkshopController::class, 'completeStage'])->name('workshop.complete-stage');
-    Route::put('/atolye/asama/{stage}', [\App\Http\Controllers\WorkshopController::class, 'updateStage'])->name('workshop.update-stage');
-    Route::delete('/atolye/asama/{stage}', [\App\Http\Controllers\WorkshopController::class, 'destroyStage'])->name('workshop.destroy-stage');
+    Route::post('/atolye/asama/{stage}/guncelle', [\App\Http\Controllers\WorkshopController::class, 'updateStage'])->name('workshop.update-stage');
+    Route::post('/atolye/asama/{stage}/sil', [\App\Http\Controllers\WorkshopController::class, 'destroyStage'])->name('workshop.destroy-stage');
     Route::post('/atolye/{sale}/bitti', [\App\Http\Controllers\WorkshopController::class, 'completeProduction'])->name('workshop.complete-production');
     Route::post('/atolye/{sale}/asama', [\App\Http\Controllers\WorkshopController::class, 'storeStage'])->name('workshop.store-stage');
     Route::get('/atolye/{sale}', [\App\Http\Controllers\WorkshopController::class, 'show'])->name('workshop.show');
