@@ -33,10 +33,14 @@ class UserTaskController extends Controller
             'completedByUser:id,name',
         ]);
 
-        if ($request->filled('personnelId')) {
-            $query->where('personnelId', $request->personnelId);
-        } elseif ($request->filled('userId')) {
-            $query->where('userId', $request->userId);
+        $this->applyTaskVisibilityScope($query, $user);
+
+        if ($user->isAdmin()) {
+            if ($request->filled('personnelId')) {
+                $query->where('personnelId', $request->personnelId);
+            } elseif ($request->filled('userId')) {
+                $query->where('userId', $request->userId);
+            }
         }
 
         $query->where(function ($w) use ($monthStart, $monthEnd) {
@@ -74,25 +78,30 @@ class UserTaskController extends Controller
         $ownerId = (string) $request->user()->id;
         $personnelId = null;
 
-        if (! empty($validated['personnelId'])) {
-            $personnel = Personnel::query()
-                ->where('id', $validated['personnelId'])
-                ->where('isActive', true)
-                ->first();
+        if ($request->user()->isAdmin()) {
+            if (! empty($validated['personnelId'])) {
+                $personnel = Personnel::query()
+                    ->where('id', $validated['personnelId'])
+                    ->where('isActive', true)
+                    ->first();
 
-            if (! $personnel) {
-                return response()->json(['message' => 'Geçersiz personel seçimi.'], 422);
-            }
+                if (! $personnel) {
+                    return response()->json(['message' => 'Geçersiz personel seçimi.'], 422);
+                }
 
-            $personnelId = $personnel->id;
-            $ownerId = $personnel->userId
-                ? (string) $personnel->userId
-                : (string) $request->user()->id;
-        } elseif ($request->user()->isAdmin() && ! empty($validated['userId'])) {
-            $ownerId = (string) $validated['userId'];
-            if (! User::where('id', $ownerId)->where('isActive', true)->exists()) {
-                return response()->json(['message' => 'Geçersiz kullanıcı.'], 422);
+                $personnelId = $personnel->id;
+                $ownerId = $personnel->userId
+                    ? (string) $personnel->userId
+                    : (string) $request->user()->id;
+            } elseif (! empty($validated['userId'])) {
+                $ownerId = (string) $validated['userId'];
+                if (! User::where('id', $ownerId)->where('isActive', true)->exists()) {
+                    return response()->json(['message' => 'Geçersiz kullanıcı.'], 422);
+                }
             }
+        } elseif ($request->user()->personnel?->id) {
+            $personnelId = $request->user()->personnel->id;
+            $ownerId = (string) $request->user()->id;
         }
 
         $task = UserTask::create([
@@ -162,25 +171,24 @@ class UserTaskController extends Controller
         }
 
         if (array_key_exists('personnelId', $validated)) {
-            if ($validated['personnelId'] === null || $validated['personnelId'] === '') {
-                $updates['personnelId'] = null;
-                if (! $request->user()->isAdmin()) {
-                    $updates['userId'] = (string) $request->user()->id;
-                }
-            } else {
-                $personnel = Personnel::query()
-                    ->where('id', $validated['personnelId'])
-                    ->where('isActive', true)
-                    ->first();
+            if ($request->user()->isAdmin()) {
+                if ($validated['personnelId'] === null || $validated['personnelId'] === '') {
+                    $updates['personnelId'] = null;
+                } else {
+                    $personnel = Personnel::query()
+                        ->where('id', $validated['personnelId'])
+                        ->where('isActive', true)
+                        ->first();
 
-                if (! $personnel) {
-                    return response()->json(['message' => 'Geçersiz personel seçimi.'], 422);
-                }
+                    if (! $personnel) {
+                        return response()->json(['message' => 'Geçersiz personel seçimi.'], 422);
+                    }
 
-                $updates['personnelId'] = $personnel->id;
-                $updates['userId'] = $personnel->userId
-                    ? (string) $personnel->userId
-                    : (string) $request->user()->id;
+                    $updates['personnelId'] = $personnel->id;
+                    $updates['userId'] = $personnel->userId
+                        ? (string) $personnel->userId
+                        : (string) $request->user()->id;
+                }
             }
         }
 
@@ -222,9 +230,43 @@ class UserTaskController extends Controller
 
     private function authorizeTask(UserTask $task): void
     {
-        if (! auth()->check()) {
+        $user = auth()->user();
+        if (! $user) {
             abort(403, 'Bu görevi yönetme yetkiniz yok.');
         }
+
+        if ($user->isAdmin()) {
+            return;
+        }
+
+        $personnelId = $user->personnel?->id;
+        $ownsTask = (string) $task->userId === (string) $user->id
+            || ($personnelId && (string) $task->personnelId === (string) $personnelId);
+
+        if (! $ownsTask) {
+            abort(403, 'Bu görevi yönetme yetkiniz yok.');
+        }
+    }
+
+    /** @param  \Illuminate\Database\Eloquent\Builder<UserTask>  $query */
+    private function applyTaskVisibilityScope($query, User $user): void
+    {
+        if ($user->isAdmin()) {
+            return;
+        }
+
+        $personnelId = $user->personnel?->id;
+
+        $query->where(function ($w) use ($user, $personnelId) {
+            if ($personnelId) {
+                $w->where('personnelId', $personnelId)
+                    ->orWhere(function ($inner) use ($user) {
+                        $inner->where('userId', $user->id)->whereNull('personnelId');
+                    });
+            } else {
+                $w->where('userId', $user->id);
+            }
+        });
     }
 
     private function taskPayload(UserTask $task, array $completerFallback = []): array

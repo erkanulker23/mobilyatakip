@@ -28,6 +28,9 @@ class DashboardController extends Controller
         }
 
         $showDashboardMetrics = auth()->user()?->canSeeDashboardMetrics() ?? false;
+        $showPersonalTasks = auth()->user()?->showsPersonalTasksDashboard() ?? false;
+        $taskPersonnel = $showPersonalTasks ? $this->taskPersonnelForCurrentUser() : collect();
+        $personalPersonnelId = auth()->user()?->personnel?->id;
 
         $stats = $showDashboardMetrics ? [
             'salesCount' => Sale::where('isCancelled', false)->count(),
@@ -222,6 +225,9 @@ class DashboardController extends Controller
 
         return view('dashboard.index', compact(
             'showDashboardMetrics',
+            'showPersonalTasks',
+            'taskPersonnel',
+            'personalPersonnelId',
             'stats',
             'monthlySales',
             'monthlyCollected',
@@ -257,13 +263,26 @@ class DashboardController extends Controller
 
     public function tasks()
     {
+        $showPersonalTasks = auth()->user()?->showsPersonalTasksDashboard() ?? false;
+
         return view('tasks.index', [
             'taskPersonnel' => $this->taskPersonnelForCurrentUser(),
+            'showPersonalTasks' => $showPersonalTasks,
+            'personalPersonnelId' => auth()->user()?->personnel?->id,
         ]);
     }
 
     private function taskPersonnelForCurrentUser()
     {
-        return \App\Models\Personnel::where('isActive', true)->orderBy('name')->get(['id', 'name', 'title', 'userId', 'photoUrl']);
+        $user = auth()->user();
+        if ($user?->isAdmin()) {
+            return \App\Models\Personnel::where('isActive', true)->orderBy('name')->get(['id', 'name', 'title', 'userId', 'photoUrl']);
+        }
+
+        if ($user?->personnel && $user->personnel->isActive) {
+            return collect([$user->personnel]);
+        }
+
+        return collect();
     }
 }

@@ -1,6 +1,10 @@
 @php
+    $personalTasksView = $personalTasksView ?? false;
+    $personalPersonnelId = $personalPersonnelId ?? null;
     $currentUserId = (string) auth()->id();
-    $initialPersonnelFilter = request('personnelId', '');
+    $initialPersonnelFilter = $personalTasksView && $personalPersonnelId
+        ? (string) $personalPersonnelId
+        : request('personnelId', '');
     $taskColorPalette = \App\Support\UserTaskColor::PALETTE;
     $taskColorMapJson = collect(\App\Support\UserTaskColor::allowedKeys())->mapWithKeys(function ($key) {
         $c = \App\Support\UserTaskColor::classes($key);
@@ -28,18 +32,24 @@
 <div class="card overflow-hidden mb-8" id="yapilacaklar" x-data="dashboardTasks()" x-init="init()">
     <div class="card-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-            <span class="text-base font-semibold">Yapılacaklar</span>
+            <span class="text-base font-semibold">{{ $personalTasksView ? 'Yapılacaklarım' : 'Yapılacaklar' }}</span>
             <p class="text-xs font-normal text-neutral-500 mt-0.5">
-                Tüm personelin görevlerini görüntüleyebilir, atayabilir ve düzenleyebilirsiniz
+                @if($personalTasksView)
+                    Size atanmış görevlerinizi görüntüleyin ve tamamlayın
+                @else
+                    Tüm personelin görevlerini görüntüleyebilir, atayabilir ve düzenleyebilirsiniz
+                @endif
             </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
+            @unless($personalTasksView)
             <select x-model="filterPersonnelId" @change="loadTasks()" class="form-select text-sm min-h-[36px] py-1.5 max-w-[220px]">
                 <option value="">Tüm personel</option>
                 @foreach($taskPersonnel ?? [] as $person)
                 <option value="{{ $person->id }}">{{ $person->name }}@if($person->title) — {{ $person->title }}@endif</option>
                 @endforeach
             </select>
+            @endunless
             <button type="button" @click="openCreateModal()" class="btn-primary text-sm min-h-[36px] py-1.5">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 Görev Ekle
@@ -135,8 +145,8 @@
         <div>
             <div class="flex flex-wrap items-end justify-between gap-3 mb-4">
                 <div>
-                    <h3 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">Personel Görevleri</h3>
-                    <p class="text-xs text-neutral-500 mt-0.5">Her personelin açık görevleri ayrı satırda listelenir</p>
+                    <h3 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">{{ $personalTasksView ? 'Görevlerim' : 'Personel Görevleri' }}</h3>
+                    <p class="text-xs text-neutral-500 mt-0.5">{{ $personalTasksView ? 'Açık ve tamamlanan görevleriniz' : 'Her personelin açık görevleri ayrı satırda listelenir' }}</p>
                 </div>
             </div>
 
@@ -247,6 +257,7 @@
                         <label class="form-label">Tarih</label>
                         <input type="date" x-model="form.dueDate" class="form-input">
                     </div>
+                    @unless($personalTasksView)
                     <div>
                         <label class="form-label">Personel</label>
                         <select x-model="form.personnelId" class="form-select">
@@ -256,6 +267,7 @@
                             </template>
                         </select>
                     </div>
+                    @endunless
                 </div>
                 <div>
                     <label class="form-label">Öncelik</label>
@@ -303,6 +315,7 @@
                     <label class="form-label">Tarih</label>
                     <input type="date" x-model="editForm.dueDate" class="form-input">
                 </div>
+                @unless($personalTasksView)
                 <div>
                     <label class="form-label">Personel</label>
                     <select x-model="editForm.personnelId" class="form-select">
@@ -312,6 +325,7 @@
                         </template>
                     </select>
                 </div>
+                @endunless
             </div>
             <div>
                 <label class="form-label">Öncelik</label>
@@ -353,6 +367,8 @@ function dashboardTasks() {
     const apiUpdateBase = @json(url('/api/user-tasks'));
     const currentUserId = @json($currentUserId);
     const personnelOptions = @json($taskPersonnelOptions);
+    const personalTasksView = @json($personalTasksView);
+    const defaultPersonnelId = @json($personalTasksView && $personalPersonnelId ? (string) $personalPersonnelId : '');
 
     function localDateStr(date) {
         const d = date || new Date();
@@ -371,6 +387,8 @@ function dashboardTasks() {
         showCreateModal: false,
         formError: '',
         filterPersonnelId: @json($initialPersonnelFilter),
+        personalTasksView,
+        defaultPersonnelId,
         currentMonth: today.slice(0, 7),
         selectedDate: today,
         editingTaskId: null,
@@ -421,7 +439,7 @@ function dashboardTasks() {
                 completedCount: this.tasks.filter(t => t.personnelId === p.id && t.isCompleted).length,
             }));
 
-            if (!this.filterPersonnelId) {
+            if (!this.filterPersonnelId && !this.personalTasksView) {
                 groups.push({
                     id: '__unassigned__',
                     name: 'Atanmamış',
@@ -431,6 +449,19 @@ function dashboardTasks() {
                     openTasks: sortOpenTasks(this.tasks.filter(t => !t.personnelId && !t.isCompleted)),
                     completedTasks: sortCompletedTasks(this.tasks.filter(t => !t.personnelId)),
                     completedCount: this.tasks.filter(t => !t.personnelId && t.isCompleted).length,
+                });
+            }
+
+            if (this.personalTasksView && groups.length === 0) {
+                groups.push({
+                    id: '__mine__',
+                    name: 'Görevlerim',
+                    title: 'Size atanmış görevler',
+                    photoUrl: null,
+                    label: 'Görevlerim',
+                    openTasks: sortOpenTasks(this.tasks.filter(t => !t.isCompleted)),
+                    completedTasks: sortCompletedTasks(this.tasks.filter(t => t.isCompleted)),
+                    completedCount: this.tasks.filter(t => t.isCompleted).length,
                 });
             }
 
@@ -595,7 +626,7 @@ function dashboardTasks() {
                 title: '',
                 dueDate: this.selectedDate || today,
                 color: 'blue',
-                personnelId: this.filterPersonnelId || '',
+                personnelId: this.filterPersonnelId || this.defaultPersonnelId || '',
                 notes: '',
             };
             this.showCreateModal = true;

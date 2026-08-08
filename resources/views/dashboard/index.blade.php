@@ -11,7 +11,15 @@
 <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
     <div>
         <h1 class="page-title">{{ $dashboardGreeting }}</h1>
-        <p class="page-desc mt-1">{{ ($showDashboardMetrics ?? false) ? 'Bugün odaklanmanız gereken işler ve özet rakamlar' : 'Bugün odaklanmanız gereken işler' }}</p>
+        <p class="page-desc mt-1">
+            @if($showPersonalTasks ?? false)
+                Size atanmış görevleriniz ve güncel işler
+            @elseif($showDashboardMetrics ?? false)
+                Bugün odaklanmanız gereken işler ve özet rakamlar
+            @else
+                Bugün odaklanmanız gereken işler
+            @endif
+        </p>
     </div>
     <div class="flex flex-wrap gap-2">
         <a href="{{ route('sales.create') }}" class="btn-primary text-sm">Yeni Satış</a>
@@ -119,6 +127,14 @@
         @endif
     </div>
 </div>
+@endif
+
+@if($showPersonalTasks ?? false)
+@include('partials.dashboard-tasks', [
+    'taskPersonnel' => $taskPersonnel ?? collect(),
+    'personalTasksView' => true,
+    'personalPersonnelId' => $personalPersonnelId ?? null,
+])
 @endif
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">

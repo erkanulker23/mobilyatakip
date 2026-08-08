@@ -97,6 +97,12 @@ class User extends Authenticatable implements CanResetPasswordContract
         return $this->role === 'admin';
     }
 
+    /** Personel: dashboard'da önce kendi yapılacak listesi. */
+    public function showsPersonalTasksDashboard(): bool
+    {
+        return ! $this->isAdmin() && ! $this->isWorkshop();
+    }
+
     public function personnelCategory(): ?string
     {
         return $this->personnel?->category;
