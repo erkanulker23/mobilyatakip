@@ -44,9 +44,9 @@
         <p class="text-xs font-medium text-violet-800 dark:text-violet-300 uppercase tracking-wide">Bu hafta satış</p>
         <p class="text-2xl sm:text-3xl font-semibold text-violet-700 dark:text-violet-400 mt-1 tabular-nums">{{ $weekSalesCount }}</p>
         @if($weekSalesTotal > 0)
-            <p class="text-xs text-violet-700/80 dark:text-violet-400/80 mt-1 tabular-nums">₺{{ number_format($weekSalesTotal, 0, ',', '.') }} ciro</p>
+            <p class="text-xs text-violet-700/80 dark:text-violet-400/80 mt-1 tabular-nums">₺{{ number_format($weekSalesTotal, 0, ',', '.') }} ciro · {{ $weekRangeLabel }}</p>
         @else
-            <p class="text-xs text-neutral-500 mt-1">{{ $weekRangeLabel ?? '' }}</p>
+            <p class="text-xs text-neutral-500 mt-1">{{ $weekRangeLabel }}</p>
         @endif
     </a>
     <a href="{{ route('customer-payments.create', ['list' => 1, 'from' => $weekStartStr, 'to' => $weekEndStr]) }}" class="card p-4 border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/40 dark:bg-indigo-950/20 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors">
