@@ -336,4 +336,46 @@ class SaleDelivery
             ->whereNotNull('dueDate')
             ->whereDate('dueDate', '<=', $horizon);
     }
+
+    /**
+     * Zamanında teslimat oranı — termin tarihi olan teslim edilmiş siparişler.
+     *
+     * @return array{rate: ?float, onTimeCount: int, lateCount: int, totalCount: int}
+     */
+    public static function onTimeDeliveryStats(?\Carbon\CarbonInterface $from = null, ?\Carbon\CarbonInterface $to = null): array
+    {
+        $query = Sale::query()
+            ->where('isCancelled', false)
+            ->whereNotNull('deliveredAt')
+            ->whereNotNull('dueDate');
+
+        if ($from) {
+            $query->whereDate('deliveredAt', '>=', $from);
+        }
+        if ($to) {
+            $query->whereDate('deliveredAt', '<=', $to);
+        }
+
+        $total = (int) (clone $query)->count();
+
+        if ($total === 0) {
+            return [
+                'rate' => null,
+                'onTimeCount' => 0,
+                'lateCount' => 0,
+                'totalCount' => 0,
+            ];
+        }
+
+        $onTime = (int) (clone $query)
+            ->whereRaw('DATE(deliveredAt) <= DATE(dueDate)')
+            ->count();
+
+        return [
+            'rate' => round($onTime / $total * 100, 1),
+            'onTimeCount' => $onTime,
+            'lateCount' => $total - $onTime,
+            'totalCount' => $total,
+        ];
+    }
 }

@@ -9,6 +9,7 @@ use App\Models\Purchase;
 use App\Models\ServiceTicket;
 use App\Models\User;
 use App\Services\StockService;
+use App\Support\SaleDelivery;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -159,6 +160,9 @@ class DashboardController extends Controller
         $employeeOfTheMonth = $topPersonnel->first();
         $employeeOfTheMonthLabel = Carbon::now()->locale('tr')->isoFormat('MMMM YYYY');
 
+        $onTimeDelivery = SaleDelivery::onTimeDeliveryStats($monthStart, $monthEnd);
+        $onTimeDeliveryAllTime = SaleDelivery::onTimeDeliveryStats();
+
         $defaultWorkTab = $urgentDueSales->isNotEmpty() || $upcomingSales->isNotEmpty()
             ? 'termin'
             : ($finalMeasurementSales->isNotEmpty() ? 'olcu' : ($upcomingServiceTickets->isNotEmpty() ? 'ssh' : 'termin'));
@@ -183,6 +187,8 @@ class DashboardController extends Controller
             'employeeOfTheMonth',
             'employeeOfTheMonthLabel',
             'defaultWorkTab',
+            'onTimeDelivery',
+            'onTimeDeliveryAllTime',
         ) + ['terminAlertDays' => self::TERMIN_ALERT_DAYS]);
     }
 

@@ -43,10 +43,12 @@
         <span class="text-xs text-neutral-400 self-center mr-1">Hızlı liste:</span>
         @php
             $quickLists = [
-                ['label' => 'Borçlu', 'params' => ['odeme' => 'borclu', 'deliveryStatus' => null], 'active' => request('odeme') === 'borclu' && !request('deliveryStatus'), 'tone' => 'red'],
-                ['label' => 'Ölçü bekliyor', 'params' => ['deliveryStatus' => \App\Support\SaleDelivery::FINAL_MEASUREMENT, 'odeme' => null], 'active' => request('deliveryStatus') === \App\Support\SaleDelivery::FINAL_MEASUREMENT, 'tone' => 'amber'],
+                ['label' => 'Ölçüye gidilecekler', 'params' => ['deliveryStatus' => \App\Support\SaleDelivery::FINAL_MEASUREMENT, 'odeme' => null], 'active' => request('deliveryStatus') === \App\Support\SaleDelivery::FINAL_MEASUREMENT, 'tone' => 'amber'],
                 ['label' => 'Üretimde', 'params' => ['deliveryStatus' => \App\Support\SaleDelivery::IN_PRODUCTION, 'odeme' => null], 'active' => request('deliveryStatus') === \App\Support\SaleDelivery::IN_PRODUCTION, 'tone' => 'violet'],
-                ['label' => 'Teslim bekliyor', 'params' => ['deliveryStatus' => \App\Support\SaleDelivery::PENDING, 'odeme' => null], 'active' => request('deliveryStatus') === \App\Support\SaleDelivery::PENDING && !request('odeme'), 'tone' => 'neutral'],
+                ['label' => 'Teslim bekleyenler', 'params' => ['deliveryStatus' => \App\Support\SaleDelivery::PENDING, 'odeme' => null], 'active' => request('deliveryStatus') === \App\Support\SaleDelivery::PENDING && !request('odeme'), 'tone' => 'neutral'],
+                ['label' => 'Halen görüşülüyor', 'params' => ['deliveryStatus' => \App\Support\SaleDelivery::IN_DISCUSSION, 'odeme' => null], 'active' => request('deliveryStatus') === \App\Support\SaleDelivery::IN_DISCUSSION, 'tone' => 'sky'],
+                ['label' => 'SSH var', 'params' => ['deliveryStatus' => \App\Support\SaleDelivery::SSH, 'odeme' => null], 'active' => request('deliveryStatus') === \App\Support\SaleDelivery::SSH, 'tone' => 'orange'],
+                ['label' => 'Borçlu', 'params' => ['odeme' => 'borclu', 'deliveryStatus' => null], 'active' => request('odeme') === 'borclu' && !request('deliveryStatus'), 'tone' => 'red'],
             ];
         @endphp
         @foreach($quickLists as $list)

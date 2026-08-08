@@ -20,7 +20,7 @@
 </div>
 
 {{-- Özet kartlar --}}
-<div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+<div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
     <div class="card p-4">
         <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Bu ay ciro</p>
         <p class="text-xl sm:text-2xl font-semibold text-neutral-900 dark:text-neutral-100 mt-1 tabular-nums">₺{{ number_format($monthlySales, 0, ',', '.') }}</p>
@@ -50,6 +50,32 @@
         <p class="text-xl sm:text-2xl font-semibold {{ $stats['lowStockCount'] > 0 ? 'text-red-600' : 'text-neutral-900 dark:text-neutral-100' }} mt-1">{{ $stats['lowStockCount'] }}</p>
         <p class="text-xs text-neutral-400 mt-1">Stok uyarıları</p>
     </a>
+    @php
+        $otRate = $onTimeDelivery['rate'] ?? null;
+        $otTotal = $onTimeDelivery['totalCount'] ?? 0;
+        $otClass = $otRate === null
+            ? 'text-neutral-900 dark:text-neutral-100'
+            : ($otRate >= 90 ? 'text-emerald-600' : ($otRate >= 70 ? 'text-amber-600' : 'text-red-600'));
+        $otRing = $otRate !== null && $otRate < 70 ? 'ring-1 ring-red-200 dark:ring-red-800/60' : ($otRate !== null && $otRate < 90 ? 'ring-1 ring-amber-200 dark:ring-amber-800/60' : '');
+    @endphp
+    <div class="card p-4 {{ $otRing }}">
+        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Zamanında teslimat</p>
+        <p class="text-xl sm:text-2xl font-semibold {{ $otClass }} mt-1 tabular-nums">
+            @if($otRate !== null)
+                %{{ number_format($otRate, $otRate == (int) $otRate ? 0 : 1, ',', '.') }}
+            @else
+                —
+            @endif
+        </p>
+        @if($otTotal > 0)
+            <p class="text-xs text-neutral-400 mt-1">{{ $onTimeDelivery['onTimeCount'] }}/{{ $otTotal }} bu ay (terminli)</p>
+            @if(($onTimeDeliveryAllTime['totalCount'] ?? 0) > 0 && ($onTimeDeliveryAllTime['rate'] ?? null) !== null)
+                <p class="text-xs text-neutral-400">Genel: %{{ number_format($onTimeDeliveryAllTime['rate'], $onTimeDeliveryAllTime['rate'] == (int) $onTimeDeliveryAllTime['rate'] ? 0 : 1, ',', '.') }}</p>
+            @endif
+        @else
+            <p class="text-xs text-neutral-400 mt-1">Bu ay terminli teslim yok</p>
+        @endif
+    </div>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">

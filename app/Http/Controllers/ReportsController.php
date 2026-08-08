@@ -71,6 +71,7 @@ class ReportsController extends Controller
             - (float) SupplierPayment::sum('amount'));
 
         $monthLabel = Carbon::now()->locale('tr')->isoFormat('MMMM YYYY');
+        $salesStageReports = $this->salesStageReportCards();
 
         return view('reports.index', compact(
             'monthlySales',
@@ -83,7 +84,81 @@ class ReportsController extends Controller
             'customerReceivable',
             'supplierPayable',
             'monthLabel',
+            'salesStageReports',
         ));
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function salesStageReportCards(): array
+    {
+        $definitions = [
+            [
+                'deliveryStatus' => SaleDelivery::FINAL_MEASUREMENT,
+                'label' => 'Ölçüye gidilecekler',
+                'desc' => 'Kesin ölçü alınacak siparişler',
+                'tone' => 'amber',
+                'keywords' => 'ölçü kesin ölçü bekliyor',
+            ],
+            [
+                'deliveryStatus' => SaleDelivery::IN_PRODUCTION,
+                'label' => 'Üretimde',
+                'desc' => 'Atölyede üretimi devam eden siparişler',
+                'tone' => 'violet',
+                'keywords' => 'üretim atölye',
+            ],
+            [
+                'deliveryStatus' => SaleDelivery::PENDING,
+                'label' => 'Teslim bekleyenler',
+                'desc' => 'Üretim sonrası teslimat bekleyen siparişler',
+                'tone' => 'teal',
+                'keywords' => 'teslim bekliyor sevkiyat',
+            ],
+            [
+                'deliveryStatus' => SaleDelivery::IN_DISCUSSION,
+                'label' => 'Halen görüşülüyor',
+                'desc' => 'Müşteriyle görüşmesi süren siparişler',
+                'tone' => 'sky',
+                'keywords' => 'görüşme',
+            ],
+            [
+                'deliveryStatus' => SaleDelivery::SSH,
+                'label' => 'SSH var',
+                'desc' => 'Açık servis kaydı bulunan siparişler',
+                'tone' => 'orange',
+                'keywords' => 'ssh servis',
+            ],
+            [
+                'odeme' => 'borclu',
+                'label' => 'Borçlu siparişler',
+                'desc' => 'Tahsilatı tamamlanmamış siparişler',
+                'tone' => 'red',
+                'keywords' => 'borç tahsilat ödeme',
+            ],
+        ];
+
+        $cards = [];
+        foreach ($definitions as $definition) {
+            $query = Sale::query()->where('isCancelled', false);
+
+            if (! empty($definition['deliveryStatus'])) {
+                SaleDelivery::applyDeliveryFilter($query, $definition['deliveryStatus']);
+            } elseif (($definition['odeme'] ?? null) === 'borclu') {
+                $query->whereRaw('grandTotal - COALESCE(paidAmount, 0) > 0.005');
+            }
+
+            $params = array_filter([
+                'deliveryStatus' => $definition['deliveryStatus'] ?? null,
+                'odeme' => $definition['odeme'] ?? null,
+            ]);
+
+            $cards[] = array_merge($definition, [
+                'count' => (int) $query->count(),
+                'listUrl' => route('reports.sales', $params),
+                'printUrl' => route('reports.sales.print', $params),
+            ]);
+        }
+
+        return $cards;
     }
 
     public function incomeExpense(Request $request)

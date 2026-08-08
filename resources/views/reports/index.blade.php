@@ -133,6 +133,8 @@
 </div>
 @endif
 
+@include('reports.partials.sales-stage-cards', ['salesStageReports' => $salesStageReports ?? []])
+
 <div id="reportSections" class="space-y-8">
     @foreach($categories as $catKey => $cat)
     @php $catReports = $reports->where('category', $catKey); @endphp
@@ -213,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.querySelectorAll('.report-section').forEach(function(section) {
             let sectionVisible = 0;
-            section.querySelectorAll('.report-card').forEach(function(card) {
+            section.querySelectorAll('.report-card, .sales-stage-card').forEach(function(card) {
                 const haystack = card.getAttribute('data-search') || '';
                 const match = !q || haystack.includes(q);
                 card.classList.toggle('hidden', !match);
