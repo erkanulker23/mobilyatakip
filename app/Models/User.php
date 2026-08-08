@@ -107,6 +107,12 @@ class User extends Authenticatable implements CanResetPasswordContract
         return \App\Support\WorkshopUser::isWorkshopCategory($this->personnelCategory());
     }
 
+    /** Yönetici paneli: ciro, kasa, teslimat skoru vb. */
+    public function canSeeDashboardMetrics(): bool
+    {
+        return $this->isAdmin();
+    }
+
     /** Atölye personeli: fiyat, tahsilat vb. görmez; müşteri adını operasyon ekranlarında görür. */
     public function hideCommercialData(): bool
     {

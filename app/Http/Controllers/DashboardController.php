@@ -27,12 +27,130 @@ class DashboardController extends Controller
             return redirect()->route('workshop.dashboard');
         }
 
-        $stats = [
+        $showDashboardMetrics = auth()->user()?->canSeeDashboardMetrics() ?? false;
+
+        $stats = $showDashboardMetrics ? [
             'salesCount' => Sale::where('isCancelled', false)->count(),
             'quotesCount' => Quote::count(),
             'purchasesCount' => Purchase::count(),
             'lowStockCount' => $this->stockService->getLowStock()->count(),
-        ];
+        ] : ['salesCount' => 0, 'quotesCount' => 0, 'purchasesCount' => 0, 'lowStockCount' => 0];
+
+        $monthStart = Carbon::now()->startOfMonth();
+        $monthEnd = Carbon::now()->endOfMonth();
+        $today = Carbon::today();
+        $weekStart = Carbon::now()->startOfWeek();
+        $weekEnd = Carbon::now()->endOfWeek();
+
+        if ($showDashboardMetrics) {
+            $todaySalesBase = Sale::query()
+                ->where('isCancelled', false)
+                ->whereDate('saleDate', $today);
+
+            $todaySalesCount = (int) (clone $todaySalesBase)->count();
+            $todaySalesTotal = (float) (clone $todaySalesBase)->sum('grandTotal');
+
+            $todayKasaInflow = (float) KasaHareket::query()
+                ->ledger()
+                ->where('refType', 'customer_payment')
+                ->whereDate('movementDate', $today)
+                ->where('amount', '>', 0)
+                ->sum('amount');
+
+            $weekSalesBase = Sale::query()
+                ->where('isCancelled', false)
+                ->whereBetween('saleDate', [$weekStart->toDateString(), $weekEnd->toDateString()]);
+
+            $weekSalesCount = (int) (clone $weekSalesBase)->count();
+            $weekSalesTotal = (float) (clone $weekSalesBase)->sum('grandTotal');
+
+            $weekKasaInflow = (float) KasaHareket::query()
+                ->ledger()
+                ->where('refType', 'customer_payment')
+                ->whereBetween('movementDate', [$weekStart->toDateString(), $weekEnd->toDateString()])
+                ->where('amount', '>', 0)
+                ->sum('amount');
+
+            $weekRangeLabel = $weekStart->locale('tr')->isoFormat('D MMM') . ' – ' . $weekEnd->locale('tr')->isoFormat('D MMM');
+
+            $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
+            $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
+
+            $monthlySalesBase = Sale::query()
+                ->where('isCancelled', false)
+                ->whereBetween('saleDate', [$monthStart->toDateString(), $monthEnd->toDateString()]);
+
+            $monthlySales = (float) (clone $monthlySalesBase)->sum('grandTotal');
+            $monthlyCollected = (float) (clone $monthlySalesBase)->sum('paidAmount');
+            $monthlyReceivable = (float) (clone $monthlySalesBase)
+                ->selectRaw('COALESCE(SUM(GREATEST(grandTotal - COALESCE(paidAmount, 0), 0)), 0) as total')
+                ->value('total');
+            $monthlySalesCount = (int) (clone $monthlySalesBase)->count();
+
+            $lastMonthSalesBase = Sale::query()
+                ->where('isCancelled', false)
+                ->whereBetween('saleDate', [$lastMonthStart->toDateString(), $lastMonthEnd->toDateString()]);
+
+            $lastMonthSales = (float) (clone $lastMonthSalesBase)->sum('grandTotal');
+
+            $monthlyChange = $lastMonthSales > 0
+                ? round((($monthlySales - $lastMonthSales) / $lastMonthSales) * 100, 1)
+                : ($monthlySales > 0 ? 100 : 0);
+
+            $totalCustomers = Customer::where('isActive', true)->count();
+
+            $recentSales = Sale::with('customer')
+                ->where('isCancelled', false)
+                ->orderBy('createdAt', 'desc')
+                ->take(5)
+                ->get();
+
+            $topPersonnel = Sale::query()
+                ->join('personnel', 'sales.personnelId', '=', 'personnel.id')
+                ->where('sales.isCancelled', false)
+                ->whereNotNull('sales.personnelId')
+                ->where('personnel.isActive', true)
+                ->where('sales.saleDate', '>=', $monthStart)
+                ->select(
+                    'personnel.id',
+                    'personnel.name',
+                    'personnel.title',
+                    'personnel.photoUrl',
+                )
+                ->selectRaw('COUNT(*) as sales_count')
+                ->selectRaw('COALESCE(SUM(sales.grandTotal), 0) as sales_total')
+                ->groupBy('personnel.id', 'personnel.name', 'personnel.title', 'personnel.photoUrl')
+                ->orderByDesc('sales_count')
+                ->orderByDesc('sales_total')
+                ->take(3)
+                ->get();
+
+            $employeeOfTheMonth = $topPersonnel->first();
+            $employeeOfTheMonthLabel = Carbon::now()->locale('tr')->isoFormat('MMMM YYYY');
+
+            $deliveryScore = SaleDelivery::deliveryScoreStats();
+            $deliveryScoreThisMonth = SaleDelivery::deliveryScoreStats($monthStart, $monthEnd);
+        } else {
+            $todaySalesCount = 0;
+            $todaySalesTotal = 0;
+            $todayKasaInflow = 0;
+            $weekSalesCount = 0;
+            $weekSalesTotal = 0;
+            $weekKasaInflow = 0;
+            $weekRangeLabel = $weekStart->locale('tr')->isoFormat('D MMM') . ' – ' . $weekEnd->locale('tr')->isoFormat('D MMM');
+            $monthlySales = 0;
+            $monthlyCollected = 0;
+            $monthlyReceivable = 0;
+            $monthlySalesCount = 0;
+            $monthlyChange = 0;
+            $totalCustomers = 0;
+            $recentSales = collect();
+            $topPersonnel = collect();
+            $employeeOfTheMonth = null;
+            $employeeOfTheMonthLabel = '';
+            $deliveryScore = ['rate' => null, 'onTimeCount' => 0, 'lateCount' => 0, 'totalCount' => 0, 'overduePendingCount' => 0];
+            $deliveryScoreThisMonth = $deliveryScore;
+        }
 
         $last3Days = collect(range(2, 0))->map(function ($daysAgo) {
             $date = Carbon::today()->subDays($daysAgo);
@@ -43,81 +161,6 @@ class DashboardController extends Controller
                     ->count(),
             ];
         });
-
-        $monthStart = Carbon::now()->startOfMonth();
-        $today = Carbon::today();
-
-        $todaySalesBase = Sale::query()
-            ->where('isCancelled', false)
-            ->whereDate('saleDate', $today);
-
-        $todaySalesCount = (int) (clone $todaySalesBase)->count();
-        $todaySalesTotal = (float) (clone $todaySalesBase)->sum('grandTotal');
-
-        $todayKasaInflow = (float) KasaHareket::query()
-            ->ledger()
-            ->where('refType', 'customer_payment')
-            ->whereDate('movementDate', $today)
-            ->where('amount', '>', 0)
-            ->sum('amount');
-
-        $weekStart = Carbon::now()->startOfWeek();
-        $weekEnd = Carbon::now()->endOfWeek();
-
-        $weekSalesBase = Sale::query()
-            ->where('isCancelled', false)
-            ->whereBetween('saleDate', [$weekStart->toDateString(), $weekEnd->toDateString()]);
-
-        $weekSalesCount = (int) (clone $weekSalesBase)->count();
-        $weekSalesTotal = (float) (clone $weekSalesBase)->sum('grandTotal');
-
-        $weekKasaInflow = (float) KasaHareket::query()
-            ->ledger()
-            ->where('refType', 'customer_payment')
-            ->whereBetween('movementDate', [$weekStart->toDateString(), $weekEnd->toDateString()])
-            ->where('amount', '>', 0)
-            ->sum('amount');
-
-        $weekRangeLabel = $weekStart->locale('tr')->isoFormat('D MMM') . ' – ' . $weekEnd->locale('tr')->isoFormat('D MMM');
-
-        $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
-        $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
-
-        $monthEnd = Carbon::now()->endOfMonth();
-
-        $monthlySalesBase = Sale::query()
-            ->where('isCancelled', false)
-            ->whereBetween('saleDate', [$monthStart->toDateString(), $monthEnd->toDateString()]);
-
-        $monthlySales = (float) (clone $monthlySalesBase)->sum('grandTotal');
-        $monthlyCollected = (float) (clone $monthlySalesBase)->sum('paidAmount');
-        $monthlyReceivable = (float) (clone $monthlySalesBase)
-            ->selectRaw('COALESCE(SUM(GREATEST(grandTotal - COALESCE(paidAmount, 0), 0)), 0) as total')
-            ->value('total');
-        $monthlySalesCount = (int) (clone $monthlySalesBase)->count();
-
-        $lastMonthSalesBase = Sale::query()
-            ->where('isCancelled', false)
-            ->whereBetween('saleDate', [$lastMonthStart->toDateString(), $lastMonthEnd->toDateString()]);
-
-        $lastMonthSales = (float) (clone $lastMonthSalesBase)->sum('grandTotal');
-        $lastMonthSalesCount = (int) (clone $lastMonthSalesBase)->count();
-
-        $monthlyChange = $lastMonthSales > 0
-            ? round((($monthlySales - $lastMonthSales) / $lastMonthSales) * 100, 1)
-            : ($monthlySales > 0 ? 100 : 0);
-
-        $avgOrderValue = $stats['salesCount'] > 0
-            ? (float) Sale::where('isCancelled', false)->avg('grandTotal')
-            : 0;
-
-        $totalCustomers = Customer::where('isActive', true)->count();
-
-        $recentSales = Sale::with('customer')
-            ->where('isCancelled', false)
-            ->orderBy('createdAt', 'desc')
-            ->take(5)
-            ->get();
 
         $terminHorizon = Carbon::today()->addDays(self::TERMIN_WINDOW_DAYS);
         $terminAlertHorizon = Carbon::today()->addDays(self::TERMIN_ALERT_DAYS);
@@ -173,37 +216,12 @@ class DashboardController extends Controller
             ->whereDate('dueDate', '<=', $terminHorizon)
             ->count();
 
-        $topPersonnel = Sale::query()
-            ->join('personnel', 'sales.personnelId', '=', 'personnel.id')
-            ->where('sales.isCancelled', false)
-            ->whereNotNull('sales.personnelId')
-            ->where('personnel.isActive', true)
-            ->where('sales.saleDate', '>=', $monthStart)
-            ->select(
-                'personnel.id',
-                'personnel.name',
-                'personnel.title',
-                'personnel.photoUrl',
-            )
-            ->selectRaw('COUNT(*) as sales_count')
-            ->selectRaw('COALESCE(SUM(sales.grandTotal), 0) as sales_total')
-            ->groupBy('personnel.id', 'personnel.name', 'personnel.title', 'personnel.photoUrl')
-            ->orderByDesc('sales_count')
-            ->orderByDesc('sales_total')
-            ->take(3)
-            ->get();
-
-        $employeeOfTheMonth = $topPersonnel->first();
-        $employeeOfTheMonthLabel = Carbon::now()->locale('tr')->isoFormat('MMMM YYYY');
-
-        $deliveryScore = SaleDelivery::deliveryScoreStats();
-        $deliveryScoreThisMonth = SaleDelivery::deliveryScoreStats($monthStart, $monthEnd);
-
         $defaultWorkTab = $urgentDueSales->isNotEmpty() || $upcomingSales->isNotEmpty()
             ? 'termin'
             : ($finalMeasurementSales->isNotEmpty() ? 'olcu' : ($upcomingServiceTickets->isNotEmpty() ? 'ssh' : 'termin'));
 
         return view('dashboard.index', compact(
+            'showDashboardMetrics',
             'stats',
             'monthlySales',
             'monthlyCollected',

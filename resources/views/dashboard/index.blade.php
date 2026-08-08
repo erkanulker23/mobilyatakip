@@ -11,7 +11,7 @@
 <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
     <div>
         <h1 class="page-title">{{ $dashboardGreeting }}</h1>
-        <p class="page-desc mt-1">Bugün odaklanmanız gereken işler ve özet rakamlar</p>
+        <p class="page-desc mt-1">{{ ($showDashboardMetrics ?? false) ? 'Bugün odaklanmanız gereken işler ve özet rakamlar' : 'Bugün odaklanmanız gereken işler' }}</p>
     </div>
     <div class="flex flex-wrap gap-2">
         <a href="{{ route('sales.create') }}" class="btn-primary text-sm">Yeni Satış</a>
@@ -19,6 +19,7 @@
     </div>
 </div>
 
+@if($showDashboardMetrics ?? false)
 {{-- Bugün / bu hafta özeti --}}
 @php
     $todayStr = now()->format('Y-m-d');
@@ -118,10 +119,11 @@
         @endif
     </div>
 </div>
+@endif
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
     {{-- Sol: iş listesi + son siparişler --}}
-    <div class="lg:col-span-2 space-y-5">
+    <div class="{{ ($showDashboardMetrics ?? false) ? 'lg:col-span-2' : 'lg:col-span-full' }} space-y-5">
         <div id="is-listesi" class="card overflow-hidden scroll-mt-24" x-data="{ tab: '{{ $defaultWorkTab }}' }">
             <div class="card-header flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <span>Yapılacak işler</span>
@@ -262,6 +264,7 @@
             </div>
         </div>
 
+        @if($showDashboardMetrics ?? false)
         {{-- Son siparişler --}}
         <div class="card overflow-hidden">
             <div class="card-header flex items-center justify-between">
@@ -294,8 +297,10 @@
                 </div>
             @endif
         </div>
+        @endif
     </div>
 
+    @if($showDashboardMetrics ?? false)
     {{-- Sağ: finans + personel --}}
     <div class="space-y-5">
         <div class="card p-5">
@@ -383,6 +388,7 @@
             </div>
         </div>
     </div>
+    @endif
 </div>
 
 <details class="mt-8 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/50 dark:bg-amber-950/20">
