@@ -13,7 +13,7 @@
         <h1 class="page-title">{{ $dashboardGreeting }}</h1>
         <p class="page-desc mt-1">
             @if($showPersonalTasks ?? false)
-                Size atanmış görevleriniz ve güncel işler
+                Size atanmış görevleriniz
             @elseif($showDashboardMetrics ?? false)
                 Bugün odaklanmanız gereken işler ve özet rakamlar
             @else
@@ -22,8 +22,10 @@
         </p>
     </div>
     <div class="flex flex-wrap gap-2">
+        @unless($showPersonalTasks ?? false)
         <a href="{{ route('sales.create') }}" class="btn-primary text-sm">Yeni Satış</a>
         <a href="{{ route('quotes.create') }}" class="btn-secondary text-sm">Yeni Teklif</a>
+        @endunless
     </div>
 </div>
 
@@ -135,8 +137,7 @@
     'personalTasksView' => true,
     'personalPersonnelId' => $personalPersonnelId ?? null,
 ])
-@endif
-
+@else
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
     {{-- Sol: iş listesi + son siparişler --}}
     <div class="{{ ($showDashboardMetrics ?? false) ? 'lg:col-span-2' : 'lg:col-span-full' }} space-y-5">
@@ -406,7 +407,9 @@
     </div>
     @endif
 </div>
+@endif
 
+@if(!($showPersonalTasks ?? false))
 <details class="mt-8 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/50 dark:bg-amber-950/20">
     <summary class="cursor-pointer px-4 py-3 text-sm font-medium text-amber-900 dark:text-amber-200 select-none">
         Proje başlangıç tarihi hakkında bilgi (02.08.2026)
@@ -415,4 +418,5 @@
         Bu proje 02.08.2026 tarihinde işleme alınmıştır. Bu tarihten önceki siparişlerde dikkatli olun; satış fişlerinde gerekli düzenlemeleri yapın. Kasa defterleri bu dönem için doğru olmayabilir.
     </p>
 </details>
+@endif
 @endsection

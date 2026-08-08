@@ -57,7 +57,8 @@
         </div>
     </div>
 
-    <div class="p-5 space-y-8">
+    <div class="p-5 @unless($personalTasksView) space-y-8 @endunless">
+        @unless($personalTasksView)
         {{-- Takvim --}}
         <div>
             <div class="flex items-center justify-between mb-4">
@@ -140,15 +141,20 @@
                 </template>
             </div>
         </div>
+        @endunless
 
         {{-- Personel satırları --}}
         <div>
             <div class="flex flex-wrap items-end justify-between gap-3 mb-4">
+                @unless($personalTasksView)
                 <div>
-                    <h3 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">{{ $personalTasksView ? 'Görevlerim' : 'Personel Görevleri' }}</h3>
-                    <p class="text-xs text-neutral-500 mt-0.5">{{ $personalTasksView ? 'Açık ve tamamlanan görevleriniz' : 'Her personelin açık görevleri ayrı satırda listelenir' }}</p>
+                    <h3 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">Personel Görevleri</h3>
+                    <p class="text-xs text-neutral-500 mt-0.5">Her personelin açık görevleri ayrı satırda listelenir</p>
                 </div>
+                @endunless
             </div>
+
+            <p x-show="loading" class="text-sm text-neutral-500 py-8 text-center">Yükleniyor...</p>
 
             <div class="space-y-4" x-show="!loading">
                 <template x-for="group in personnelTaskGroups" :key="group.id">
