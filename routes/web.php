@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
 Route::get('/assets/js/{file}', function (string $file) {
-    $allowed = ['turkey-address.js', 'money.js', 'form-inputs.js', 'payment-kasa.js', 'image-upload-compress.js'];
+    $allowed = ['turkey-address.js', 'money.js', 'form-inputs.js', 'payment-kasa.js', 'image-upload-compress.js', 'list-search.js'];
     if (! in_array($file, $allowed, true)) {
         abort(404);
     }

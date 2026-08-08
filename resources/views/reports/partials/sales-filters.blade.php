@@ -1,7 +1,9 @@
 @php
     $selectedPersonnelId = $filters['personnelId'] ?? request('personnelId');
     $selectedOdeme = $filters['odeme'] ?? request('odeme');
+    $selectedDeliveryStatus = $filters['deliveryStatus'] ?? request('deliveryStatus');
     $showOdemeFilter = $showOdemeFilter ?? true;
+    $showDeliveryFilter = $showDeliveryFilter ?? true;
 @endphp
 <div class="min-w-[180px]">
     <label class="form-label">Satışı yapan personel</label>
@@ -20,6 +22,17 @@
         <option value="">Tümü</option>
         <option value="borclu" {{ $selectedOdeme === 'borclu' ? 'selected' : '' }}>Borçlular</option>
         <option value="borcsuz" {{ $selectedOdeme === 'borcsuz' ? 'selected' : '' }}>Borçsuzlar</option>
+    </select>
+</div>
+@endif
+@if($showDeliveryFilter)
+<div class="min-w-[180px]">
+    <label class="form-label">Teslim durumu</label>
+    <select name="deliveryStatus" class="form-select">
+        <option value="">Tümü</option>
+        @foreach(\App\Support\SaleDelivery::filterOptions() as $value => $label)
+        <option value="{{ $value }}" {{ $selectedDeliveryStatus === $value ? 'selected' : '' }}>{{ $label }}</option>
+        @endforeach
     </select>
 </div>
 @endif

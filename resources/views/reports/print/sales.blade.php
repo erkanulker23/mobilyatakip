@@ -3,6 +3,9 @@
 @section('content')
 @php
     $periodLabel = \App\Support\ReportFilters::periodLabel($from, $to, $year);
+    if (!empty($skipDateFilter)) {
+        $periodLabel = 'Tüm dönem';
+    }
     $printSubtitle = trim($periodLabel . ($filters['label'] ?? '' ? ' · ' . $filters['label'] : ''));
 @endphp
 <div class="print-document print-document--fit card overflow-hidden print:shadow-none print:border-0">

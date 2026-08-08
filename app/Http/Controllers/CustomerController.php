@@ -13,6 +13,7 @@ use App\Rules\TurkishTaxId;
 use App\Rules\UniqueCustomerPhone;
 use App\Support\CustomerPhone;
 use App\Support\ServiceTicketStatus;
+use Illuminate\Support\Facades\Cache;
 use App\Services\AuditService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -69,8 +70,12 @@ class CustomerController extends Controller
                     ->orWhere('phone2', 'like', "%{$s}%")
                     ->orWhere('address', 'like', "%{$s}%")
                     ->orWhere('taxNumber', 'like', "%{$s}%")
-                    ->orWhereHas('city', fn ($c) => $c->where('name', 'like', "%{$s}%"))
-                    ->orWhereHas('district', fn ($d) => $d->where('name', 'like', "%{$s}%"));
+                    ->orWhereIn('cityId', function ($sub) use ($s) {
+                        $sub->select('id')->from('cities')->where('name', 'like', "%{$s}%");
+                    })
+                    ->orWhereIn('districtId', function ($sub) use ($s) {
+                        $sub->select('id')->from('districts')->where('name', 'like', "%{$s}%");
+                    });
             });
         }
 
@@ -84,12 +89,18 @@ class CustomerController extends Controller
 
         $customers = $q->paginate(20)->withQueryString();
 
-        $stats = [
-            'total' => Customer::count(),
-            'active' => Customer::where('isActive', true)->count(),
-            'debtors' => $this->countCustomersByBalance('borclu'),
-            'creditors' => $this->countCustomersByBalance('alacakli'),
-        ];
+        if ($request->header('X-List-Partial') === '1') {
+            return view('customers.partials.index-results', compact('customers'));
+        }
+
+        $stats = Cache::remember('customers.index.stats', now()->addMinutes(2), function () {
+            return [
+                'total' => Customer::count(),
+                'active' => Customer::where('isActive', true)->count(),
+                'debtors' => $this->countCustomersByBalance('borclu'),
+                'creditors' => $this->countCustomersByBalance('alacakli'),
+            ];
+        });
 
         return view('customers.index', compact('customers', 'stats'));
     }

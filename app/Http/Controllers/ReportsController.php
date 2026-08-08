@@ -16,6 +16,7 @@ use App\Models\SupplierPayment;
 use App\Support\CustomerBalance;
 use App\Support\CustomerLedger;
 use App\Support\ReportFilters;
+use App\Support\SaleDelivery;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -346,9 +347,19 @@ class ReportsController extends Controller
     /** @return array<string, mixed> */
     private function salesData(Carbon $from, Carbon $to, Request $request): array
     {
+        $deliveryStatus = SaleDelivery::isFilterValue($request->input('deliveryStatus'))
+            ? $request->input('deliveryStatus')
+            : null;
+        $odeme = $request->input('odeme');
+        $hasStatusFilter = $deliveryStatus !== null || in_array($odeme, ['borclu', 'borcsuz'], true);
+        $hasExplicitDates = $request->filled('from') || $request->filled('to') || $request->filled('year');
+
         $query = Sale::with(['customer', 'personnel'])
-            ->where('isCancelled', false)
-            ->whereBetween('saleDate', [$from, $to]);
+            ->where('isCancelled', false);
+
+        if ($hasExplicitDates || ! $hasStatusFilter) {
+            $query->whereBetween('saleDate', [$from, $to]);
+        }
 
         if ($request->filled('personnelId')) {
             if ($request->input('personnelId') === 'none') {
@@ -358,25 +369,24 @@ class ReportsController extends Controller
             }
         }
 
+        if ($deliveryStatus) {
+            SaleDelivery::applyDeliveryFilter($query, $deliveryStatus);
+        }
+
+        if ($odeme === 'borclu') {
+            $query->whereRaw('grandTotal - COALESCE(paidAmount, 0) > 0.005');
+        } elseif ($odeme === 'borcsuz') {
+            $query->whereRaw('ABS(grandTotal - COALESCE(paidAmount, 0)) <= 0.005');
+        }
+
         $sales = $query
             ->orderByDesc('saleDate')
             ->orderByDesc('createdAt')
             ->get();
 
-        if ($request->filled('odeme')) {
-            $sales = $sales->filter(function (Sale $s) use ($request) {
-                $remaining = CustomerBalance::saleRemaining($s);
-
-                return match ($request->input('odeme')) {
-                    'borclu' => $remaining > 0.005,
-                    'borcsuz' => $remaining <= 0.005,
-                    default => true,
-                };
-            })->values();
-        }
-
         return [
             'sales' => $sales,
+            'skipDateFilter' => $hasStatusFilter && ! $hasExplicitDates,
             'totals' => (object) [
                 'count' => $sales->count(),
                 'grandTotal' => (float) $sales->sum('grandTotal'),
@@ -396,11 +406,14 @@ class ReportsController extends Controller
             ->get();
     }
 
-    /** @return array{personnelId: ?string, odeme: ?string, label: ?string} */
+    /** @return array{personnelId: ?string, odeme: ?string, deliveryStatus: ?string, label: ?string} */
     private function salesFilterState(Request $request, $personnelOptions): array
     {
         $personnelId = $request->input('personnelId');
         $odeme = $request->input('odeme');
+        $deliveryStatus = SaleDelivery::isFilterValue($request->input('deliveryStatus'))
+            ? $request->input('deliveryStatus')
+            : null;
 
         $labels = [];
         if ($personnelId === 'none') {
@@ -412,14 +425,19 @@ class ReportsController extends Controller
         }
 
         if ($odeme === 'borclu') {
-            $labels[] = 'Borçlular';
+            $labels[] = 'Borçlu';
         } elseif ($odeme === 'borcsuz') {
             $labels[] = 'Borçsuzlar';
+        }
+
+        if ($deliveryStatus) {
+            $labels[] = SaleDelivery::filterOptions()[$deliveryStatus];
         }
 
         return [
             'personnelId' => $personnelId,
             'odeme' => $odeme,
+            'deliveryStatus' => $deliveryStatus,
             'label' => $labels !== [] ? implode(' · ', $labels) : null,
         ];
     }

@@ -12,6 +12,7 @@ use App\Models\Customer;
 use App\Models\CustomerPayment;
 use App\Support\CustomerLedger;
 use App\Models\Kasa;
+use Illuminate\Support\Facades\Cache;
 use App\Models\KasaHareket;
 use App\Models\Product;
 use App\Models\Supplier;
@@ -245,24 +246,35 @@ class SaleController extends Controller
         }
 
         $sales = $q->paginate(20)->withQueryString();
-        $customers = Customer::orderBy('name')->get(['id', 'name']);
         $saleIds = $sales->getCollection()->pluck('id')->values()->all();
+        $activeFilters = $request->hasAny(['search', 'customerId', 'deliveryStatus', 'paymentStatus', 'from', 'to']);
 
-        $stats = [
-            'total' => (int) Sale::where('isCancelled', false)->count(),
-            'receivable' => (float) Sale::where('isCancelled', false)
-                ->selectRaw('COALESCE(SUM(GREATEST(grandTotal - COALESCE(paidAmount, 0), 0)), 0) as total')
-                ->value('total'),
-            'withDebt' => (int) Sale::where('isCancelled', false)
-                ->whereRaw('grandTotal - COALESCE(paidAmount, 0) > 0.005')
-                ->count(),
-            'finalMeasurement' => (int) Sale::where('isCancelled', false)
-                ->where('needsFinalMeasurement', true)
-                ->pendingDelivery()
-                ->count(),
-        ];
+        if ($request->header('X-List-Partial') === '1') {
+            return view('sales.partials.index-results', compact('sales', 'saleIds', 'activeFilters'));
+        }
 
-        return view('sales.index', compact('sales', 'customers', 'saleIds', 'stats'));
+        $filterCustomers = collect();
+        if ($request->filled('customerId')) {
+            $filterCustomers = Customer::where('id', $request->customerId)->orderBy('name')->get(['id', 'name']);
+        }
+
+        $stats = Cache::remember('sales.index.stats', now()->addMinutes(2), function () {
+            return [
+                'total' => (int) Sale::where('isCancelled', false)->count(),
+                'receivable' => (float) Sale::where('isCancelled', false)
+                    ->selectRaw('COALESCE(SUM(GREATEST(grandTotal - COALESCE(paidAmount, 0), 0)), 0) as total')
+                    ->value('total'),
+                'withDebt' => (int) Sale::where('isCancelled', false)
+                    ->whereRaw('grandTotal - COALESCE(paidAmount, 0) > 0.005')
+                    ->count(),
+                'finalMeasurement' => (int) Sale::where('isCancelled', false)
+                    ->where('needsFinalMeasurement', true)
+                    ->pendingDelivery()
+                    ->count(),
+            ];
+        });
+
+        return view('sales.index', compact('sales', 'filterCustomers', 'saleIds', 'stats', 'activeFilters'));
     }
 
     public function bulkDestroy(Request $request)

@@ -18,8 +18,10 @@
         @forelse($sales as $s)
         @php
             $remaining = \App\Support\CustomerBalance::saleRemaining($s);
-            $status = \App\Support\CustomerBalance::saleStatus($s);
+            $paymentStatus = \App\Support\CustomerBalance::saleStatus($s);
+            $deliveryStatus = \App\Support\SaleDelivery::currentStatus($s);
             $isDelivered = \App\Support\SaleDelivery::isDelivered($s);
+            $showDeliveryStatus = !empty($filters['deliveryStatus']);
             $dueClass = !$isDelivered && $s->dueDate && $s->dueDate->isPast()
                 ? 'text-red-600 font-medium'
                 : ($s->dueDate && !$isDelivered && $s->dueDate->lte(now()->addDays(7))
@@ -35,7 +37,19 @@
             <td class="table-td text-right font-medium">{{ number_format($s->grandTotal ?? 0, 0, ',', '.') }} ₺</td>
             <td class="table-td text-right text-emerald-600">{{ number_format($s->paidAmount ?? 0, 0, ',', '.') }} ₺</td>
             <td class="table-td text-right {{ $remaining > 0 ? 'text-red-600 font-medium' : ($remaining < -0.005 ? 'text-blue-600 font-medium' : 'text-slate-600') }}">{{ number_format($remaining, 0, ',', '.') }} ₺</td>
-            <td class="table-td">{{ $status['label'] ?? '—' }}</td>
+            <td class="table-td">
+                @if($showDeliveryStatus)
+                    {{ \App\Support\SaleDelivery::label($deliveryStatus) }}
+                    @if($paymentStatus['key'] === 'borclu')
+                        <span class="block text-xs text-red-600 mt-0.5">Borçlu</span>
+                    @endif
+                @else
+                    {{ $paymentStatus['label'] ?? '—' }}
+                    @if($deliveryStatus !== \App\Support\SaleDelivery::PENDING && $deliveryStatus !== \App\Support\SaleDelivery::DELIVERED)
+                        <span class="block text-xs text-neutral-500 mt-0.5">{{ \App\Support\SaleDelivery::label($deliveryStatus) }}</span>
+                    @endif
+                @endif
+            </td>
             @if(!$print)
             <td class="table-td">
                 <a href="{{ route('sales.show', $s) }}" class="text-primary-600 hover:underline text-sm">Detay</a>
@@ -43,7 +57,7 @@
             @endif
         </tr>
         @empty
-        <tr><td colspan="{{ $print ? 9 : 10 }}" class="px-6 py-8 text-center text-neutral-500">Seçilen dönemde satış yok.</td></tr>
+        <tr><td colspan="{{ $print ? 9 : 10 }}" class="px-6 py-8 text-center text-neutral-500">Seçilen filtreye uygun satış bulunamadı.</td></tr>
         @endforelse
     </tbody>
     @if($sales->isNotEmpty())

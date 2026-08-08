@@ -3,7 +3,7 @@
 
 @section('content')
 @php
-    $activeFilters = request()->hasAny(['search', 'customerId', 'deliveryStatus', 'paymentStatus', 'from', 'to']);
+    $activeFilters = $activeFilters ?? request()->hasAny(['search', 'customerId', 'deliveryStatus', 'paymentStatus', 'from', 'to']);
     $filterChip = fn (array $params) => route('sales.index', array_filter(array_merge(request()->only(['search', 'customerId', 'from', 'to', 'paymentStatus', 'deliveryStatus']), $params)));
 @endphp
 
@@ -48,10 +48,11 @@
                 <label class="form-label">Müşteri</label>
                 <select name="customerId" class="form-select w-full">
                     <option value="">Tümü</option>
-                    @foreach($customers ?? [] as $c)
+                    @foreach($filterCustomers ?? [] as $c)
                     <option value="{{ $c->id }}" {{ request('customerId') == $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
                     @endforeach
                 </select>
+                <p class="mt-1 text-xs text-neutral-400">Müşteri adı için üstteki arama kutusunu kullanın.</p>
             </div>
             <div>
                 <label class="form-label">Teslim durumu</label>
@@ -94,167 +95,12 @@
         </div>
     </div>
 
-    <div class="px-4 sm:px-5 py-3 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between gap-3 flex-wrap">
-        <span class="text-sm text-neutral-500">
-            @if($sales->total() === 0)
-                Kayıt bulunamadı
-            @elseif($sales->total() === 1)
-                1 sipariş
-            @else
-                {{ number_format($sales->total(), 0, ',', '.') }} sipariş
-                @if($sales->hasPages())
-                    · sayfa {{ $sales->currentPage() }}/{{ $sales->lastPage() }}
-                @endif
-            @endif
-            @if($activeFilters)
-                <span class="text-neutral-400"> · filtre aktif</span>
-            @endif
-        </span>
-        <div class="flex items-center gap-3" x-show="selected.length > 0">
-            <span class="text-sm text-neutral-500" x-text="selected.length + ' seçildi'"></span>
-            <button type="button" @click="showBulkDeleteModal = true" class="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium text-sm">
-                Seçilenleri sil
-            </button>
-        </div>
-    </div>
-
     <form id="sales-bulk-form" method="POST" action="{{ route('sales.bulk-destroy') }}" class="hidden">
         @csrf
         <div id="sales-bulk-form-ids"></div>
     </form>
 
-    <div class="overflow-x-auto -mx-px">
-        <table class="min-w-full sales-index-table">
-            <thead>
-                <tr class="border-b border-neutral-100 dark:border-neutral-800">
-                    <th class="table-th w-10 col-hide-mobile">
-                        <input type="checkbox" class="rounded border-slate-300 text-green-600 focus:ring-green-500"
-                               @change="toggleAll($event.target.checked)" :checked="selected.length === items.length && items.length > 0">
-                    </th>
-                    <th class="table-th">Sipariş</th>
-                    <th class="table-th col-hide-mobile whitespace-nowrap">Tarih / Termin</th>
-                    <th class="table-th text-right whitespace-nowrap">Tutar</th>
-                    <th class="table-th">Durum</th>
-                    <th class="table-th text-right w-36 sm:w-44">İşlem</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($sales as $s)
-                @php
-                    $saleStatus = \App\Support\CustomerBalance::saleStatus($s);
-                    $orderStatus = \App\Support\SaleDelivery::currentStatus($s);
-                    $remaining = \App\Support\CustomerBalance::saleRemaining($s);
-                    $saleNumberClass = \App\Support\SaleDelivery::numberClassFor($s);
-                    $terminMeta = \App\Support\SaleDelivery::terminListMeta($s);
-                @endphp
-                <tr class="border-b border-neutral-50 dark:border-neutral-800/60 hover:bg-neutral-50/50 dark:hover:bg-neutral-900/40 transition-colors {{ ($s->isCancelled ?? false) ? 'opacity-60 bg-slate-50 dark:bg-slate-800/30' : '' }}">
-                    <td class="table-td col-hide-mobile">
-                        <input type="checkbox" name="ids[]" value="{{ $s->id }}" class="sale-row-check rounded border-slate-300 text-green-600 focus:ring-green-500"
-                               @change="toggleRow('{{ $s->id }}', $event.target.checked)">
-                    </td>
-                    <td class="table-td min-w-[10rem]">
-                        <a href="{{ route('sales.show', $s) }}" class="font-medium hover:underline {{ $saleNumberClass }}">{{ $s->saleNumber }}</a>
-                        @if($s->isCancelled ?? false)
-                            <span class="ml-1 text-[10px] px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-300 font-medium">İptal</span>
-                        @endif
-                        <p class="text-sm text-neutral-600 dark:text-neutral-400 truncate mt-0.5">{{ $s->customer?->name ?? '—' }}</p>
-                        @if($s->personnel)
-                            <p class="text-xs text-neutral-400 mt-0.5 col-hide-mobile">{{ $s->personnel->name }}</p>
-                        @endif
-                        @if($s->needsFinalMeasurement ?? false)
-                            <span class="inline-block mt-1">@include('partials.final-measurement-badge', ['sale' => $s])</span>
-                        @endif
-                        <span class="block mt-1 text-xs text-neutral-400 md:hidden">
-                            {{ $s->saleDate?->format('d.m.Y') ?? '—' }}
-                            @if($terminMeta['date'])
-                                · {{ $terminMeta['prefix'] }} {{ $terminMeta['date']->format('d.m.Y') }}
-                                @if($terminMeta['suffix'])
-                                    · {{ $terminMeta['suffix'] }}
-                                @endif
-                            @endif
-                        </span>
-                    </td>
-                    <td class="table-td col-hide-mobile whitespace-nowrap">
-                        <p class="text-neutral-900 dark:text-neutral-100">{{ $s->saleDate?->format('d.m.Y') ?? '—' }}</p>
-                        @if($terminMeta['empty'])
-                            <p class="text-xs text-neutral-400 mt-0.5">{{ $terminMeta['empty'] }}</p>
-                        @elseif($terminMeta['date'])
-                            <p class="text-xs mt-0.5 {{ $terminMeta['class'] }}">
-                                {{ $terminMeta['prefix'] }} {{ $terminMeta['date']->format('d.m.Y') }}
-                                @if($terminMeta['suffix'])
-                                    · {{ $terminMeta['suffix'] }}
-                                @endif
-                            </p>
-                        @endif
-                    </td>
-                    <td class="table-td text-right whitespace-nowrap">
-                        <p class="font-semibold text-neutral-900 dark:text-neutral-100 tabular-nums">{{ number_format($s->grandTotal ?? 0, 0, ',', '.') }} ₺</p>
-                        @if($remaining > 0.005)
-                            <p class="text-xs font-medium text-red-600 dark:text-red-400 tabular-nums mt-0.5">{{ number_format($remaining, 0, ',', '.') }} ₺ kalan</p>
-                        @elseif($remaining < -0.005)
-                            <p class="text-xs font-medium amount-negative tabular-nums mt-0.5">{{ number_format(abs($remaining), 0, ',', '.') }} ₺ fazla</p>
-                        @else
-                            <p class="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">Ödendi</p>
-                        @endif
-                        @if((float) ($s->paidAmount ?? 0) > 0 && $remaining > 0.005)
-                            <p class="text-xs text-neutral-400 tabular-nums mt-0.5 col-hide-mobile">{{ number_format($s->paidAmount ?? 0, 0, ',', '.') }} ₺ alındı</p>
-                        @endif
-                    </td>
-                    <td class="table-td min-w-[7rem]">
-                        @if(!($s->isCancelled ?? false))
-                        <div class="flex flex-col items-start gap-1">
-                            @include('partials.payment-status-badge', ['status' => $saleStatus])
-                            @include('partials.delivery-status-badge', ['sale' => $s])
-                            @if($orderStatus === \App\Support\SaleDelivery::PENDING && !($s->needsFinalMeasurement ?? false))
-                                <span class="text-xs text-neutral-400">Teslim bekliyor</span>
-                            @endif
-                        </div>
-                        @else
-                            <span class="text-neutral-400">—</span>
-                        @endif
-                    </td>
-                    <td class="table-td">
-                        <div class="flex items-center justify-end gap-1 flex-wrap sm:flex-nowrap">
-                            @include('partials.action-buttons', [
-                                'show' => route('sales.show', $s),
-                                'edit' => !($s->isCancelled ?? false) ? route('sales.edit', $s) : null,
-                                'print' => route('sales.print', $s),
-                                'shipment' => !($s->isCancelled ?? false) ? route('sales.shipment', $s) : null,
-                                'destroy' => route('sales.destroy', $s),
-                            ])
-                            @if(!($s->isCancelled ?? false))
-                            <form method="POST" action="{{ route('sales.convert-to-quote', $s) }}" class="inline-flex" onsubmit="return confirm('Bu kayıt teklif olarak devam edecek. Satış listesinden kaldırılır; teklifler bölümünde kalır. Devam?');">
-                                @csrf
-                                <button type="submit" title="Teklife Dönüştür" aria-label="Teklife dönüştür" class="p-2 rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-300 transition-colors">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"></path></svg>
-                                </button>
-                            </form>
-                            @endif
-                        </div>
-                    </td>
-                </tr>
-                @empty
-                <tr>
-                    <td colspan="6" class="px-6 py-16 text-center">
-                        <div class="mx-auto w-12 h-12 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-4">
-                            <svg class="w-6 h-6 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                        </div>
-                        <p class="text-neutral-500 text-sm">Filtreye uygun satış bulunamadı.</p>
-                        @if($activeFilters)
-                            <a href="{{ route('sales.index') }}" class="btn-secondary mt-4 text-sm">Filtreleri temizle</a>
-                        @else
-                            <a href="{{ route('sales.create') }}" class="btn-primary mt-4 text-sm">Satış oluştur</a>
-                        @endif
-                    </td>
-                </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-
-    @if($sales->hasPages())
-    <div class="px-4 sm:px-5 py-3 border-t border-neutral-100 dark:border-neutral-800">{{ $sales->links() }}</div>
-    @endif
+    @include('sales.partials.index-results', compact('sales', 'saleIds', 'activeFilters'))
 
     <div x-show="showBulkDeleteModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
         <div x-show="showBulkDeleteModal" x-transition class="fixed inset-0 bg-black/50" @click="showBulkDeleteModal = false"></div>
@@ -269,32 +115,28 @@
     </div>
 </div>
 
+@push('scripts')
+<script src="{{ route('assets.js', ['file' => 'list-search.js']) }}"></script>
 <script>
 (function () {
-    const input = document.getElementById('salesSearchInput');
-    const form = document.getElementById('salesFilterForm');
-    if (input && form) {
-        let timer = null;
-        input.addEventListener('input', function () {
-            clearTimeout(timer);
-            timer = setTimeout(() => form.submit(), 450);
-        });
-        if (input.value !== '') {
-            input.focus();
-            input.setSelectionRange(input.value.length, input.value.length);
-        }
-    }
-
-    function register() {
+    function registerSalesBulk() {
         Alpine.data('salesBulk', function () {
             var el = this.$el;
             var idsJson = el && el.getAttribute ? el.getAttribute('data-sale-ids') : '[]';
             var items = [];
             try { items = JSON.parse(idsJson || '[]'); } catch (e) {}
+
             return {
                 items: items,
                 selected: [],
                 showBulkDeleteModal: false,
+                init: function () {
+                    var self = this;
+                    document.addEventListener('sales-results-updated', function (event) {
+                        self.items = event.detail.saleIds || [];
+                        self.selected = [];
+                    });
+                },
                 toggleAll: function (checked) {
                     this.selected = checked ? this.items.slice() : [];
                     this.$nextTick(function () {
@@ -324,8 +166,33 @@
             };
         });
     }
-    if (typeof Alpine !== 'undefined') register();
-    else document.addEventListener('alpine:init', register);
+
+    if (typeof Alpine !== 'undefined') registerSalesBulk();
+    else document.addEventListener('alpine:init', registerSalesBulk);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        window.initListSearch({
+            formId: 'salesFilterForm',
+            inputId: 'salesSearchInput',
+            resultsId: 'salesListResults',
+            debounceMs: 650,
+            onUpdated: function (resultsEl) {
+                if (window.Alpine) {
+                    window.Alpine.initTree(resultsEl);
+                }
+                var card = document.querySelector('[data-sale-ids]');
+                var saleIds = [];
+                try {
+                    saleIds = JSON.parse(resultsEl.getAttribute('data-sale-ids') || '[]');
+                } catch (e) {}
+                if (card) {
+                    card.setAttribute('data-sale-ids', JSON.stringify(saleIds));
+                }
+                document.dispatchEvent(new CustomEvent('sales-results-updated', { detail: { saleIds: saleIds } }));
+            },
+        });
+    });
 })();
 </script>
+@endpush
 @endsection

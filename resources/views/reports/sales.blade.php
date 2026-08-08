@@ -3,7 +3,18 @@
 @section('content')
 @php
     $periodLabel = \App\Support\ReportFilters::periodLabel($from, $to, $year);
+    if (!empty($skipDateFilter)) {
+        $periodLabel = 'Tüm dönem';
+    }
     $filterDesc = $filters['label'] ?? null;
+    $reportChip = fn (array $params) => route('reports.sales', array_filter(array_merge(
+        request()->only(['from', 'to', 'year', 'personnelId', 'odeme', 'deliveryStatus']),
+        $params
+    )));
+    $printChip = fn (array $params) => route('reports.sales.print', array_filter(array_merge(
+        request()->only(['from', 'to', 'year', 'personnelId', 'odeme', 'deliveryStatus']),
+        $params
+    )));
 @endphp
 <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
     <div>
@@ -27,6 +38,28 @@
             <a href="{{ route('reports.sales') }}" class="btn-secondary">Temizle</a>
         </div>
     </form>
+
+    <div class="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
+        <span class="text-xs text-neutral-400 self-center mr-1">Hızlı liste:</span>
+        @php
+            $quickLists = [
+                ['label' => 'Borçlu', 'params' => ['odeme' => 'borclu', 'deliveryStatus' => null], 'active' => request('odeme') === 'borclu' && !request('deliveryStatus'), 'tone' => 'red'],
+                ['label' => 'Ölçü bekliyor', 'params' => ['deliveryStatus' => \App\Support\SaleDelivery::FINAL_MEASUREMENT, 'odeme' => null], 'active' => request('deliveryStatus') === \App\Support\SaleDelivery::FINAL_MEASUREMENT, 'tone' => 'amber'],
+                ['label' => 'Üretimde', 'params' => ['deliveryStatus' => \App\Support\SaleDelivery::IN_PRODUCTION, 'odeme' => null], 'active' => request('deliveryStatus') === \App\Support\SaleDelivery::IN_PRODUCTION, 'tone' => 'violet'],
+                ['label' => 'Teslim bekliyor', 'params' => ['deliveryStatus' => \App\Support\SaleDelivery::PENDING, 'odeme' => null], 'active' => request('deliveryStatus') === \App\Support\SaleDelivery::PENDING && !request('odeme'), 'tone' => 'neutral'],
+            ];
+        @endphp
+        @foreach($quickLists as $list)
+        <div class="inline-flex rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-700">
+            <a href="{{ $reportChip($list['params']) }}" class="px-2.5 py-1.5 text-xs font-medium transition-colors {{ $list['active'] ? 'bg-neutral-900 text-white dark:bg-emerald-600' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">
+                {{ $list['label'] }}
+            </a>
+            <a href="{{ $printChip($list['params']) }}" target="_blank" rel="noopener" class="px-2 py-1.5 text-xs font-medium border-l border-neutral-200 dark:border-neutral-700 bg-white text-neutral-500 hover:text-emerald-600 hover:bg-neutral-50 dark:bg-neutral-900 dark:hover:bg-neutral-800" title="{{ $list['label'] }} listesini yazdır">
+                Yazdır
+            </a>
+        </div>
+        @endforeach
+    </div>
 </div>
 
 @if($sales->isNotEmpty())
