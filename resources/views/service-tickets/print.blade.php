@@ -18,10 +18,6 @@
                 'documentSubtitle' => ServiceTicketStatus::label($serviceTicket->status),
             ])
 
-            <div class="print-info-banner print-section">
-                Bu belge sevkiyat / servis ekibine verilir. Müşteri adresindeki problemler giderilir; sonuç işaretlenir ve imza alınır.
-            </div>
-
             <div class="print-meta-grid print-section-lg">
                 <div class="print-card">
                     <p class="print-label">Müşteri / Servis Adresi</p>
