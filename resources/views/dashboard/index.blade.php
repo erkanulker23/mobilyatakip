@@ -13,7 +13,11 @@
         <h1 class="page-title">{{ $dashboardGreeting }}</h1>
         <p class="page-desc mt-1">
             @if($showPersonalTasks ?? false)
-                Size atanmış görevleriniz
+                @if($personnelDashboard ?? null)
+                    Görevleriniz, siparişleriniz ve yaklaşan terminler
+                @else
+                    Size atanmış görevleriniz
+                @endif
             @elseif($showDashboardMetrics ?? false)
                 Bugün odaklanmanız gereken işler ve özet rakamlar
             @else
@@ -22,10 +26,15 @@
         </p>
     </div>
     <div class="flex flex-wrap gap-2">
-        @unless($showPersonalTasks ?? false)
+        @if($showPersonalTasks ?? false)
+            @if($personnelDashboard['personnel'] ?? null)
+            <a href="{{ route('sales.create') }}" class="btn-primary text-sm">Yeni Satış</a>
+            <a href="{{ route('personnel.show', $personnelDashboard['personnel']) }}" class="btn-secondary text-sm">Siparişlerim</a>
+            @endif
+        @else
         <a href="{{ route('sales.create') }}" class="btn-primary text-sm">Yeni Satış</a>
         <a href="{{ route('quotes.create') }}" class="btn-secondary text-sm">Yeni Teklif</a>
-        @endunless
+        @endif
     </div>
 </div>
 
@@ -137,6 +146,9 @@
     'personalTasksView' => true,
     'personalPersonnelId' => $personalPersonnelId ?? null,
 ])
+@if($personnelDashboard ?? null)
+@include('partials.dashboard-personnel-overview', ['personnelDashboard' => $personnelDashboard])
+@endif
 @else
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
     {{-- Sol: iş listesi + son siparişler --}}

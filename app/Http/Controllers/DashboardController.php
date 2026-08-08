@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\CustomerPayment;
 use App\Models\KasaHareket;
+use App\Models\Personnel;
 use App\Models\Sale;
 use App\Models\Quote;
 use App\Models\Purchase;
@@ -31,6 +33,9 @@ class DashboardController extends Controller
         $showPersonalTasks = auth()->user()?->showsPersonalTasksDashboard() ?? false;
         $taskPersonnel = $showPersonalTasks ? $this->taskPersonnelForCurrentUser() : collect();
         $personalPersonnelId = auth()->user()?->personnel?->id;
+        $personnelDashboard = $showPersonalTasks && auth()->user()?->personnel
+            ? $this->buildPersonnelDashboardData(auth()->user()->personnel)
+            : null;
 
         $stats = $showDashboardMetrics ? [
             'salesCount' => Sale::where('isCancelled', false)->count(),
@@ -168,66 +173,78 @@ class DashboardController extends Controller
         $terminHorizon = Carbon::today()->addDays(self::TERMIN_WINDOW_DAYS);
         $terminAlertHorizon = Carbon::today()->addDays(self::TERMIN_ALERT_DAYS);
 
-        $urgentDueSales = Sale::with('customer')
-            ->where('isCancelled', false)
-            ->pendingDelivery()
-            ->whereNotNull('dueDate')
-            ->whereDate('dueDate', '<=', $terminAlertHorizon)
-            ->orderBy('dueDate')
-            ->get();
+        if ($showPersonalTasks) {
+            $urgentDueSales = collect();
+            $upcomingSales = collect();
+            $upcomingServiceTickets = collect();
+            $finalMeasurementSales = collect();
+            $upcomingSalesCount = 0;
+            $upcomingSshCount = 0;
+            $finalMeasurementCount = 0;
+            $defaultWorkTab = 'termin';
+        } else {
+            $urgentDueSales = Sale::with('customer')
+                ->where('isCancelled', false)
+                ->pendingDelivery()
+                ->whereNotNull('dueDate')
+                ->whereDate('dueDate', '<=', $terminAlertHorizon)
+                ->orderBy('dueDate')
+                ->get();
 
-        $upcomingSales = Sale::with('customer')
-            ->where('isCancelled', false)
-            ->pendingDelivery()
-            ->whereNotNull('dueDate')
-            ->whereDate('dueDate', '<=', $terminHorizon)
-            ->orderBy('dueDate')
-            ->take(8)
-            ->get();
+            $upcomingSales = Sale::with('customer')
+                ->where('isCancelled', false)
+                ->pendingDelivery()
+                ->whereNotNull('dueDate')
+                ->whereDate('dueDate', '<=', $terminHorizon)
+                ->orderBy('dueDate')
+                ->take(8)
+                ->get();
 
-        $upcomingServiceTickets = ServiceTicket::with(['customer', 'sale'])
-            ->whereNotIn('status', ['tamamlandi', 'iptal'])
-            ->whereNotNull('dueDate')
-            ->whereDate('dueDate', '<=', $terminHorizon)
-            ->orderBy('dueDate')
-            ->take(8)
-            ->get();
+            $upcomingServiceTickets = ServiceTicket::with(['customer', 'sale'])
+                ->whereNotIn('status', ['tamamlandi', 'iptal'])
+                ->whereNotNull('dueDate')
+                ->whereDate('dueDate', '<=', $terminHorizon)
+                ->orderBy('dueDate')
+                ->take(8)
+                ->get();
 
-        $finalMeasurementCount = (int) Sale::query()
-            ->where('isCancelled', false)
-            ->where('needsFinalMeasurement', true)
-            ->count();
+            $finalMeasurementCount = (int) Sale::query()
+                ->where('isCancelled', false)
+                ->where('needsFinalMeasurement', true)
+                ->count();
 
-        $finalMeasurementSales = Sale::with(['customer', 'personnel'])
-            ->where('isCancelled', false)
-            ->where('needsFinalMeasurement', true)
-            ->orderBy('saleDate')
-            ->orderBy('createdAt')
-            ->take(8)
-            ->get();
+            $finalMeasurementSales = Sale::with(['customer', 'personnel'])
+                ->where('isCancelled', false)
+                ->where('needsFinalMeasurement', true)
+                ->orderBy('saleDate')
+                ->orderBy('createdAt')
+                ->take(8)
+                ->get();
 
-        $upcomingSalesCount = (int) Sale::query()
-            ->where('isCancelled', false)
-            ->pendingDelivery()
-            ->whereNotNull('dueDate')
-            ->whereDate('dueDate', '<=', $terminHorizon)
-            ->count();
+            $upcomingSalesCount = (int) Sale::query()
+                ->where('isCancelled', false)
+                ->pendingDelivery()
+                ->whereNotNull('dueDate')
+                ->whereDate('dueDate', '<=', $terminHorizon)
+                ->count();
 
-        $upcomingSshCount = (int) ServiceTicket::query()
-            ->whereNotIn('status', ['tamamlandi', 'iptal'])
-            ->whereNotNull('dueDate')
-            ->whereDate('dueDate', '<=', $terminHorizon)
-            ->count();
+            $upcomingSshCount = (int) ServiceTicket::query()
+                ->whereNotIn('status', ['tamamlandi', 'iptal'])
+                ->whereNotNull('dueDate')
+                ->whereDate('dueDate', '<=', $terminHorizon)
+                ->count();
 
-        $defaultWorkTab = $urgentDueSales->isNotEmpty() || $upcomingSales->isNotEmpty()
-            ? 'termin'
-            : ($finalMeasurementSales->isNotEmpty() ? 'olcu' : ($upcomingServiceTickets->isNotEmpty() ? 'ssh' : 'termin'));
+            $defaultWorkTab = $urgentDueSales->isNotEmpty() || $upcomingSales->isNotEmpty()
+                ? 'termin'
+                : ($finalMeasurementSales->isNotEmpty() ? 'olcu' : ($upcomingServiceTickets->isNotEmpty() ? 'ssh' : 'termin'));
+        }
 
         return view('dashboard.index', compact(
             'showDashboardMetrics',
             'showPersonalTasks',
             'taskPersonnel',
             'personalPersonnelId',
+            'personnelDashboard',
             'stats',
             'monthlySales',
             'monthlyCollected',
@@ -284,5 +301,70 @@ class DashboardController extends Controller
         }
 
         return collect();
+    }
+
+    private function buildPersonnelDashboardData(Personnel $personnel): array
+    {
+        $monthStart = Carbon::now()->startOfMonth();
+        $monthEnd = Carbon::now()->endOfMonth();
+        $terminHorizon = Carbon::today()->addDays(self::TERMIN_WINDOW_DAYS);
+
+        $activeSalesQuery = $personnel->sales()->where('isCancelled', false);
+        $monthSalesQuery = (clone $activeSalesQuery)
+            ->whereBetween('saleDate', [$monthStart->toDateString(), $monthEnd->toDateString()]);
+
+        $stats = [
+            'monthCount' => (int) (clone $monthSalesQuery)->count(),
+            'monthTotal' => (float) (clone $monthSalesQuery)->sum('grandTotal'),
+            'monthCollected' => (float) (clone $monthSalesQuery)->sum('paidAmount'),
+            'totalReceivable' => (float) (clone $activeSalesQuery)
+                ->selectRaw('COALESCE(SUM(GREATEST(grandTotal - COALESCE(paidAmount, 0), 0)), 0) as receivable')
+                ->value('receivable'),
+            'activeCount' => (int) (clone $activeSalesQuery)->count(),
+        ];
+
+        $recentSales = $personnel->sales()
+            ->with('customer')
+            ->where('isCancelled', false)
+            ->orderByDesc('saleDate')
+            ->orderByDesc('createdAt')
+            ->take(5)
+            ->get();
+
+        $recentPayments = CustomerPayment::query()
+            ->with(['sale.customer', 'customer'])
+            ->whereHas('sale', fn ($q) => $q
+                ->where('personnelId', $personnel->id)
+                ->where('isCancelled', false))
+            ->orderByDesc('paymentDate')
+            ->orderByDesc('createdAt')
+            ->take(5)
+            ->get();
+
+        $upcomingDueSales = $personnel->sales()
+            ->with('customer')
+            ->where('isCancelled', false)
+            ->pendingDelivery()
+            ->whereNotNull('dueDate')
+            ->whereDate('dueDate', '<=', $terminHorizon)
+            ->orderBy('dueDate')
+            ->take(8)
+            ->get();
+
+        $upcomingDueCount = (int) $personnel->sales()
+            ->where('isCancelled', false)
+            ->pendingDelivery()
+            ->whereNotNull('dueDate')
+            ->whereDate('dueDate', '<=', $terminHorizon)
+            ->count();
+
+        return [
+            'personnel' => $personnel,
+            'stats' => $stats,
+            'recentSales' => $recentSales,
+            'recentPayments' => $recentPayments,
+            'upcomingDueSales' => $upcomingDueSales,
+            'upcomingDueCount' => $upcomingDueCount,
+        ];
     }
 }
