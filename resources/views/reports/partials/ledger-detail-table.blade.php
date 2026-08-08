@@ -20,7 +20,12 @@
         </tr>
         @endif
         @forelse($filteredRows as $r)
-        <tr>
+        @php
+            $isHighlighted = ($highlightRefId ?? null) && ($highlightType ?? null)
+                && ($r->refId ?? null) === $highlightRefId
+                && ($r->type ?? null) === $highlightType;
+        @endphp
+        <tr class="{{ $isHighlighted ? 'bg-emerald-50 dark:bg-emerald-950/20' : '' }}">
             <td class="table-td">{{ $r->date->format('d.m.Y') }}</td>
             <td class="table-td">
                 @if(!$print && !empty($r->refRoute) && !empty($r->refId))

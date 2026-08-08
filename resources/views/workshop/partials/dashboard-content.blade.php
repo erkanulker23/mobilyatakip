@@ -1,4 +1,5 @@
 @php
+    use App\Models\SaleProductionStage;
     use App\Support\SaleDelivery;
     use App\Support\ServiceTicketStatus;
     use App\Support\UserGreeting;
@@ -38,31 +39,17 @@
 @endif
 
 @if(($workshopStats->overdueCount ?? 0) > 0)
-<div class="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-100">
+<a href="#termin" class="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-100 transition-all hover:shadow-md hover:border-red-300 dark:hover:border-red-800 cursor-pointer block">
     <svg class="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
     <div>
         <p class="font-semibold">{{ $workshopStats->overdueCount }} siparişin termin tarihi geçmiş</p>
-        <p class="mt-0.5 text-red-800/80 dark:text-red-200/80">Termin sekmesinden gecikmiş siparişleri inceleyin.</p>
+        <p class="mt-0.5 text-red-800/80 dark:text-red-200/80">Termin sekmesinden gecikmiş siparişleri inceleyin →</p>
     </div>
-</div>
+</a>
 @endif
 
-<div x-data="{
-    tab: @json($defaultTab),
-    goToTab(name) {
-        this.tab = name;
-        this.$nextTick(() => document.getElementById('atolyem-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-    },
-    init() {
-        const hash = window.location.hash.replace('#', '');
-        if (['uretim', 'termin', 'ssh'].includes(hash)) {
-            this.tab = hash;
-            this.$nextTick(() => document.getElementById('atolyem-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-        }
-    },
-}">
 <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-6">
-    <button type="button" @click="goToTab('uretim')" class="card p-4 text-left w-full transition-all hover:shadow-md cursor-pointer {{ $workshopStats->productionCount > 0 ? 'ring-1 ring-violet-200 dark:ring-violet-800/50' : '' }}">
+    <a href="{{ route('workshop.index') }}" class="card p-4 text-left w-full transition-all hover:shadow-md cursor-pointer block {{ $workshopStats->productionCount > 0 ? 'ring-1 ring-violet-200 dark:ring-violet-800/50' : '' }}">
         <div class="flex items-center justify-between gap-2">
             <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Üretimde</p>
             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
@@ -71,9 +58,9 @@
         </div>
         <p class="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white mt-2">{{ $workshopStats->productionCount }}</p>
         <p class="text-xs text-neutral-500 mt-1">Not ve eksiklik eklenebilir</p>
-    </button>
+    </a>
 
-    <button type="button" @click="goToTab('termin')" class="card p-4 text-left w-full transition-all hover:shadow-md cursor-pointer {{ ($workshopStats->overdueCount ?? 0) > 0 ? 'ring-1 ring-red-200 dark:ring-red-800/50' : (($urgentTerminCount ?? 0) > 0 ? 'ring-1 ring-amber-200 dark:ring-amber-800/50' : '') }}">
+    <a href="{{ route('reports.upcoming-due', ['days' => $terminDays]) }}" class="card p-4 text-left w-full transition-all hover:shadow-md cursor-pointer block {{ ($workshopStats->overdueCount ?? 0) > 0 ? 'ring-1 ring-red-200 dark:ring-red-800/50' : (($urgentTerminCount ?? 0) > 0 ? 'ring-1 ring-amber-200 dark:ring-amber-800/50' : '') }}">
         <div class="flex items-center justify-between gap-2">
             <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Termin ({{ $terminDays }} gün)</p>
             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
@@ -90,9 +77,9 @@
             {{ $upcomingInProductionCount ?? 0 }} tanesi üretimde
             @endif
         </p>
-    </button>
+    </a>
 
-    <button type="button" @click="goToTab('ssh')" class="card p-4 text-left w-full transition-all hover:shadow-md cursor-pointer {{ $workshopStats->openSshCount > 0 ? 'ring-1 ring-orange-200 dark:ring-orange-800/50' : '' }}">
+    <a href="{{ route('service-tickets.index') }}" class="card p-4 text-left w-full transition-all hover:shadow-md cursor-pointer block {{ $workshopStats->openSshCount > 0 ? 'ring-1 ring-orange-200 dark:ring-orange-800/50' : '' }}">
         <div class="flex items-center justify-between gap-2">
             <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Açık SSH</p>
             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">
@@ -101,9 +88,9 @@
         </div>
         <p class="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white mt-2">{{ $workshopStats->openSshCount }}</p>
         <p class="text-xs text-neutral-500 mt-1">Açık servis kaydı</p>
-    </button>
+    </a>
 
-    <button type="button" @click="goToTab('uretim')" class="card p-4 text-left w-full transition-all hover:shadow-md cursor-pointer border-red-200/80 dark:border-red-900/40 bg-red-50/40 dark:bg-red-950/20">
+    <a href="{{ route('workshop.index', ['type' => SaleProductionStage::TYPE_DEFICIENCY]) }}" class="card p-4 text-left w-full transition-all hover:shadow-md cursor-pointer block border-red-200/80 dark:border-red-900/40 bg-red-50/40 dark:bg-red-950/20">
         <div class="flex items-center justify-between gap-2">
             <p class="text-xs font-medium text-red-700/80 dark:text-red-300/80 uppercase tracking-wide">Açık Eksiklik</p>
             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
@@ -112,36 +99,36 @@
         </div>
         <p class="text-2xl sm:text-3xl font-bold text-red-800 dark:text-red-200 mt-2">{{ $workshopStats->openDeficienciesCount }}</p>
         <p class="text-xs text-red-700/70 dark:text-red-400/70 mt-1">Çözülmemiş parça sorunu</p>
-    </button>
+    </a>
 </div>
 
-<div id="atolyem-list" class="card overflow-hidden mb-6 scroll-mt-24">
+<div id="atolyem-list" class="card overflow-hidden mb-6 scroll-mt-24" data-workshop-tabs data-default-tab="{{ e($defaultTab) }}">
     <div class="px-4 sm:px-6 py-4 border-b border-neutral-200 dark:border-slate-700 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex flex-wrap gap-1.5">
-            <button type="button" @click="goToTab('uretim')" :class="tab === 'uretim' ? 'bg-neutral-900 text-white dark:bg-emerald-600' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+            <a href="#uretim" data-workshop-tab-btn="uretim" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {{ $defaultTab === 'uretim' ? 'bg-neutral-900 text-white dark:bg-emerald-600' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300' }}">
                 Üretimde
                 @if($productionSales->isNotEmpty())
                 <span class="ml-1 opacity-80">({{ $productionSales->count() }})</span>
                 @endif
-            </button>
-            <button type="button" @click="goToTab('termin')" :class="tab === 'termin' ? 'bg-neutral-900 text-white dark:bg-emerald-600' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+            </a>
+            <a href="#termin" data-workshop-tab-btn="termin" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {{ $defaultTab === 'termin' ? 'bg-neutral-900 text-white dark:bg-emerald-600' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300' }}">
                 Termin
                 @if($upcomingDueSales->isNotEmpty())
                 <span class="ml-1 opacity-80">({{ $upcomingDueSales->count() }})</span>
                 @endif
-            </button>
-            <button type="button" @click="goToTab('ssh')" :class="tab === 'ssh' ? 'bg-neutral-900 text-white dark:bg-emerald-600' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+            </a>
+            <a href="#ssh" data-workshop-tab-btn="ssh" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {{ $defaultTab === 'ssh' ? 'bg-neutral-900 text-white dark:bg-emerald-600' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300' }}">
                 SSH
                 @if($openServiceTickets->isNotEmpty())
                 <span class="ml-1 opacity-80">({{ $openServiceTickets->count() }})</span>
                 @endif
-            </button>
+            </a>
         </div>
         <a href="{{ route('reports.upcoming-due', ['days' => $terminDays]) }}" class="text-sm font-medium text-emerald-600 hover:text-emerald-700 shrink-0">Detaylı termin raporu →</a>
     </div>
 
     {{-- Üretimde --}}
-    <div x-show="tab === 'uretim'" x-cloak class="divide-y divide-neutral-100 dark:divide-slate-800">
+    <div data-workshop-tab-panel="uretim" class="divide-y divide-neutral-100 dark:divide-slate-800{{ $defaultTab !== 'uretim' ? ' hidden' : '' }}">
         @if($productionSales->isEmpty())
         <div class="px-6 py-14 text-center">
             <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500">
@@ -202,7 +189,7 @@
     </div>
 
     {{-- Termin --}}
-    <div x-show="tab === 'termin'" x-cloak class="divide-y divide-neutral-100 dark:divide-slate-800">
+    <div data-workshop-tab-panel="termin" class="divide-y divide-neutral-100 dark:divide-slate-800{{ $defaultTab !== 'termin' ? ' hidden' : '' }}">
         @if($upcomingDueSales->isEmpty())
         <div class="px-6 py-14 text-center">
             <p class="text-neutral-600 dark:text-neutral-400 font-medium">Yaklaşan termin yok</p>
@@ -264,7 +251,7 @@
     </div>
 
     {{-- SSH --}}
-    <div x-show="tab === 'ssh'" x-cloak class="divide-y divide-neutral-100 dark:divide-slate-800">
+    <div data-workshop-tab-panel="ssh" class="divide-y divide-neutral-100 dark:divide-slate-800{{ $defaultTab !== 'ssh' ? ' hidden' : '' }}">
         @if($openServiceTickets->isEmpty())
         <div class="px-6 py-14 text-center">
             <p class="text-neutral-600 dark:text-neutral-400 font-medium">Açık SSH kaydı yok</p>
@@ -318,6 +305,54 @@
         @endif
     </div>
 </div>
-</div>
+
+@push('scripts')
+<script>
+(function () {
+    var root = document.querySelector('[data-workshop-tabs]');
+    if (!root) return;
+
+    var tabs = ['uretim', 'termin', 'ssh'];
+    var defaultTab = root.getAttribute('data-default-tab') || 'uretim';
+    var btnActive = ['bg-neutral-900', 'text-white', 'dark:bg-emerald-600'];
+    var btnInactive = ['bg-neutral-100', 'text-neutral-600', 'dark:bg-neutral-800', 'dark:text-neutral-300'];
+
+    function setBtnState(btn, active) {
+        btnActive.forEach(function (c) { btn.classList.toggle(c, active); });
+        btnInactive.forEach(function (c) { btn.classList.toggle(c, !active); });
+    }
+
+    function showTab(name, scroll) {
+        if (tabs.indexOf(name) === -1) name = defaultTab;
+
+        root.querySelectorAll('[data-workshop-tab-panel]').forEach(function (panel) {
+            panel.classList.toggle('hidden', panel.getAttribute('data-workshop-tab-panel') !== name);
+        });
+
+        root.querySelectorAll('[data-workshop-tab-btn]').forEach(function (btn) {
+            setBtnState(btn, btn.getAttribute('data-workshop-tab-btn') === name);
+        });
+
+        if (scroll) {
+            root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    function syncFromHash(scroll) {
+        var hash = (window.location.hash || '').replace('#', '');
+        showTab(tabs.indexOf(hash) >= 0 ? hash : defaultTab, scroll);
+    }
+
+    root.querySelectorAll('[data-workshop-tab-btn]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            window.setTimeout(function () { syncFromHash(true); }, 0);
+        });
+    });
+
+    syncFromHash(window.location.hash.length > 1);
+    window.addEventListener('hashchange', function () { syncFromHash(true); });
+})();
+</script>
+@endpush
 
 @include('partials.personnel-tasks-list')

@@ -68,6 +68,9 @@
             <a href="{{ route('sales.shipment', $sale) }}" target="_blank" class="btn-secondary text-sm">
                 Sevkiyat Fişi Çıkar
             </a>
+            @if($sale->customer)
+            <a href="#musteri-ekstresi" class="btn-secondary text-sm">Müşteri Ekstresi</a>
+            @endif
             <button type="button" @click="openStatusModal()" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm">
                 Sipariş Durumunu Güncelle
             </button>
@@ -138,6 +141,14 @@
 <div class="mt-6">
     @include('partials.drawing-files-display', ['drawingFiles' => $sale->drawingFiles ?? []])
 </div>
+
+@if($customerLedger)
+@include('partials.customer-ledger-panel', [
+    'customerLedger' => $customerLedger,
+    'highlightRefId' => $sale->id,
+    'highlightType' => 'satis',
+])
+@endif
 
 @php
     use App\Models\SaleActivity;

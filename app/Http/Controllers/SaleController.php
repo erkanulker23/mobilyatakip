@@ -10,6 +10,7 @@ use App\Models\SaleActivity;
 use App\Models\Quote;
 use App\Models\Customer;
 use App\Models\CustomerPayment;
+use App\Support\CustomerLedger;
 use App\Models\Kasa;
 use App\Models\KasaHareket;
 use App\Models\Product;
@@ -453,7 +454,11 @@ class SaleController extends Controller
                 ->get();
         }
 
-        return view('sales.show', compact('sale', 'unlinkedPayments', 'saleRemaining', 'kasalar', 'suppliers', 'productionStages'));
+        $customerLedger = $sale->customer
+            ? CustomerLedger::detailData($sale->customer)
+            : null;
+
+        return view('sales.show', compact('sale', 'unlinkedPayments', 'saleRemaining', 'kasalar', 'suppliers', 'productionStages', 'customerLedger'));
     }
 
     public function print(Sale $sale)
