@@ -3,7 +3,6 @@
 @section('content')
 @php
     use App\Support\SaleDelivery;
-    use App\Models\SaleProductionStage;
 
     $orderStatus = $orderStatus ?? SaleDelivery::currentStatus($sale);
     $status = $orderStatus;
@@ -11,7 +10,6 @@
     $canEditProduction = $canEditProduction ?? ($status === SaleDelivery::IN_PRODUCTION);
     $termin = SaleDelivery::terminListMeta($sale);
     $backUrl = $backUrl ?? route('workshop.index');
-    $defaultNoteType = !empty($hideCommercialData) ? SaleProductionStage::TYPE_DEFICIENCY : old('type', SaleProductionStage::TYPE_DEFICIENCY);
 @endphp
 <div class="mb-6">
     <nav class="flex items-center gap-2 text-neutral-500 text-sm mb-1">
@@ -41,11 +39,11 @@
 
 @if(! $canAddProductionStage)
 <div class="mb-6 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900/40 dark:text-neutral-300">
-    Bu sipariş iptal edilmiş; yeni aşama eklenemez.
+    Bu sipariş iptal edilmiş; yeni not eklenemez.
 </div>
 @elseif(! $canEditProduction)
 <div class="mb-6 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900/40 dark:text-neutral-300">
-    Bu sipariş henüz <strong>üretimde değil</strong>. Yine de aşama ve eksiklik kaydı ekleyebilirsiniz; üretim tamamlama işlemi sipariş üretime alındığında kullanılabilir.
+    Bu sipariş henüz <strong>üretimde değil</strong>. Yine de not ekleyebilirsiniz; üretim tamamlama işlemi sipariş üretime alındığında kullanılabilir.
 </div>
 @endif
 
@@ -55,7 +53,7 @@
 </div>
 @elseif($canAddProductionStage)
 <div class="card p-6 mb-6 border-amber-200/80 dark:border-amber-900/40 bg-amber-50/30 dark:bg-amber-950/20">
-    @include('partials.sale-production-stage-form', ['sale' => $sale, 'formId' => 'workshopNoteForm', 'defaultNoteType' => $defaultNoteType, 'compact' => true])
+    @include('partials.sale-production-stage-form', ['sale' => $sale, 'formId' => 'workshopNoteForm', 'compact' => true])
 </div>
 @endif
 
@@ -78,9 +76,6 @@
                             <th class="table-th">Adet</th>
                             <th class="table-th">Kalem Açıklaması</th>
                             <th class="table-th">Ürün Detayı</th>
-                            @if(!empty($productionStagesReady) && $canAddProductionStage)
-                            <th class="table-th text-right">Not</th>
-                            @endif
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -95,16 +90,9 @@
                             <td class="table-td">{{ $item->quantity }}</td>
                             <td class="table-td text-sm text-neutral-600 dark:text-neutral-400 whitespace-pre-wrap">{{ $item->description ?: '—' }}</td>
                             <td class="table-td text-sm text-neutral-600 dark:text-neutral-400 whitespace-pre-wrap">{{ $itemDetail !== '' ? $itemDetail : '—' }}</td>
-                            @if(!empty($productionStagesReady) && $canAddProductionStage)
-                            <td class="table-td text-right">
-                                <button type="button" class="item-note-btn text-sm font-medium text-amber-700 hover:text-amber-800 dark:text-amber-300 dark:hover:text-amber-200" data-item-id="{{ $item->id }}" data-item-name="{{ $itemName }}">
-                                    Eksiklik bildir
-                                </button>
-                            </td>
-                            @endif
                         </tr>
                         @empty
-                        <tr><td colspan="{{ (!empty($productionStagesReady) && $canAddProductionStage) ? 6 : 5 }}" class="table-td text-neutral-500">Kalem yok</td></tr>
+                        <tr><td colspan="5" class="table-td text-neutral-500">Kalem yok</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -112,7 +100,7 @@
         </div>
 
         <div class="card p-6">
-            <h2 class="font-semibold text-neutral-900 dark:text-white mb-4">Atölye Notları</h2>
+            <h2 class="font-semibold text-neutral-900 dark:text-white mb-4">Notlar</h2>
             @if($sale->productionStages->isEmpty())
             <p class="text-neutral-500 text-sm">Henüz not eklenmemiş.</p>
             @else
@@ -172,23 +160,4 @@
         @endif
     </div>
 </div>
-<script>
-(function () {
-    document.querySelectorAll('.item-note-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            var form = document.getElementById('workshopNoteForm');
-            var itemSelect = document.getElementById('workshopNoteFormItem');
-            var type = document.getElementById('workshopNoteFormType');
-            var notes = document.getElementById('workshopNoteFormNotes');
-            if (itemSelect) itemSelect.value = this.dataset.itemId || '';
-            if (type) type.value = 'eksiklik';
-            if (notes) notes.value = (this.dataset.itemName || 'Ürün') + ': Sol panel parçaları eksik geldi';
-            if (form) {
-                form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                notes.focus();
-            }
-        });
-    });
-})();
-</script>
 @endsection

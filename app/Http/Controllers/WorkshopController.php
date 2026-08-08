@@ -173,9 +173,7 @@ class WorkshopController extends Controller
             'actionDate' => now(),
         ]);
 
-        $label = SaleProductionStage::typeLabel($validated['type']);
-
-        return back()->with('success', "{$label} kaydı eklendi.");
+        return back()->with('success', 'Not eklendi.');
     }
 
     public function completeStage(Request $request, SaleProductionStage $stage)
