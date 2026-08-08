@@ -107,13 +107,10 @@
                 Hesabınızdan güvenli şekilde çıkış yapın.
             </p>
         </div>
-        <form method="POST" action="{{ route('logout') }}" class="shrink-0">
-            @csrf
-            <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-[0.625rem] hover:bg-red-100 transition-colors dark:text-red-300 dark:bg-red-950/40 dark:border-red-900/50 dark:hover:bg-red-950/60 whitespace-nowrap">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                Çıkış Yap
-            </button>
-        </form>
+        <a href="{{ route('logout') }}" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-[0.625rem] hover:bg-red-100 transition-colors dark:text-red-300 dark:bg-red-950/40 dark:border-red-900/50 dark:hover:bg-red-950/60 whitespace-nowrap shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            Çıkış Yap
+        </a>
     </div>
 </div>
 

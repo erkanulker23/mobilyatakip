@@ -66,7 +66,7 @@ Route::get('/sifremi-unuttum', [\App\Http\Controllers\PasswordResetController::c
 Route::post('/sifremi-unuttum', [\App\Http\Controllers\PasswordResetController::class, 'sendResetLink'])->name('password.email')->middleware('guest');
 Route::get('/sifre-sifirla/{token}', [\App\Http\Controllers\PasswordResetController::class, 'showResetForm'])->name('password.reset')->middleware('guest');
 Route::post('/sifre-sifirla', [\App\Http\Controllers\PasswordResetController::class, 'reset'])->name('password.update')->middleware('guest');
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
+Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
