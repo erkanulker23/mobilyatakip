@@ -19,6 +19,27 @@
     </div>
 </div>
 
+{{-- Bugün özeti --}}
+@php
+    $todayStr = now()->format('Y-m-d');
+@endphp
+<div class="grid grid-cols-2 gap-3 mb-3">
+    <a href="{{ route('sales.index', ['from' => $todayStr, 'to' => $todayStr]) }}" class="card p-4 border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/20 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors">
+        <p class="text-xs font-medium text-emerald-800 dark:text-emerald-300 uppercase tracking-wide">Bugün satış</p>
+        <p class="text-2xl sm:text-3xl font-semibold text-emerald-700 dark:text-emerald-400 mt-1 tabular-nums">{{ $todaySalesCount }}</p>
+        @if($todaySalesTotal > 0)
+            <p class="text-xs text-emerald-700/80 dark:text-emerald-400/80 mt-1 tabular-nums">₺{{ number_format($todaySalesTotal, 0, ',', '.') }} ciro</p>
+        @else
+            <p class="text-xs text-neutral-500 mt-1">Bugün kayıt yok</p>
+        @endif
+    </a>
+    <a href="{{ route('customer-payments.create', ['list' => 1, 'from' => $todayStr, 'to' => $todayStr]) }}" class="card p-4 border-sky-200 dark:border-sky-800/60 bg-sky-50/40 dark:bg-sky-950/20 hover:bg-sky-50 dark:hover:bg-sky-950/30 transition-colors">
+        <p class="text-xs font-medium text-sky-800 dark:text-sky-300 uppercase tracking-wide">Bugün kasa girişi</p>
+        <p class="text-2xl sm:text-3xl font-semibold text-sky-700 dark:text-sky-400 mt-1 tabular-nums">₺{{ number_format($todayKasaInflow, 0, ',', '.') }}</p>
+        <p class="text-xs text-neutral-500 mt-1">Tahsilat (tüm kasalar)</p>
+    </a>
+</div>
+
 {{-- Özet kartlar --}}
 <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
     <div class="card p-4">

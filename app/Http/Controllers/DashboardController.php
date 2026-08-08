@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\KasaHareket;
 use App\Models\Sale;
 use App\Models\Quote;
 use App\Models\Purchase;
@@ -44,6 +45,22 @@ class DashboardController extends Controller
         });
 
         $monthStart = Carbon::now()->startOfMonth();
+        $today = Carbon::today();
+
+        $todaySalesBase = Sale::query()
+            ->where('isCancelled', false)
+            ->whereDate('saleDate', $today);
+
+        $todaySalesCount = (int) (clone $todaySalesBase)->count();
+        $todaySalesTotal = (float) (clone $todaySalesBase)->sum('grandTotal');
+
+        $todayKasaInflow = (float) KasaHareket::query()
+            ->ledger()
+            ->where('refType', 'customer_payment')
+            ->whereDate('movementDate', $today)
+            ->where('amount', '>', 0)
+            ->sum('amount');
+
         $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
         $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
 
@@ -189,6 +206,9 @@ class DashboardController extends Controller
             'defaultWorkTab',
             'deliveryScore',
             'deliveryScoreThisMonth',
+            'todaySalesCount',
+            'todaySalesTotal',
+            'todayKasaInflow',
         ) + ['terminAlertDays' => self::TERMIN_ALERT_DAYS]);
     }
 
