@@ -177,8 +177,18 @@
                     @php
                         $sshDaysLeft = (int) now()->startOfDay()->diffInDays($serviceTicket->dueDate, false);
                         $sshTerminClass = $sshDaysLeft < 0 ? 'text-red-600 font-medium' : ($sshDaysLeft <= 3 ? 'text-amber-600 font-medium' : 'text-neutral-900');
+                        $sshDaysSuffix = null;
+                        if (! in_array($status, ['tamamlandi', 'iptal'], true)) {
+                            if ($sshDaysLeft < 0) {
+                                $sshDaysSuffix = abs($sshDaysLeft) . ' gün gecikti';
+                            } elseif ($sshDaysLeft === 0) {
+                                $sshDaysSuffix = 'bugün';
+                            } else {
+                                $sshDaysSuffix = $sshDaysLeft . ' gün kaldı';
+                            }
+                        }
                     @endphp
-                    <div><dt class="form-label">Açılacak Servis Tarihi</dt><dd class="{{ $sshTerminClass }}">{{ $serviceTicket->dueDate->format('d.m.Y') }}@if(!in_array($status, ['tamamlandi', 'iptal'], true)) · @if($sshDaysLeft < 0){{ abs($sshDaysLeft) }} gün gecikti@elseif($sshDaysLeft === 0)bugün@else{{ $sshDaysLeft }} gün kaldı@endif @endif</dd></div>
+                    <div><dt class="form-label">Açılacak Servis Tarihi</dt><dd class="{{ $sshTerminClass }}">{{ $serviceTicket->dueDate->format('d.m.Y') }}@if($sshDaysSuffix) · {{ $sshDaysSuffix }}@endif</dd></div>
                     @endif
                     @if($serviceTicket->closedAt)<div><dt class="form-label">Kapanış</dt><dd>{{ $serviceTicket->closedAt->format('d.m.Y H:i') }}</dd></div>@endif
                 </dl>
