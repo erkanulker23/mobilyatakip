@@ -13,6 +13,8 @@ use Illuminate\Http\Request;
 
 class UserTaskController extends Controller
 {
+    public const ASSIGN_ALL_PERSONNEL = 'all';
+
     public function __construct(private AuditService $auditService) {}
 
     public function index(Request $request)
@@ -33,9 +35,9 @@ class UserTaskController extends Controller
             'completedByUser:id,name',
         ]);
 
-        $this->applyTaskVisibilityScope($query, $user);
+        $this->applyTaskVisibilityScope($query, $user, $request);
 
-        if ($user->isAdmin()) {
+        if ($user->isAdmin() || $user->canManageTeamTasks()) {
             if ($request->filled('personnelId')) {
                 $query->where('personnelId', $request->personnelId);
             } elseif ($request->filled('userId')) {
@@ -78,26 +80,22 @@ class UserTaskController extends Controller
         $ownerId = (string) $request->user()->id;
         $personnelId = null;
 
-        if ($request->user()->isAdmin()) {
-            if (! empty($validated['personnelId'])) {
-                $personnel = Personnel::query()
-                    ->where('id', $validated['personnelId'])
-                    ->where('isActive', true)
-                    ->first();
+        if (
+            $request->user()->canManageTeamTasks()
+            && ($validated['personnelId'] ?? '') === self::ASSIGN_ALL_PERSONNEL
+        ) {
+            return $this->storeForAllPersonnel($request, $validated);
+        }
 
-                if (! $personnel) {
-                    return response()->json(['message' => 'Geçersiz personel seçimi.'], 422);
-                }
-
-                $personnelId = $personnel->id;
-                $ownerId = $personnel->userId
-                    ? (string) $personnel->userId
-                    : (string) $request->user()->id;
-            } elseif (! empty($validated['userId'])) {
-                $ownerId = (string) $validated['userId'];
-                if (! User::where('id', $ownerId)->where('isActive', true)->exists()) {
-                    return response()->json(['message' => 'Geçersiz kullanıcı.'], 422);
-                }
+        if ($request->user()->canManageTeamTasks() && ! empty($validated['personnelId'])) {
+            [$personnelId, $ownerId] = $this->resolvePersonnelAssignment(
+                $request,
+                (string) $validated['personnelId']
+            );
+        } elseif ($request->user()->canManageTeamTasks() && ! empty($validated['userId'])) {
+            $ownerId = (string) $validated['userId'];
+            if (! User::where('id', $ownerId)->where('isActive', true)->exists()) {
+                return response()->json(['message' => 'Geçersiz kullanıcı.'], 422);
             }
         } elseif ($request->user()->personnel?->id) {
             $personnelId = $request->user()->personnel->id;
@@ -171,23 +169,16 @@ class UserTaskController extends Controller
         }
 
         if (array_key_exists('personnelId', $validated)) {
-            if ($request->user()->isAdmin()) {
+            if ($request->user()->canManageTeamTasks()) {
                 if ($validated['personnelId'] === null || $validated['personnelId'] === '') {
                     $updates['personnelId'] = null;
                 } else {
-                    $personnel = Personnel::query()
-                        ->where('id', $validated['personnelId'])
-                        ->where('isActive', true)
-                        ->first();
-
-                    if (! $personnel) {
-                        return response()->json(['message' => 'Geçersiz personel seçimi.'], 422);
-                    }
-
-                    $updates['personnelId'] = $personnel->id;
-                    $updates['userId'] = $personnel->userId
-                        ? (string) $personnel->userId
-                        : (string) $request->user()->id;
+                    [$assignedPersonnelId, $ownerId] = $this->resolvePersonnelAssignment(
+                        $request,
+                        (string) $validated['personnelId']
+                    );
+                    $updates['personnelId'] = $assignedPersonnelId;
+                    $updates['userId'] = $ownerId;
                 }
             }
         }
@@ -228,6 +219,60 @@ class UserTaskController extends Controller
         return response()->json(['message' => 'Görev silindi.']);
     }
 
+    private function storeForAllPersonnel(Request $request, array $validated): \Illuminate\Http\JsonResponse
+    {
+        $personnelList = Personnel::query()
+            ->where('isActive', true)
+            ->orderBy('name')
+            ->get();
+
+        if ($personnelList->isEmpty()) {
+            return response()->json(['message' => 'Atanacak aktif personel bulunamadı.'], 422);
+        }
+
+        $taskData = [
+            'title' => trim($validated['title']),
+            'notes' => isset($validated['notes']) ? trim($validated['notes']) : null,
+            'dueDate' => $validated['dueDate'] ?? null,
+            'color' => UserTaskColor::normalize($validated['color'] ?? null),
+        ];
+
+        $creatorId = (string) $request->user()->id;
+        $tasks = collect();
+
+        foreach ($personnelList as $personnel) {
+            $ownerId = $personnel->userId
+                ? (string) $personnel->userId
+                : $creatorId;
+
+            $task = UserTask::create([
+                'userId' => $ownerId,
+                'personnelId' => (string) $personnel->id,
+                ...$taskData,
+            ]);
+
+            $this->auditService->logCreate('user_task', $task->id, ['title' => $task->title]);
+            $tasks->push($task);
+        }
+
+        $tasks->load([
+            'user:id,name,role',
+            'personnel:id,name,title,userId',
+            'completedByUser:id,name',
+        ]);
+
+        $count = $tasks->count();
+        $firstTask = $tasks->first();
+
+        return response()->json([
+            'task' => $firstTask ? $this->taskPayload($firstTask) : null,
+            'tasks' => $tasks->map(fn (UserTask $task) => $this->taskPayload($task))->values(),
+            'message' => $count === 1
+                ? '1 personele görev eklendi.'
+                : $count . ' personele görev eklendi.',
+        ], 201);
+    }
+
     private function authorizeTask(UserTask $task): void
     {
         $user = auth()->user();
@@ -235,7 +280,7 @@ class UserTaskController extends Controller
             abort(403, 'Bu görevi yönetme yetkiniz yok.');
         }
 
-        if ($user->isAdmin()) {
+        if ($user->isAdmin() || $user->canManageTeamTasks()) {
             return;
         }
 
@@ -249,9 +294,13 @@ class UserTaskController extends Controller
     }
 
     /** @param  \Illuminate\Database\Eloquent\Builder<UserTask>  $query */
-    private function applyTaskVisibilityScope($query, User $user): void
+    private function applyTaskVisibilityScope($query, User $user, Request $request): void
     {
         if ($user->isAdmin()) {
+            return;
+        }
+
+        if ($user->canManageTeamTasks() && $request->input('scope') !== 'personal') {
             return;
         }
 
@@ -267,6 +316,27 @@ class UserTaskController extends Controller
                 $w->where('userId', $user->id);
             }
         });
+    }
+
+    /** @return array{0: string, 1: string} personnelId, owner userId */
+    private function resolvePersonnelAssignment(Request $request, string $personnelId): array
+    {
+        $personnel = Personnel::query()
+            ->where('id', $personnelId)
+            ->where('isActive', true)
+            ->first();
+
+        if (! $personnel) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'personnelId' => 'Geçersiz personel seçimi.',
+            ]);
+        }
+
+        $ownerId = $personnel->userId
+            ? (string) $personnel->userId
+            : (string) $request->user()->id;
+
+        return [(string) $personnel->id, $ownerId];
     }
 
     private function taskPayload(UserTask $task, array $completerFallback = []): array

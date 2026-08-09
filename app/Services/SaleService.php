@@ -8,6 +8,7 @@ use App\Models\SaleActivity;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Product;
+use App\Support\DrawingFiles;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -181,6 +182,10 @@ class SaleService
                 'grandTotalOverride' => ($quote->generalDiscountAmount && (float) $quote->generalDiscountAmount > 0)
                     ? (float) $quote->grandTotal
                     : null,
+                'drawingFiles' => ($copiedDrawings = DrawingFiles::duplicateEntries(
+                    DrawingFiles::entries($quote->drawingFiles),
+                    'drawings/sales'
+                )) !== [] ? $copiedDrawings : null,
             ]);
 
             foreach ($quote->items as $qi) {

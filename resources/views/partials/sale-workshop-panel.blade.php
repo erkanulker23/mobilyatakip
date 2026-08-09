@@ -9,7 +9,7 @@
 @endphp
 
 @if($showPanel)
-<div class="mt-6 card overflow-hidden no-print sale-personnel-notes-panel" id="atolye-takibi">
+<div class="mt-6 card overflow-hidden no-print sale-personnel-notes-panel scroll-mt-24" id="atolye-takibi">
     <div class="px-6 py-4 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap items-center justify-between gap-3">
         <div>
             <h2 class="text-lg font-semibold text-neutral-900 dark:text-white">Notlar</h2>

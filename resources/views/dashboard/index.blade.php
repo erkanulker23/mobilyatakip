@@ -58,6 +58,9 @@
     <a href="{{ route('customer-payments.create', ['list' => 1, 'from' => $todayStr, 'to' => $todayStr]) }}" class="card p-4 border-sky-200 dark:border-sky-800/60 bg-sky-50/40 dark:bg-sky-950/20 hover:bg-sky-50 dark:hover:bg-sky-950/30 transition-colors">
         <p class="text-xs font-medium text-sky-800 dark:text-sky-300 uppercase tracking-wide">Bugün kasa girişi</p>
         <p class="text-2xl sm:text-3xl font-semibold text-sky-700 dark:text-sky-400 mt-1 tabular-nums">₺{{ number_format($todayKasaInflow, 0, ',', '.') }}</p>
+        @if(($todayKasaBreakdown['nakitTotal'] ?? 0) > 0)
+            <p class="text-xs text-sky-700/90 dark:text-sky-300/90 mt-1 tabular-nums">Nakit: ₺{{ number_format($todayKasaBreakdown['nakitTotal'], 0, ',', '.') }}</p>
+        @endif
         <p class="text-xs text-neutral-500 mt-1">Tahsilat (tüm kasalar)</p>
     </a>
     <a href="{{ route('sales.index', ['from' => $weekStartStr, 'to' => $weekEndStr]) }}" class="card p-4 border-violet-200 dark:border-violet-800/60 bg-violet-50/40 dark:bg-violet-950/20 hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-colors">
@@ -75,6 +78,49 @@
         <p class="text-xs text-neutral-500 mt-1">{{ $weekRangeLabel ?? '' }} · tahsilat</p>
     </a>
 </div>
+
+@if(($todayKasaBreakdown['total'] ?? 0) > 0)
+<div class="card p-4 mb-6 border-sky-200/80 dark:border-sky-800/50 bg-sky-50/30 dark:bg-sky-950/15">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+            <p class="text-xs font-medium text-sky-800 dark:text-sky-300 uppercase tracking-wide">Bugün kasa girişi dağılımı</p>
+            <p class="text-sm text-neutral-600 dark:text-neutral-400 mt-1">Ödeme tipi ve kasa bazında tahsilat</p>
+        </div>
+        <a href="{{ route('customer-payments.create', ['list' => 1, 'from' => $todayStr, 'to' => $todayStr]) }}" class="text-xs text-sky-700 dark:text-sky-400 hover:underline shrink-0">Tüm tahsilatları gör →</a>
+    </div>
+    <div class="mt-4 grid gap-6 sm:grid-cols-2">
+        <div>
+            <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">Ödeme tipi</p>
+            <ul class="space-y-1.5">
+                @foreach($todayKasaBreakdown['byType'] as $row)
+                <li class="flex items-center justify-between gap-3 text-sm">
+                    <span class="text-neutral-700 dark:text-neutral-300">{{ $row['label'] }}</span>
+                    <span class="font-medium tabular-nums text-neutral-900 dark:text-neutral-100">₺{{ number_format($row['amount'], 0, ',', '.') }}</span>
+                </li>
+                @endforeach
+            </ul>
+        </div>
+        <div>
+            <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">Kasalar</p>
+            <ul class="space-y-1.5">
+                @foreach($todayKasaBreakdown['byKasa'] as $row)
+                <li>
+                    <a href="{{ route('kasa.show', ['kasa' => $row['id'], 'date_from' => $todayStr, 'date_to' => $todayStr, 'movement' => 'tahsilat']) }}" class="flex items-center justify-between gap-3 text-sm rounded-md -mx-1 px-1 py-0.5 hover:bg-sky-100/80 dark:hover:bg-sky-900/30 transition-colors">
+                        <span class="text-neutral-700 dark:text-neutral-300">
+                            {{ $row['name'] }}
+                            @if($row['typeLabel'])
+                                <span class="text-neutral-400">· {{ $row['typeLabel'] }}</span>
+                            @endif
+                        </span>
+                        <span class="font-medium tabular-nums text-neutral-900 dark:text-neutral-100">₺{{ number_format($row['amount'], 0, ',', '.') }}</span>
+                    </a>
+                </li>
+                @endforeach
+            </ul>
+        </div>
+    </div>
+</div>
+@endif
 
 {{-- Özet kartlar --}}
 <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">

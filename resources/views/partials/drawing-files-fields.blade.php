@@ -19,8 +19,14 @@
                     <img src="{{ $fileUrl }}" alt="" class="w-16 h-16 object-cover rounded-lg border border-neutral-200">
                 </a>
                 @else
-                <div class="w-16 h-16 shrink-0 rounded-lg border border-neutral-200 bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
-                    <span class="text-[10px] font-bold text-red-700 dark:text-red-300">PDF</span>
+                <div class="w-16 h-16 shrink-0 rounded-lg border border-neutral-200 flex items-center justify-center
+                    @if(\App\Support\DrawingFiles::isDwg($entry)) bg-sky-50 dark:bg-sky-900/20
+                    @elseif(\App\Support\DrawingFiles::isPdf($entry)) bg-red-50 dark:bg-red-900/20
+                    @else bg-neutral-50 dark:bg-neutral-800 @endif">
+                    <span class="text-[10px] font-bold
+                        @if(\App\Support\DrawingFiles::isDwg($entry)) text-sky-700 dark:text-sky-300
+                        @elseif(\App\Support\DrawingFiles::isPdf($entry)) text-red-700 dark:text-red-300
+                        @else text-neutral-600 dark:text-neutral-300 @endif">{{ \App\Support\DrawingFiles::kindLabel($entry) }}</span>
                 </div>
                 @endif
                 <div class="min-w-0 flex-1">
@@ -41,8 +47,8 @@
 
         <div>
             <label class="form-label">Yeni dosya ekle</label>
-            <input type="file" name="drawing_files[]" multiple accept=".pdf,image/jpeg,image/png,image/gif,image/webp,application/pdf" class="form-input py-2">
-            <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400">PDF, JPG, PNG, WEBP · dosya başına en fazla 10 MB · birden fazla dosya seçebilirsiniz</p>
+            <input type="file" name="drawing_files[]" multiple accept=".pdf,.dwg,image/jpeg,image/png,image/gif,image/webp,application/pdf" class="form-input py-2">
+            <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400">PDF, DWG, JPG, PNG, WEBP · dosya başına en fazla 10 MB · birden fazla dosya seçebilirsiniz</p>
             @error('drawing_files')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             @error('drawing_files.*')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>

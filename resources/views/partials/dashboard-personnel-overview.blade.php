@@ -24,17 +24,17 @@
         <div class="card p-4">
             <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Bu ay ciro</p>
             <p class="text-2xl sm:text-3xl font-semibold text-neutral-900 dark:text-neutral-100 mt-1 tabular-nums">₺{{ number_format($stats['monthTotal'] ?? 0, 0, ',', '.') }}</p>
-            <p class="text-xs text-neutral-500 mt-1">İptal edilmeyen satışlar</p>
+            <p class="text-xs text-neutral-500 mt-1">Bu ayki sipariş tutarları</p>
         </div>
         <div class="card p-4 border-sky-200 dark:border-sky-800/60 bg-sky-50/40 dark:bg-sky-950/20">
             <p class="text-xs font-medium text-sky-800 dark:text-sky-300 uppercase tracking-wide">Bu ay tahsilat</p>
             <p class="text-2xl sm:text-3xl font-semibold text-sky-700 dark:text-sky-400 mt-1 tabular-nums">₺{{ number_format($stats['monthCollected'] ?? 0, 0, ',', '.') }}</p>
-            <p class="text-xs text-neutral-500 mt-1">Siparişlerden alınan</p>
+            <p class="text-xs text-neutral-500 mt-1">Bu ay alınan ödemeler</p>
         </div>
         <div class="card p-4 {{ ($stats['totalReceivable'] ?? 0) > 0 ? 'ring-1 ring-amber-200 dark:ring-amber-800/60' : '' }}">
-            <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Alınacak</p>
+            <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Toplam alınacak</p>
             <p class="text-2xl sm:text-3xl font-semibold {{ ($stats['totalReceivable'] ?? 0) > 0 ? 'text-amber-600' : 'text-neutral-900 dark:text-neutral-100' }} mt-1 tabular-nums">₺{{ number_format($stats['totalReceivable'] ?? 0, 0, ',', '.') }}</p>
-            <p class="text-xs text-neutral-500 mt-1">Bekleyen tahsilat</p>
+            <p class="text-xs text-neutral-500 mt-1">Tüm aktif siparişlerden kalan</p>
         </div>
     </div>
 

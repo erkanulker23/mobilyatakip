@@ -12,6 +12,7 @@ use App\Services\AuditService;
 use App\Services\PersonnelAccessService;
 use App\Support\ActivityMessage;
 use App\Support\PersonnelCategory;
+use App\Support\PersonnelSalesStats;
 use App\Support\SaleDelivery;
 use App\Support\WorkshopDashboard;
 use App\Support\WorkshopUser;
@@ -377,7 +378,7 @@ class PersonnelController extends Controller
         return [
             'count' => (int) (clone $base)->count(),
             'total' => (float) (clone $base)->sum('grandTotal'),
-            'collected' => (float) (clone $base)->sum('paidAmount'),
+            'collected' => PersonnelSalesStats::collectedInPeriod($personnel, $start, $end),
         ];
     }
 

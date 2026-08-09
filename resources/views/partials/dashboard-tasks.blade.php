@@ -268,6 +268,7 @@
                         <label class="form-label">Personel</label>
                         <select x-model="form.personnelId" class="form-select">
                             <option value="">Atanmadı</option>
+                            <option value="all">Tüm personel</option>
                             <template x-for="person in personnelOptions" :key="person.id">
                                 <option :value="person.id" x-text="person.label"></option>
                             </template>
@@ -588,6 +589,7 @@ function dashboardTasks() {
             try {
                 const url = new URL(apiIndex, window.location.origin);
                 url.searchParams.set('month', this.currentMonth);
+                if (this.personalTasksView) url.searchParams.set('scope', 'personal');
                 if (this.filterPersonnelId) url.searchParams.set('personnelId', this.filterPersonnelId);
                 const res = await fetch(url, {
                     credentials: 'same-origin',

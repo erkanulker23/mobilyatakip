@@ -103,6 +103,16 @@ class User extends Authenticatable implements CanResetPasswordContract
         return ! $this->isAdmin() && ! $this->isWorkshop();
     }
 
+    /** Yapılacaklar sayfasında ekip görevlerini yönetebilir / personele atayabilir. */
+    public function canManageTeamTasks(): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return (bool) ($this->personnel?->isActive ?? false);
+    }
+
     public function personnelCategory(): ?string
     {
         return $this->personnel?->category;

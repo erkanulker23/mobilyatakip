@@ -4,6 +4,10 @@
 @php
     $currentOrderStatus = \App\Support\SaleDelivery::currentStatus($sale);
     $initialDeliveryStatus = old('deliveryStatus', $currentOrderStatus);
+    $openServiceTickets = ($sale->serviceTickets ?? collect())
+        ->filter(fn ($ticket) => ! \App\Support\ServiceTicketStatus::isClosed($ticket->status))
+        ->values();
+    $primaryServiceTicket = $openServiceTickets->first();
 @endphp
 <div x-data='{
     showCustomerEmail: false,
@@ -28,6 +32,12 @@
                 @if($sale->isCancelled ?? false)
                 <span class="text-sm font-normal px-2.5 py-1 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">İptal</span>
                 @endif
+                @if($primaryServiceTicket)
+                <a href="{{ $openServiceTickets->count() > 1 ? '#ssh-kayitlari' : route('service-tickets.show', $primaryServiceTicket) }}" class="inline-flex items-center gap-1.5 text-sm font-semibold px-3 py-1 rounded-full bg-orange-100 text-orange-800 ring-1 ring-orange-300/80 hover:bg-orange-200 dark:bg-orange-900/40 dark:text-orange-200 dark:ring-orange-700/60 dark:hover:bg-orange-900/55 transition-colors">
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    SSH{{ $openServiceTickets->count() > 1 ? ' (' . $openServiceTickets->count() . ')' : '' }}
+                </a>
+                @endif
                 @include('partials.final-measurement-badge', ['sale' => $sale])
             </h1>
             <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm text-neutral-600 dark:text-neutral-400">
@@ -42,7 +52,13 @@
                 @if(!($sale->isCancelled ?? false) && \App\Support\SaleDelivery::currentStatus($sale) !== \App\Support\SaleDelivery::PENDING)
                 <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
                 <span class="inline-flex flex-wrap items-center gap-1.5">
+                    @if($primaryServiceTicket && \App\Support\SaleDelivery::currentStatus($sale) === \App\Support\SaleDelivery::SSH)
+                    <a href="{{ route('service-tickets.show', $primaryServiceTicket) }}" class="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full {{ \App\Support\SaleDelivery::badgeClass(\App\Support\SaleDelivery::SSH) }} hover:opacity-90 transition-opacity">
+                        {{ \App\Support\SaleDelivery::label(\App\Support\SaleDelivery::SSH) }}
+                    </a>
+                    @else
                     @include('partials.delivery-status-badge', ['sale' => $sale])
+                    @endif
                     @if(\App\Support\SaleDelivery::isDelivered($sale) && $sale->deliveredAt)
                     <span>({{ $sale->deliveredAt->format('d.m.Y') }})</span>
                     @endif
@@ -52,6 +68,12 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
             @if(!($sale->isCancelled ?? false))
+            @if($primaryServiceTicket)
+            <a href="{{ $openServiceTickets->count() > 1 ? '#ssh-kayitlari' : route('service-tickets.show', $primaryServiceTicket) }}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-orange-600 text-white rounded-[0.625rem] hover:bg-orange-700 font-medium text-sm transition-colors dark:bg-orange-700 dark:hover:bg-orange-800">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                {{ $openServiceTickets->count() > 1 ? 'SSH Kayıtları' : 'SSH\'ye Git' }}
+            </a>
+            @endif
             <a href="{{ route('sales.edit', $sale) }}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-[0.625rem] hover:bg-red-700 font-medium text-sm transition-colors dark:bg-red-700 dark:hover:bg-red-800">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                 Düzenle
@@ -115,6 +137,60 @@
 @endif
 @endif
 
+@if(!($sale->isCancelled ?? false) && $openServiceTickets->isNotEmpty())
+<div id="ssh-kayitlari" class="mb-6 scroll-mt-24">
+    @if($openServiceTickets->count() === 1)
+        @php $ticket = $openServiceTickets->first(); @endphp
+        <a href="{{ route('service-tickets.show', $ticket) }}" class="group block p-4 rounded-xl bg-orange-50 dark:bg-orange-950/35 border-2 border-orange-300 dark:border-orange-700 hover:bg-orange-100/80 dark:hover:bg-orange-950/50 transition-colors">
+            <div class="flex items-start gap-3">
+                <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-200 text-orange-800 dark:bg-orange-900/50 dark:text-orange-200 group-hover:bg-orange-300 dark:group-hover:bg-orange-900/70 transition-colors" aria-hidden="true">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </span>
+                <div class="min-w-0 flex-1">
+                    <p class="font-semibold text-lg text-orange-950 dark:text-orange-100">Bu siparişte açık SSH kaydı var</p>
+                    <p class="text-sm text-orange-900/90 dark:text-orange-200/90 mt-1">
+                        <span class="font-medium">{{ $ticket->ticketNumber }}</span>
+                        · {{ \App\Support\ServiceTicketStatus::label($ticket->status) }}
+                        @if($ticket->dueDate)
+                        · Termin {{ $ticket->dueDate->format('d.m.Y') }}
+                        @endif
+                    </p>
+                    <p class="text-sm font-medium text-orange-700 dark:text-orange-300 mt-2 group-hover:underline">SSH kaydına git →</p>
+                </div>
+            </div>
+        </a>
+    @else
+        <div class="p-4 rounded-xl bg-orange-50 dark:bg-orange-950/35 border-2 border-orange-300 dark:border-orange-700">
+            <div class="flex items-start gap-3 mb-4">
+                <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-200 text-orange-800 dark:bg-orange-900/50 dark:text-orange-200" aria-hidden="true">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </span>
+                <div>
+                    <p class="font-semibold text-lg text-orange-950 dark:text-orange-100">Bu siparişte {{ $openServiceTickets->count() }} açık SSH kaydı var</p>
+                    <p class="text-sm text-orange-900/90 dark:text-orange-200/90 mt-1">İlgili servis kaydına tıklayarak detayına gidebilirsiniz.</p>
+                </div>
+            </div>
+            <div class="grid gap-2 sm:grid-cols-2">
+                @foreach($openServiceTickets as $ticket)
+                <a href="{{ route('service-tickets.show', $ticket) }}" class="flex items-center justify-between gap-3 rounded-lg border border-orange-200 dark:border-orange-800 bg-white/70 dark:bg-neutral-900/40 px-3 py-2.5 hover:bg-orange-100 dark:hover:bg-orange-950/40 transition-colors">
+                    <span class="min-w-0">
+                        <span class="block font-semibold text-orange-900 dark:text-orange-100">{{ $ticket->ticketNumber }}</span>
+                        <span class="block text-xs text-orange-800/80 dark:text-orange-200/80 mt-0.5">
+                            {{ \App\Support\ServiceTicketStatus::label($ticket->status) }}
+                            @if($ticket->dueDate)
+                            · Termin {{ $ticket->dueDate->format('d.m.Y') }}
+                            @endif
+                        </span>
+                    </span>
+                    <span class="text-sm font-medium text-orange-700 dark:text-orange-300 shrink-0">Git →</span>
+                </a>
+                @endforeach
+            </div>
+        </div>
+    @endif
+</div>
+@endif
+
 @if($sale->needsFinalMeasurement ?? false)
 <div class="mb-6 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-950 dark:text-amber-100">
     <div class="flex items-start gap-3">
@@ -129,16 +205,35 @@
 </div>
 @endif
 
+@if(($productionStagesReady ?? false) && ($productionStages ?? collect())->isNotEmpty() && !($sale->isCancelled ?? false))
+<div class="mb-6 p-4 rounded-xl bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-start gap-3 min-w-0">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300" aria-hidden="true">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
+            </span>
+            <div class="min-w-0">
+                <p class="font-semibold text-sky-900 dark:text-sky-100">Siparişte notlar var</p>
+                <p class="text-sm text-sky-800/90 dark:text-sky-200/90 mt-0.5">
+                    Bu siparişe {{ $productionStages->count() }} not eklenmiş. Notları okuyabilirsiniz.
+                </p>
+            </div>
+        </div>
+        <a href="#atolye-takibi" class="btn-secondary text-sm shrink-0">Notları Gör</a>
+    </div>
+</div>
+@endif
+
 @include('partials.sale-order-meta-panel', ['sale' => $sale])
+
+<div class="mb-6">
+    @include('partials.drawing-files-display', ['entries' => \App\Support\DrawingFiles::entriesForSale($sale)])
+</div>
 
 @include('partials.invoice-document', array_merge(
     \App\Support\SaleDocument::invoiceParams($sale),
     ['showOrderSummary' => false]
 ))
-
-<div class="mt-6">
-    @include('partials.drawing-files-display', ['drawingFiles' => $sale->drawingFiles ?? []])
-</div>
 
 @if($customerLedger)
 @include('partials.customer-ledger-panel', [

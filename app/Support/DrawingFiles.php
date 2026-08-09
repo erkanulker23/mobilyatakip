@@ -11,6 +11,9 @@ class DrawingFiles
 {
     public const MAX_BYTES = 10485760; // 10 MB
 
+    /** @var list<string> */
+    public const ALLOWED_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'dwg'];
+
     /** @return array<int, array{path: string, name: string}> */
     public static function entries(mixed $raw): array
     {
@@ -69,6 +72,44 @@ class DrawingFiles
         return Str::endsWith($name, '.pdf');
     }
 
+    public static function isDwg(array $entry): bool
+    {
+        $name = strtolower($entry['name'] ?? basename($entry['path'] ?? ''));
+
+        return Str::endsWith($name, '.dwg');
+    }
+
+    public static function kindLabel(array $entry): string
+    {
+        if (self::isImage($entry)) {
+            return 'Görsel';
+        }
+        if (self::isPdf($entry)) {
+            return 'PDF';
+        }
+        if (self::isDwg($entry)) {
+            return 'DWG';
+        }
+
+        return 'Dosya';
+    }
+
+    /** @return array<int, array{path: string, name: string}> */
+    public static function entriesForSale(\App\Models\Sale $sale): array
+    {
+        $entries = self::entries($sale->drawingFiles);
+
+        if ($entries === []) {
+            $quote = $sale->relationLoaded('quote') ? $sale->quote : null;
+            if ($quote === null && $sale->quoteId) {
+                $quote = $sale->quote()->first(['id', 'drawingFiles']);
+            }
+            $entries = self::entries($quote?->drawingFiles);
+        }
+
+        return self::existingEntries($entries);
+    }
+
     /** @param  array<int, array{path: string, name: string}>  $current */
     public static function syncFromRequest(Request $request, array $current, string $folder): array
     {
@@ -121,7 +162,7 @@ class DrawingFiles
             return false;
         }
 
-        $allowed = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp'];
+        $allowed = self::ALLOWED_EXTENSIONS;
 
         return in_array(strtolower($file->getClientOriginalExtension()), $allowed, true);
     }
@@ -183,7 +224,15 @@ class DrawingFiles
     {
         return [
             'drawing_files' => 'nullable|array',
-            'drawing_files.*' => 'file|mimes:pdf,jpeg,jpg,png,gif,webp|max:10240',
+            'drawing_files.*' => [
+                'file',
+                'max:10240',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if ($value instanceof UploadedFile && ! self::isValidUpload($value)) {
+                        $fail('Dosya PDF, JPG, PNG, WEBP veya DWG formatında olmalı (en fazla 10 MB).');
+                    }
+                },
+            ],
             'remove_drawing_files' => 'nullable|array',
             'remove_drawing_files.*' => 'string',
         ];

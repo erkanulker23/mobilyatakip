@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\CustomerPayment;
+use App\Models\Kasa;
 use App\Models\KasaHareket;
 use App\Models\Personnel;
 use App\Models\Sale;
@@ -12,6 +13,8 @@ use App\Models\Purchase;
 use App\Models\ServiceTicket;
 use App\Models\User;
 use App\Services\StockService;
+use App\Support\PaymentType;
+use App\Support\PersonnelSalesStats;
 use App\Support\SaleDelivery;
 use Carbon\Carbon;
 
@@ -58,12 +61,8 @@ class DashboardController extends Controller
             $todaySalesCount = (int) (clone $todaySalesBase)->count();
             $todaySalesTotal = (float) (clone $todaySalesBase)->sum('grandTotal');
 
-            $todayKasaInflow = (float) KasaHareket::query()
-                ->ledger()
-                ->where('refType', 'customer_payment')
-                ->whereDate('movementDate', $today)
-                ->where('amount', '>', 0)
-                ->sum('amount');
+            $todayKasaBreakdown = $this->buildTodayKasaBreakdown($today);
+            $todayKasaInflow = $todayKasaBreakdown['total'];
 
             $weekSalesBase = Sale::query()
                 ->where('isCancelled', false)
@@ -142,6 +141,7 @@ class DashboardController extends Controller
             $todaySalesCount = 0;
             $todaySalesTotal = 0;
             $todayKasaInflow = 0;
+            $todayKasaBreakdown = ['total' => 0, 'nakitTotal' => 0, 'byType' => collect(), 'byKasa' => collect()];
             $weekSalesCount = 0;
             $weekSalesTotal = 0;
             $weekKasaInflow = 0;
@@ -269,6 +269,7 @@ class DashboardController extends Controller
             'todaySalesCount',
             'todaySalesTotal',
             'todayKasaInflow',
+            'todayKasaBreakdown',
             'weekSalesCount',
             'weekSalesTotal',
             'weekKasaInflow',
@@ -280,11 +281,9 @@ class DashboardController extends Controller
 
     public function tasks()
     {
-        $showPersonalTasks = auth()->user()?->showsPersonalTasksDashboard() ?? false;
-
         return view('tasks.index', [
-            'taskPersonnel' => $this->taskPersonnelForCurrentUser(),
-            'showPersonalTasks' => $showPersonalTasks,
+            'taskPersonnel' => $this->assignableTaskPersonnel(),
+            'personalTasksView' => false,
             'personalPersonnelId' => auth()->user()?->personnel?->id,
         ]);
     }
@@ -303,6 +302,89 @@ class DashboardController extends Controller
         return collect();
     }
 
+    private function assignableTaskPersonnel()
+    {
+        $user = auth()->user();
+        if ($user?->isAdmin() || $user?->canManageTeamTasks()) {
+            return \App\Models\Personnel::where('isActive', true)->orderBy('name')->get(['id', 'name', 'title', 'userId', 'photoUrl']);
+        }
+
+        return $this->taskPersonnelForCurrentUser();
+    }
+
+    private function buildTodayKasaBreakdown(Carbon $date): array
+    {
+        $movements = KasaHareket::query()
+            ->ledger()
+            ->where('refType', 'customer_payment')
+            ->whereDate('movementDate', $date)
+            ->where('amount', '>', 0)
+            ->get(['id', 'amount', 'kasaId', 'refId']);
+
+        if ($movements->isEmpty()) {
+            return [
+                'total' => 0.0,
+                'nakitTotal' => 0.0,
+                'byType' => collect(),
+                'byKasa' => collect(),
+            ];
+        }
+
+        $payments = CustomerPayment::query()
+            ->whereIn('id', $movements->pluck('refId')->filter()->unique())
+            ->get(['id', 'paymentType'])
+            ->keyBy('id');
+
+        $kasalar = Kasa::query()
+            ->whereIn('id', $movements->pluck('kasaId')->filter()->unique())
+            ->get(['id', 'name', 'type', 'bankName'])
+            ->keyBy('id');
+
+        $byType = [];
+        $byKasa = [];
+
+        foreach ($movements as $movement) {
+            $amount = (float) $movement->amount;
+            $paymentType = $payments->get($movement->refId)?->paymentType ?? 'diger';
+            $byType[$paymentType] = ($byType[$paymentType] ?? 0) + $amount;
+
+            if ($movement->kasaId) {
+                $kasaKey = (string) $movement->kasaId;
+                $byKasa[$kasaKey] = ($byKasa[$kasaKey] ?? 0) + $amount;
+            }
+        }
+
+        $byTypeRows = collect($byType)
+            ->map(fn (float $amount, string $type) => [
+                'type' => $type,
+                'label' => PaymentType::label($type),
+                'amount' => $amount,
+            ])
+            ->sortByDesc('amount')
+            ->values();
+
+        $byKasaRows = collect($byKasa)
+            ->map(function (float $amount, string $kasaId) use ($kasalar) {
+                $kasa = $kasalar->get($kasaId);
+
+                return [
+                    'id' => $kasaId,
+                    'name' => $kasa?->name ?? 'Kasa',
+                    'typeLabel' => $kasa ? PaymentType::kasaTypeLabel($kasa) : '',
+                    'amount' => $amount,
+                ];
+            })
+            ->sortByDesc('amount')
+            ->values();
+
+        return [
+            'total' => (float) $movements->sum('amount'),
+            'nakitTotal' => (float) ($byType['nakit'] ?? 0),
+            'byType' => $byTypeRows,
+            'byKasa' => $byKasaRows,
+        ];
+    }
+
     private function buildPersonnelDashboardData(Personnel $personnel): array
     {
         $monthStart = Carbon::now()->startOfMonth();
@@ -316,10 +398,9 @@ class DashboardController extends Controller
         $stats = [
             'monthCount' => (int) (clone $monthSalesQuery)->count(),
             'monthTotal' => (float) (clone $monthSalesQuery)->sum('grandTotal'),
-            'monthCollected' => (float) (clone $monthSalesQuery)->sum('paidAmount'),
-            'totalReceivable' => (float) (clone $activeSalesQuery)
-                ->selectRaw('COALESCE(SUM(GREATEST(grandTotal - COALESCE(paidAmount, 0), 0)), 0) as receivable')
-                ->value('receivable'),
+            'monthCollected' => PersonnelSalesStats::collectedInPeriod($personnel, $monthStart, $monthEnd),
+            'monthReceivable' => PersonnelSalesStats::receivableTotal(clone $monthSalesQuery),
+            'totalReceivable' => PersonnelSalesStats::receivableTotal(clone $activeSalesQuery),
             'activeCount' => (int) (clone $activeSalesQuery)->count(),
         ];
 
