@@ -152,6 +152,33 @@ class DrawingFiles
         return $relative;
     }
 
+    /** @return array<int, array{path: string, name: string}> */
+    public static function duplicateEntries(array $entries, string $folder): array
+    {
+        $duplicated = [];
+        foreach (self::existingEntries($entries) as $entry) {
+            $relative = self::relativePath($entry['path'] ?? '');
+            if ($relative === '') {
+                continue;
+            }
+            $extension = pathinfo($relative, PATHINFO_EXTENSION);
+            $targetDir = trim($folder, '/') . '/' . date('Y-m-d');
+            $newRelative = $targetDir . '/' . Str::uuid() . ($extension !== '' ? '.' . $extension : '');
+            if (! Storage::disk('public')->exists($targetDir)) {
+                Storage::disk('public')->makeDirectory($targetDir);
+            }
+            if (! Storage::disk('public')->copy($relative, $newRelative)) {
+                continue;
+            }
+            $duplicated[] = [
+                'path' => '/storage/' . $newRelative,
+                'name' => $entry['name'],
+            ];
+        }
+
+        return $duplicated;
+    }
+
     public static function validationRules(): array
     {
         return [

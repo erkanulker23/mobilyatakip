@@ -296,6 +296,70 @@ class QuoteController extends Controller
         return redirect()->route('quotes.show', $quote)->with('success', 'Teklif güncellendi.');
     }
 
+    public function duplicate(Quote $quote)
+    {
+        $quote->load('items');
+
+        $newQuote = DB::transaction(function () use ($quote) {
+            $last = Quote::whereYear('createdAt', date('Y'))
+                ->orderBy('quoteNumber', 'desc')
+                ->lockForUpdate()
+                ->first();
+            $next = $last ? (int) preg_replace('/^TKL-\d+-/', '', $last->quoteNumber) + 1 : 1;
+            $quoteNumber = 'TKL-' . date('Y') . '-' . str_pad((string) $next, 5, '0', STR_PAD_LEFT);
+
+            $drawingFiles = DrawingFiles::duplicateEntries(
+                DrawingFiles::entries($quote->drawingFiles),
+                'drawings/quotes'
+            );
+
+            $newQuote = Quote::create([
+                'quoteNumber' => $quoteNumber,
+                'customerId' => $quote->customerId,
+                'status' => 'taslak',
+                'kdvIncluded' => $quote->kdvIncluded,
+                'generalDiscountPercent' => $quote->generalDiscountPercent ?? 0,
+                'generalDiscountAmount' => $quote->generalDiscountAmount ?? 0,
+                'revision' => 1,
+                'validUntil' => $quote->validUntil,
+                'notes' => $quote->notes,
+                'personnelId' => $quote->personnelId,
+                'createdBy' => auth()->id() ?: null,
+                'customerSource' => $quote->customerSource,
+                'subtotal' => $quote->subtotal,
+                'kdvTotal' => $quote->kdvTotal,
+                'grandTotal' => $quote->grandTotal,
+                'drawingFiles' => $drawingFiles !== [] ? $drawingFiles : null,
+            ]);
+
+            foreach ($quote->items as $item) {
+                QuoteItem::create([
+                    'quoteId' => $newQuote->id,
+                    'productId' => $item->productId,
+                    'productName' => $item->productName,
+                    'description' => $item->description,
+                    'unitPrice' => $item->unitPrice,
+                    'quantity' => $item->quantity,
+                    'kdvRate' => $item->kdvRate,
+                    'lineDiscountPercent' => $item->lineDiscountPercent,
+                    'lineDiscountAmount' => $item->lineDiscountAmount,
+                    'lineTotal' => $item->lineTotal,
+                ]);
+            }
+
+            return $newQuote;
+        });
+
+        $this->auditService->logAction('quote', $newQuote->id, 'duplicate', [
+            'quoteNumber' => $newQuote->quoteNumber,
+            'sourceQuoteNumber' => $quote->quoteNumber,
+            'sourceQuoteId' => $quote->id,
+        ]);
+
+        return redirect()->route('quotes.show', $newQuote)
+            ->with('success', 'Teklif çoğaltıldı: ' . $newQuote->quoteNumber);
+    }
+
     public function destroy(Quote $quote)
     {
         if ($quote->convertedSaleId) {

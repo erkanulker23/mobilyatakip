@@ -120,6 +120,12 @@
                                 'print' => route('quotes.print', $q),
                                 'destroy' => !$q->convertedSaleId ? route('quotes.destroy', $q) : null,
                             ])
+                            <form method="POST" action="{{ route('quotes.duplicate', $q) }}" class="inline-flex" onsubmit="return confirm('Bu tekliften yeni bir teklif oluşturulsun mu?');">
+                                @csrf
+                                <button type="submit" title="Teklif Çoğalt" aria-label="Teklif Çoğalt" class="p-2 rounded-lg bg-neutral-100 text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                </button>
+                            </form>
                             @if(!$q->convertedSaleId && ($q->status ?? '') == 'taslak')
                             <form method="POST" action="{{ route('quotes.convert', $q) }}" class="inline-flex ml-1" onsubmit="return confirm('Bu teklifi satışa dönüştürmek istediğinize emin misiniz?');">
                                 @csrf

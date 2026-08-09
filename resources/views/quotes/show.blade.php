@@ -22,6 +22,13 @@
                 Düzenle
             </a>
             @endif
+            <form method="POST" action="{{ route('quotes.duplicate', $quote) }}" class="inline-flex" onsubmit="return confirm('Bu tekliften yeni bir teklif oluşturulsun mu?');">
+                @csrf
+                <button type="submit" class="btn-secondary">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    Teklif Çoğalt
+                </button>
+            </form>
             @if(!$quote->convertedSaleId && ($quote->status ?? '') == 'taslak')
             <form method="POST" action="{{ route('quotes.convert', $quote) }}" class="inline-flex" onsubmit="return confirm('Bu teklifi satışa dönüştürmek istediğinize emin misiniz?');">
                 @csrf

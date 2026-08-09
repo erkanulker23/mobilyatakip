@@ -140,6 +140,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/quotes/{quote}/email', [QuoteController::class, 'email'])->name('quotes.email');
     Route::post('/quotes/{quote}/send-email', [QuoteController::class, 'sendEmail'])->name('quotes.sendEmail');
     Route::post('/quotes/{quote}/convert', [QuoteController::class, 'convert'])->name('quotes.convert');
+    Route::post('/quotes/{quote}/duplicate', [QuoteController::class, 'duplicate'])->name('quotes.duplicate');
 
     Route::resource('sales', SaleController::class);
     Route::post('/sales/actions/bulk-destroy', [SaleController::class, 'bulkDestroy'])->name('sales.bulk-destroy');
