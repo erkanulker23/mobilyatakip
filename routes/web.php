@@ -134,13 +134,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/stock/{stock}/edit', [StockController::class, 'edit'])->name('stock.edit');
     Route::put('/stock/{stock}', [StockController::class, 'update'])->name('stock.update');
 
-    Route::resource('quotes', QuoteController::class);
     Route::post('/quotes/actions/bulk-destroy', [QuoteController::class, 'bulkDestroy'])->name('quotes.bulk-destroy');
     Route::get('/quotes/{quote}/print', [QuoteController::class, 'print'])->name('quotes.print');
     Route::get('/quotes/{quote}/email', [QuoteController::class, 'email'])->name('quotes.email');
     Route::post('/quotes/{quote}/send-email', [QuoteController::class, 'sendEmail'])->name('quotes.sendEmail');
     Route::post('/quotes/{quote}/convert', [QuoteController::class, 'convert'])->name('quotes.convert');
     Route::post('/quotes/{quote}/duplicate', [QuoteController::class, 'duplicate'])->name('quotes.duplicate');
+    Route::resource('quotes', QuoteController::class);
 
     Route::resource('sales', SaleController::class);
     Route::post('/sales/actions/bulk-destroy', [SaleController::class, 'bulkDestroy'])->name('sales.bulk-destroy');

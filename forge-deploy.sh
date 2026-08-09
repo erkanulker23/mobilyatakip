@@ -37,8 +37,14 @@ npm run build
 # 5. Cache (config/route/view — veritabanına dokunmaz)
 php artisan optimize:clear
 php artisan config:cache
+php artisan route:clear
 php artisan route:cache
 php artisan view:cache
+
+# OPcache eski route/config dosyalarını tutmasın
+if [ -n "${FORGE_PHP_FPM:-}" ]; then
+  sudo service "$FORGE_PHP_FPM" reload || true
+fi
 
 # 6. Storage link (dosya silmez, sembolik link oluşturur)
 if [ ! -L public/storage ]; then
