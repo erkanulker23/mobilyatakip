@@ -345,7 +345,9 @@ class DashboardController extends Controller
 
         foreach ($movements as $movement) {
             $amount = (float) $movement->amount;
-            $paymentType = $payments->get($movement->refId)?->paymentType ?? 'diger';
+            $kasa = $kasalar->get($movement->kasaId);
+            $storedType = $payments->get($movement->refId)?->paymentType;
+            $paymentType = PaymentType::effectiveTypeForKasaMovement($storedType, $kasa);
             $byType[$paymentType] = ($byType[$paymentType] ?? 0) + $amount;
 
             if ($movement->kasaId) {

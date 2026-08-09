@@ -176,6 +176,12 @@ class CustomerPaymentController extends Controller
             $validated['kasaId'] = null;
         } else {
             $validated['supplierId'] = null;
+            if (! empty($validated['kasaId'])) {
+                $kasa = Kasa::find($validated['kasaId']);
+                if ($kasa) {
+                    $validated['paymentType'] = PaymentType::syncPaymentTypeWithKasa($validated['paymentType'], $kasa);
+                }
+            }
             $kasaError = PaymentType::validateKasaSelection(
                 $validated['kasaId'] ?? null,
                 $validated['paymentType'],
@@ -333,6 +339,12 @@ class CustomerPaymentController extends Controller
             $validated['kasaId'] = null;
         } else {
             $validated['supplierId'] = null;
+            if (! empty($validated['kasaId'])) {
+                $kasa = Kasa::find($validated['kasaId']);
+                if ($kasa) {
+                    $validated['paymentType'] = PaymentType::syncPaymentTypeWithKasa($validated['paymentType'], $kasa);
+                }
+            }
             $kasaError = PaymentType::validateKasaSelection(
                 $validated['kasaId'] ?? null,
                 $validated['paymentType'],

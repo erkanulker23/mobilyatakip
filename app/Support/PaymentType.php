@@ -81,6 +81,10 @@ class PaymentType
 
     public static function kasaTypeLabel(Kasa $kasa): string
     {
+        if (self::looksLikeCreditCardKasa($kasa)) {
+            return KasaType::label(KasaType::KREDI_KARTI);
+        }
+
         return KasaType::label($kasa->type);
     }
 
@@ -97,11 +101,70 @@ class PaymentType
     public static function kasaMatchesPaymentType(string $paymentType, Kasa $kasa): bool
     {
         return match ($paymentType) {
-            'nakit' => $kasa->type === KasaType::KASA,
+            'nakit' => $kasa->type === KasaType::KASA && ! self::looksLikeCreditCardKasa($kasa),
             'havale' => $kasa->type === KasaType::BANKA || self::isBankAccount($kasa),
-            'kredi_karti' => in_array($kasa->type, [KasaType::KREDI_KARTI, KasaType::BANKA], true),
+            'kredi_karti' => in_array($kasa->type, [KasaType::KREDI_KARTI, KasaType::BANKA], true)
+                || self::looksLikeCreditCardKasa($kasa),
             default => true,
         };
+    }
+
+    public static function looksLikeCreditCardKasa(Kasa $kasa): bool
+    {
+        if ($kasa->type === KasaType::KREDI_KARTI) {
+            return true;
+        }
+
+        $name = mb_strtolower($kasa->name ?? '');
+
+        return str_contains($name, 'kredi kart')
+            || (str_contains($name, 'pos') && str_contains($name, 'kart'));
+    }
+
+    public static function inferTypeFromKasa(?Kasa $kasa): ?string
+    {
+        if (! $kasa) {
+            return null;
+        }
+
+        if (self::looksLikeCreditCardKasa($kasa)) {
+            return 'kredi_karti';
+        }
+
+        if ($kasa->type === KasaType::BANKA || self::isBankAccount($kasa)) {
+            return 'havale';
+        }
+
+        if ($kasa->type === KasaType::KASA) {
+            return 'nakit';
+        }
+
+        return null;
+    }
+
+    /** Tahsilat raporu için kasa hedefine göre gerçek ödeme tipi. */
+    public static function effectiveTypeForKasaMovement(?string $paymentType, ?Kasa $kasa): string
+    {
+        $inferred = self::inferTypeFromKasa($kasa);
+
+        if ($inferred === null) {
+            return $paymentType ?: 'diger';
+        }
+
+        if (! $paymentType || ! self::kasaMatchesPaymentType($paymentType, $kasa)) {
+            return $inferred;
+        }
+
+        return $paymentType;
+    }
+
+    public static function syncPaymentTypeWithKasa(string $paymentType, ?Kasa $kasa): string
+    {
+        if (! $kasa || $paymentType === 'tedarikciye_ode') {
+            return $paymentType;
+        }
+
+        return self::effectiveTypeForKasaMovement($paymentType, $kasa);
     }
 
     public static function validateKasaSelection(?string $kasaId, string $paymentType, bool $required = true): ?string

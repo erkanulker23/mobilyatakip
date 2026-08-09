@@ -820,6 +820,13 @@ class SaleController extends Controller
         ?string $paymentNotes = null
     ): void {
         DB::transaction(function () use ($sale, $amount, $paymentType, $kasaId, $paymentDate, $paymentLabel, $paymentNotes) {
+            if ($kasaId) {
+                $kasa = Kasa::find($kasaId);
+                if ($kasa) {
+                    $paymentType = \App\Support\PaymentType::syncPaymentTypeWithKasa($paymentType, $kasa);
+                }
+            }
+
             $payment = CustomerPayment::create([
                 'customerId' => $sale->customerId,
                 'saleId' => $sale->id,
