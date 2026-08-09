@@ -10,7 +10,7 @@
     @if($showYear)
     <div class="min-w-[120px]">
         <label class="form-label">Yıl</label>
-        <select name="year" class="form-select" onchange="this.form.querySelector('[name=from]').value=''; this.form.querySelector('[name=to]').value='';">
+        <select name="year" class="form-select" data-report-year-select>
             <option value="">Tümü / Özel</option>
             @foreach($years as $y)
             <option value="{{ $y }}" {{ (string) ($year ?? '') === (string) $y ? 'selected' : '' }}>{{ $y }}</option>
@@ -20,11 +20,11 @@
     @endif
     <div class="min-w-[140px]">
         <label class="form-label">Başlangıç</label>
-        <input type="date" name="from" value="{{ $from?->format('Y-m-d') }}" class="form-input">
+        <input type="date" name="from" value="{{ ($dateFrom ?? $from)?->format('Y-m-d') }}" class="form-input" data-report-from>
     </div>
     <div class="min-w-[140px]">
         <label class="form-label">Bitiş</label>
-        <input type="date" name="to" value="{{ $to?->format('Y-m-d') }}" class="form-input">
+        <input type="date" name="to" value="{{ ($dateTo ?? $to)?->format('Y-m-d') }}" class="form-input" data-report-to>
     </div>
     @foreach($extraFilters ?? [] as $filter)
     <div class="{{ $filter['class'] ?? 'min-w-[140px]' }}">

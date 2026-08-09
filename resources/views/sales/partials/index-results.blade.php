@@ -1,5 +1,13 @@
 @php
-    $activeFilters = $activeFilters ?? request()->hasAny(['search', 'customerId', 'deliveryStatus', 'paymentStatus', 'from', 'to']);
+    $activeFilters = $activeFilters ?? (
+        request()->filled('search')
+        || request()->filled('customerId')
+        || request()->filled('personnelId')
+        || \App\Support\SaleDelivery::isFilterValue(request('deliveryStatus'))
+        || in_array(request('paymentStatus'), ['borclu', 'alacakli', 'odendi'], true)
+        || request()->filled('from')
+        || request()->filled('to')
+    );
 @endphp
 <div id="salesListResults" class="transition-opacity duration-150" data-sale-ids='@json($saleIds ?? [])'>
     <div class="px-4 sm:px-5 py-3 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between gap-3 flex-wrap">

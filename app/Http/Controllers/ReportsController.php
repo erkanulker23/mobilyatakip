@@ -17,6 +17,7 @@ use App\Support\CustomerBalance;
 use App\Support\CustomerLedger;
 use App\Support\ReportFilters;
 use App\Support\SaleDelivery;
+use App\Support\SalesReportQuery;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -422,37 +423,7 @@ class ReportsController extends Controller
     /** @return array<string, mixed> */
     private function salesData(Carbon $from, Carbon $to, Request $request): array
     {
-        $deliveryStatus = SaleDelivery::isFilterValue($request->input('deliveryStatus'))
-            ? $request->input('deliveryStatus')
-            : null;
-        $odeme = $request->input('odeme');
-        $hasStatusFilter = $deliveryStatus !== null || in_array($odeme, ['borclu', 'borcsuz'], true);
-        $hasExplicitDates = $request->filled('from') || $request->filled('to') || $request->filled('year');
-
-        $query = Sale::with(['customer', 'personnel'])
-            ->where('isCancelled', false);
-
-        if ($hasExplicitDates || ! $hasStatusFilter) {
-            $query->whereBetween('saleDate', [$from, $to]);
-        }
-
-        if ($request->filled('personnelId')) {
-            if ($request->input('personnelId') === 'none') {
-                $query->whereNull('personnelId');
-            } else {
-                $query->where('personnelId', $request->input('personnelId'));
-            }
-        }
-
-        if ($deliveryStatus) {
-            SaleDelivery::applyDeliveryFilter($query, $deliveryStatus);
-        }
-
-        if ($odeme === 'borclu') {
-            $query->whereRaw('grandTotal - COALESCE(paidAmount, 0) > 0.005');
-        } elseif ($odeme === 'borcsuz') {
-            $query->whereRaw('ABS(grandTotal - COALESCE(paidAmount, 0)) <= 0.005');
-        }
+        ['query' => $query, 'statusOnlyList' => $statusOnlyList] = SalesReportQuery::fromRequest($from, $to, $request);
 
         $sales = $query
             ->orderByDesc('saleDate')
@@ -461,7 +432,7 @@ class ReportsController extends Controller
 
         return [
             'sales' => $sales,
-            'skipDateFilter' => $hasStatusFilter && ! $hasExplicitDates,
+            'skipDateFilter' => $statusOnlyList,
             'totals' => (object) [
                 'count' => $sales->count(),
                 'grandTotal' => (float) $sales->sum('grandTotal'),

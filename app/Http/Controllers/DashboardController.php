@@ -13,10 +13,10 @@ use App\Models\Purchase;
 use App\Models\ServiceTicket;
 use App\Models\User;
 use App\Services\StockService;
-use App\Support\MonthPeriod;
 use App\Support\PaymentType;
 use App\Support\PersonnelSalesStats;
 use App\Support\SaleDelivery;
+use App\Support\SalesMonthStats;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -51,11 +51,12 @@ class DashboardController extends Controller
         $monthStart = Carbon::now()->startOfMonth();
         $monthEnd = Carbon::now()->endOfMonth();
         $today = Carbon::today();
-        $monthPeriod = MonthPeriod::current($today);
-        $weekStart = $monthPeriod['start'];
-        $weekEnd = $monthPeriod['end'];
-        $weekQueryEnd = $monthPeriod['queryEnd'];
-        $weekRangeLabel = $monthPeriod['label'];
+        $monthRange = SalesMonthStats::currentMonthRange($today);
+        $weekStart = $monthRange['start'];
+        $weekEnd = $monthRange['end'];
+        $weekQueryEnd = $today->copy();
+        $weekRangeLabel = $monthRange['label'];
+        $currentMonthSalesQuery = SalesMonthStats::currentMonthQuery($today);
 
         if ($showDashboardMetrics) {
             $todaySalesBase = Sale::query()
@@ -68,12 +69,8 @@ class DashboardController extends Controller
             $todayKasaBreakdown = $this->buildTodayKasaBreakdown($today);
             $todayKasaInflow = $todayKasaBreakdown['total'];
 
-            $weekSalesBase = Sale::query()
-                ->where('isCancelled', false)
-                ->whereBetween('saleDate', [$weekStart->toDateString(), $weekQueryEnd->toDateString()]);
-
-            $weekSalesCount = (int) (clone $weekSalesBase)->count();
-            $weekSalesTotal = (float) (clone $weekSalesBase)->sum('grandTotal');
+            $weekSalesCount = SalesMonthStats::count($currentMonthSalesQuery);
+            $weekSalesTotal = SalesMonthStats::turnover($currentMonthSalesQuery);
 
             $weekKasaInflow = (float) KasaHareket::query()
                 ->ledger()
@@ -85,22 +82,14 @@ class DashboardController extends Controller
             $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
             $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
 
-            $monthlySalesBase = Sale::query()
-                ->where('isCancelled', false)
-                ->whereBetween('saleDate', [$monthStart->toDateString(), $monthEnd->toDateString()]);
+            $monthlySales = SalesMonthStats::turnover($currentMonthSalesQuery);
+            $monthlyCollected = SalesMonthStats::collectedOnSales($currentMonthSalesQuery);
+            $monthlyReceivable = SalesMonthStats::receivable($currentMonthSalesQuery);
+            $monthlySalesCount = SalesMonthStats::count($currentMonthSalesQuery);
 
-            $monthlySales = (float) (clone $monthlySalesBase)->sum('grandTotal');
-            $monthlyCollected = (float) (clone $monthlySalesBase)->sum('paidAmount');
-            $monthlyReceivable = (float) (clone $monthlySalesBase)
-                ->selectRaw('COALESCE(SUM(GREATEST(grandTotal - COALESCE(paidAmount, 0), 0)), 0) as total')
-                ->value('total');
-            $monthlySalesCount = (int) (clone $monthlySalesBase)->count();
-
-            $lastMonthSalesBase = Sale::query()
-                ->where('isCancelled', false)
-                ->whereBetween('saleDate', [$lastMonthStart->toDateString(), $lastMonthEnd->toDateString()]);
-
-            $lastMonthSales = (float) (clone $lastMonthSalesBase)->sum('grandTotal');
+            $lastMonthSales = SalesMonthStats::turnover(
+                SalesMonthStats::salesQuery($lastMonthStart, $lastMonthEnd)
+            );
 
             $monthlyChange = $lastMonthSales > 0
                 ? round((($monthlySales - $lastMonthSales) / $lastMonthSales) * 100, 1)
@@ -147,7 +136,7 @@ class DashboardController extends Controller
             $weekSalesCount = 0;
             $weekSalesTotal = 0;
             $weekKasaInflow = 0;
-            $weekRangeLabel = MonthPeriod::current($today)['label'];
+            $weekRangeLabel = SalesMonthStats::currentMonthRange($today)['label'];
             $monthlySales = 0;
             $monthlyCollected = 0;
             $monthlyReceivable = 0;
@@ -278,7 +267,7 @@ class DashboardController extends Controller
             'weekStart',
             'weekEnd',
             'weekRangeLabel',
-        ) + ['terminAlertDays' => self::TERMIN_ALERT_DAYS]);
+        ) + ['terminAlertDays' => self::TERMIN_ALERT_DAYS, 'monthFilterFrom' => $weekStart->toDateString(), 'monthFilterTo' => $weekQueryEnd->toDateString()]);
     }
 
     public function tasks()

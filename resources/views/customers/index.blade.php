@@ -48,7 +48,7 @@
 
 <div class="card overflow-hidden">
     <div class="p-4 border-b border-neutral-100 dark:border-neutral-800">
-        <form method="GET" id="customerFilterForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 items-end">
+        <form method="GET" action="{{ route('customers.index') }}" id="customerFilterForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 items-end">
             <div class="sm:col-span-2 xl:col-span-2">
                 <label for="customerSearchInput" class="form-label">Ara</label>
                 <div class="relative">

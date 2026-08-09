@@ -3,7 +3,15 @@
 
 @section('content')
 @php
-    $activeFilters = $activeFilters ?? request()->hasAny(['search', 'customerId', 'deliveryStatus', 'paymentStatus', 'from', 'to']);
+    $activeFilters = $activeFilters ?? (
+        request()->filled('search')
+        || request()->filled('customerId')
+        || request()->filled('personnelId')
+        || \App\Support\SaleDelivery::isFilterValue(request('deliveryStatus'))
+        || in_array(request('paymentStatus'), ['borclu', 'alacakli', 'odendi'], true)
+        || request()->filled('from')
+        || request()->filled('to')
+    );
     $filterChip = fn (array $params) => route('sales.index', array_filter(array_merge(request()->only(['search', 'customerId', 'from', 'to', 'paymentStatus', 'deliveryStatus']), $params)));
 @endphp
 
@@ -20,7 +28,7 @@
 
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
     <div class="card p-4">
-        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Toplam sipariş</p>
+        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">{{ $activeFilters ? 'Filtrelenen sipariş' : 'Toplam sipariş' }}</p>
         <p class="text-2xl font-semibold text-neutral-900 dark:text-neutral-100 mt-1">{{ number_format($stats['total'], 0, ',', '.') }}</p>
     </div>
     <div class="card p-4 {{ $stats['receivable'] > 0 ? 'ring-1 ring-amber-200 dark:ring-amber-800/60' : '' }}">
@@ -39,7 +47,7 @@
 
 <div class="card overflow-hidden" x-data="salesBulk" data-sale-ids='{{ json_encode($saleIds ?? []) }}'>
     <div class="p-4 border-b border-neutral-100 dark:border-neutral-800">
-        <form method="GET" id="salesFilterForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-end">
+        <form method="GET" action="{{ route('sales.index') }}" id="salesFilterForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-end">
             <div class="sm:col-span-2 xl:col-span-2">
                 <label for="salesSearchInput" class="form-label">Ara</label>
                 <input type="text" name="search" id="salesSearchInput" placeholder="Sipariş no veya müşteri..." value="{{ request('search') }}" class="form-input w-full" autocomplete="off">

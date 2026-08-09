@@ -30,8 +30,13 @@
 </div>
 
 <div class="card p-6 mb-6">
-    <form method="get" class="flex flex-wrap gap-4 items-end">
-        @include('reports.partials.date-filters', ['embedded' => true, 'submitLabel' => 'Listele'])
+    <form method="get" action="{{ route('reports.sales') }}" class="flex flex-wrap gap-4 items-end">
+        @include('reports.partials.date-filters', [
+            'embedded' => true,
+            'submitLabel' => 'Listele',
+            'dateFrom' => ($skipDateFilter ?? false) && !request()->filled('from') ? null : $from,
+            'dateTo' => ($skipDateFilter ?? false) && !request()->filled('to') ? null : $to,
+        ])
         @include('reports.partials.sales-filters')
         <div class="flex gap-2">
             <button type="submit" class="btn-primary">Listele</button>
@@ -87,4 +92,27 @@
 <div class="card overflow-hidden">
     @include('reports.partials.sales-table')
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-report-year-select]').forEach(function (select) {
+        select.addEventListener('change', function () {
+            var year = select.value;
+            if (!year || !select.form) {
+                return;
+            }
+            var fromInput = select.form.querySelector('[data-report-from]');
+            var toInput = select.form.querySelector('[data-report-to]');
+            if (fromInput) {
+                fromInput.value = year + '-01-01';
+            }
+            if (toInput) {
+                toInput.value = year + '-12-31';
+            }
+        });
+    });
+});
+</script>
+@endpush
 @endsection

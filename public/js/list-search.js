@@ -10,7 +10,6 @@
         var debounceMs = options.debounceMs || 650;
         var timer = null;
         var controller = null;
-        var loading = false;
 
         function buildUrl() {
             var url = new URL(form.getAttribute('action') || window.location.href, window.location.origin);
@@ -25,8 +24,11 @@
             return url;
         }
 
+        function navigateWithFilters() {
+            window.location.href = buildUrl().toString();
+        }
+
         function setLoading(isLoading) {
-            loading = isLoading;
             results.classList.toggle('opacity-50', isLoading);
             results.classList.toggle('pointer-events-none', isLoading);
         }
@@ -68,7 +70,7 @@
                     if (error && error.name === 'AbortError') {
                         return;
                     }
-                    form.submit();
+                    navigateWithFilters();
                 })
                 .finally(function () {
                     setLoading(false);
@@ -90,12 +92,18 @@
             }
         }
 
+        if (options.refreshOnChange !== false) {
+            form.querySelectorAll('select, input[type="date"], input[type="datetime-local"]').forEach(function (field) {
+                if (input && field === input) {
+                    return;
+                }
+                field.addEventListener('change', navigateWithFilters);
+            });
+        }
+
         form.addEventListener('submit', function (event) {
-            if (event.submitter && event.submitter.type === 'submit') {
-                return;
-            }
             event.preventDefault();
-            refresh(true);
+            navigateWithFilters();
         });
 
         results.addEventListener('click', function (event) {
@@ -118,29 +126,7 @@
                 return;
             }
             event.preventDefault();
-            window.history.replaceState(null, '', url.toString());
-            fetch(url.toString(), {
-                headers: {
-                    'X-List-Partial': '1',
-                    'Accept': 'text/html',
-                },
-            })
-                .then(function (response) {
-                    if (!response.ok) {
-                        throw new Error('partial failed');
-                    }
-                    return response.text();
-                })
-                .then(function (html) {
-                    results.outerHTML = html;
-                    results = document.getElementById(options.resultsId);
-                    if (typeof options.onUpdated === 'function') {
-                        options.onUpdated(results);
-                    }
-                })
-                .catch(function () {
-                    window.location.href = url.toString();
-                });
+            window.location.href = url.toString();
         });
 
         return { refresh: refresh };

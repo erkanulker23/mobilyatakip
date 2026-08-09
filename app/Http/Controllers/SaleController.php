@@ -24,6 +24,7 @@ use App\Support\SaleDocument;
 use App\Support\SaleDocumentNaming;
 use App\Support\DrawingFiles;
 use App\Support\ItemDescription;
+use App\Support\SaleDelivery;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -213,7 +214,47 @@ class SaleController extends Controller
 
     public function index(Request $request)
     {
+        $activeFilters = $this->salesIndexHasFilters($request);
+        $q = $this->salesIndexQuery($request);
+        $statsQuery = clone $q;
+        $sales = $q->paginate(20)->withQueryString();
+        $saleIds = $sales->getCollection()->pluck('id')->values()->all();
+
+        if ($request->header('X-List-Partial') === '1') {
+            return view('sales.partials.index-results', compact('sales', 'saleIds', 'activeFilters'));
+        }
+
+        $filterCustomers = collect();
+        if ($request->filled('customerId')) {
+            $filterCustomers = Customer::where('id', $request->customerId)->orderBy('name')->get(['id', 'name']);
+        }
+
+        $stats = $activeFilters
+            ? $this->salesIndexStatsFromQuery($statsQuery, (int) $sales->total())
+            : Cache::remember('sales.index.stats', now()->addMinutes(2), fn () => $this->salesIndexStatsFromQuery(
+                Sale::query()->where('isCancelled', false),
+                (int) Sale::where('isCancelled', false)->count(),
+            ));
+
+        return view('sales.index', compact('sales', 'filterCustomers', 'saleIds', 'stats', 'activeFilters'));
+    }
+
+    private function salesIndexHasFilters(Request $request): bool
+    {
+        return $request->filled('search')
+            || $request->filled('customerId')
+            || $request->filled('personnelId')
+            || SaleDelivery::isFilterValue($request->input('deliveryStatus'))
+            || in_array($request->input('paymentStatus'), ['borclu', 'alacakli', 'odendi'], true)
+            || $request->filled('from')
+            || $request->filled('to');
+    }
+
+    /** @return \Illuminate\Database\Eloquent\Builder<Sale> */
+    private function salesIndexQuery(Request $request)
+    {
         $q = Sale::with(['customer', 'personnel'])->where('isCancelled', false)->orderBy('createdAt', 'desc');
+
         if ($request->filled('search')) {
             $s = $request->search;
             $q->where(function ($w) use ($s) {
@@ -233,9 +274,14 @@ class SaleController extends Controller
         if ($request->filled('to')) {
             $q->whereDate('saleDate', '<=', $request->to);
         }
-        if ($request->filled('deliveryStatus')) {
-            \App\Support\SaleDelivery::applyDeliveryFilter($q, $request->deliveryStatus);
+
+        $deliveryStatus = SaleDelivery::isFilterValue($request->input('deliveryStatus'))
+            ? $request->input('deliveryStatus')
+            : null;
+        if ($deliveryStatus) {
+            SaleDelivery::applyDeliveryFilter($q, $deliveryStatus);
         }
+
         if ($request->filled('paymentStatus')) {
             match ($request->paymentStatus) {
                 'borclu' => $q->whereRaw('grandTotal - COALESCE(paidAmount, 0) > 0.005'),
@@ -245,36 +291,25 @@ class SaleController extends Controller
             };
         }
 
-        $sales = $q->paginate(20)->withQueryString();
-        $saleIds = $sales->getCollection()->pluck('id')->values()->all();
-        $activeFilters = $request->hasAny(['search', 'customerId', 'deliveryStatus', 'paymentStatus', 'from', 'to']);
+        return $q;
+    }
 
-        if ($request->header('X-List-Partial') === '1') {
-            return view('sales.partials.index-results', compact('sales', 'saleIds', 'activeFilters'));
-        }
-
-        $filterCustomers = collect();
-        if ($request->filled('customerId')) {
-            $filterCustomers = Customer::where('id', $request->customerId)->orderBy('name')->get(['id', 'name']);
-        }
-
-        $stats = Cache::remember('sales.index.stats', now()->addMinutes(2), function () {
-            return [
-                'total' => (int) Sale::where('isCancelled', false)->count(),
-                'receivable' => (float) Sale::where('isCancelled', false)
-                    ->selectRaw('COALESCE(SUM(GREATEST(grandTotal - COALESCE(paidAmount, 0), 0)), 0) as total')
-                    ->value('total'),
-                'withDebt' => (int) Sale::where('isCancelled', false)
-                    ->whereRaw('grandTotal - COALESCE(paidAmount, 0) > 0.005')
-                    ->count(),
-                'finalMeasurement' => (int) Sale::where('isCancelled', false)
-                    ->where('needsFinalMeasurement', true)
-                    ->pendingDelivery()
-                    ->count(),
-            ];
-        });
-
-        return view('sales.index', compact('sales', 'filterCustomers', 'saleIds', 'stats', 'activeFilters'));
+    /** @param  \Illuminate\Database\Eloquent\Builder<Sale>  $query */
+    private function salesIndexStatsFromQuery($query, int $total): array
+    {
+        return [
+            'total' => $total,
+            'receivable' => (float) (clone $query)
+                ->selectRaw('COALESCE(SUM(GREATEST(grandTotal - COALESCE(paidAmount, 0), 0)), 0) as total')
+                ->value('total'),
+            'withDebt' => (int) (clone $query)
+                ->whereRaw('grandTotal - COALESCE(paidAmount, 0) > 0.005')
+                ->count(),
+            'finalMeasurement' => (int) (clone $query)
+                ->where('needsFinalMeasurement', true)
+                ->pendingDelivery()
+                ->count(),
+        ];
     }
 
     public function bulkDestroy(Request $request)
