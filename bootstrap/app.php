@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->appendToGroup('web', [
             \App\Http\Middleware\RestrictWorkshopUser::class,
+            \App\Http\Middleware\TrackLastLogin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

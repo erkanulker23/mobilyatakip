@@ -150,6 +150,11 @@ class User extends Authenticatable implements CanResetPasswordContract
         return $this->personnelCategory() === \App\Support\PersonnelCategory::MIMAR;
     }
 
+    public function lastLoginAtDisplay(): ?\Carbon\CarbonInterface
+    {
+        return $this->lastLoginAt?->clone()->timezone(config('app.timezone'));
+    }
+
     public function auditLogs(): HasMany
     {
         return $this->hasMany(AuditLog::class, 'userId');

@@ -24,7 +24,7 @@
                 · Son {{ $logKeepLimit }} kayıt gösterilir
                 · {{ $logRetentionDays }} günden eskiler otomatik silinir
                 @if($personnel->user?->lastLoginAt)
-                    · Son giriş {{ $personnel->user->lastLoginAt->format('d.m.Y H:i') }}
+                    · Son giriş {{ $personnel->user->lastLoginAtDisplay()?->format('d.m.Y H:i') }}
                 @endif
             </p>
         </div>
@@ -61,7 +61,7 @@
     </div>
     <div class="card p-4">
         <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Son giriş</p>
-        <p class="text-sm font-medium text-neutral-900 dark:text-neutral-100 mt-2">{{ $personnel->user->lastLoginAt?->format('d.m.Y H:i') ?? '—' }}</p>
+        <p class="text-sm font-medium text-neutral-900 dark:text-neutral-100 mt-2">{{ $personnel->user->lastLoginAtDisplay()?->format('d.m.Y H:i') ?? '—' }}</p>
     </div>
 </div>
 

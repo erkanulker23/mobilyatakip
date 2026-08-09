@@ -77,8 +77,9 @@
                     <td class="table-td text-neutral-500">{{ \App\Support\PersonnelCategory::label($p->category) }}</td>
                     <td class="table-td text-neutral-500 whitespace-nowrap">
                         @if($p->user?->lastLoginAt)
-                            <span title="{{ $p->user->lastLoginAt->format('d.m.Y H:i') }}">{{ $p->user->lastLoginAt->locale('tr')->diffForHumans() }}</span>
-                            <span class="block text-xs text-neutral-400">{{ $p->user->lastLoginAt->format('d.m.Y H:i') }}</span>
+                            @php $lastLogin = $p->user->lastLoginAtDisplay(); @endphp
+                            <span title="{{ $lastLogin->format('d.m.Y H:i') }}">{{ $lastLogin->locale('tr')->diffForHumans() }}</span>
+                            <span class="block text-xs text-neutral-400">{{ $lastLogin->format('d.m.Y H:i') }}</span>
                         @elseif($p->userId)
                             <span class="text-neutral-400">Henüz giriş yok</span>
                         @else
