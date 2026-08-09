@@ -213,13 +213,13 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
             </span>
             <div class="min-w-0">
-                <p class="font-semibold text-sky-900 dark:text-sky-100">Siparişte notlar var</p>
+                <p class="font-semibold text-sky-900 dark:text-sky-100">Siparişte aşamalar var</p>
                 <p class="text-sm text-sky-800/90 dark:text-sky-200/90 mt-0.5">
-                    Bu siparişe {{ $productionStages->count() }} not eklenmiş. Notları okuyabilirsiniz.
+                    Bu siparişe {{ $productionStages->count() }} aşama eklenmiş. Aşamaları okuyabilirsiniz.
                 </p>
             </div>
         </div>
-        <a href="#atolye-takibi" class="btn-secondary text-sm shrink-0">Notları Gör</a>
+        <a href="#atolye-takibi" class="btn-secondary text-sm shrink-0">Aşamaları Gör</a>
     </div>
 </div>
 @endif

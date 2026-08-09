@@ -12,8 +12,8 @@
 <div class="mt-6 card overflow-hidden no-print sale-personnel-notes-panel scroll-mt-24" id="atolye-takibi">
     <div class="px-6 py-4 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap items-center justify-between gap-3">
         <div>
-            <h2 class="text-lg font-semibold text-neutral-900 dark:text-white">Notlar</h2>
-            <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Siparişe not ekleyebilirsiniz</p>
+            <h2 class="text-lg font-semibold text-neutral-900 dark:text-white">Aşamalar</h2>
+            <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Siparişe aşama ekleyebilirsiniz</p>
         </div>
         @if(SaleDelivery::currentStatus($sale) === SaleDelivery::IN_PRODUCTION && auth()->user()?->isWorkshop())
         <a href="{{ route('workshop.show', $sale) }}" class="btn-secondary text-sm">Atölye Detayı</a>
@@ -27,7 +27,7 @@
         @endif
 
         @if($productionStages->isEmpty())
-        <p class="text-sm text-neutral-500">Henüz not yok.</p>
+        <p class="text-sm text-neutral-500">Henüz aşama yok.</p>
         @else
         <div class="space-y-3">
             @foreach($productionStages as $stage)

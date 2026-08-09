@@ -56,7 +56,7 @@
             @if($canOpen)
             <div class="flex flex-wrap gap-2 shrink-0">
                 <a href="{{ route('workshop.show', $sale) }}" class="btn-view text-sm py-2.5">
-                    {{ $inProduction ? 'Not ekle / düzenle' : 'Tam detay' }}
+                    {{ $inProduction ? 'Aşama ekle / düzenle' : 'Tam detay' }}
                 </a>
             </div>
             @endif

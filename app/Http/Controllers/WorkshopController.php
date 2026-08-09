@@ -173,7 +173,7 @@ class WorkshopController extends Controller
             'actionDate' => now(),
         ]);
 
-        return back()->with('success', 'Not eklendi.');
+        return back()->with('success', 'Aşama eklendi.');
     }
 
     public function updateStage(Request $request, SaleProductionStage $stage)
@@ -191,7 +191,7 @@ class WorkshopController extends Controller
             'notes' => $validated['notes'],
         ]);
 
-        return back()->with('success', 'Not güncellendi.');
+        return back()->with('success', 'Aşama güncellendi.');
     }
 
     public function destroyStage(SaleProductionStage $stage)
@@ -202,7 +202,7 @@ class WorkshopController extends Controller
         $this->authorizeStageOwner($stage);
         $stage->delete();
 
-        return back()->with('success', 'Not silindi.');
+        return back()->with('success', 'Aşama silindi.');
     }
 
     public function completeStage(Request $request, SaleProductionStage $stage)
@@ -281,7 +281,7 @@ class WorkshopController extends Controller
         }
 
         if ((string) $stage->userId !== (string) $user?->id) {
-            abort(403, 'Bu notu yalnızca ekleyen kişi veya yönetici düzenleyebilir.');
+            abort(403, 'Bu aşamayı yalnızca ekleyen kişi veya yönetici düzenleyebilir.');
         }
     }
 

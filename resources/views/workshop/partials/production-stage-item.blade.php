@@ -29,7 +29,7 @@
                     <button type="button" @click="editing = true" x-show="!editing" class="text-xs font-medium px-2.5 py-1.5 rounded-lg text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800">
                         Düzenle
                     </button>
-                    <form method="POST" action="{{ route('workshop.destroy-stage', $stage) }}" x-show="!editing" class="inline" onsubmit="return confirm('Bu notu silmek istediğinize emin misiniz?');">
+                    <form method="POST" action="{{ route('workshop.destroy-stage', $stage) }}" x-show="!editing" class="inline" onsubmit="return confirm('Bu aşamayı silmek istediğinize emin misiniz?');">
                         @csrf
                         <button type="submit" class="text-xs font-medium px-2.5 py-1.5 rounded-lg text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30">
                             Sil

@@ -13,10 +13,10 @@
         @csrf
         <input type="hidden" name="type" value="{{ SaleProductionStage::TYPE_STAGE }}">
         <div>
-            <label class="form-label" for="{{ $formId }}Notes">Not</label>
-            <textarea name="notes" id="{{ $formId }}Notes" rows="3" required class="form-input form-textarea" placeholder="Sipariş hakkında not yazın...">{{ old('notes') }}</textarea>
+            <label class="form-label" for="{{ $formId }}Notes">Aşama</label>
+            <textarea name="notes" id="{{ $formId }}Notes" rows="3" required class="form-input form-textarea" placeholder="Aşama açıklaması yazın...">{{ old('notes') }}</textarea>
             @error('notes')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
-        <button type="submit" class="btn-primary">Not Ekle</button>
+        <button type="submit" class="btn-primary">Aşama Ekle</button>
     </form>
 </div>

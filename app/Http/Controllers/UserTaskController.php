@@ -267,11 +267,11 @@ class UserTaskController extends Controller
     }
 
     /** @param  \Illuminate\Support\Collection<int, Personnel>  $personnelList
-     * @return \Illuminate\Support\Collection<int, UserTask> */
+     * @return \Illuminate\Database\Eloquent\Collection<int, UserTask> */
     private function createTasksForPersonnel(Request $request, array $taskData, $personnelList)
     {
         $creatorId = (string) $request->user()->id;
-        $tasks = collect();
+        $tasks = new \Illuminate\Database\Eloquent\Collection();
 
         foreach ($personnelList as $personnel) {
             $ownerId = $personnel->userId

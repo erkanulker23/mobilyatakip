@@ -39,17 +39,17 @@
 
 @if(! $canAddProductionStage)
 <div class="mb-6 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900/40 dark:text-neutral-300">
-    Bu sipariş iptal edilmiş; yeni not eklenemez.
+    Bu sipariş iptal edilmiş; yeni aşama eklenemez.
 </div>
 @elseif(! $canEditProduction)
 <div class="mb-6 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900/40 dark:text-neutral-300">
-    Bu sipariş henüz <strong>üretimde değil</strong>. Yine de not ekleyebilirsiniz; üretim tamamlama işlemi sipariş üretime alındığında kullanılabilir.
+    Bu sipariş henüz <strong>üretimde değil</strong>. Yine de aşama ekleyebilirsiniz; üretim tamamlama işlemi sipariş üretime alındığında kullanılabilir.
 </div>
 @endif
 
 @if(empty($productionStagesReady))
 <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
-    Not ekleme henüz aktif değil. Sistem yöneticisinin <code class="text-xs">php artisan migrate --force</code> çalıştırması gerekiyor.
+    Aşama ekleme henüz aktif değil. Sistem yöneticisinin <code class="text-xs">php artisan migrate --force</code> çalıştırması gerekiyor.
 </div>
 @elseif($canAddProductionStage)
 <div class="card p-6 mb-6 border-amber-200/80 dark:border-amber-900/40 bg-amber-50/30 dark:bg-amber-950/20">
@@ -100,9 +100,9 @@
         </div>
 
         <div class="card p-6">
-            <h2 class="font-semibold text-neutral-900 dark:text-white mb-4">Notlar</h2>
+            <h2 class="font-semibold text-neutral-900 dark:text-white mb-4">Aşamalar</h2>
             @if($sale->productionStages->isEmpty())
-            <p class="text-neutral-500 text-sm">Henüz not eklenmemiş.</p>
+            <p class="text-neutral-500 text-sm">Henüz aşama eklenmemiş.</p>
             @else
             <div class="space-y-4">
                 @foreach($sale->productionStages as $stage)
