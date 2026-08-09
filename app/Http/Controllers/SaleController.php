@@ -239,6 +239,106 @@ class SaleController extends Controller
         return view('sales.index', compact('sales', 'filterCustomers', 'saleIds', 'stats', 'activeFilters'));
     }
 
+    public function delivered(Request $request)
+    {
+        $activeFilters = $this->salesDeliveredHasFilters($request);
+        $q = $this->salesDeliveredQuery($request);
+        $statsQuery = clone $q;
+        $sales = $q->paginate(20)->withQueryString();
+        $saleIds = $sales->getCollection()->pluck('id')->values()->all();
+
+        if ($request->header('X-List-Partial') === '1') {
+            return view('sales.partials.index-results', [
+                'sales' => $sales,
+                'saleIds' => $saleIds,
+                'activeFilters' => $activeFilters,
+                'listContext' => 'delivered',
+            ]);
+        }
+
+        $filterCustomers = collect();
+        if ($request->filled('customerId')) {
+            $filterCustomers = Customer::where('id', $request->customerId)->orderBy('name')->get(['id', 'name']);
+        }
+
+        $stats = $this->salesDeliveredStatsFromQuery($statsQuery, (int) $sales->total());
+
+        return view('sales.delivered', compact('sales', 'filterCustomers', 'saleIds', 'stats', 'activeFilters'));
+    }
+
+    private function salesDeliveredHasFilters(Request $request): bool
+    {
+        return $request->filled('search')
+            || $request->filled('customerId')
+            || $request->filled('personnelId')
+            || in_array($request->input('paymentStatus'), ['borclu', 'alacakli', 'odendi'], true)
+            || $request->filled('from')
+            || $request->filled('to');
+    }
+
+    /** @return \Illuminate\Database\Eloquent\Builder<Sale> */
+    private function salesDeliveredQuery(Request $request)
+    {
+        $q = Sale::with(['customer', 'personnel'])
+            ->where('isCancelled', false)
+            ->delivered()
+            ->orderByDesc('deliveredAt')
+            ->orderByDesc('createdAt');
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $q->where(function ($w) use ($s) {
+                $w->where('saleNumber', 'like', "%{$s}%")
+                    ->orWhereHas('customer', fn ($q) => $q->where('name', 'like', "%{$s}%"));
+            });
+        }
+        if ($request->filled('customerId')) {
+            $q->where('customerId', $request->customerId);
+        }
+        if ($request->filled('personnelId')) {
+            $q->where('personnelId', $request->personnelId);
+        }
+        if ($request->filled('from')) {
+            $q->whereDate('deliveredAt', '>=', $request->from);
+        }
+        if ($request->filled('to')) {
+            $q->whereDate('deliveredAt', '<=', $request->to);
+        }
+
+        if ($request->filled('paymentStatus')) {
+            match ($request->paymentStatus) {
+                'borclu' => $q->whereRaw('grandTotal - COALESCE(paidAmount, 0) > 0.005'),
+                'alacakli' => $q->whereRaw('grandTotal - COALESCE(paidAmount, 0) < -0.005'),
+                'odendi' => $q->whereRaw('ABS(grandTotal - COALESCE(paidAmount, 0)) <= 0.005 AND grandTotal > 0'),
+                default => null,
+            };
+        }
+
+        return $q;
+    }
+
+    /** @param  \Illuminate\Database\Eloquent\Builder<Sale>  $query */
+    private function salesDeliveredStatsFromQuery($query, int $total): array
+    {
+        $monthStart = now()->startOfMonth()->toDateString();
+        $monthEnd = now()->endOfMonth()->toDateString();
+
+        return [
+            'total' => $total,
+            'turnover' => (float) (clone $query)->sum('grandTotal'),
+            'receivable' => (float) (clone $query)
+                ->selectRaw('COALESCE(SUM(GREATEST(grandTotal - COALESCE(paidAmount, 0), 0)), 0) as total')
+                ->value('total'),
+            'withDebt' => (int) (clone $query)
+                ->whereRaw('grandTotal - COALESCE(paidAmount, 0) > 0.005')
+                ->count(),
+            'thisMonth' => (int) (clone $query)
+                ->whereDate('deliveredAt', '>=', $monthStart)
+                ->whereDate('deliveredAt', '<=', $monthEnd)
+                ->count(),
+        ];
+    }
+
     private function salesIndexHasFilters(Request $request): bool
     {
         return $request->filled('search')

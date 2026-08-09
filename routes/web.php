@@ -143,6 +143,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/quotes/{quote}/duplicate', [QuoteController::class, 'duplicate'])->name('quotes.duplicate');
     Route::resource('quotes', QuoteController::class);
 
+    Route::get('/sales/teslim-edilenler', [SaleController::class, 'delivered'])->name('sales.delivered');
     Route::resource('sales', SaleController::class);
     Route::post('/sales/actions/bulk-destroy', [SaleController::class, 'bulkDestroy'])->name('sales.bulk-destroy');
     Route::get('/sales/{sale}/print', [SaleController::class, 'print'])->name('sales.print');

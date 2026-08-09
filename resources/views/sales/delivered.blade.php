@@ -1,53 +1,50 @@
 @extends('layouts.app')
-@section('title', 'Satışlar')
+@section('title', 'Teslim Edilenler')
 
 @section('content')
 @php
-    $activeFilters = $activeFilters ?? (
-        request()->filled('search')
-        || request()->filled('customerId')
-        || request()->filled('personnelId')
-        || \App\Support\SaleDelivery::isFilterValue(request('deliveryStatus'))
-        || in_array(request('paymentStatus'), ['borclu', 'alacakli', 'odendi'], true)
-        || request()->filled('from')
-        || request()->filled('to')
-    );
-    $filterChip = fn (array $params) => route('sales.index', array_filter(array_merge(request()->only(['search', 'customerId', 'from', 'to', 'paymentStatus', 'deliveryStatus']), $params)));
+    $listRoute = route('sales.delivered');
+    $filterChip = fn (array $params) => route('sales.delivered', array_filter(array_merge(request()->only(['search', 'customerId', 'from', 'to', 'paymentStatus']), $params)));
 @endphp
 
 <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
     <div>
-        <h1 class="page-title">Satışlar</h1>
-        <p class="page-desc mt-1">Siparişler, teslimat durumu ve tahsilat takibi</p>
+        <nav class="flex items-center gap-2 text-sm text-neutral-500 mb-1">
+            <a href="{{ route('sales.index') }}" class="hover:text-neutral-900 dark:hover:text-neutral-100">Satışlar</a>
+            <span aria-hidden="true">/</span>
+            <span class="text-neutral-700 dark:text-neutral-300">Teslim edilenler</span>
+        </nav>
+        <h1 class="page-title">Teslim Edilenler</h1>
+        <p class="page-desc mt-1">Müşteriye teslim edilmiş siparişler</p>
     </div>
-    <a href="{{ route('sales.create') }}" class="btn-primary w-full sm:w-auto justify-center">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
-        Satış Oluştur
-    </a>
+    <a href="{{ route('sales.index') }}" class="btn-secondary w-full sm:w-auto justify-center">← Tüm satışlar</a>
 </div>
 
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
     <div class="card p-4">
-        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">{{ $activeFilters ? 'Filtrelenen sipariş' : 'Toplam sipariş' }}</p>
+        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">{{ $activeFilters ? 'Filtrelenen' : 'Toplam teslim' }}</p>
         <p class="text-2xl font-semibold text-neutral-900 dark:text-neutral-100 mt-1">{{ number_format($stats['total'], 0, ',', '.') }}</p>
     </div>
-    <div class="card p-4 {{ $stats['receivable'] > 0 ? 'ring-1 ring-amber-200 dark:ring-amber-800/60' : '' }}">
-        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Alınacak</p>
-        <p class="text-xl sm:text-2xl font-semibold {{ $stats['receivable'] > 0 ? 'text-amber-600' : 'text-neutral-900 dark:text-neutral-100' }} mt-1 tabular-nums">₺{{ number_format($stats['receivable'], 0, ',', '.') }}</p>
+    <div class="card p-4 border-indigo-100 dark:border-indigo-900/40 bg-indigo-50/40 dark:bg-indigo-950/20">
+        <p class="text-xs font-medium text-indigo-700 dark:text-indigo-300 uppercase tracking-wide">Bu ay teslim</p>
+        <p class="text-2xl font-semibold text-indigo-700 dark:text-indigo-300 mt-1">{{ number_format($stats['thisMonth'], 0, ',', '.') }}</p>
     </div>
-    <a href="{{ $filterChip(['paymentStatus' => 'borclu', 'deliveryStatus' => null]) }}" class="card p-4 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors {{ request('paymentStatus') === 'borclu' ? 'ring-2 ring-red-300 dark:ring-red-700' : ($stats['withDebt'] > 0 ? 'ring-1 ring-red-200 dark:ring-red-800/60' : '') }}">
-        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Borçlu sipariş</p>
+    <div class="card p-4">
+        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Toplam ciro</p>
+        <p class="text-xl sm:text-2xl font-semibold text-neutral-900 dark:text-neutral-100 mt-1 tabular-nums">₺{{ number_format($stats['turnover'], 0, ',', '.') }}</p>
+    </div>
+    <a href="{{ $filterChip(['paymentStatus' => 'borclu']) }}" class="card p-4 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors {{ request('paymentStatus') === 'borclu' ? 'ring-2 ring-red-300 dark:ring-red-700' : ($stats['withDebt'] > 0 ? 'ring-1 ring-red-200 dark:ring-red-800/60' : '') }}">
+        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Teslim · borçlu</p>
         <p class="text-2xl font-semibold {{ $stats['withDebt'] > 0 ? 'text-red-600' : 'text-neutral-900 dark:text-neutral-100' }} mt-1">{{ number_format($stats['withDebt'], 0, ',', '.') }}</p>
-    </a>
-    <a href="{{ $filterChip(['deliveryStatus' => \App\Support\SaleDelivery::FINAL_MEASUREMENT, 'paymentStatus' => null]) }}" class="card p-4 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors {{ request('deliveryStatus') === \App\Support\SaleDelivery::FINAL_MEASUREMENT ? 'ring-2 ring-amber-300 dark:ring-amber-700' : ($stats['finalMeasurement'] > 0 ? 'ring-1 ring-amber-200 dark:ring-amber-800/60' : '') }}">
-        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Ölçü bekliyor</p>
-        <p class="text-2xl font-semibold {{ $stats['finalMeasurement'] > 0 ? 'text-amber-600' : 'text-neutral-900 dark:text-neutral-100' }} mt-1">{{ number_format($stats['finalMeasurement'], 0, ',', '.') }}</p>
+        @if($stats['receivable'] > 0)
+        <p class="text-xs text-amber-600 dark:text-amber-400 mt-1 tabular-nums">₺{{ number_format($stats['receivable'], 0, ',', '.') }} alınacak</p>
+        @endif
     </a>
 </div>
 
 <div class="card overflow-hidden" x-data="salesBulk" data-sale-ids='{{ json_encode($saleIds ?? []) }}'>
     <div class="p-4 border-b border-neutral-100 dark:border-neutral-800">
-        <form method="GET" action="{{ route('sales.index') }}" id="salesFilterForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-end">
+        <form method="GET" action="{{ $listRoute }}" id="salesFilterForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-end">
             <div class="sm:col-span-2 xl:col-span-2">
                 <label for="salesSearchInput" class="form-label">Ara</label>
                 <input type="text" name="search" id="salesSearchInput" placeholder="Sipariş no veya müşteri..." value="{{ request('search') }}" class="form-input w-full" autocomplete="off">
@@ -60,16 +57,6 @@
                     <option value="{{ $c->id }}" {{ request('customerId') == $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
                     @endforeach
                 </select>
-                <p class="mt-1 text-xs text-neutral-400">Müşteri adı için üstteki arama kutusunu kullanın.</p>
-            </div>
-            <div>
-                <label class="form-label">Teslim durumu</label>
-                <select name="deliveryStatus" class="form-select w-full">
-                    <option value="">Tümü</option>
-                    @foreach(\App\Support\SaleDelivery::filterOptions() as $value => $label)
-                    <option value="{{ $value }}" {{ request('deliveryStatus') === $value ? 'selected' : '' }}>{{ $label }}</option>
-                    @endforeach
-                </select>
             </div>
             <div>
                 <label class="form-label">Ödeme durumu</label>
@@ -80,27 +67,24 @@
                 </select>
             </div>
             <div>
-                <label class="form-label">Başlangıç</label>
+                <label class="form-label">Teslim başlangıç</label>
                 <input type="date" name="from" value="{{ request('from') }}" class="form-input w-full">
             </div>
             <div>
-                <label class="form-label">Bitiş</label>
+                <label class="form-label">Teslim bitiş</label>
                 <input type="date" name="to" value="{{ request('to') }}" class="form-input w-full">
             </div>
-            <div class="flex flex-col sm:flex-row gap-2 sm:col-span-2 xl:col-span-6">
+            <div class="flex flex-col sm:flex-row gap-2 sm:col-span-2 xl:col-span-5">
                 <button type="submit" class="btn-primary w-full sm:w-auto justify-center">Filtrele</button>
-                <a href="{{ route('sales.index') }}" class="btn-secondary w-full sm:w-auto justify-center">Temizle</a>
+                <a href="{{ $listRoute }}" class="btn-secondary w-full sm:w-auto justify-center">Temizle</a>
             </div>
         </form>
 
         <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
             <span class="text-xs text-neutral-400 self-center mr-1">Hızlı filtre:</span>
-            <a href="{{ route('sales.index') }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ !$activeFilters ? 'bg-neutral-900 text-white dark:bg-emerald-600' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">Tümü</a>
-            <a href="{{ $filterChip(['paymentStatus' => 'borclu']) }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ request('paymentStatus') === 'borclu' && !request('deliveryStatus') ? 'bg-red-600 text-white' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">Borçlu</a>
-            <a href="{{ $filterChip(['deliveryStatus' => \App\Support\SaleDelivery::FINAL_MEASUREMENT, 'paymentStatus' => null]) }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ request('deliveryStatus') === \App\Support\SaleDelivery::FINAL_MEASUREMENT ? 'bg-amber-500 text-white' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">Ölçü bekliyor</a>
-            <a href="{{ $filterChip(['deliveryStatus' => \App\Support\SaleDelivery::IN_PRODUCTION, 'paymentStatus' => null]) }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ request('deliveryStatus') === \App\Support\SaleDelivery::IN_PRODUCTION ? 'bg-violet-600 text-white' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">Üretimde</a>
-            <a href="{{ $filterChip(['deliveryStatus' => \App\Support\SaleDelivery::PENDING, 'paymentStatus' => null]) }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ request('deliveryStatus') === \App\Support\SaleDelivery::PENDING ? 'bg-neutral-700 text-white dark:bg-neutral-500' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">Teslim bekliyor</a>
-            <a href="{{ route('sales.delivered') }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700">Teslim edilenler →</a>
+            <a href="{{ $listRoute }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ !$activeFilters ? 'bg-neutral-900 text-white dark:bg-emerald-600' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">Tümü</a>
+            <a href="{{ $filterChip(['paymentStatus' => 'borclu']) }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ request('paymentStatus') === 'borclu' ? 'bg-red-600 text-white' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">Borçlu</a>
+            <a href="{{ $filterChip(['from' => now()->startOfMonth()->format('Y-m-d'), 'to' => now()->endOfMonth()->format('Y-m-d'), 'paymentStatus' => null]) }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ request('from') === now()->startOfMonth()->format('Y-m-d') && request('to') === now()->endOfMonth()->format('Y-m-d') ? 'bg-indigo-600 text-white' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">Bu ay</a>
         </div>
     </div>
 
@@ -109,7 +93,7 @@
         <div id="sales-bulk-form-ids"></div>
     </form>
 
-    @include('sales.partials.index-results', compact('sales', 'saleIds', 'activeFilters'))
+    @include('sales.partials.index-results', ['sales' => $sales, 'saleIds' => $saleIds, 'activeFilters' => $activeFilters, 'listContext' => 'delivered'])
 
     <div x-show="showBulkDeleteModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
         <div x-show="showBulkDeleteModal" x-transition class="fixed inset-0 bg-black/50" @click="showBulkDeleteModal = false"></div>

@@ -1,4 +1,6 @@
 @php
+    $listContext = $listContext ?? null;
+    $isDeliveredList = $listContext === 'delivered';
     $activeFilters = $activeFilters ?? (
         request()->filled('search')
         || request()->filled('customerId')
@@ -43,7 +45,7 @@
                                @change="toggleAll($event.target.checked)" :checked="selected.length === items.length && items.length > 0">
                     </th>
                     <th class="table-th">Sipariş</th>
-                    <th class="table-th col-hide-mobile whitespace-nowrap">Tarih / Termin</th>
+                    <th class="table-th col-hide-mobile whitespace-nowrap">{{ $isDeliveredList ? 'Teslim / Sipariş' : 'Tarih / Termin' }}</th>
                     <th class="table-th text-right whitespace-nowrap">Tutar</th>
                     <th class="table-th">Durum</th>
                     <th class="table-th text-right w-36 sm:w-44">İşlem</th>
@@ -76,8 +78,12 @@
                             <span class="inline-block mt-1">@include('partials.final-measurement-badge', ['sale' => $s])</span>
                         @endif
                         <span class="block mt-1 text-xs text-neutral-400 md:hidden">
-                            {{ $s->saleDate?->format('d.m.Y') ?? '—' }}
-                            @if($terminMeta['date'])
+                            @if($isDeliveredList && $s->deliveredAt)
+                                Teslim {{ $s->deliveredAt->format('d.m.Y') }}
+                            @else
+                                {{ $s->saleDate?->format('d.m.Y') ?? '—' }}
+                            @endif
+                            @if(!$isDeliveredList && $terminMeta['date'])
                                 · {{ $terminMeta['prefix'] }} {{ $terminMeta['date']->format('d.m.Y') }}
                                 @if($terminMeta['suffix'])
                                     · {{ $terminMeta['suffix'] }}
@@ -86,6 +92,10 @@
                         </span>
                     </td>
                     <td class="table-td col-hide-mobile whitespace-nowrap">
+                        @if($isDeliveredList)
+                            <p class="font-medium text-indigo-700 dark:text-indigo-300">{{ $s->deliveredAt?->format('d.m.Y') ?? '—' }}</p>
+                            <p class="text-xs text-neutral-500 mt-0.5">Sipariş {{ $s->saleDate?->format('d.m.Y') ?? '—' }}</p>
+                        @else
                         <p class="text-neutral-900 dark:text-neutral-100">{{ $s->saleDate?->format('d.m.Y') ?? '—' }}</p>
                         @if($terminMeta['empty'])
                             <p class="text-xs text-neutral-400 mt-0.5">{{ $terminMeta['empty'] }}</p>
@@ -96,6 +106,7 @@
                                     · {{ $terminMeta['suffix'] }}
                                 @endif
                             </p>
+                        @endif
                         @endif
                     </td>
                     <td class="table-td text-right whitespace-nowrap">
@@ -150,10 +161,10 @@
                         <div class="mx-auto w-12 h-12 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-4">
                             <svg class="w-6 h-6 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         </div>
-                        <p class="text-neutral-500 text-sm">Filtreye uygun satış bulunamadı.</p>
+                        <p class="text-neutral-500 text-sm">{{ $isDeliveredList ? 'Filtreye uygun teslim edilmiş sipariş bulunamadı.' : 'Filtreye uygun satış bulunamadı.' }}</p>
                         @if($activeFilters)
-                            <a href="{{ route('sales.index') }}" class="btn-secondary mt-4 text-sm">Filtreleri temizle</a>
-                        @else
+                            <a href="{{ $isDeliveredList ? route('sales.delivered') : route('sales.index') }}" class="btn-secondary mt-4 text-sm">Filtreleri temizle</a>
+                        @elseif(!$isDeliveredList)
                             <a href="{{ route('sales.create') }}" class="btn-primary mt-4 text-sm">Satış oluştur</a>
                         @endif
                     </td>
