@@ -10,6 +10,7 @@ use App\Support\UserTaskColor;
 use App\Support\UserTaskCompletion;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class UserTaskController extends Controller
 {
@@ -209,6 +210,33 @@ class UserTaskController extends Controller
             'task' => $this->taskPayload($userTask),
             'message' => 'Görev güncellendi.',
         ]);
+    }
+
+    public function reorder(Request $request)
+    {
+        $validated = $request->validate([
+            'taskIds' => 'required|array|min:1',
+            'taskIds.*' => 'required|string',
+        ]);
+
+        $taskIds = array_values(array_unique($validated['taskIds']));
+        $tasks = UserTask::query()->whereIn('id', $taskIds)->get()->keyBy('id');
+
+        if ($tasks->count() !== count($taskIds)) {
+            return response()->json(['message' => 'Geçersiz görev seçimi.'], 422);
+        }
+
+        foreach ($taskIds as $taskId) {
+            $this->authorizeTask($tasks->get($taskId));
+        }
+
+        DB::transaction(function () use ($taskIds, $tasks) {
+            foreach ($taskIds as $index => $taskId) {
+                $tasks->get($taskId)?->update(['sortOrder' => $index + 1]);
+            }
+        });
+
+        return response()->json(['message' => 'Görev sırası güncellendi.']);
     }
 
     public function destroy(UserTask $userTask)

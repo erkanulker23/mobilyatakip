@@ -67,7 +67,7 @@
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
             <h1 class="page-title">Teklif Düzenle</h1>
-            <p class="page-desc">{{ $quote->quoteNumber }} — teklif kalemleri (satış değil, tahsilat yok)</p>
+            <p class="page-desc">{{ $quote->quoteNumber }} — teklif kalemleri (satış değil, tahsilat yok)@if($quote->customer) · Müşteri: <a href="{{ route('customers.show', $quote->customer) }}" class="font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300">{{ $quote->customer->name }}</a>@endif</p>
         </div>
         <div class="flex flex-wrap items-center gap-2 self-start">
             @if(!$quote->convertedSaleId && ($quote->status ?? '') == 'taslak')
@@ -86,6 +86,7 @@
 @php
     $customersQuoteJson = $customers->map(fn($c) => [
         'id' => $c->id, 'name' => $c->name,
+        'showUrl' => route('customers.show', $c),
         'phone' => $c->phone ?? '', 'email' => $c->email ?? '', 'address' => $c->full_address,
         'taxNumber' => $c->taxNumber ?? '', 'taxOffice' => $c->taxOffice ?? '', 'identityNumber' => $c->identityNumber ?? ''
     ])->values();
@@ -147,7 +148,8 @@
                         </div>
                         <div id="quoteCustomerInfoBox" class="customer-info-panel hidden">
                             <div class="flex items-start justify-between gap-3 mb-3">
-                                <p id="quoteCustomerName" class="text-sm font-semibold text-neutral-900">—</p>
+                                <p id="quoteCustomerName" class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">—</p>
+                                <a id="quoteCustomerProfileLink" href="#" class="text-xs font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 whitespace-nowrap hidden">Müşteri sayfası →</a>
                             </div>
                             <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div id="quoteCustomerPhoneRow"><dt>Telefon</dt><dd id="quoteCustomerPhone">—</dd></div>
@@ -389,7 +391,7 @@ function quoteCreateForm() {
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    customersQuote.push({ id: data.id, name: data.name, phone: data.phone || '', email: data.email || '', address: data.address || '', taxNumber: data.taxNumber || '', taxOffice: data.taxOffice || '', identityNumber: data.identityNumber || '' });
+                    customersQuote.push({ id: data.id, name: data.name, showUrl: @json(url('/customers')) + '/' + data.id, phone: data.phone || '', email: data.email || '', address: data.address || '', taxNumber: data.taxNumber || '', taxOffice: data.taxOffice || '', identityNumber: data.identityNumber || '' });
                     if (window.customerQuoteTomSelect) {
                         window.customerQuoteTomSelect.addOption({ value: data.id, text: data.name });
                         window.customerQuoteTomSelect.setValue(data.id);
@@ -737,6 +739,15 @@ function updateQuoteCustomerInfo(customerId) {
     }
     box.classList.remove('hidden');
     document.getElementById('quoteCustomerName').textContent = c.name || '—';
+    const profileLink = document.getElementById('quoteCustomerProfileLink');
+    if (profileLink) {
+        if (c.showUrl) {
+            profileLink.href = c.showUrl;
+            profileLink.classList.remove('hidden');
+        } else {
+            profileLink.classList.add('hidden');
+        }
+    }
     const setRow = (id, val) => {
         const row = document.getElementById('quoteCustomer' + id + 'Row');
         const el = document.getElementById('quoteCustomer' + id);

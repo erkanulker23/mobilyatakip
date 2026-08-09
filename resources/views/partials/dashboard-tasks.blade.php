@@ -182,11 +182,29 @@
                                 <p class="text-sm text-neutral-500 text-center py-4">Açık görev yok.</p>
                             </template>
                             <div class="space-y-2" x-show="group.openTasks.length > 0">
+                                <p class="text-[11px] text-neutral-400 mb-1">Sürükleyerek sıralayın</p>
                                 <template x-for="task in group.openTasks" :key="'person-' + group.id + '-' + task.id">
-                                    <div class="task-color-card rounded-xl border p-3"
+                                    <div class="task-color-card rounded-xl border p-3 transition-opacity"
+                                        draggable="true"
+                                        @dragstart="onTaskDragStart($event, task.id)"
+                                        @dragend="onTaskDragEnd()"
+                                        @dragover.prevent="onTaskDragOver(task.id)"
+                                        @dragleave="onTaskDragLeave(task.id)"
+                                        @drop.prevent="onTaskDrop(group.id, task.id)"
+                                        :class="{
+                                            'opacity-50': draggingTaskId === task.id,
+                                            'ring-2 ring-emerald-400 ring-inset': dropTargetTaskId === task.id && draggingTaskId !== task.id
+                                        }"
                                         :data-task-color="normalizeTaskColor(task.color)">
                                         <div class="flex items-start gap-3">
-                                            <input type="checkbox" :checked="task.isCompleted" @change="toggleComplete(task)" class="mt-1 rounded border-neutral-300 shrink-0">
+                                            <button type="button"
+                                                class="mt-0.5 p-1 rounded text-neutral-300 hover:text-neutral-500 cursor-grab active:cursor-grabbing shrink-0 touch-none"
+                                                title="Sürükleyerek sırala"
+                                                @mousedown.stop
+                                                aria-label="Sürükleyerek sırala">
+                                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="1.5"/><circle cx="15" cy="7" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="17" r="1.5"/><circle cx="15" cy="17" r="1.5"/></svg>
+                                            </button>
+                                            <input type="checkbox" :checked="task.isCompleted" @change="toggleComplete(task)" @mousedown.stop @click.stop class="mt-1 rounded border-neutral-300 shrink-0">
                                             <span class="task-color-dot task-color-dot--sm mt-1.5" :data-task-color="normalizeTaskColor(task.color)"></span>
                                             <div class="min-w-0 flex-1">
                                                 <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
@@ -199,11 +217,11 @@
                                                     x-text="taskDueLabel(task)"></p>
                                             </div>
                                             <div class="flex items-center gap-0.5 shrink-0">
-                                                <button type="button" @click="openEditTask(task)" class="p-1 rounded hover:bg-black/5 text-neutral-400 hover:text-neutral-700" title="Düzenle">
+                                                <button type="button" @click="openEditTask(task)" @mousedown.stop class="p-1 rounded hover:bg-black/5 text-neutral-400 hover:text-neutral-700" title="Düzenle">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                                 </button>
                                                 <div class="relative" x-data="{ open: false }">
-                                                    <button type="button" @click="open = !open" class="inline-flex items-center gap-1 px-1.5 py-1 rounded hover:bg-black/5 text-neutral-500" :title="priorityLabel(task.color)">
+                                                    <button type="button" @click="open = !open" @mousedown.stop class="inline-flex items-center gap-1 px-1.5 py-1 rounded hover:bg-black/5 text-neutral-500" :title="priorityLabel(task.color)">
                                                         <span class="task-color-dot task-color-dot--sm" :data-task-color="normalizeTaskColor(task.color)"></span>
                                                         <span class="text-[10px] font-semibold max-w-[4.5rem] truncate" x-text="priorityLabel(task.color)"></span>
                                                     </button>
@@ -216,7 +234,7 @@
                                                         @endforeach
                                                     </div>
                                                 </div>
-                                                <button type="button" @click="deleteTask(task)" class="p-1 rounded hover:bg-red-50 text-neutral-400 hover:text-red-600" title="Sil">
+                                                <button type="button" @click="deleteTask(task)" @mousedown.stop class="p-1 rounded hover:bg-red-50 text-neutral-400 hover:text-red-600" title="Sil">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                                 </button>
                                             </div>
@@ -373,6 +391,7 @@ function dashboardTasks() {
     const apiIndex = @json(route('api.user-tasks.index'));
     const apiStore = @json(route('api.user-tasks.store'));
     const apiUpdateBase = @json(url('/api/user-tasks'));
+    const apiReorder = @json(route('api.user-tasks.reorder'));
     const currentUserId = @json($currentUserId);
     const personnelOptions = @json($taskPersonnelOptions);
     const personalTasksView = @json($personalTasksView);
@@ -401,6 +420,9 @@ function dashboardTasks() {
         selectedDate: today,
         editingTaskId: null,
         editingTask: null,
+        draggingTaskId: null,
+        dropTargetTaskId: null,
+        reordering: false,
         editForm: { title: '', notes: '', dueDate: '', personnelId: '', color: 'blue' },
         personnelOptions,
         weekdayLabels: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'],
@@ -421,6 +443,8 @@ function dashboardTasks() {
         },
         get personnelTaskGroups() {
             const sortOpenTasks = (list) => [...list].sort((a, b) => {
+                const orderDiff = (a.sortOrder || 0) - (b.sortOrder || 0);
+                if (orderDiff !== 0) return orderDiff;
                 const aOver = this.isOverdue(a.dueDate);
                 const bOver = this.isOverdue(b.dueDate);
                 if (aOver !== bOver) return aOver ? -1 : 1;
@@ -789,6 +813,115 @@ function dashboardTasks() {
             } catch (e) {
                 alert(e.message || 'Silinemedi');
             }
+        },
+
+        tasksForGroup(groupId, openOnly = true) {
+            let list = this.tasks;
+            if (groupId === '__unassigned__') {
+                list = list.filter(t => !t.personnelId);
+            } else if (groupId === '__mine__') {
+                list = list;
+            } else {
+                list = list.filter(t => t.personnelId === groupId);
+            }
+            if (openOnly) {
+                list = list.filter(t => !t.isCompleted);
+            }
+            return list;
+        },
+
+        sortedOpenTasksForGroup(groupId) {
+            const list = this.tasksForGroup(groupId, true);
+            const orderDiff = (a, b) => (a.sortOrder || 0) - (b.sortOrder || 0);
+            const overdueDiff = (a, b) => {
+                const aOver = this.isOverdue(a.dueDate);
+                const bOver = this.isOverdue(b.dueDate);
+                if (aOver !== bOver) return aOver ? -1 : 1;
+                if (!a.dueDate && !b.dueDate) return 0;
+                if (!a.dueDate) return 1;
+                if (!b.dueDate) return -1;
+                return a.dueDate.localeCompare(b.dueDate);
+            };
+            return [...list].sort((a, b) => {
+                const byOrder = orderDiff(a, b);
+                return byOrder !== 0 ? byOrder : overdueDiff(a, b);
+            });
+        },
+
+        onTaskDragStart(event, taskId) {
+            this.draggingTaskId = taskId;
+            this.dropTargetTaskId = null;
+            if (event.dataTransfer) {
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/plain', taskId);
+            }
+        },
+
+        onTaskDragEnd() {
+            this.draggingTaskId = null;
+            this.dropTargetTaskId = null;
+        },
+
+        onTaskDragOver(taskId) {
+            if (this.draggingTaskId && this.draggingTaskId !== taskId) {
+                this.dropTargetTaskId = taskId;
+            }
+        },
+
+        onTaskDragLeave(taskId) {
+            if (this.dropTargetTaskId === taskId) {
+                this.dropTargetTaskId = null;
+            }
+        },
+
+        async onTaskDrop(groupId, targetTaskId) {
+            const fromId = this.draggingTaskId;
+            this.onTaskDragEnd();
+            if (!fromId || fromId === targetTaskId || this.reordering) return;
+
+            const groupTasks = this.sortedOpenTasksForGroup(groupId);
+            const fromIdx = groupTasks.findIndex(t => t.id === fromId);
+            const toIdx = groupTasks.findIndex(t => t.id === targetTaskId);
+            if (fromIdx < 0 || toIdx < 0) return;
+
+            const reordered = [...groupTasks];
+            const [moved] = reordered.splice(fromIdx, 1);
+            reordered.splice(toIdx, 0, moved);
+
+            const taskIds = reordered.map(t => t.id);
+            const previousOrders = this.tasks.map(t => ({ id: t.id, sortOrder: t.sortOrder }));
+
+            taskIds.forEach((id, index) => {
+                const task = this.tasks.find(t => t.id === id);
+                if (task) task.sortOrder = index + 1;
+            });
+
+            this.reordering = true;
+            try {
+                await this.saveTaskOrder(taskIds);
+            } catch (e) {
+                previousOrders.forEach(({ id, sortOrder }) => {
+                    const task = this.tasks.find(t => t.id === id);
+                    if (task) task.sortOrder = sortOrder;
+                });
+                alert(e.message || 'Sıralama kaydedilemedi');
+            }
+            this.reordering = false;
+        },
+
+        async saveTaskOrder(taskIds) {
+            const res = await fetch(apiReorder, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({ taskIds }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Sıralama kaydedilemedi');
         },
     };
 }

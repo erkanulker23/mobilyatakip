@@ -102,6 +102,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/products/search', [ProductController::class, 'searchForSelect'])->name('api.products.search');
     Route::get('/api/user-tasks', [\App\Http\Controllers\UserTaskController::class, 'index'])->name('api.user-tasks.index');
     Route::post('/api/user-tasks', [\App\Http\Controllers\UserTaskController::class, 'store'])->name('api.user-tasks.store');
+    Route::patch('/api/user-tasks/reorder', [\App\Http\Controllers\UserTaskController::class, 'reorder'])->name('api.user-tasks.reorder');
     Route::patch('/api/user-tasks/{userTask}', [\App\Http\Controllers\UserTaskController::class, 'update'])->name('api.user-tasks.update');
     Route::delete('/api/user-tasks/{userTask}', [\App\Http\Controllers\UserTaskController::class, 'destroy'])->name('api.user-tasks.destroy');
     Route::get('/customers/{customer}/print', [CustomerController::class, 'print'])->name('customers.print');
