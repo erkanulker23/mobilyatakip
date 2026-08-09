@@ -19,6 +19,8 @@ class SaleDelivery
 
     public const IN_DISCUSSION = 'in_discussion';
 
+    public const PARTIALLY_DELIVERED = 'partially_delivered';
+
     public const FINAL_MEASUREMENT = 'final_measurement';
 
     /** @return list<string> */
@@ -28,6 +30,7 @@ class SaleDelivery
             self::PENDING,
             self::IN_DISCUSSION,
             self::IN_PRODUCTION,
+            self::PARTIALLY_DELIVERED,
             self::DELIVERED,
             self::SSH,
         ];
@@ -40,6 +43,7 @@ class SaleDelivery
             self::PENDING => 'Teslim bekliyor',
             self::IN_DISCUSSION => 'Halen görüşülüyor',
             self::IN_PRODUCTION => 'Üretimde',
+            self::PARTIALLY_DELIVERED => 'Eksik teslim edildi',
             self::DELIVERED => 'Teslim edildi',
             self::SSH => 'SSH var',
         ];
@@ -53,6 +57,7 @@ class SaleDelivery
             self::FINAL_MEASUREMENT => 'Ölçü bekliyor',
             self::IN_DISCUSSION => 'Halen görüşülüyor',
             self::IN_PRODUCTION => 'Üretimde',
+            self::PARTIALLY_DELIVERED => 'Eksik teslim edildi',
             self::DELIVERED => 'Teslim edildi',
             self::SSH => 'SSH var',
         ];
@@ -218,6 +223,7 @@ class SaleDelivery
             self::SSH => 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
             self::IN_PRODUCTION => 'bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300',
             self::IN_DISCUSSION => 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300',
+            self::PARTIALLY_DELIVERED => 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
             default => 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
         };
     }
@@ -244,6 +250,7 @@ class SaleDelivery
             self::SSH => 'text-orange-600 dark:text-orange-400',
             self::IN_PRODUCTION => 'text-violet-600 dark:text-violet-400',
             self::IN_DISCUSSION => 'text-sky-600 dark:text-sky-400',
+            self::PARTIALLY_DELIVERED => 'text-rose-600 dark:text-rose-400',
             self::PENDING => 'text-teal-700 dark:text-teal-400',
             default => 'text-neutral-900 dark:text-neutral-100',
         };

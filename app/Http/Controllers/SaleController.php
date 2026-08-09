@@ -623,6 +623,13 @@ class SaleController extends Controller
             ]);
             SaleActivity::logStatusChange($sale->fresh(), $fromStatus, \App\Support\SaleDelivery::IN_DISCUSSION);
             $message = 'Sipariş halen görüşülüyor olarak işaretlendi.';
+        } elseif ($status === \App\Support\SaleDelivery::PARTIALLY_DELIVERED) {
+            $sale->update([
+                'orderStatus' => \App\Support\SaleDelivery::PARTIALLY_DELIVERED,
+                'deliveredAt' => null,
+            ]);
+            SaleActivity::logStatusChange($sale->fresh(), $fromStatus, \App\Support\SaleDelivery::PARTIALLY_DELIVERED);
+            $message = 'Sipariş eksik teslim edildi olarak işaretlendi.';
         } else {
             $sale->update([
                 'orderStatus' => \App\Support\SaleDelivery::PENDING,
