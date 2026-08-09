@@ -12,6 +12,7 @@
 <div x-data='{
     showCustomerEmail: false,
     showStatusModal: @json(old('deliveryStatus') !== null || $errors->has('deliveredAt')),
+    showCancelModal: false,
     showPaymentModal: @json(session('open_payment_modal') || (old('redirectToSale') && old('redirectToSale') == $sale->id)),
     deliveryStatus: @json($initialDeliveryStatus),
     openStatusModal() {
@@ -111,10 +112,10 @@
             <button type="button" @click="showPaymentModal = true" class="btn-primary text-sm">Ödeme Al</button>
             @endif
             @if(!($sale->isCancelled ?? false))
-            <form method="POST" action="{{ route('sales.cancel', $sale) }}" class="inline" onsubmit="return confirm('Bu satışı iptal etmek istediğinize emin misiniz?');">
-                @csrf
-                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 font-medium text-sm">İptal Et</button>
-            </form>
+            <button type="button" @click="showCancelModal = true" class="inline-flex items-center gap-2 px-4 py-2.5 border border-red-300 text-red-700 rounded-[0.625rem] hover:bg-red-50 font-medium text-sm transition-colors dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/40">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                Siparişi İptal Et
+            </button>
             @endif
             @include('partials.action-buttons', [
                 'destroy' => route('sales.destroy', $sale),
@@ -122,6 +123,13 @@
         </div>
     </div>
 </div>
+
+@if($sale->isCancelled ?? false)
+<div class="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
+    <p class="font-semibold text-red-800 dark:text-red-200">Bu sipariş iptal edilmiş</p>
+    <p class="text-sm text-red-700/90 dark:text-red-300/90 mt-1">Kayıt silinmedi; stok iade edildi. Düzenleme ve yeni işlem yapılamaz.</p>
+</div>
+@endif
 
 @if(!($sale->isCancelled ?? false))
 @php $suppliersWithEmail = $sale->getSuppliersWithEmail(); $showPrompt = session('show_supplier_email_prompt') || (!$sale->hasSupplierEmailSent() && $suppliersWithEmail->isNotEmpty()); @endphp
@@ -432,6 +440,38 @@
                 <button type="button" @click="showStatusModal = false" class="btn-secondary min-h-[44px]">İptal</button>
                 <button type="submit" class="btn-primary min-h-[44px]">Kaydet</button>
             </div>
+        </form>
+    </div>
+</div>
+@endif
+
+{{-- Sipariş iptal modal --}}
+@if(!($sale->isCancelled ?? false))
+<div x-show="showCancelModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="cancel-sale-title">
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showCancelModal = false"></div>
+    <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-neutral-200 dark:border-slate-700 overflow-hidden">
+        <div class="px-5 pt-5 pb-1">
+            <h2 id="cancel-sale-title" class="text-lg font-semibold text-red-700 dark:text-red-300">Siparişi İptal Et</h2>
+            <p class="mt-1 text-sm text-neutral-600 dark:text-slate-400">{{ $sale->saleNumber }} numaralı sipariş iptal edilecek.</p>
+        </div>
+        <div class="px-5 py-4 space-y-3 text-sm text-neutral-700 dark:text-slate-300">
+            <ul class="list-disc list-inside space-y-1.5 text-neutral-600 dark:text-slate-400">
+                <li>Rezerve edilen stok iade edilir.</li>
+                <li>Sipariş kaydı silinmez; iptal olarak işaretlenir.</li>
+                <li>İptal sonrası düzenleme ve durum güncellemesi yapılamaz.</li>
+            </ul>
+            @php $paidOnSale = (float) ($sale->paidAmount ?? 0); @endphp
+            @if($paidOnSale > 0.005)
+            <div class="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200">
+                <p class="font-medium">Tahsilat kaydı var</p>
+                <p class="mt-1">Bu siparişe bağlı {{ number_format($paidOnSale, 2, ',', '.') }} ₺ tahsilat görünüyor. İptal sonrası tahsilat kayıtları silinmez; gerekirse müşteri tahsilatlarından düzenleyin.</p>
+            </div>
+            @endif
+        </div>
+        <form method="POST" action="{{ route('sales.cancel', $sale) }}" class="px-5 pb-5 flex gap-3 justify-end">
+            @csrf
+            <button type="button" @click="showCancelModal = false" class="btn-secondary min-h-[44px]">Vazgeç</button>
+            <button type="submit" class="inline-flex items-center justify-center min-h-[44px] px-4 py-2.5 rounded-[0.625rem] bg-red-600 text-white font-medium text-sm hover:bg-red-700 transition-colors">Evet, Siparişi İptal Et</button>
         </form>
     </div>
 </div>

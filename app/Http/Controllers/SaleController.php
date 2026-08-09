@@ -712,7 +712,9 @@ class SaleController extends Controller
         DB::transaction(function () use ($sale, $saleId, $saleNumber, $grandTotal) {
             Quote::where('convertedSaleId', $saleId)->update(['convertedSaleId' => null]);
             CustomerPayment::where('saleId', $saleId)->update(['saleId' => null]);
-            $this->reverseSaleStock($saleId, $saleNumber, 'satis_silme');
+            if (! $sale->isCancelled) {
+                $this->reverseSaleStock($saleId, $saleNumber, 'satis_silme');
+            }
             $sale->items()->delete();
             $sale->delete();
             $this->auditService->logDelete('sale', $saleId, ['saleNumber' => $saleNumber, 'grandTotal' => $grandTotal]);
@@ -729,8 +731,14 @@ class SaleController extends Controller
             $this->reverseSaleStock($sale->id, $sale->saleNumber, 'satis_iptal');
             $sale->update(['isCancelled' => true]);
         });
+        SaleActivity::create([
+            'saleId' => $sale->id,
+            'type' => SaleActivity::TYPE_STATUS_CHANGED,
+            'description' => 'Sipariş iptal edildi',
+            'metadata' => ['cancelled' => true],
+        ]);
         $this->auditService->logCancel('sale', $sale->id);
-        return redirect()->route('sales.show', $sale)->with('success', 'Satış iptal edildi.');
+        return redirect()->route('sales.show', $sale)->with('success', 'Sipariş iptal edildi.');
     }
 
     public function markDelivered(Sale $sale)
