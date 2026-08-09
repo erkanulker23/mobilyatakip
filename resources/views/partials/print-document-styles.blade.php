@@ -118,7 +118,7 @@
 }
 
 .print-brand-name {
-    font-family: 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
     font-size: 18px;
     font-weight: 700;
     letter-spacing: 0.04em;
@@ -708,6 +708,16 @@
     .sale-personnel-notes-panel,
     #atolye-takibi {
         display: none !important;
+    }
+
+    .print-fit-target {
+        transform: none !important;
+        width: auto !important;
+    }
+
+    .print-document--fit {
+        height: auto !important;
+        overflow: visible !important;
     }
 
     .print-document {

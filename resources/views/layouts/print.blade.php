@@ -1,14 +1,13 @@
 <!DOCTYPE html>
-<html lang="tr" class="font-sans">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Yazdır')</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    @vite(['resources/css/app.css'])
     <style>
         body {
-            font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             color: #171717;
             background: #f5f5f4;
             font-size: 14px;
@@ -22,16 +21,25 @@
             size: A4 portrait;
             margin: 10mm;
         }
+
+        @media print {
+            html, body {
+                background: #fff !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
     </style>
     @stack('print-styles')
 </head>
-<body class="font-sans @yield('printBodyClass')">
+<body class="@yield('printBodyClass')">
     <div class="no-print max-w-[210mm] mx-auto px-4 pt-4 pb-2">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <p class="text-sm text-neutral-600">Yazdırma önizlemesi — en iyi sonuç için kenar boşluklarını <strong>Varsayılan</strong> bırakın.</p>
+            <p class="text-sm text-neutral-600">Yazdırma önizlemesi — PDF için <strong>PDF olarak kaydet</strong> seçin. Kenar boşlukları: <strong>Varsayılan</strong>.</p>
             <div class="flex gap-2">
-                <button onclick="window.print()" class="px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 font-medium text-sm">Yazdır</button>
-                <button onclick="window.close()" class="px-4 py-2 bg-white border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-50 font-medium text-sm">Kapat</button>
+                <button type="button" onclick="window.print()" class="px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 font-medium text-sm">Yazdır / PDF</button>
+                <button type="button" onclick="window.close()" class="px-4 py-2 bg-white border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-50 font-medium text-sm">Kapat</button>
             </div>
         </div>
     </div>
@@ -39,59 +47,11 @@
         @yield('content')
     </div>
     <script>
-        (function () {
-            var fitTarget = null;
-            var fitHost = null;
-
-            function resetPrintFit() {
-                if (!fitTarget) return;
-                fitTarget.style.transform = '';
-                fitTarget.style.width = '';
-                if (fitHost) {
-                    fitHost.style.height = '';
-                    fitHost.style.overflow = '';
-                }
-                fitTarget = null;
-                fitHost = null;
+        window.addEventListener('load', function () {
+            if (window.location.search.includes('auto=1')) {
+                window.setTimeout(function () { window.print(); }, 300);
             }
-
-            function fitPrintDocumentToPage() {
-                resetPrintFit();
-                var host = document.querySelector('.print-document--fit');
-                if (!host) return;
-                var target = host.querySelector('.print-fit-target') || host;
-                fitHost = host;
-                fitTarget = target;
-
-                var mmToPx = 96 / 25.4;
-                var pageHeight = 277 * mmToPx;
-                var pageWidth = 190 * mmToPx;
-                var height = target.scrollHeight;
-                var width = target.scrollWidth;
-
-                if (height > pageHeight * 1.06) {
-                    return;
-                }
-
-                var scale = Math.min(1, pageHeight / height, pageWidth / width);
-                scale = Math.max(0.74, scale);
-
-                if (scale < 0.995) {
-                    target.style.transformOrigin = 'top left';
-                    target.style.transform = 'scale(' + scale + ')';
-                    target.style.width = (100 / scale) + '%';
-                    host.style.height = Math.ceil(height * scale) + 'px';
-                    host.style.overflow = 'hidden';
-                }
-            }
-
-            window.addEventListener('beforeprint', fitPrintDocumentToPage);
-            window.addEventListener('afterprint', resetPrintFit);
-        })();
-
-        window.onload = function () {
-            if (window.location.search.includes('auto=1')) window.print();
-        };
+        });
     </script>
 </body>
 </html>
