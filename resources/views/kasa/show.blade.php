@@ -181,7 +181,7 @@
                                 $cariUrl = null;
                                 $paymentTypeLabel = null;
                                 $paymentTypeValue = null;
-                                $refId = $h->refId !== null && $h->refId !== '' ? (is_numeric($h->refId) ? (int) $h->refId : $h->refId) : null;
+                                $refId = $h->refId !== null && $h->refId !== '' ? (string) $h->refId : null;
 
                                 if ($h->refType === 'customer_payment' && $refId !== null && isset($customerPayments[$refId])) {
                                     $cp = $customerPayments[$refId];
@@ -204,16 +204,32 @@
                                 }
 
                                 $tutar = (float) ($h->amount ?? 0);
+                                $operationDetail = KasaMovement::operationDetail($h, $kasa->id, [
+                                    'customerPayments' => $customerPayments,
+                                    'supplierPayments' => $supplierPayments,
+                                    'expenses' => $expenses,
+                                    'shippingCompanyPayments' => $shippingCompanyPayments,
+                                ]);
                             @endphp
                             <tr class="hover:bg-neutral-50/70 transition-colors">
                                 <td class="table-td whitespace-nowrap text-neutral-600">{{ $h->movementDate?->format('d.m.Y') }}</td>
                                 <td class="table-td">
+                                    @if($operationDetail)
+                                    <a href="{{ $operationDetail['url'] }}" class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border hover:opacity-90 transition-opacity {{ KasaMovement::toneClasses($badge['tone']) }}" title="{{ $operationDetail['label'] }}">
+                                        <span aria-hidden="true">{{ $badge['icon'] }}</span>
+                                        {{ $badge['label'] }}
+                                    </a>
+                                    @else
                                     <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border {{ KasaMovement::toneClasses($badge['tone']) }}">
                                         <span aria-hidden="true">{{ $badge['icon'] }}</span>
                                         {{ $badge['label'] }}
                                     </span>
+                                    @endif
                                     @if($transferDetail)
                                     <span class="block text-xs text-neutral-500 mt-1">{{ $transferDetail }}</span>
+                                    @endif
+                                    @if($operationDetail)
+                                    <a href="{{ $operationDetail['url'] }}" class="inline-block text-xs text-sky-600 hover:underline mt-1">{{ $operationDetail['label'] }} →</a>
                                     @endif
                                 </td>
                                 <td class="table-td">

@@ -52,4 +52,54 @@ class KasaMovement
 
         return null;
     }
+
+    /**
+     * @param  array{
+     *     customerPayments?: \Illuminate\Support\Collection|array,
+     *     supplierPayments?: \Illuminate\Support\Collection|array,
+     *     expenses?: \Illuminate\Support\Collection|array,
+     *     shippingCompanyPayments?: \Illuminate\Support\Collection|array,
+     * }  $refs
+     * @return array{url: string, label: string}|null
+     */
+    public static function operationDetail(KasaHareket $h, string $currentKasaId, array $refs = []): ?array
+    {
+        $refId = $h->refId !== null && $h->refId !== '' ? (string) $h->refId : null;
+
+        $customerPayments = collect($refs['customerPayments'] ?? []);
+        $supplierPayments = collect($refs['supplierPayments'] ?? []);
+        $expenses = collect($refs['expenses'] ?? []);
+        $shippingCompanyPayments = collect($refs['shippingCompanyPayments'] ?? []);
+
+        return match ($h->refType) {
+            'customer_payment' => ($cp = $customerPayments->get($refId))
+                ? ['url' => route('customer-payments.show', $cp), 'label' => 'Tahsilat detayı']
+                : null,
+            'supplier_payment' => ($sp = $supplierPayments->get($refId))
+                ? ['url' => route('supplier-payments.show', $sp), 'label' => 'Tedarikçi ödemesi detayı']
+                : null,
+            'expense' => ($expense = $expenses->get($refId))
+                ? ['url' => route('expenses.show', $expense), 'label' => 'Gider detayı']
+                : null,
+            'shipping_company_payment' => ($payment = $shippingCompanyPayments->get($refId))
+                ? ['url' => route('shipping-company-payments.show', $payment), 'label' => 'Nakliye ödemesi detayı']
+                : null,
+            'kasa_transfer' => self::transferOperationDetail($h),
+            default => null,
+        };
+    }
+
+    /** @return array{url: string, label: string}|null */
+    private static function transferOperationDetail(KasaHareket $h): ?array
+    {
+        $otherKasa = (float) $h->amount < 0 ? $h->toKasa : $h->fromKasa;
+        if (! $otherKasa) {
+            return null;
+        }
+
+        return [
+            'url' => route('kasa.show', $otherKasa),
+            'label' => 'Karşı kasa: ' . $otherKasa->name,
+        ];
+    }
 }

@@ -9,6 +9,7 @@
     if ($problems === [] && $serviceTicket->issueType) {
         $problems = [['description' => $serviceTicket->issueType, 'status' => 'bekliyor']];
     }
+    $ticketCustomer = $serviceTicket->customer ?? $serviceTicket->sale?->customer;
 @endphp
 
 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
@@ -24,12 +25,20 @@
         </div>
         <p class="page-desc">
             {{ ServiceTicketStatus::problemSummary($problems) }}
-            @if($showCustomerNames && $serviceTicket->customer?->name)
-            · {{ $serviceTicket->customer->name }}
+            @if($showCustomerNames && $ticketCustomer?->name)
+            · Müşteri:
+            @if(empty($hideCommercialData))
+            <a href="{{ route('customers.show', $ticketCustomer) }}" class="font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300">{{ $ticketCustomer->name }}</a>
+            @else
+            {{ $ticketCustomer->name }}
+            @endif
             @endif
         </p>
     </div>
     <div class="flex flex-wrap items-center gap-2">
+        @if(empty($hideCommercialData) && $ticketCustomer)
+        <a href="{{ route('customers.show', $ticketCustomer) }}" class="btn-secondary">Müşteri Detayı</a>
+        @endif
         @if(empty($hideCommercialData))
         <a href="{{ route('service-tickets.print', $serviceTicket) }}" target="_blank" rel="noopener" class="btn-print">Sevkiyat Formu Yazdır</a>
         @endif
@@ -139,17 +148,17 @@
             <div class="card-header">Servis Bilgileri</div>
             <div class="p-5">
                 <dl class="space-y-3 text-sm">
-                    @if($showCustomerNames && $serviceTicket->customer)
+                    @if($showCustomerNames && $ticketCustomer)
                     <div><dt class="form-label">Müşteri</dt><dd class="font-medium">
                         @if(empty($hideCommercialData))
-                        <a href="{{ route('customers.show', $serviceTicket->customer) }}" class="hover:underline">{{ $serviceTicket->customer->name }}</a>
+                        <a href="{{ route('customers.show', $ticketCustomer) }}" class="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 hover:underline">{{ $ticketCustomer->name }}</a>
                         @else
-                        {{ $serviceTicket->customer->name }}
+                        {{ $ticketCustomer->name }}
                         @endif
                     </dd></div>
                     @if(empty($hideCommercialData))
-                    <div><dt class="form-label">Telefon</dt><dd>{{ $serviceTicket->customer->phone ?: '—' }}</dd></div>
-                    <div><dt class="form-label">Adres</dt><dd class="whitespace-pre-wrap">{{ $serviceTicket->customer->full_address ?: '—' }}</dd></div>
+                    <div><dt class="form-label">Telefon</dt><dd>{{ $ticketCustomer->phone ?: '—' }}</dd></div>
+                    <div><dt class="form-label">Adres</dt><dd class="whitespace-pre-wrap">{{ $ticketCustomer->full_address ?: '—' }}</dd></div>
                     @endif
                     @endif
                     @if($serviceTicket->sale)

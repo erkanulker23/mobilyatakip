@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\CustomerPayment;
+use App\Models\Expense;
 use App\Models\Kasa;
 use App\Models\KasaHareket;
+use App\Models\ShippingCompanyPayment;
 use App\Models\SupplierPayment;
 use App\Services\AuditService;
 use App\Services\KasaService;
@@ -85,8 +87,12 @@ class KasaController extends Controller
 
         $customerPaymentIds = $hareketler->where('refType', 'customer_payment')->pluck('refId')->unique()->filter()->values()->all();
         $supplierPaymentIds = $hareketler->where('refType', 'supplier_payment')->pluck('refId')->unique()->filter()->values()->all();
-        $customerPayments = CustomerPayment::with('customer')->whereIn('id', $customerPaymentIds)->get()->keyBy('id');
-        $supplierPayments = SupplierPayment::with('supplier')->whereIn('id', $supplierPaymentIds)->get()->keyBy('id');
+        $expenseIds = $hareketler->where('refType', 'expense')->pluck('refId')->unique()->filter()->values()->all();
+        $shippingPaymentIds = $hareketler->where('refType', 'shipping_company_payment')->pluck('refId')->unique()->filter()->values()->all();
+        $customerPayments = CustomerPayment::with('customer')->whereIn('id', $customerPaymentIds)->get()->keyBy(fn ($p) => (string) $p->id);
+        $supplierPayments = SupplierPayment::with('supplier')->whereIn('id', $supplierPaymentIds)->get()->keyBy(fn ($p) => (string) $p->id);
+        $expenses = Expense::query()->whereIn('id', $expenseIds)->get()->keyBy(fn ($e) => (string) $e->id);
+        $shippingCompanyPayments = ShippingCompanyPayment::with('shippingCompany')->whereIn('id', $shippingPaymentIds)->get()->keyBy(fn ($p) => (string) $p->id);
 
         $otherKasalar = Kasa::query()
             ->where('isActive', true)
@@ -102,6 +108,8 @@ class KasaController extends Controller
             'summary',
             'customerPayments',
             'supplierPayments',
+            'expenses',
+            'shippingCompanyPayments',
             'otherKasalar',
         ) + [
             'paymentTypes' => PaymentType::labels(),
