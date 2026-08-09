@@ -170,6 +170,10 @@ class UserTaskController extends Controller
 
         if (array_key_exists('personnelId', $validated)) {
             if ($request->user()->canManageTeamTasks()) {
+                if (($validated['personnelId'] ?? '') === self::ASSIGN_ALL_PERSONNEL) {
+                    return $this->reassignToAllPersonnel($request, $userTask, $validated);
+                }
+
                 if ($validated['personnelId'] === null || $validated['personnelId'] === '') {
                     $updates['personnelId'] = null;
                 } else {
@@ -230,13 +234,42 @@ class UserTaskController extends Controller
             return response()->json(['message' => 'Atanacak aktif personel bulunamadı.'], 422);
         }
 
-        $taskData = [
-            'title' => trim($validated['title']),
-            'notes' => isset($validated['notes']) ? trim($validated['notes']) : null,
-            'dueDate' => $validated['dueDate'] ?? null,
-            'color' => UserTaskColor::normalize($validated['color'] ?? null),
-        ];
+        $tasks = $this->createTasksForPersonnel(
+            $request,
+            $this->taskDataFromValidated($validated),
+            $personnelList
+        );
 
+        return $this->tasksCreatedResponse($tasks, 201);
+    }
+
+    private function reassignToAllPersonnel(Request $request, UserTask $userTask, array $validated): \Illuminate\Http\JsonResponse
+    {
+        $personnelList = Personnel::query()
+            ->where('isActive', true)
+            ->orderBy('name')
+            ->get();
+
+        if ($personnelList->isEmpty()) {
+            return response()->json(['message' => 'Atanacak aktif personel bulunamadı.'], 422);
+        }
+
+        $taskData = $this->taskDataFromUpdate($userTask, $validated);
+        $taskId = $userTask->id;
+        $taskTitle = $userTask->title;
+
+        $userTask->delete();
+        $this->auditService->logDelete('user_task', $taskId, ['title' => $taskTitle]);
+
+        $tasks = $this->createTasksForPersonnel($request, $taskData, $personnelList);
+
+        return $this->tasksCreatedResponse($tasks, 200, 'Görev tüm personele atandı.');
+    }
+
+    /** @param  \Illuminate\Support\Collection<int, Personnel>  $personnelList
+     * @return \Illuminate\Support\Collection<int, UserTask> */
+    private function createTasksForPersonnel(Request $request, array $taskData, $personnelList)
+    {
         $creatorId = (string) $request->user()->id;
         $tasks = collect();
 
@@ -261,16 +294,74 @@ class UserTaskController extends Controller
             'completedByUser:id,name',
         ]);
 
+        return $tasks;
+    }
+
+    /** @param  \Illuminate\Support\Collection<int, UserTask>  $tasks */
+    private function tasksCreatedResponse($tasks, int $status = 201, ?string $message = null): \Illuminate\Http\JsonResponse
+    {
         $count = $tasks->count();
         $firstTask = $tasks->first();
 
         return response()->json([
             'task' => $firstTask ? $this->taskPayload($firstTask) : null,
             'tasks' => $tasks->map(fn (UserTask $task) => $this->taskPayload($task))->values(),
-            'message' => $count === 1
+            'reloaded' => true,
+            'message' => $message ?? ($count === 1
                 ? '1 personele görev eklendi.'
-                : $count . ' personele görev eklendi.',
-        ], 201);
+                : $count . ' personele görev eklendi.'),
+        ], $status);
+    }
+
+    /** @return array{title: string, notes: ?string, dueDate: ?string, color: string, isCompleted: bool, completedAt: ?\Illuminate\Support\Carbon, completedByUserId: ?string} */
+    private function taskDataFromValidated(array $validated): array
+    {
+        return [
+            'title' => trim($validated['title']),
+            'notes' => isset($validated['notes']) ? trim($validated['notes']) : null,
+            'dueDate' => $validated['dueDate'] ?? null,
+            'color' => UserTaskColor::normalize($validated['color'] ?? null),
+            'isCompleted' => false,
+            'completedAt' => null,
+            'completedByUserId' => null,
+        ];
+    }
+
+    /** @return array{title: string, notes: ?string, dueDate: ?string, color: string, isCompleted: bool, completedAt: ?\Illuminate\Support\Carbon, completedByUserId: ?string} */
+    private function taskDataFromUpdate(UserTask $userTask, array $validated): array
+    {
+        $isCompleted = array_key_exists('isCompleted', $validated)
+            ? (bool) $validated['isCompleted']
+            : (bool) $userTask->isCompleted;
+
+        $completedAt = $userTask->completedAt;
+        $completedByUserId = $userTask->completedByUserId ? (string) $userTask->completedByUserId : null;
+
+        if (array_key_exists('isCompleted', $validated)) {
+            if ($validated['isCompleted']) {
+                $completedAt = now();
+                $completedByUserId = (string) request()->user()->id;
+            } else {
+                $completedAt = null;
+                $completedByUserId = null;
+            }
+        }
+
+        return [
+            'title' => array_key_exists('title', $validated) ? trim($validated['title']) : $userTask->title,
+            'notes' => array_key_exists('notes', $validated)
+                ? ($validated['notes'] !== null ? trim($validated['notes']) : null)
+                : $userTask->notes,
+            'dueDate' => array_key_exists('dueDate', $validated)
+                ? $validated['dueDate']
+                : $userTask->dueDate?->format('Y-m-d'),
+            'color' => array_key_exists('color', $validated)
+                ? UserTaskColor::normalize($validated['color'])
+                : UserTaskColor::normalize($userTask->color),
+            'isCompleted' => $isCompleted,
+            'completedAt' => $completedAt,
+            'completedByUserId' => $completedByUserId,
+        ];
     }
 
     private function authorizeTask(UserTask $task): void

@@ -327,6 +327,7 @@
                     <label class="form-label">Personel</label>
                     <select x-model="editForm.personnelId" class="form-select">
                         <option value="">Atanmadı</option>
+                        <option value="all">Tüm personel</option>
                         <template x-for="person in personnelOptions" :key="person.id">
                             <option :value="person.id" x-text="person.label"></option>
                         </template>
@@ -755,6 +756,10 @@ function dashboardTasks() {
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message || 'Güncellenemedi');
+                if (data.reloaded) {
+                    await this.loadTasks();
+                    return;
+                }
                 const idx = this.tasks.findIndex(t => t.id === task.id);
                 if (idx !== -1) {
                     this.tasks = this.tasks.map((t, i) => (i === idx ? data.task : t));
