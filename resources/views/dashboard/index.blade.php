@@ -42,8 +42,8 @@
 {{-- Bugün / bu hafta özeti --}}
 @php
     $todayStr = now()->format('Y-m-d');
-    $weekStartStr = ($weekStart ?? now()->startOfWeek())->format('Y-m-d');
-    $weekEndStr = ($weekEnd ?? now()->endOfWeek())->format('Y-m-d');
+    $weekStartStr = ($weekStart ?? \App\Support\MonthPeriod::current()['start'])->format('Y-m-d');
+    $weekEndStr = ($weekEnd ?? \App\Support\MonthPeriod::current()['end'])->format('Y-m-d');
 @endphp
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
     <a href="{{ route('sales.index', ['from' => $todayStr, 'to' => $todayStr]) }}" class="card p-4 border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/20 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors">
@@ -64,7 +64,7 @@
         <p class="text-xs text-neutral-500 mt-1">Tahsilat (tüm kasalar)</p>
     </a>
     <a href="{{ route('sales.index', ['from' => $weekStartStr, 'to' => $weekEndStr]) }}" class="card p-4 border-violet-200 dark:border-violet-800/60 bg-violet-50/40 dark:bg-violet-950/20 hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-colors">
-        <p class="text-xs font-medium text-violet-800 dark:text-violet-300 uppercase tracking-wide">Bu hafta satış</p>
+        <p class="text-xs font-medium text-violet-800 dark:text-violet-300 uppercase tracking-wide">Bu dönem satış</p>
         <p class="text-2xl sm:text-3xl font-semibold text-violet-700 dark:text-violet-400 mt-1 tabular-nums">{{ $weekSalesCount }}</p>
         @if($weekSalesTotal > 0)
             <p class="text-xs text-violet-700/80 dark:text-violet-400/80 mt-1 tabular-nums">₺{{ number_format($weekSalesTotal, 0, ',', '.') }} ciro · {{ $weekRangeLabel }}</p>
@@ -73,7 +73,7 @@
         @endif
     </a>
     <a href="{{ route('customer-payments.create', ['list' => 1, 'from' => $weekStartStr, 'to' => $weekEndStr]) }}" class="card p-4 border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/40 dark:bg-indigo-950/20 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors">
-        <p class="text-xs font-medium text-indigo-800 dark:text-indigo-300 uppercase tracking-wide">Bu hafta kasa girişi</p>
+        <p class="text-xs font-medium text-indigo-800 dark:text-indigo-300 uppercase tracking-wide">Bu dönem kasa girişi</p>
         <p class="text-2xl sm:text-3xl font-semibold text-indigo-700 dark:text-indigo-400 mt-1 tabular-nums">₺{{ number_format($weekKasaInflow, 0, ',', '.') }}</p>
         <p class="text-xs text-neutral-500 mt-1">{{ $weekRangeLabel ?? '' }} · tahsilat</p>
     </a>

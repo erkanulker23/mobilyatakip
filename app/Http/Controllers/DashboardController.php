@@ -13,6 +13,7 @@ use App\Models\Purchase;
 use App\Models\ServiceTicket;
 use App\Models\User;
 use App\Services\StockService;
+use App\Support\MonthPeriod;
 use App\Support\PaymentType;
 use App\Support\PersonnelSalesStats;
 use App\Support\SaleDelivery;
@@ -50,8 +51,11 @@ class DashboardController extends Controller
         $monthStart = Carbon::now()->startOfMonth();
         $monthEnd = Carbon::now()->endOfMonth();
         $today = Carbon::today();
-        $weekStart = Carbon::now()->startOfWeek();
-        $weekEnd = Carbon::now()->endOfWeek();
+        $monthPeriod = MonthPeriod::current($today);
+        $weekStart = $monthPeriod['start'];
+        $weekEnd = $monthPeriod['end'];
+        $weekQueryEnd = $monthPeriod['queryEnd'];
+        $weekRangeLabel = $monthPeriod['label'];
 
         if ($showDashboardMetrics) {
             $todaySalesBase = Sale::query()
@@ -66,7 +70,7 @@ class DashboardController extends Controller
 
             $weekSalesBase = Sale::query()
                 ->where('isCancelled', false)
-                ->whereBetween('saleDate', [$weekStart->toDateString(), $weekEnd->toDateString()]);
+                ->whereBetween('saleDate', [$weekStart->toDateString(), $weekQueryEnd->toDateString()]);
 
             $weekSalesCount = (int) (clone $weekSalesBase)->count();
             $weekSalesTotal = (float) (clone $weekSalesBase)->sum('grandTotal');
@@ -74,11 +78,9 @@ class DashboardController extends Controller
             $weekKasaInflow = (float) KasaHareket::query()
                 ->ledger()
                 ->where('refType', 'customer_payment')
-                ->whereBetween('movementDate', [$weekStart->toDateString(), $weekEnd->toDateString()])
+                ->whereBetween('movementDate', [$weekStart->toDateString(), $weekQueryEnd->toDateString()])
                 ->where('amount', '>', 0)
                 ->sum('amount');
-
-            $weekRangeLabel = $weekStart->locale('tr')->isoFormat('D MMM') . ' – ' . $weekEnd->locale('tr')->isoFormat('D MMM');
 
             $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
             $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
@@ -145,7 +147,7 @@ class DashboardController extends Controller
             $weekSalesCount = 0;
             $weekSalesTotal = 0;
             $weekKasaInflow = 0;
-            $weekRangeLabel = $weekStart->locale('tr')->isoFormat('D MMM') . ' – ' . $weekEnd->locale('tr')->isoFormat('D MMM');
+            $weekRangeLabel = MonthPeriod::current($today)['label'];
             $monthlySales = 0;
             $monthlyCollected = 0;
             $monthlyReceivable = 0;
