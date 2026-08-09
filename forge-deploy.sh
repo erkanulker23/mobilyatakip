@@ -39,6 +39,7 @@ php artisan optimize:clear
 php artisan config:cache
 php artisan route:clear
 php artisan route:cache
+php artisan route:list --name=sales.delivered --quiet || { echo "HATA: sales.delivered route kaydı yok."; exit 1; }
 php artisan view:cache
 
 # OPcache eski route/config dosyalarını tutmasın

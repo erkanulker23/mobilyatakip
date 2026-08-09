@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Http\Controllers\SaleController;
 use App\Models\AuditLog;
 use App\Support\ActivityMessage;
 use App\Support\ProductionCommandGuard;
@@ -11,6 +12,7 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -30,6 +32,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         ProductionCommandGuard::register();
+
+        $this->registerFallbackRoutes();
 
         app()->setLocale(config('app.locale', 'tr'));
         Paginator::defaultView('vendor.pagination.tailwind');
@@ -70,6 +74,19 @@ class AppServiceProvider extends ServiceProvider
                 ->map(fn (AuditLog $log) => ActivityMessage::from($log));
 
             $view->with('recentActivities', $recentActivities);
+        });
+    }
+
+    /** Route önbelleği güncellenmemiş ortamlarda eksik named route hatalarını önler. */
+    private function registerFallbackRoutes(): void
+    {
+        if (Route::has('sales.delivered')) {
+            return;
+        }
+
+        Route::middleware(['web', 'auth'])->group(function (): void {
+            Route::get('/sales/teslim-edilenler', [SaleController::class, 'delivered'])
+                ->name('sales.delivered');
         });
     }
 }
