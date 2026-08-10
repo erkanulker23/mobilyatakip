@@ -11,8 +11,12 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function showLogin()
+    public function showLogin(Request $request)
     {
+        if (! $request->session()->isStarted()) {
+            $request->session()->start();
+        }
+
         $company = Company::first();
 
         return view('auth.login', compact('company'));

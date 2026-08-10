@@ -34,7 +34,11 @@ else
 fi
 npm run build
 
-# 5. Cache (config/route/view — veritabanına dokunmaz)
+# 5. Oturum dizini (file driver)
+mkdir -p storage/framework/sessions
+chmod -R ug+rwx storage bootstrap/cache || true
+
+# 6. Cache (config/route/view — veritabanına dokunmaz)
 php artisan optimize:clear
 php artisan config:cache
 php artisan route:clear
@@ -47,14 +51,14 @@ if [ -n "${FORGE_PHP_FPM:-}" ]; then
   sudo service "$FORGE_PHP_FPM" reload || true
 fi
 
-# 6. Storage link (dosya silmez, sembolik link oluşturur)
+# 7. Storage link (dosya silmez, sembolik link oluşturur)
 if [ ! -L public/storage ]; then
   php artisan storage:link
 else
   echo "Storage link zaten mevcut."
 fi
 
-# 7. Queue worker yenile
+# 8. Queue worker yenile
 php artisan queue:restart || true
 
 echo "Deploy tamamlandı: $(date -Iseconds)"

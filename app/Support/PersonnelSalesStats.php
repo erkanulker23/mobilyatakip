@@ -6,6 +6,7 @@ use App\Models\CustomerPayment;
 use App\Models\Personnel;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 final class PersonnelSalesStats
 {
@@ -20,7 +21,7 @@ final class PersonnelSalesStats
             ->sum('amount');
     }
 
-    public static function receivableTotal(Builder $activeSalesQuery): float
+    public static function receivableTotal(Builder|Relation $activeSalesQuery): float
     {
         return (float) (clone $activeSalesQuery)
             ->selectRaw('COALESCE(SUM(GREATEST(grandTotal - COALESCE(paidAmount, 0), 0)), 0) as receivable')

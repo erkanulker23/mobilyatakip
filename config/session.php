@@ -18,7 +18,7 @@ return [
     |
     */
 
-    'driver' => env('SESSION_DRIVER', 'database'),
+    'driver' => env('SESSION_DRIVER', 'file'),
 
     /*
     |--------------------------------------------------------------------------
@@ -169,6 +169,7 @@ return [
     |
     */
 
+    // null = istek HTTPS ise Secure çerez (Forge/nginx proxy ile uyumlu)
     'secure' => env('SESSION_SECURE_COOKIE'),
 
     /*

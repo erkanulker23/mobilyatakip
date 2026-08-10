@@ -56,6 +56,9 @@
             @if(session('success'))
             <div class="mb-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 text-sm">{{ session('success') }}</div>
             @endif
+            @if(session('error'))
+            <div class="mb-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 text-sm">{{ session('error') }}</div>
+            @endif
             <form method="POST" action="{{ route('login') }}" class="space-y-5" id="login-form">
                 @csrf
                 <div>
