@@ -9,22 +9,20 @@ use Illuminate\Http\Request;
 
 final class SalesReportQuery
 {
-    /** @return array{query: Builder, applyDateFilter: bool, statusOnlyList: bool} */
+    /** @return array{query: Builder, applyDateFilter: bool} */
     public static function fromRequest(Carbon $from, Carbon $to, Request $request): array
     {
         $deliveryStatus = SaleDelivery::isFilterValue($request->input('deliveryStatus'))
             ? $request->input('deliveryStatus')
             : null;
         $odeme = $request->input('odeme');
-        $hasStatusFilter = $deliveryStatus !== null || in_array($odeme, ['borclu', 'borcsuz'], true);
-        $hasExplicitDates = self::hasExplicitDates($request);
-        $statusOnlyList = $hasStatusFilter && ! $hasExplicitDates;
+        $applyDateFilter = self::hasExplicitDates($request);
 
         $query = Sale::query()
             ->with(['customer', 'personnel'])
             ->where('isCancelled', false);
 
-        if (! $statusOnlyList) {
+        if ($applyDateFilter) {
             self::applyDateRange($query, $from, $to);
         }
 
@@ -48,8 +46,7 @@ final class SalesReportQuery
 
         return [
             'query' => $query,
-            'applyDateFilter' => ! $statusOnlyList,
-            'statusOnlyList' => $statusOnlyList,
+            'applyDateFilter' => $applyDateFilter,
         ];
     }
 
@@ -65,7 +62,9 @@ final class SalesReportQuery
     /** @param Builder<Sale> $query */
     public static function applyDateRange(Builder $query, Carbon $from, Carbon $to): void
     {
-        $query->whereDate('saleDate', '>=', $from->toDateString())
-            ->whereDate('saleDate', '<=', $to->toDateString());
+        $query->whereBetween('saleDate', [
+            $from->toDateString(),
+            $to->toDateString(),
+        ]);
     }
 }

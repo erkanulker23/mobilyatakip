@@ -423,7 +423,7 @@ class ReportsController extends Controller
     /** @return array<string, mixed> */
     private function salesData(Carbon $from, Carbon $to, Request $request): array
     {
-        ['query' => $query, 'statusOnlyList' => $statusOnlyList] = SalesReportQuery::fromRequest($from, $to, $request);
+        ['query' => $query, 'applyDateFilter' => $applyDateFilter] = SalesReportQuery::fromRequest($from, $to, $request);
 
         $sales = $query
             ->orderByDesc('saleDate')
@@ -432,7 +432,7 @@ class ReportsController extends Controller
 
         return [
             'sales' => $sales,
-            'skipDateFilter' => $statusOnlyList,
+            'applyDateFilter' => $applyDateFilter,
             'totals' => (object) [
                 'count' => $sales->count(),
                 'grandTotal' => (float) $sales->sum('grandTotal'),

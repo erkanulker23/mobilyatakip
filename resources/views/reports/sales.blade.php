@@ -2,10 +2,9 @@
 @section('title', 'Satış Raporu')
 @section('content')
 @php
-    $periodLabel = \App\Support\ReportFilters::periodLabel($from, $to, $year);
-    if (!empty($skipDateFilter)) {
-        $periodLabel = 'Tüm dönem';
-    }
+    $periodLabel = ! empty($applyDateFilter)
+        ? \App\Support\ReportFilters::periodLabel($from, $to, $year)
+        : 'Tüm dönem';
     $filterDesc = $filters['label'] ?? null;
     $reportChip = fn (array $params) => route('reports.sales', array_filter(array_merge(
         request()->only(['from', 'to', 'year', 'personnelId', 'odeme', 'deliveryStatus']),
@@ -34,8 +33,8 @@
         @include('reports.partials.date-filters', [
             'embedded' => true,
             'submitLabel' => 'Listele',
-            'dateFrom' => ($skipDateFilter ?? false) && !request()->filled('from') ? null : $from,
-            'dateTo' => ($skipDateFilter ?? false) && !request()->filled('to') ? null : $to,
+            'dateFrom' => request()->filled('from') || request()->filled('year') ? $from : null,
+            'dateTo' => request()->filled('to') || request()->filled('year') ? $to : null,
         ])
         @include('reports.partials.sales-filters')
         <div class="flex gap-2">
