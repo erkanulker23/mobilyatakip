@@ -3,7 +3,7 @@
 @section('content')
 @php
     $periodLabel = ! empty($applyDateFilter)
-        ? \App\Support\ReportFilters::periodLabel($from, $to, $year)
+        ? \App\Support\ReportFilters::periodLabel($from, $to, $year ?? null, $month ?? null)
         : 'Tüm dönem';
     $printSubtitle = trim($periodLabel . ($filters['label'] ?? '' ? ' · ' . $filters['label'] : ''));
 @endphp
@@ -15,6 +15,7 @@
             'documentNumber' => $printSubtitle,
             'documentDate' => now(),
         ])
+        @include('reports.partials.sales-summary', ['print' => true, 'periodLabel' => $printSubtitle])
         @include('reports.partials.sales-table', ['print' => true])
         @include('partials.print-document-footer', ['documentRef' => 'Satış Raporu · ' . $printSubtitle, 'footerNote' => null])
         </div>

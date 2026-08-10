@@ -150,6 +150,7 @@ class ReportsController extends Controller
             $params = array_filter([
                 'deliveryStatus' => $definition['deliveryStatus'] ?? null,
                 'odeme' => $definition['odeme'] ?? null,
+                'allTime' => 1,
             ]);
 
             $cards[] = array_merge($definition, [
@@ -184,34 +185,26 @@ class ReportsController extends Controller
 
     public function sales(Request $request)
     {
-        ['from' => $from, 'to' => $to, 'year' => $year] = ReportFilters::range(
-            $request,
-            now()->startOfYear(),
-            now()->endOfDay(),
-        );
+        ['from' => $from, 'to' => $to, 'year' => $year, 'month' => $month] = ReportFilters::range($request);
 
         $personnelOptions = $this->salesPersonnelOptions();
         $filters = $this->salesFilterState($request, $personnelOptions);
 
         return view('reports.sales', array_merge(
-            compact('from', 'to', 'year', 'personnelOptions', 'filters'),
+            compact('from', 'to', 'year', 'month', 'personnelOptions', 'filters'),
             $this->salesData($from, $to, $request),
         ));
     }
 
     public function salesPrint(Request $request): View
     {
-        ['from' => $from, 'to' => $to, 'year' => $year] = ReportFilters::range(
-            $request,
-            now()->startOfYear(),
-            now()->endOfDay(),
-        );
+        ['from' => $from, 'to' => $to, 'year' => $year, 'month' => $month] = ReportFilters::range($request);
 
         $personnelOptions = $this->salesPersonnelOptions();
         $filters = $this->salesFilterState($request, $personnelOptions);
 
         return view('reports.print.sales', array_merge(
-            compact('from', 'to', 'year', 'personnelOptions', 'filters'),
+            compact('from', 'to', 'year', 'month', 'personnelOptions', 'filters'),
             $this->salesData($from, $to, $request),
         ));
     }
@@ -423,7 +416,7 @@ class ReportsController extends Controller
     /** @return array<string, mixed> */
     private function salesData(Carbon $from, Carbon $to, Request $request): array
     {
-        ['query' => $query, 'applyDateFilter' => $applyDateFilter] = SalesReportQuery::fromRequest($from, $to, $request);
+        ['query' => $query, 'applyDateFilter' => $applyDateFilter, 'statusOnlyList' => $statusOnlyList] = SalesReportQuery::fromRequest($from, $to, $request);
 
         $sales = $query
             ->orderByDesc('saleDate')
@@ -433,6 +426,7 @@ class ReportsController extends Controller
         return [
             'sales' => $sales,
             'applyDateFilter' => $applyDateFilter,
+            'statusOnlyList' => $statusOnlyList,
             'totals' => (object) [
                 'count' => $sales->count(),
                 'grandTotal' => (float) $sales->sum('grandTotal'),

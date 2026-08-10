@@ -16,7 +16,8 @@ final class SalesReportQuery
             ? $request->input('deliveryStatus')
             : null;
         $odeme = $request->input('odeme');
-        $applyDateFilter = self::hasExplicitDates($request);
+        $statusOnlyList = self::isStatusOnlyList($request);
+        $applyDateFilter = ! $statusOnlyList;
 
         $query = Sale::query()
             ->with(['customer', 'personnel'])
@@ -47,16 +48,46 @@ final class SalesReportQuery
         return [
             'query' => $query,
             'applyDateFilter' => $applyDateFilter,
+            'statusOnlyList' => $statusOnlyList,
         ];
     }
 
-    public static function hasExplicitDates(Request $request): bool
+    /** Durum listeleri (üretimde, borçlu vb.) tarih filtresi olmadan tüm dönem. */
+    public static function isStatusOnlyList(Request $request): bool
     {
+        if ($request->boolean('allTime')) {
+            return true;
+        }
+
+        $deliveryStatus = SaleDelivery::isFilterValue($request->input('deliveryStatus'))
+            ? $request->input('deliveryStatus')
+            : null;
+        $odeme = $request->input('odeme');
+        $hasStatusFilter = $deliveryStatus !== null || in_array($odeme, ['borclu', 'borcsuz'], true);
+
+        if (! $hasStatusFilter) {
+            return false;
+        }
+
+        return ! self::hasExplicitPeriod($request);
+    }
+
+    public static function hasExplicitPeriod(Request $request): bool
+    {
+        if ($request->filled('period') || $request->filled('month')) {
+            return true;
+        }
+
         if ($request->filled('from') || $request->filled('to')) {
             return true;
         }
 
         return $request->filled('year');
+    }
+
+    public static function hasExplicitDates(Request $request): bool
+    {
+        return self::hasExplicitPeriod($request);
     }
 
     /** @param Builder<Sale> $query */

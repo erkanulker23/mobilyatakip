@@ -3,56 +3,76 @@
 @section('content')
 @php
     $periodLabel = ! empty($applyDateFilter)
-        ? \App\Support\ReportFilters::periodLabel($from, $to, $year)
+        ? \App\Support\ReportFilters::periodLabel($from, $to, $year ?? null, $month ?? null)
         : 'Tüm dönem';
     $filterDesc = $filters['label'] ?? null;
+    $queryKeys = ['from', 'to', 'year', 'month', 'period', 'personnelId', 'odeme', 'deliveryStatus', 'allTime'];
     $reportChip = fn (array $params) => route('reports.sales', array_filter(array_merge(
-        request()->only(['from', 'to', 'year', 'personnelId', 'odeme', 'deliveryStatus']),
+        request()->only($queryKeys),
         $params
-    )));
+    ), fn ($v) => $v !== null && $v !== ''));
     $printChip = fn (array $params) => route('reports.sales.print', array_filter(array_merge(
-        request()->only(['from', 'to', 'year', 'personnelId', 'odeme', 'deliveryStatus']),
+        request()->only($queryKeys),
         $params
-    )));
+    ), fn ($v) => $v !== null && $v !== ''));
+    $periodPresets = [
+        ['label' => 'Bu ay', 'params' => ['period' => 'this_month', 'from' => null, 'to' => null, 'year' => null, 'month' => null, 'allTime' => null], 'active' => request('period') === 'this_month' || (! request()->hasAny(['period', 'from', 'to', 'year', 'month', 'allTime', 'deliveryStatus', 'odeme']) && empty($statusOnlyList))],
+        ['label' => 'Geçen ay', 'params' => ['period' => 'last_month', 'from' => null, 'to' => null, 'year' => null, 'month' => null, 'allTime' => null], 'active' => request('period') === 'last_month'],
+        ['label' => 'Bu yıl', 'params' => ['period' => 'this_year', 'from' => null, 'to' => null, 'year' => null, 'month' => null, 'allTime' => null], 'active' => request('period') === 'this_year'],
+    ];
 @endphp
 <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
     <div>
         <h1 class="page-title">Satış Raporu</h1>
         <p class="page-desc">
-            Tarih ve filtreye göre satış listesi — {{ $periodLabel }}
+            Dönemsel satış hasılatı ve detay listesi — {{ $periodLabel }}
             @if($filterDesc)
             <span class="text-neutral-500">· {{ $filterDesc }}</span>
             @endif
         </p>
     </div>
-    @include('reports.partials.toolbar', ['printRoute' => 'reports.sales.print'])
+    @include('reports.partials.toolbar', [
+        'printRoute' => 'reports.sales.print',
+        'printParams' => request()->query(),
+    ])
 </div>
 
 <div class="card p-6 mb-6">
+    <p class="text-xs font-semibold uppercase tracking-wide text-neutral-400 mb-3">Dönem seçimi</p>
+    <div class="flex flex-wrap items-center gap-2 mb-4">
+        @foreach($periodPresets as $preset)
+        <a href="{{ $reportChip(array_merge($preset['params'], ['deliveryStatus' => null, 'odeme' => null])) }}"
+           class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors {{ $preset['active'] && empty($statusOnlyList) ? 'bg-emerald-600 text-white' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">
+            {{ $preset['label'] }}
+        </a>
+        @endforeach
+    </div>
+
     <form method="get" action="{{ route('reports.sales') }}" class="flex flex-wrap gap-4 items-end">
         @include('reports.partials.date-filters', [
             'embedded' => true,
-            'submitLabel' => 'Listele',
-            'dateFrom' => request()->filled('from') || request()->filled('year') ? $from : null,
-            'dateTo' => request()->filled('to') || request()->filled('year') ? $to : null,
+            'submitLabel' => 'Hesapla',
+            'showMonth' => true,
+            'dateFrom' => $from,
+            'dateTo' => $to,
         ])
         @include('reports.partials.sales-filters')
         <div class="flex gap-2">
-            <button type="submit" class="btn-primary">Listele</button>
-            <a href="{{ route('reports.sales') }}" class="btn-secondary">Temizle</a>
+            <button type="submit" class="btn-primary">Hesapla</button>
+            <a href="{{ route('reports.sales', ['period' => 'this_month']) }}" class="btn-secondary">Bu aya dön</a>
         </div>
     </form>
 
     <div class="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
-        <span class="text-xs text-neutral-400 self-center mr-1">Hızlı liste:</span>
+        <span class="text-xs text-neutral-400 self-center mr-1">Operasyon listesi (tüm dönem):</span>
         @php
             $quickLists = [
-                ['label' => 'Ölçüye gidilecekler', 'params' => ['deliveryStatus' => \App\Support\SaleDelivery::FINAL_MEASUREMENT, 'odeme' => null], 'active' => request('deliveryStatus') === \App\Support\SaleDelivery::FINAL_MEASUREMENT, 'tone' => 'amber'],
-                ['label' => 'Üretimde', 'params' => ['deliveryStatus' => \App\Support\SaleDelivery::IN_PRODUCTION, 'odeme' => null], 'active' => request('deliveryStatus') === \App\Support\SaleDelivery::IN_PRODUCTION, 'tone' => 'violet'],
-                ['label' => 'Teslim bekleyenler', 'params' => ['deliveryStatus' => \App\Support\SaleDelivery::PENDING, 'odeme' => null], 'active' => request('deliveryStatus') === \App\Support\SaleDelivery::PENDING && !request('odeme'), 'tone' => 'neutral'],
-                ['label' => 'Halen görüşülüyor', 'params' => ['deliveryStatus' => \App\Support\SaleDelivery::IN_DISCUSSION, 'odeme' => null], 'active' => request('deliveryStatus') === \App\Support\SaleDelivery::IN_DISCUSSION, 'tone' => 'sky'],
-                ['label' => 'SSH var', 'params' => ['deliveryStatus' => \App\Support\SaleDelivery::SSH, 'odeme' => null], 'active' => request('deliveryStatus') === \App\Support\SaleDelivery::SSH, 'tone' => 'orange'],
-                ['label' => 'Borçlu', 'params' => ['odeme' => 'borclu', 'deliveryStatus' => null], 'active' => request('odeme') === 'borclu' && !request('deliveryStatus'), 'tone' => 'red'],
+                ['label' => 'Ölçüye gidilecekler', 'params' => ['deliveryStatus' => \App\Support\SaleDelivery::FINAL_MEASUREMENT, 'odeme' => null, 'allTime' => 1, 'period' => null, 'from' => null, 'to' => null, 'year' => null, 'month' => null], 'active' => request('deliveryStatus') === \App\Support\SaleDelivery::FINAL_MEASUREMENT && request()->boolean('allTime'), 'tone' => 'amber'],
+                ['label' => 'Üretimde', 'params' => ['deliveryStatus' => \App\Support\SaleDelivery::IN_PRODUCTION, 'odeme' => null, 'allTime' => 1, 'period' => null, 'from' => null, 'to' => null, 'year' => null, 'month' => null], 'active' => request('deliveryStatus') === \App\Support\SaleDelivery::IN_PRODUCTION && request()->boolean('allTime'), 'tone' => 'violet'],
+                ['label' => 'Teslim bekleyenler', 'params' => ['deliveryStatus' => \App\Support\SaleDelivery::PENDING, 'odeme' => null, 'allTime' => 1, 'period' => null, 'from' => null, 'to' => null, 'year' => null, 'month' => null], 'active' => request('deliveryStatus') === \App\Support\SaleDelivery::PENDING && request()->boolean('allTime') && !request('odeme'), 'tone' => 'neutral'],
+                ['label' => 'Halen görüşülüyor', 'params' => ['deliveryStatus' => \App\Support\SaleDelivery::IN_DISCUSSION, 'odeme' => null, 'allTime' => 1, 'period' => null, 'from' => null, 'to' => null, 'year' => null, 'month' => null], 'active' => request('deliveryStatus') === \App\Support\SaleDelivery::IN_DISCUSSION && request()->boolean('allTime'), 'tone' => 'sky'],
+                ['label' => 'SSH var', 'params' => ['deliveryStatus' => \App\Support\SaleDelivery::SSH, 'odeme' => null, 'allTime' => 1, 'period' => null, 'from' => null, 'to' => null, 'year' => null, 'month' => null], 'active' => request('deliveryStatus') === \App\Support\SaleDelivery::SSH && request()->boolean('allTime'), 'tone' => 'orange'],
+                ['label' => 'Borçlu', 'params' => ['odeme' => 'borclu', 'deliveryStatus' => null, 'allTime' => 1, 'period' => null, 'from' => null, 'to' => null, 'year' => null, 'month' => null], 'active' => request('odeme') === 'borclu' && request()->boolean('allTime') && !request('deliveryStatus'), 'tone' => 'red'],
             ];
         @endphp
         @foreach($quickLists as $list)
@@ -68,27 +88,17 @@
     </div>
 </div>
 
-@if($sales->isNotEmpty())
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-    <div class="card p-4">
-        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Toplam ciro</p>
-        <p class="text-2xl font-semibold text-neutral-900 dark:text-neutral-100 mt-1 tabular-nums">{{ number_format($totals->grandTotal, 0, ',', '.') }} ₺</p>
-        <p class="text-xs text-neutral-400 mt-1">{{ $totals->count }} satış · {{ $periodLabel }}</p>
-    </div>
-    <div class="card p-4">
-        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Tahsil edilen</p>
-        <p class="text-2xl font-semibold text-emerald-600 mt-1 tabular-nums">{{ number_format($totals->paidAmount, 0, ',', '.') }} ₺</p>
-        <p class="text-xs text-neutral-400 mt-1">Siparişe işlenen ödemeler</p>
-    </div>
-    <div class="card p-4">
-        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Kalan borç</p>
-        <p class="text-2xl font-semibold {{ $totals->remaining > 0 ? 'text-red-600' : 'text-neutral-900 dark:text-neutral-100' }} mt-1 tabular-nums">{{ number_format($totals->remaining, 0, ',', '.') }} ₺</p>
-        <p class="text-xs text-neutral-400 mt-1">{{ number_format($totals->paidAmount + $totals->remaining, 0, ',', '.') }} ₺ = tahsil + kalan</p>
-    </div>
-</div>
+@if($sales->isNotEmpty() || ! empty($applyDateFilter))
+@include('reports.partials.sales-summary', compact('periodLabel'))
 @endif
 
 <div class="card overflow-hidden">
+    <div class="card-header flex flex-wrap items-center justify-between gap-2">
+        <span>Satış detay listesi</span>
+        @if(! empty($applyDateFilter))
+        <span class="text-xs font-normal text-neutral-500">Satış tarihine göre · {{ $periodLabel }}</span>
+        @endif
+    </div>
     @include('reports.partials.sales-table')
 </div>
 
@@ -103,11 +113,40 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             var fromInput = select.form.querySelector('[data-report-from]');
             var toInput = select.form.querySelector('[data-report-to]');
+            var monthSelect = select.form.querySelector('[data-report-month-select]');
+            if (monthSelect) {
+                monthSelect.value = '';
+            }
             if (fromInput) {
                 fromInput.value = year + '-01-01';
             }
             if (toInput) {
                 toInput.value = year + '-12-31';
+            }
+        });
+    });
+
+    document.querySelectorAll('[data-report-month-select]').forEach(function (select) {
+        select.addEventListener('change', function () {
+            var month = select.value;
+            var form = select.form;
+            if (!form) {
+                return;
+            }
+            var yearSelect = form.querySelector('[data-report-year-select]');
+            var year = yearSelect && yearSelect.value ? yearSelect.value : String(new Date().getFullYear());
+            if (!month) {
+                return;
+            }
+            var padded = String(month).padStart(2, '0');
+            var lastDay = new Date(Number(year), Number(month), 0).getDate();
+            var fromInput = form.querySelector('[data-report-from]');
+            var toInput = form.querySelector('[data-report-to]');
+            if (fromInput) {
+                fromInput.value = year + '-' + padded + '-01';
+            }
+            if (toInput) {
+                toInput.value = year + '-' + padded + '-' + String(lastDay).padStart(2, '0');
             }
         });
     });
