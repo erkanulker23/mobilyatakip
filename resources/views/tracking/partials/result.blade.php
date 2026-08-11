@@ -147,7 +147,7 @@
             @foreach($result['serviceTickets'] as $ticket)
                 <li class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-neutral-100 dark:border-neutral-800 px-3 py-2.5">
                     <div>
-                        <a href="{{ route('tracking.show', $ticket['ticketNumber']) }}" class="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:underline">{{ $ticket['ticketNumber'] }}</a>
+                        <a href="{{ url('/takip/'.$ticket['ticketNumber']) }}" class="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:underline">{{ $ticket['ticketNumber'] }}</a>
                         <p class="text-xs text-neutral-500 mt-0.5">{{ $ticket['problemSummary'] }}</p>
                     </div>
                     <span class="text-xs font-medium px-2 py-1 rounded-full {{ $ticket['isOpen'] ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300' }}">
@@ -162,7 +162,7 @@
     @if(!$isSale && !empty($result['linkedSale']['saleNumber']))
     <div class="px-5 sm:px-6 py-4 border-b border-neutral-100 dark:border-neutral-800 text-sm">
         Bağlı sipariş:
-        <a href="{{ route('tracking.show', $result['linkedSale']['saleNumber']) }}" class="font-mono font-medium text-emerald-600 dark:text-emerald-400 hover:underline">
+        <a href="{{ url('/takip/'.$result['linkedSale']['saleNumber']) }}" class="font-mono font-medium text-emerald-600 dark:text-emerald-400 hover:underline">
             {{ $result['linkedSale']['saleNumber'] }}
         </a>
         <span class="text-neutral-500">· {{ $result['linkedSale']['currentStage']['label'] ?? '' }}</span>

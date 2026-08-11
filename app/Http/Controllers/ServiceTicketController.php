@@ -57,7 +57,24 @@ class ServiceTicketController extends Controller
         $tickets = $q->paginate(20)->withQueryString();
         $customers = Customer::with(['city', 'district'])->where('isActive', true)->orderBy('name')->get();
 
-        return view('service-tickets.index', compact('tickets', 'customers'));
+        $statusCounts = ServiceTicket::query()
+            ->selectRaw('status, COUNT(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status')
+            ->map(fn ($n) => (int) $n)
+            ->all();
+        $openCount = collect($statusCounts)
+            ->reject(fn ($_, $status) => ServiceTicketStatus::isClosed($status))
+            ->sum();
+        $stats = [
+            'open' => $openCount,
+            'parca_bekleniyor' => (int) ($statusCounts['parca_bekleniyor'] ?? 0),
+            'sevkiyatci_bekleniyor' => (int) ($statusCounts['sevkiyatci_bekleniyor'] ?? 0),
+            'tamamlandi' => (int) ($statusCounts['tamamlandi'] ?? 0),
+            'total' => array_sum($statusCounts),
+        ];
+
+        return view('service-tickets.index', compact('tickets', 'customers', 'stats'));
     }
 
     public function show(ServiceTicket $serviceTicket)

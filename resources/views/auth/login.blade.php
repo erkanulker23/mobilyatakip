@@ -85,7 +85,7 @@
             </form>
             <p class="mt-6 text-center text-sm text-neutral-500 dark:text-neutral-400">
                 Siparişinizi mi takip ediyorsunuz?
-                <a href="{{ route('tracking.index') }}" class="font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">Takip kodu sorgula</a>
+                <a href="{{ url('/takip') }}" class="font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">Takip kodu sorgula</a>
             </p>
         </div>
     </div>

@@ -67,7 +67,7 @@
                 </div>
 
                 <div class="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm p-5 sm:p-6">
-                    <form method="POST" action="{{ route('tracking.lookup') }}" class="flex flex-col sm:flex-row gap-3">
+                    <form method="POST" action="{{ url('/takip') }}" class="flex flex-col sm:flex-row gap-3">
                         @csrf
                         <label for="code" class="sr-only">Takip kodu</label>
                         <input
