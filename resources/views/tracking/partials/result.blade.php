@@ -62,22 +62,72 @@
         @else
             <div>
                 <p class="text-xs text-neutral-500 dark:text-neutral-400">Açılış</p>
-                <p class="font-medium mt-0.5">{{ $result['openedAt'] ?? '—' }}</p>
+                <p class="font-medium mt-0.5 text-neutral-900 dark:text-neutral-100">{{ $result['openedAt'] ?? '—' }}</p>
+                @if(!empty($result['openedAtFull']) && ($result['openedAtFull'] ?? '') !== ($result['openedAt'] ?? ''))
+                    <p class="text-[11px] text-neutral-400 mt-0.5">{{ $result['openedAtFull'] }}</p>
+                @endif
             </div>
             <div>
-                <p class="text-xs text-neutral-500 dark:text-neutral-400">Termin</p>
-                <p class="font-medium mt-0.5">{{ $result['dueDate'] ?? '—' }}</p>
+                <p class="text-xs text-neutral-500 dark:text-neutral-400">Servis termin</p>
+                <p class="font-medium mt-0.5 text-neutral-900 dark:text-neutral-100">{{ $result['dueDate'] ?? '—' }}</p>
+                @if(!empty($result['dueHint']))
+                    <p class="text-[11px] mt-0.5 {{ str_contains($result['dueHint'], 'gecik') ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400' }}">{{ $result['dueHint'] }}</p>
+                @elseif(empty($result['dueDate']))
+                    <p class="text-[11px] text-neutral-400 mt-0.5">Henüz belirlenmedi</p>
+                @endif
             </div>
             <div>
                 <p class="text-xs text-neutral-500 dark:text-neutral-400">Kapanış</p>
-                <p class="font-medium mt-0.5">{{ $result['closedAt'] ?? '—' }}</p>
+                <p class="font-medium mt-0.5 text-neutral-900 dark:text-neutral-100">{{ $result['closedAt'] ?? 'Henüz kapanmadı' }}</p>
             </div>
             <div>
-                <p class="text-xs text-neutral-500 dark:text-neutral-400">Problemler</p>
-                <p class="font-medium mt-0.5">{{ $result['problemSummary'] ?? '—' }}</p>
+                <p class="text-xs text-neutral-500 dark:text-neutral-400">Garanti</p>
+                <p class="font-medium mt-0.5 text-neutral-900 dark:text-neutral-100">{{ !empty($result['underWarranty']) ? 'Garanti kapsamında' : 'Garanti dışı' }}</p>
+                @if(!empty($result['workshopFinished']))
+                    <p class="text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5">Atölye işi bitti{{ !empty($result['workshopFinishedAt']) ? ' · '.$result['workshopFinishedAt'] : '' }}</p>
+                @endif
             </div>
         @endif
     </div>
+
+    {{-- SSH özet: açıklama, ücret, problem ilerleme --}}
+    @if(!$isSale && (!empty($result['description']) || !empty($result['serviceCharge']) || !empty($result['problemProgress']['total']) || !empty($result['problemSummary'])))
+    <div class="px-5 sm:px-6 py-4 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950/40 space-y-4">
+        @if(!empty($result['description']))
+        <div>
+            <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-1.5">Servis açıklaması</h3>
+            <p class="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap">{{ $result['description'] }}</p>
+        </div>
+        @endif
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            @if(!empty($result['serviceCharge']))
+            <div class="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 px-3 py-3">
+                <p class="text-xs text-neutral-500">Servis ücreti</p>
+                <p class="font-semibold mt-1 tabular-nums text-neutral-900 dark:text-neutral-100">{{ $result['serviceCharge']['label'] }}</p>
+            </div>
+            @endif
+            @php $progress = $result['problemProgress'] ?? null; @endphp
+            @if($progress && ($progress['total'] ?? 0) > 0)
+            <div class="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 px-3 py-3">
+                <div class="flex items-center justify-between gap-2">
+                    <p class="text-xs text-neutral-500">Problem ilerleme</p>
+                    <p class="text-xs font-medium tabular-nums text-neutral-700 dark:text-neutral-300">{{ $progress['fixed'] }}/{{ $progress['total'] }}</p>
+                </div>
+                <div class="mt-2 h-2 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+                    <div class="h-full rounded-full bg-emerald-500" style="width: {{ max(0, min(100, (int) ($progress['percent'] ?? 0))) }}%"></div>
+                </div>
+                <p class="text-[11px] text-neutral-500 mt-1.5">{{ $result['problemSummary'] ?? '' }}</p>
+            </div>
+            @elseif(!empty($result['problemSummary']))
+            <div class="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 px-3 py-3">
+                <p class="text-xs text-neutral-500">Problemler</p>
+                <p class="font-medium mt-1 text-neutral-900 dark:text-neutral-100">{{ $result['problemSummary'] }}</p>
+            </div>
+            @endif
+        </div>
+    </div>
+    @endif
 
     {{-- Ödeme özeti (satış) --}}
     @if($isSale && !empty($result['totals']))
@@ -224,6 +274,53 @@
     </div>
     @endif
 
+    {{-- SSH sevkiyat --}}
+    @if(!$isSale && !empty($result['shipping']))
+    <div class="px-5 sm:px-6 py-5 border-b border-neutral-100 dark:border-neutral-800">
+        <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-3">Sevkiyat bilgisi</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            @if(!empty($result['shipping']['company']))
+            <div class="rounded-xl border border-neutral-200 dark:border-neutral-800 px-3 py-3">
+                <p class="text-xs text-neutral-500">Firma</p>
+                <p class="font-medium mt-0.5 text-neutral-900 dark:text-neutral-100">{{ $result['shipping']['company'] }}</p>
+            </div>
+            @endif
+            @if(!empty($result['shipping']['driver']))
+            <div class="rounded-xl border border-neutral-200 dark:border-neutral-800 px-3 py-3">
+                <p class="text-xs text-neutral-500">Şoför</p>
+                <p class="font-medium mt-0.5 text-neutral-900 dark:text-neutral-100">{{ $result['shipping']['driver'] }}</p>
+            </div>
+            @endif
+            @if(!empty($result['shipping']['phone']))
+            <div class="rounded-xl border border-neutral-200 dark:border-neutral-800 px-3 py-3">
+                <p class="text-xs text-neutral-500">Telefon</p>
+                <a href="tel:{{ preg_replace('/\s+/', '', $result['shipping']['phone']) }}" class="font-medium mt-0.5 block text-emerald-600 dark:text-emerald-400 hover:underline">{{ $result['shipping']['phone'] }}</a>
+            </div>
+            @endif
+            @if(!empty($result['shipping']['plate']))
+            <div class="rounded-xl border border-neutral-200 dark:border-neutral-800 px-3 py-3">
+                <p class="text-xs text-neutral-500">Plaka</p>
+                <p class="font-mono font-medium mt-0.5 text-neutral-900 dark:text-neutral-100">{{ $result['shipping']['plate'] }}</p>
+            </div>
+            @endif
+        </div>
+    </div>
+    @endif
+
+    {{-- SSH görseller --}}
+    @if(!$isSale && !empty($result['images']))
+    <div class="px-5 sm:px-6 py-5 border-b border-neutral-100 dark:border-neutral-800">
+        <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-3">Görseller</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            @foreach($result['images'] as $imageUrl)
+            <a href="{{ $imageUrl }}" target="_blank" rel="noopener" class="block aspect-square rounded-xl overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800">
+                <img src="{{ $imageUrl }}" alt="SSH görseli" class="w-full h-full object-cover" loading="lazy">
+            </a>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
     @if($isSale && !empty($result['serviceTickets']))
     <div class="px-5 sm:px-6 py-5 border-b border-neutral-100 dark:border-neutral-800">
         <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-3">SSH kayıtları</h3>
@@ -243,13 +340,58 @@
     </div>
     @endif
 
+    {{-- Bağlı sipariş (SSH) --}}
     @if(!$isSale && !empty($result['linkedSale']['saleNumber']))
-    <div class="px-5 sm:px-6 py-4 border-b border-neutral-100 dark:border-neutral-800 text-sm">
-        Bağlı sipariş:
-        <a href="{{ url('/takip/'.$result['linkedSale']['saleNumber']) }}" class="font-mono font-medium text-emerald-600 dark:text-emerald-400 hover:underline">
-            {{ $result['linkedSale']['saleNumber'] }}
-        </a>
-        <span class="text-neutral-500">· {{ $result['linkedSale']['currentStage']['label'] ?? '' }}</span>
+    <div class="px-5 sm:px-6 py-5 border-b border-neutral-100 dark:border-neutral-800">
+        <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-3">Bağlı sipariş</h3>
+        <div class="rounded-xl border border-neutral-200 dark:border-neutral-800 px-3 py-3 mb-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <a href="{{ url('/takip/'.$result['linkedSale']['saleNumber']) }}" class="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:underline">
+                    {{ $result['linkedSale']['saleNumber'] }}
+                </a>
+                <span class="text-xs font-medium px-2 py-1 rounded-full bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                    {{ $result['linkedSale']['currentStage']['label'] ?? '—' }}
+                </span>
+            </div>
+            <div class="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-neutral-500">
+                @if(!empty($result['linkedSale']['saleDate']))
+                <p>Sipariş: <span class="text-neutral-800 dark:text-neutral-200">{{ $result['linkedSale']['saleDate'] }}</span></p>
+                @endif
+                @if(!empty($result['linkedSale']['dueDate']))
+                <p>Termin: <span class="text-neutral-800 dark:text-neutral-200">{{ $result['linkedSale']['dueDate'] }}</span></p>
+                @endif
+                @if(!empty($result['linkedSale']['deliveredAt']))
+                <p>Teslim: <span class="text-neutral-800 dark:text-neutral-200">{{ $result['linkedSale']['deliveredAt'] }}</span></p>
+                @endif
+            </div>
+        </div>
+        @if(!empty($result['linkedSale']['items']))
+        <div class="overflow-x-auto -mx-1">
+            <table class="min-w-full text-sm">
+                <thead>
+                    <tr class="text-left text-xs text-neutral-500 border-b border-neutral-100 dark:border-neutral-800">
+                        <th class="py-2 pr-3 font-medium">Ürün / açıklama</th>
+                        <th class="py-2 px-2 font-medium text-center whitespace-nowrap">Adet</th>
+                        <th class="py-2 pl-2 font-medium text-right whitespace-nowrap">Tutar</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-neutral-100 dark:divide-neutral-800">
+                    @foreach($result['linkedSale']['items'] as $item)
+                    <tr>
+                        <td class="py-2.5 pr-3">
+                            <p class="font-medium text-neutral-900 dark:text-neutral-100">{{ $item['name'] }}</p>
+                            @if(!empty($item['description']))
+                            <p class="text-xs text-neutral-500 mt-0.5">{{ $item['description'] }}</p>
+                            @endif
+                        </td>
+                        <td class="py-2.5 px-2 text-center tabular-nums text-neutral-700 dark:text-neutral-300">{{ $item['quantity'] }}</td>
+                        <td class="py-2.5 pl-2 text-right tabular-nums font-medium text-neutral-900 dark:text-neutral-100 whitespace-nowrap">{{ \App\Support\Money::format($item['lineTotal']) }} ₺</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
     </div>
     @endif
 

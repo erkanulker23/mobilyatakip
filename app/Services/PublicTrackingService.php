@@ -45,8 +45,15 @@ class PublicTrackingService
             ->whereRaw('UPPER(ticketNumber) = ?', [mb_strtoupper($code)])
             ->with([
                 'customer:id,name',
-                'sale:id,saleNumber,saleDate,dueDate,orderStatus,deliveredAt,workshopCompletedAt,needsFinalMeasurement,isCancelled',
+                'sale' => fn ($q) => $q->select([
+                    'id', 'saleNumber', 'saleDate', 'dueDate', 'orderStatus', 'deliveredAt',
+                    'workshopCompletedAt', 'needsFinalMeasurement', 'isCancelled',
+                    'grandTotal', 'paidAmount',
+                ]),
+                'sale.items.product:id,name',
+                'shippingCompany:id,name',
                 'details' => fn ($q) => $q->orderByDesc('actionDate'),
+                'workshopFinishedDetail',
             ])
             ->first();
 
@@ -162,32 +169,113 @@ class PublicTrackingService
     /** @return array<string, mixed> */
     public function buildTicketPayload(ServiceTicket $ticket): array
     {
-        $salePayload = $ticket->sale ? [
-            'saleNumber' => $ticket->sale->saleNumber,
-            'currentStage' => [
-                'key' => SaleDelivery::currentStatus($ticket->sale),
-                'label' => SaleDelivery::label(SaleDelivery::currentStatus($ticket->sale)),
-            ],
-        ] : null;
+        $status = $ticket->status ?? 'acildi';
+        $isClosed = ServiceTicketStatus::isClosed($status);
+
+        $dueHint = null;
+        if ($ticket->dueDate && ! $isClosed) {
+            $daysLeft = (int) now()->startOfDay()->diffInDays($ticket->dueDate, false);
+            if ($daysLeft < 0) {
+                $dueHint = abs($daysLeft) . ' gün gecikti';
+            } elseif ($daysLeft === 0) {
+                $dueHint = 'Servis tarihi bugün';
+            } elseif ($daysLeft <= 3) {
+                $dueHint = $daysLeft . ' gün kaldı';
+            } else {
+                $dueHint = $daysLeft . ' gün kaldı';
+            }
+        }
+
+        $problems = ServiceTicketStatus::normalizeProblems($ticket->reportedProblems ?? []);
+        if ($problems === [] && $ticket->issueType) {
+            $problems = [['description' => $ticket->issueType, 'status' => 'bekliyor']];
+        }
+        $fixedCount = collect($problems)->where('status', 'duzeltildi')->count();
+        $problemTotal = count($problems);
+
+        $salePayload = null;
+        if ($ticket->sale) {
+            $sale = $ticket->sale;
+            $saleStatus = SaleDelivery::currentStatus($sale);
+            $saleItems = ($sale->items ?? collect())->map(function ($item) {
+                $name = trim((string) ($item->productName ?: $item->product?->name ?: 'Ürün'));
+                $desc = trim((string) ($item->description ?? ''));
+
+                return [
+                    'name' => $name,
+                    'description' => $desc !== '' && $desc !== $name ? $desc : null,
+                    'quantity' => (int) ($item->quantity ?? 0),
+                    'lineTotal' => (float) ($item->lineTotal ?? 0),
+                ];
+            })->values()->all();
+
+            $salePayload = [
+                'saleNumber' => $sale->saleNumber,
+                'saleDate' => $sale->saleDate?->format('d.m.Y'),
+                'dueDate' => $sale->dueDate?->format('d.m.Y'),
+                'deliveredAt' => $sale->deliveredAt?->format('d.m.Y'),
+                'currentStage' => [
+                    'key' => $saleStatus,
+                    'label' => SaleDelivery::label($saleStatus),
+                ],
+                'items' => $saleItems,
+            ];
+        }
+
+        $hasShipping = $ticket->assignedDriverName
+            || $ticket->assignedVehiclePlate
+            || $ticket->assignedDriverPhone
+            || $ticket->shippingCompany;
+
+        $images = collect(is_array($ticket->images ?? null) ? $ticket->images : [])
+            ->filter()
+            ->map(fn ($path) => storage_url($path))
+            ->filter()
+            ->values()
+            ->all();
+
+        $serviceCharge = (float) ($ticket->serviceChargeAmount ?? 0);
 
         return [
             'type' => 'ssh',
             'code' => $ticket->ticketNumber,
             'customerName' => $this->maskCustomerName($ticket->customer?->name),
             'openedAt' => $ticket->openedAt?->format('d.m.Y'),
+            'openedAtFull' => $ticket->openedAt?->format('d.m.Y H:i'),
             'dueDate' => $ticket->dueDate?->format('d.m.Y'),
+            'dueHint' => $dueHint,
             'closedAt' => $ticket->closedAt?->format('d.m.Y'),
+            'closedAtFull' => $ticket->closedAt?->format('d.m.Y H:i'),
+            'underWarranty' => (bool) ($ticket->underWarranty ?? false),
+            'description' => filled($ticket->description) ? trim((string) $ticket->description) : null,
+            'workshopFinished' => $ticket->isWorkshopFinished(),
+            'workshopFinishedAt' => $ticket->workshopFinishedDetail?->actionDate?->format('d.m.Y H:i'),
             'currentStage' => [
-                'key' => $ticket->status,
-                'label' => ServiceTicketStatus::label($ticket->status),
+                'key' => $status,
+                'label' => ServiceTicketStatus::label($status),
             ],
-            'problemSummary' => ServiceTicketStatus::problemSummary($ticket->reportedProblems),
-            'problems' => collect(ServiceTicketStatus::normalizeProblems($ticket->reportedProblems ?? []))
-                ->map(fn (array $p) => [
-                    'description' => $p['description'],
-                    'status' => $p['status'],
-                    'statusLabel' => ServiceTicketStatus::problemLabel($p['status']),
-                ])->values()->all(),
+            'problemSummary' => ServiceTicketStatus::problemSummary($problems),
+            'problemProgress' => [
+                'fixed' => $fixedCount,
+                'total' => $problemTotal,
+                'percent' => $problemTotal > 0 ? (int) round($fixedCount / $problemTotal * 100) : 0,
+            ],
+            'problems' => collect($problems)->map(fn (array $p) => [
+                'description' => $p['description'],
+                'status' => $p['status'],
+                'statusLabel' => ServiceTicketStatus::problemLabel($p['status']),
+            ])->values()->all(),
+            'serviceCharge' => $serviceCharge > 0 ? [
+                'amount' => $serviceCharge,
+                'label' => \App\Support\Money::format($serviceCharge) . ' ₺',
+            ] : null,
+            'shipping' => $hasShipping ? [
+                'company' => $ticket->shippingCompany?->name,
+                'driver' => $ticket->assignedDriverName ?: null,
+                'phone' => $ticket->assignedDriverPhone ?: null,
+                'plate' => $ticket->assignedVehiclePlate ?: null,
+            ] : null,
+            'images' => $images,
             'stages' => $this->ticketStages($ticket),
             'history' => $this->ticketHistory($ticket),
             'linkedSale' => $salePayload,
