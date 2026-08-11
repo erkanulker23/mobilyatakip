@@ -93,10 +93,11 @@
 
         <div class="flex flex-wrap items-center gap-2 shrink-0">
             <button type="button"
-                class="btn-secondary text-sm"
-                data-track-url="{{ url('/takip/'.$serviceTicket->ticketNumber) }}"
-                onclick="(function(btn){ navigator.clipboard.writeText(btn.dataset.trackUrl).then(function(){ var t = btn.textContent; btn.textContent = 'Kopyalandı'; setTimeout(function(){ btn.textContent = t; }, 1800); }); })(this)"
-            >Takip Linki</button>
+                class="btn-secondary text-sm font-mono"
+                data-track-code="{{ $serviceTicket->ticketNumber }}"
+                title="Takip kodunu kopyala"
+                onclick="(function(btn){ navigator.clipboard.writeText(btn.dataset.trackCode).then(function(){ var t = btn.textContent; btn.textContent = 'Kopyalandı'; setTimeout(function(){ btn.textContent = t; }, 1800); }); })(this)"
+            >{{ $serviceTicket->ticketNumber }}</button>
             @if(empty($hideCommercialData))
             <a href="{{ route('service-tickets.print', $serviceTicket) }}" target="_blank" rel="noopener" class="btn-print text-sm">Sevkiyat Formu</a>
             @endif
