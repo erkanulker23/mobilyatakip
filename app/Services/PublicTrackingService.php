@@ -25,6 +25,8 @@ class PublicTrackingService
             ->whereRaw('UPPER(saleNumber) = ?', [mb_strtoupper($code)])
             ->with([
                 'customer:id,name',
+                'items.product:id,name',
+                'payments' => fn ($q) => $q->orderByDesc('paymentDate'),
                 'activities',
                 'productionStages.saleItem',
                 'serviceTickets' => fn ($q) => $q->orderByDesc('openedAt'),
@@ -72,11 +74,50 @@ class PublicTrackingService
     public function buildSalePayload(Sale $sale): array
     {
         $status = SaleDelivery::currentStatus($sale);
-        $statusLabel = $sale->isCancelled
-            ? 'İptal edildi'
-            : (($sale->needsFinalMeasurement ?? false) && $status === SaleDelivery::PENDING
-                ? 'Ölçü bekliyor'
-                : SaleDelivery::label($status));
+        $isFinalMeasurement = (bool) ($sale->needsFinalMeasurement ?? false)
+            && $status === SaleDelivery::PENDING
+            && ! ($sale->isCancelled ?? false);
+
+        $statusKey = $sale->isCancelled
+            ? 'cancelled'
+            : ($isFinalMeasurement ? SaleDelivery::FINAL_MEASUREMENT : $status);
+
+        $statusLabel = match (true) {
+            (bool) ($sale->isCancelled ?? false) => 'İptal edildi',
+            $isFinalMeasurement => 'Ölçü bekliyor',
+            default => SaleDelivery::label($status),
+        };
+
+        $grandTotal = (float) ($sale->grandTotal ?? 0);
+        $paidAmount = (float) ($sale->paidAmount ?? 0);
+        $remaining = round($grandTotal - $paidAmount, 2);
+
+        $termin = SaleDelivery::terminListMeta($sale);
+        $dueHint = null;
+        if (! SaleDelivery::isDelivered($sale) && $sale->dueDate && ! ($sale->isCancelled ?? false)) {
+            $dueHint = $termin['suffix'] ?? null;
+        }
+
+        $paymentTypes = \App\Support\PaymentType::labels();
+
+        $items = ($sale->items ?? collect())->map(function ($item) {
+            $name = trim((string) ($item->productName ?: $item->product?->name ?: 'Ürün'));
+            $desc = trim((string) ($item->description ?? ''));
+
+            return [
+                'name' => $name,
+                'description' => $desc !== '' && $desc !== $name ? $desc : null,
+                'quantity' => (int) ($item->quantity ?? 0),
+                'unitPrice' => (float) ($item->unitPrice ?? 0),
+                'lineTotal' => (float) ($item->lineTotal ?? 0),
+            ];
+        })->values()->all();
+
+        $payments = ($sale->payments ?? collect())->map(fn ($p) => [
+            'amount' => (float) ($p->amount ?? 0),
+            'date' => $p->paymentDate?->format('d.m.Y'),
+            'type' => $paymentTypes[$p->paymentType ?? ''] ?? null,
+        ])->values()->all();
 
         return [
             'type' => 'sale',
@@ -84,13 +125,26 @@ class PublicTrackingService
             'customerName' => $this->maskCustomerName($sale->customer?->name),
             'saleDate' => $sale->saleDate?->format('d.m.Y'),
             'dueDate' => $sale->dueDate?->format('d.m.Y'),
+            'dueHint' => $dueHint,
             'deliveredAt' => $sale->deliveredAt?->format('d.m.Y'),
             'isCancelled' => (bool) ($sale->isCancelled ?? false),
             'needsFinalMeasurement' => (bool) ($sale->needsFinalMeasurement ?? false),
             'currentStage' => [
-                'key' => $sale->isCancelled ? 'cancelled' : $status,
+                'key' => $statusKey,
                 'label' => $statusLabel,
             ],
+            'totals' => [
+                'grandTotal' => $grandTotal,
+                'paidAmount' => $paidAmount,
+                'remaining' => $remaining,
+                'grandTotalLabel' => \App\Support\Money::format($grandTotal) . ' ₺',
+                'paidAmountLabel' => \App\Support\Money::format($paidAmount) . ' ₺',
+                'remainingLabel' => \App\Support\Money::format(abs($remaining)) . ' ₺',
+                'isPaid' => $remaining <= 0.005,
+                'hasDebt' => $remaining > 0.005,
+            ],
+            'items' => $items,
+            'payments' => $payments,
             'stages' => $this->saleStages($sale, $status),
             'history' => $this->saleHistory($sale),
             'serviceTickets' => $sale->serviceTickets->map(fn (ServiceTicket $t) => [
@@ -183,8 +237,8 @@ class PublicTrackingService
             $stages[] = [
                 'key' => 'final_measurement',
                 'label' => 'Ölçü bekliyor',
-                'done' => $status !== SaleDelivery::PENDING || ($sale->workshopCompletedAt !== null),
-                'current' => $status === SaleDelivery::PENDING && ! $sale->workshopCompletedAt,
+                'done' => $status !== SaleDelivery::PENDING,
+                'current' => $status === SaleDelivery::PENDING,
                 'at' => null,
             ];
         }

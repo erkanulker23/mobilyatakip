@@ -11,6 +11,9 @@
             'iptal' => 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
             default => 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
         };
+    if ($isSale && $stageKey === \App\Support\SaleDelivery::FINAL_MEASUREMENT) {
+        $badgeClass = 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300';
+    }
 @endphp
 
 <div class="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm overflow-hidden">
@@ -29,23 +32,32 @@
         </span>
     </div>
 
-    <div class="px-5 sm:px-6 py-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm border-b border-neutral-100 dark:border-neutral-800">
+    {{-- Tarih özeti --}}
+    <div @class([
+        'px-5 sm:px-6 py-4 grid grid-cols-2 gap-4 text-sm border-b border-neutral-100 dark:border-neutral-800',
+        'sm:grid-cols-3' => $isSale,
+        'sm:grid-cols-4' => ! $isSale,
+    ])>
         @if($isSale)
             <div>
                 <p class="text-xs text-neutral-500 dark:text-neutral-400">Sipariş tarihi</p>
-                <p class="font-medium mt-0.5">{{ $result['saleDate'] ?? '—' }}</p>
+                <p class="font-medium mt-0.5 text-neutral-900 dark:text-neutral-100">{{ $result['saleDate'] ?? '—' }}</p>
+                <p class="text-[11px] text-neutral-400 mt-0.5">Ne zaman sipariş verdi</p>
             </div>
             <div>
-                <p class="text-xs text-neutral-500 dark:text-neutral-400">Termin</p>
-                <p class="font-medium mt-0.5">{{ $result['dueDate'] ?? '—' }}</p>
+                <p class="text-xs text-neutral-500 dark:text-neutral-400">Tahmini teslim (termin)</p>
+                <p class="font-medium mt-0.5 text-neutral-900 dark:text-neutral-100">{{ $result['dueDate'] ?? '—' }}</p>
+                @if(!empty($result['dueHint']))
+                    <p class="text-[11px] mt-0.5 {{ str_contains($result['dueHint'], 'gecik') ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400' }}">{{ $result['dueHint'] }}</p>
+                @elseif(empty($result['dueDate']))
+                    <p class="text-[11px] text-neutral-400 mt-0.5">Henüz belirlenmedi</p>
+                @else
+                    <p class="text-[11px] text-neutral-400 mt-0.5">Ne zaman gelecek</p>
+                @endif
             </div>
             <div>
-                <p class="text-xs text-neutral-500 dark:text-neutral-400">Teslim</p>
-                <p class="font-medium mt-0.5">{{ $result['deliveredAt'] ?? '—' }}</p>
-            </div>
-            <div>
-                <p class="text-xs text-neutral-500 dark:text-neutral-400">SSH</p>
-                <p class="font-medium mt-0.5">{{ count($result['serviceTickets'] ?? []) }} kayıt</p>
+                <p class="text-xs text-neutral-500 dark:text-neutral-400">Teslim tarihi</p>
+                <p class="font-medium mt-0.5 text-neutral-900 dark:text-neutral-100">{{ $result['deliveredAt'] ?? 'Henüz teslim edilmedi' }}</p>
             </div>
         @else
             <div>
@@ -66,6 +78,78 @@
             </div>
         @endif
     </div>
+
+    {{-- Ödeme özeti (satış) --}}
+    @if($isSale && !empty($result['totals']))
+    <div class="px-5 sm:px-6 py-4 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950/40">
+        <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-3">Ödeme durumu</h3>
+        <div class="grid grid-cols-3 gap-3 text-sm">
+            <div class="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 px-3 py-3">
+                <p class="text-xs text-neutral-500">Sipariş tutarı</p>
+                <p class="font-semibold mt-1 tabular-nums text-neutral-900 dark:text-neutral-100">{{ $result['totals']['grandTotalLabel'] }}</p>
+            </div>
+            <div class="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 px-3 py-3">
+                <p class="text-xs text-neutral-500">Ödenen</p>
+                <p class="font-semibold mt-1 tabular-nums text-emerald-600 dark:text-emerald-400">{{ $result['totals']['paidAmountLabel'] }}</p>
+            </div>
+            <div class="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 px-3 py-3">
+                <p class="text-xs text-neutral-500">{{ ($result['totals']['remaining'] ?? 0) < -0.005 ? 'Fazla ödeme' : 'Kalan' }}</p>
+                <p class="font-semibold mt-1 tabular-nums {{ ($result['totals']['hasDebt'] ?? false) ? 'text-red-600 dark:text-red-400' : 'text-neutral-900 dark:text-neutral-100' }}">
+                    {{ $result['totals']['remainingLabel'] }}
+                </p>
+            </div>
+        </div>
+        @if(!empty($result['payments']))
+        <ul class="mt-3 space-y-1.5">
+            @foreach($result['payments'] as $payment)
+            <li class="flex items-center justify-between gap-3 text-sm px-1">
+                <span class="text-neutral-600 dark:text-neutral-400">
+                    {{ $payment['date'] ?? '—' }}
+                    @if(!empty($payment['type']))
+                        <span class="text-neutral-400">· {{ $payment['type'] }}</span>
+                    @endif
+                </span>
+                <span class="font-medium text-emerald-700 dark:text-emerald-400 tabular-nums">{{ \App\Support\Money::format($payment['amount']) }} ₺</span>
+            </li>
+            @endforeach
+        </ul>
+        @elseif(($result['totals']['paidAmount'] ?? 0) <= 0)
+        <p class="mt-3 text-xs text-neutral-500">Henüz ödeme kaydı yok.</p>
+        @endif
+    </div>
+    @endif
+
+    {{-- Sipariş kalemleri --}}
+    @if($isSale && !empty($result['items']))
+    <div class="px-5 sm:px-6 py-5 border-b border-neutral-100 dark:border-neutral-800">
+        <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-3">Sipariş detayı</h3>
+        <div class="overflow-x-auto -mx-1">
+            <table class="min-w-full text-sm">
+                <thead>
+                    <tr class="text-left text-xs text-neutral-500 border-b border-neutral-100 dark:border-neutral-800">
+                        <th class="py-2 pr-3 font-medium">Ürün / açıklama</th>
+                        <th class="py-2 px-2 font-medium text-center whitespace-nowrap">Adet</th>
+                        <th class="py-2 pl-2 font-medium text-right whitespace-nowrap">Tutar</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-neutral-100 dark:divide-neutral-800">
+                    @foreach($result['items'] as $item)
+                    <tr>
+                        <td class="py-2.5 pr-3">
+                            <p class="font-medium text-neutral-900 dark:text-neutral-100">{{ $item['name'] }}</p>
+                            @if(!empty($item['description']))
+                            <p class="text-xs text-neutral-500 mt-0.5">{{ $item['description'] }}</p>
+                            @endif
+                        </td>
+                        <td class="py-2.5 px-2 text-center tabular-nums text-neutral-700 dark:text-neutral-300">{{ $item['quantity'] }}</td>
+                        <td class="py-2.5 pl-2 text-right tabular-nums font-medium text-neutral-900 dark:text-neutral-100 whitespace-nowrap">{{ \App\Support\Money::format($item['lineTotal']) }} ₺</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif
 
     {{-- Aşama çubuğu --}}
     @if(!empty($result['stages']))
@@ -184,6 +268,7 @@
                                 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300' => ($entry['source'] ?? '') === 'production',
                                 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' => ($entry['source'] ?? '') === 'ssh',
                                 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' => ($entry['source'] ?? '') === 'activity',
+                                'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' => ($entry['source'] ?? '') === 'payment',
                             ])>•</span>
                             @if(!$loop->last)
                                 <div class="mt-1 w-px flex-1 bg-neutral-200 dark:bg-neutral-700 min-h-[20px]"></div>

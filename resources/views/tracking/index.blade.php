@@ -87,7 +87,7 @@
                     @error('code')
                         <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
-                    <p class="mt-3 text-xs text-neutral-500 dark:text-neutral-400">Takip linki örneği: <span class="font-mono text-neutral-600 dark:text-neutral-300">{{ url('/takip') }}/SAT-2026-00042</span></p>
+                    <p class="mt-3 text-xs text-neutral-500 dark:text-neutral-400">Örnek kod: <span class="font-mono text-neutral-600 dark:text-neutral-300">SAT-2026-00042</span> veya <span class="font-mono text-neutral-600 dark:text-neutral-300">SSH-2026-00003</span></p>
                 </div>
 
                 @if($notFound)
