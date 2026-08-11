@@ -265,7 +265,7 @@ class ServiceTicketController extends Controller
             'problems.*.status' => 'nullable|in:bekliyor,duzeltildi,duzeltilemedi',
             'description' => 'nullable|string',
             'dueDate' => 'nullable|date',
-            'status' => 'nullable|in:acildi,devam_ediyor,tamamlandi,iptal',
+            'status' => 'nullable|' . ServiceTicketStatus::validationRule(),
             'underWarranty' => 'nullable|boolean',
             'assignedUserId' => 'nullable|exists:users,id',
             'assignedVehiclePlate' => 'nullable|string|max:20',
@@ -322,7 +322,7 @@ class ServiceTicketController extends Controller
         $newStatus = $validated['status'] ?? $oldStatus;
         if ($newStatus === 'tamamlandi' && ! $serviceTicket->closedAt) {
             $validated['closedAt'] = now();
-        } elseif (in_array($newStatus, ['acildi', 'devam_ediyor'], true)) {
+        } elseif (in_array($newStatus, ServiceTicketStatus::openStatuses(), true)) {
             $validated['closedAt'] = null;
         }
 
@@ -595,7 +595,7 @@ class ServiceTicketController extends Controller
     public function updateStatus(Request $request, ServiceTicket $serviceTicket)
     {
         $validated = $request->validate([
-            'status' => 'required|in:acildi,devam_ediyor,tamamlandi,iptal',
+            'status' => 'required|' . ServiceTicketStatus::validationRule(),
         ]);
 
         $status = $validated['status'];
@@ -604,8 +604,10 @@ class ServiceTicketController extends Controller
 
         if ($status === 'tamamlandi') {
             $updates['closedAt'] = $serviceTicket->closedAt ?? now();
-        } elseif (in_array($status, ['acildi', 'devam_ediyor'], true)) {
+        } elseif (in_array($status, ServiceTicketStatus::openStatuses(), true)) {
             $updates['closedAt'] = null;
+        } elseif ($status === 'iptal' && ! $serviceTicket->closedAt) {
+            $updates['closedAt'] = now();
         }
 
         $serviceTicket->update($updates);

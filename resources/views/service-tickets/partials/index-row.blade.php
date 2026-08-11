@@ -27,7 +27,7 @@
         <form method="POST" action="{{ route('service-tickets.update-status', $ticket) }}" class="inline">
             @csrf
             @method('PATCH')
-            <select name="status" class="form-select text-xs py-1.5 px-2 min-w-[8.5rem] max-w-[10rem]" onchange="this.form.submit()">
+            <select name="status" class="form-select text-xs py-1.5 px-2 min-w-[10rem] max-w-[16rem]" title="{{ ServiceTicketStatus::label($status) }}" onchange="this.form.submit()">
                 @foreach(ServiceTicketStatus::STATUSES as $value => $label)
                 <option value="{{ $value }}" {{ $status === $value ? 'selected' : '' }}>{{ $label }}</option>
                 @endforeach

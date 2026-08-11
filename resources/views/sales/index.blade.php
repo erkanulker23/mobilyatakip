@@ -11,8 +11,9 @@
         || in_array(request('paymentStatus'), ['borclu', 'alacakli', 'odendi'], true)
         || request()->filled('from')
         || request()->filled('to')
+        || request()->boolean('cancelled')
     );
-    $filterChip = fn (array $params) => route('sales.index', array_filter(array_merge(request()->only(['search', 'customerId', 'from', 'to', 'paymentStatus', 'deliveryStatus']), $params)));
+    $filterChip = fn (array $params) => route('sales.index', array_filter(array_merge(request()->only(['search', 'customerId', 'from', 'to', 'paymentStatus', 'deliveryStatus', 'cancelled']), $params)));
 @endphp
 
 <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
@@ -99,7 +100,8 @@
             <a href="{{ $filterChip(['paymentStatus' => 'borclu']) }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ request('paymentStatus') === 'borclu' && !request('deliveryStatus') ? 'bg-red-600 text-white' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">Borçlu</a>
             <a href="{{ $filterChip(['deliveryStatus' => \App\Support\SaleDelivery::FINAL_MEASUREMENT, 'paymentStatus' => null]) }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ request('deliveryStatus') === \App\Support\SaleDelivery::FINAL_MEASUREMENT ? 'bg-amber-500 text-white' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">Ölçü bekliyor</a>
             <a href="{{ $filterChip(['deliveryStatus' => \App\Support\SaleDelivery::IN_PRODUCTION, 'paymentStatus' => null]) }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ request('deliveryStatus') === \App\Support\SaleDelivery::IN_PRODUCTION ? 'bg-violet-600 text-white' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">Üretimde</a>
-            <a href="{{ $filterChip(['deliveryStatus' => \App\Support\SaleDelivery::PENDING, 'paymentStatus' => null]) }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ request('deliveryStatus') === \App\Support\SaleDelivery::PENDING ? 'bg-neutral-700 text-white dark:bg-neutral-500' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">Teslim bekliyor</a>
+            <a href="{{ $filterChip(['deliveryStatus' => \App\Support\SaleDelivery::PENDING, 'paymentStatus' => null, 'cancelled' => null]) }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ request('deliveryStatus') === \App\Support\SaleDelivery::PENDING ? 'bg-neutral-700 text-white dark:bg-neutral-500' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">Teslim bekliyor</a>
+            <a href="{{ $filterChip(['cancelled' => 1, 'deliveryStatus' => null, 'paymentStatus' => null]) }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ request()->boolean('cancelled') ? 'bg-red-600 text-white' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">İptal edilenler@if(($stats['cancelled'] ?? 0) > 0) ({{ $stats['cancelled'] }})@endif</a>
             <a href="{{ route('sales.delivered') }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700">Teslim edilenler →</a>
         </div>
     </div>

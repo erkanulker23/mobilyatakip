@@ -9,6 +9,7 @@
         || in_array(request('paymentStatus'), ['borclu', 'alacakli', 'odendi'], true)
         || request()->filled('from')
         || request()->filled('to')
+        || request()->boolean('cancelled')
     );
 @endphp
 <div id="salesListResults" class="transition-opacity duration-150" data-sale-ids='@json($saleIds ?? [])'>

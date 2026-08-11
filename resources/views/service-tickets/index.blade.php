@@ -4,7 +4,7 @@
 @php
     $statusFilter = request('status');
     $showCompletedOnly = $statusFilter === 'tamamlandi';
-    $showActiveOnly = in_array($statusFilter, ['acildi', 'devam_ediyor', 'iptal'], true);
+    $showActiveOnly = $statusFilter && $statusFilter !== 'tamamlandi';
 
     $activeTickets = $tickets->filter(fn ($ticket) => ($ticket->status ?? 'acildi') !== 'tamamlandi');
     $completedTickets = $tickets->filter(fn ($ticket) => ($ticket->status ?? '') === 'tamamlandi');
@@ -54,10 +54,9 @@
             <label class="form-label">Durum</label>
             <select name="status" class="form-select">
                 <option value="">Tümü</option>
-                <option value="acildi" {{ request('status') === 'acildi' ? 'selected' : '' }}>Açıldı</option>
-                <option value="devam_ediyor" {{ request('status') === 'devam_ediyor' ? 'selected' : '' }}>Devam Ediyor</option>
-                <option value="tamamlandi" {{ request('status') === 'tamamlandi' ? 'selected' : '' }}>Tamamlandı</option>
-                <option value="iptal" {{ request('status') === 'iptal' ? 'selected' : '' }}>İptal</option>
+                @foreach(\App\Support\ServiceTicketStatus::STATUSES as $value => $label)
+                <option value="{{ $value }}" {{ request('status') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                @endforeach
             </select>
         </div>
         <div class="min-w-[130px]">

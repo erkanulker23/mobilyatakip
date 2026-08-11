@@ -68,6 +68,14 @@ Route::get('/sifre-sifirla/{token}', [\App\Http\Controllers\PasswordResetControl
 Route::post('/sifre-sifirla', [\App\Http\Controllers\PasswordResetController::class, 'reset'])->name('password.update')->middleware('guest');
 Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
+Route::prefix('takip')->middleware('throttle:30,1')->group(function () {
+    Route::get('/', [\App\Http\Controllers\PublicTrackingController::class, 'index'])->name('tracking.index');
+    Route::post('/', [\App\Http\Controllers\PublicTrackingController::class, 'lookup'])->name('tracking.lookup');
+    Route::get('/{code}', [\App\Http\Controllers\PublicTrackingController::class, 'show'])
+        ->where('code', '[A-Za-z0-9\\-]+')
+        ->name('tracking.show');
+});
+
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/bildirimler/temizle', [\App\Http\Controllers\NotificationController::class, 'dismiss'])->name('notifications.dismiss');

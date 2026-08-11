@@ -7,6 +7,8 @@ class ServiceTicketStatus
     public const STATUSES = [
         'acildi' => 'Açıldı',
         'devam_ediyor' => 'Devam Ediyor',
+        'parca_bekleniyor' => 'Parça Bekleniyor',
+        'sevkiyatci_bekleniyor' => 'Eksik ürünler hazır Sevkiyatçı bekleniyor',
         'tamamlandi' => 'Tamamlandı',
         'iptal' => 'İptal',
     ];
@@ -24,6 +26,20 @@ class ServiceTicketStatus
     public static function label(?string $status): string
     {
         return self::STATUSES[$status ?? ''] ?? ucfirst(str_replace('_', ' ', $status ?? '—'));
+    }
+
+    public static function validationRule(): string
+    {
+        return 'in:' . implode(',', array_keys(self::STATUSES));
+    }
+
+    /** Kapalı olmayan (açık) durumlar. */
+    public static function openStatuses(): array
+    {
+        return array_values(array_filter(
+            array_keys(self::STATUSES),
+            fn (string $status) => ! self::isClosed($status)
+        ));
     }
 
     public static function problemLabel(?string $status): string
@@ -111,6 +127,8 @@ class ServiceTicketStatus
         return match ($status) {
             'tamamlandi' => 'badge-green',
             'devam_ediyor' => 'badge-blue',
+            'parca_bekleniyor' => 'badge-amber',
+            'sevkiyatci_bekleniyor' => 'badge-amber',
             'iptal' => 'badge-red',
             default => 'badge-amber',
         };

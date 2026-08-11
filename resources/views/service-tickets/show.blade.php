@@ -4,7 +4,7 @@
 @php
     use App\Support\ServiceTicketStatus;
     $status = $serviceTicket->status ?? 'acildi';
-    $statusClass = $status === 'tamamlandi' ? 'badge-green' : ($status === 'devam_ediyor' ? 'badge-amber' : ($status === 'iptal' ? 'badge-dark' : 'badge-blue'));
+    $statusClass = ServiceTicketStatus::badgeClass($status);
     $problems = ServiceTicketStatus::normalizeProblems($serviceTicket->reportedProblems ?? []);
     if ($problems === [] && $serviceTicket->issueType) {
         $problems = [['description' => $serviceTicket->issueType, 'status' => 'bekliyor']];
@@ -36,6 +36,13 @@
         </p>
     </div>
     <div class="flex flex-wrap items-center gap-2">
+        <button type="button"
+            class="btn-secondary text-sm"
+            data-track-url="{{ route('tracking.show', $serviceTicket->ticketNumber) }}"
+            onclick="navigator.clipboard.writeText(this.dataset.trackUrl).then(() => { const t = this.textContent; this.textContent = 'Takip linki kopyalandı'; setTimeout(() => { this.textContent = t; }, 1800); })"
+        >
+            Takip Linkini Kopyala
+        </button>
         @if(empty($hideCommercialData) && $ticketCustomer)
         <a href="{{ route('customers.show', $ticketCustomer) }}" class="btn-secondary">Müşteri Detayı</a>
         @endif

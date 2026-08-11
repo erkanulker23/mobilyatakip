@@ -232,8 +232,8 @@ class SaleController extends Controller
         $stats = $activeFilters
             ? $this->salesIndexStatsFromQuery($statsQuery, (int) $sales->total())
             : Cache::remember('sales.index.stats', now()->addMinutes(2), fn () => $this->salesIndexStatsFromQuery(
-                Sale::query()->where('isCancelled', false),
-                (int) Sale::where('isCancelled', false)->count(),
+                Sale::query(),
+                (int) Sale::count(),
             ));
 
         return view('sales.index', compact('sales', 'filterCustomers', 'saleIds', 'stats', 'activeFilters'));
@@ -347,13 +347,20 @@ class SaleController extends Controller
             || SaleDelivery::isFilterValue($request->input('deliveryStatus'))
             || in_array($request->input('paymentStatus'), ['borclu', 'alacakli', 'odendi'], true)
             || $request->filled('from')
-            || $request->filled('to');
+            || $request->filled('to')
+            || $request->boolean('cancelled');
     }
 
     /** @return \Illuminate\Database\Eloquent\Builder<Sale> */
     private function salesIndexQuery(Request $request)
     {
-        $q = Sale::with(['customer', 'personnel'])->where('isCancelled', false)->orderBy('createdAt', 'desc');
+        $q = Sale::with(['customer', 'personnel'])
+            ->orderBy('isCancelled')
+            ->orderByDesc('createdAt');
+
+        if ($request->boolean('cancelled')) {
+            $q->where('isCancelled', true);
+        }
 
         if ($request->filled('search')) {
             $s = $request->search;
@@ -397,15 +404,18 @@ class SaleController extends Controller
     /** @param  \Illuminate\Database\Eloquent\Builder<Sale>  $query */
     private function salesIndexStatsFromQuery($query, int $total): array
     {
+        $activeQuery = (clone $query)->where('isCancelled', false);
+
         return [
             'total' => $total,
-            'receivable' => (float) (clone $query)
+            'cancelled' => (int) (clone $query)->where('isCancelled', true)->count(),
+            'receivable' => (float) (clone $activeQuery)
                 ->selectRaw('COALESCE(SUM(GREATEST(grandTotal - COALESCE(paidAmount, 0), 0)), 0) as total')
                 ->value('total'),
-            'withDebt' => (int) (clone $query)
+            'withDebt' => (int) (clone $activeQuery)
                 ->whereRaw('grandTotal - COALESCE(paidAmount, 0) > 0.005')
                 ->count(),
-            'finalMeasurement' => (int) (clone $query)
+            'finalMeasurement' => (int) (clone $activeQuery)
                 ->where('needsFinalMeasurement', true)
                 ->pendingDelivery()
                 ->count(),
