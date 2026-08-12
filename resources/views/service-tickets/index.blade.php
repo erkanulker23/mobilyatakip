@@ -94,15 +94,15 @@
 
 <div class="card overflow-hidden">
     <div class="p-4 border-b border-neutral-100 dark:border-neutral-800">
-        <form method="GET" class="flex flex-wrap gap-3 items-end">
-            <div class="min-w-[180px] flex-1">
+        <form method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3 items-end">
+            <div class="sm:col-span-2 min-w-0">
                 <label class="form-label">Ara (no{{ $showCustomerNames ? ', müşteri' : '' }}, sorun)</label>
-                <input type="text" name="search" placeholder="SSH no, müşteri veya problem..." value="{{ request('search') }}" class="form-input">
+                <input type="text" name="search" placeholder="SSH no, müşteri veya problem..." value="{{ request('search') }}" class="form-input w-full min-w-0">
             </div>
             @if(empty($hideCommercialData))
-            <div class="min-w-[160px]">
+            <div class="min-w-0">
                 <label class="form-label">Müşteri</label>
-                <select name="customerId" class="form-select">
+                <select name="customerId" class="form-select w-full min-w-0">
                     <option value="">Tümü</option>
                     @foreach($customers ?? [] as $c)
                     <option value="{{ $c->id }}" {{ request('customerId') == $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
@@ -110,9 +110,9 @@
                 </select>
             </div>
             @endif
-            <div class="min-w-[150px]">
+            <div class="min-w-0">
                 <label class="form-label">Şube</label>
-                <select name="branchId" class="form-select">
+                <select name="branchId" class="form-select w-full min-w-0">
                     <option value="">Tüm şubeler</option>
                     <option value="none" {{ $selectedBranchId === 'none' ? 'selected' : '' }}>Şube belirtilmemiş</option>
                     @foreach($branches ?? [] as $branch)
@@ -120,24 +120,24 @@
                     @endforeach
                 </select>
             </div>
-            <div class="min-w-[150px]">
+            <div class="min-w-0">
                 <label class="form-label">Durum</label>
-                <select name="status" class="form-select">
+                <select name="status" class="form-select w-full min-w-0">
                     <option value="">Tümü</option>
                     @foreach(ServiceTicketStatus::STATUSES as $value => $label)
                     <option value="{{ $value }}" {{ request('status') === $value ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
             </div>
-            <div class="min-w-[130px]">
+            <div class="min-w-0">
                 <label class="form-label">Başlangıç</label>
-                <input type="date" name="from" value="{{ request('from') }}" class="form-input">
+                <input type="date" name="from" value="{{ request('from') }}" class="form-input w-full min-w-0">
             </div>
-            <div class="min-w-[130px]">
+            <div class="min-w-0">
                 <label class="form-label">Bitiş</label>
-                <input type="date" name="to" value="{{ request('to') }}" class="form-input">
+                <input type="date" name="to" value="{{ request('to') }}" class="form-input w-full min-w-0">
             </div>
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2 sm:col-span-2 lg:col-span-4 xl:col-span-7">
                 <button type="submit" class="btn-primary">Filtrele</button>
                 @if($hasFilters)
                 <a href="{{ route('service-tickets.index') }}" class="btn-secondary">Temizle</a>

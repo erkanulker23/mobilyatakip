@@ -83,7 +83,7 @@
         .dark .nav-link:hover { background: rgba(255,255,255,.05); color: #f5f5f5; }
         .dark .nav-link.active { background: rgba(255,255,255,.06); color: #fafafa; border-left-color: #fafafa; }
         .form-label { display: block; font-size: 0.8125rem; font-weight: 500; color: #737373; margin-bottom: 0.375rem; letter-spacing: .01em; }
-        .form-input, .form-select, .form-textarea { width: 100%; border-radius: 0.625rem; padding: 0.625rem 0.875rem; font-size: 0.9375rem; background: #fafafa; border: 1px solid #e5e5e5; transition: background .15s, box-shadow .15s, border-color .15s; }
+        .form-input, .form-select, .form-textarea { width: 100%; min-width: 0; border-radius: 0.625rem; padding: 0.625rem 0.875rem; font-size: 0.9375rem; background: #fafafa; border: 1px solid #e5e5e5; transition: background .15s, box-shadow .15s, border-color .15s; }
         .form-input:hover, .form-select:hover, .form-textarea:hover { background: #f5f5f5; }
         .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; background: #fff; border-color: #d4d4d4; box-shadow: 0 0 0 3px rgba(0,0,0,.04); }
         .form-textarea { min-height: 100px; resize: vertical; }

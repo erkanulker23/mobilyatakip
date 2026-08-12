@@ -54,24 +54,23 @@
 
 <div class="card overflow-hidden" x-data="salesBulk" data-sale-ids='{{ json_encode($saleIds ?? []) }}'>
     <div class="p-4 border-b border-neutral-100 dark:border-neutral-800">
-        <form method="GET" action="{{ route('sales.index') }}" id="salesFilterForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-end">
-            <div class="sm:col-span-2 xl:col-span-2">
+        <form method="GET" action="{{ route('sales.index') }}" id="salesFilterForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-3 items-end">
+            <div class="sm:col-span-2 min-w-0">
                 <label for="salesSearchInput" class="form-label">Ara</label>
-                <input type="text" name="search" id="salesSearchInput" placeholder="Sipariş no veya müşteri..." value="{{ request('search') }}" class="form-input w-full" autocomplete="off">
+                <input type="text" name="search" id="salesSearchInput" placeholder="Sipariş no veya müşteri..." value="{{ request('search') }}" class="form-input w-full min-w-0" autocomplete="off">
             </div>
-            <div>
+            <div class="min-w-0">
                 <label class="form-label">Müşteri</label>
-                <select name="customerId" class="form-select w-full">
+                <select name="customerId" class="form-select w-full min-w-0">
                     <option value="">Tümü</option>
                     @foreach($filterCustomers ?? [] as $c)
                     <option value="{{ $c->id }}" {{ request('customerId') == $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
                     @endforeach
                 </select>
-                <p class="mt-1 text-xs text-neutral-400">Müşteri adı için üstteki arama kutusunu kullanın.</p>
             </div>
-            <div>
+            <div class="min-w-0">
                 <label class="form-label">Şube</label>
-                <select name="branchId" class="form-select w-full">
+                <select name="branchId" class="form-select w-full min-w-0">
                     <option value="">Tüm şubeler</option>
                     <option value="none" {{ $selectedBranchId === 'none' ? 'selected' : '' }}>Şube belirtilmemiş</option>
                     @foreach($branches ?? [] as $branch)
@@ -79,32 +78,32 @@
                     @endforeach
                 </select>
             </div>
-            <div>
+            <div class="min-w-0">
                 <label class="form-label">Teslim durumu</label>
-                <select name="deliveryStatus" class="form-select w-full">
+                <select name="deliveryStatus" class="form-select w-full min-w-0">
                     <option value="">Tümü</option>
                     @foreach(\App\Support\SaleDelivery::filterOptions() as $value => $label)
                     <option value="{{ $value }}" {{ request('deliveryStatus') === $value ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
             </div>
-            <div>
+            <div class="min-w-0">
                 <label class="form-label">Ödeme durumu</label>
-                <select name="paymentStatus" class="form-select w-full">
+                <select name="paymentStatus" class="form-select w-full min-w-0">
                     <option value="">Tümü</option>
                     <option value="borclu" {{ request('paymentStatus') === 'borclu' ? 'selected' : '' }}>Borçlu</option>
                     <option value="odendi" {{ request('paymentStatus') === 'odendi' ? 'selected' : '' }}>Ödendi</option>
                 </select>
             </div>
-            <div>
+            <div class="min-w-0">
                 <label class="form-label">Başlangıç</label>
-                <input type="date" name="from" value="{{ request('from') }}" class="form-input w-full">
+                <input type="date" name="from" value="{{ request('from') }}" class="form-input w-full min-w-0">
             </div>
-            <div>
+            <div class="min-w-0">
                 <label class="form-label">Bitiş</label>
-                <input type="date" name="to" value="{{ request('to') }}" class="form-input w-full">
+                <input type="date" name="to" value="{{ request('to') }}" class="form-input w-full min-w-0">
             </div>
-            <div class="flex flex-col sm:flex-row gap-2 sm:col-span-2 xl:col-span-6">
+            <div class="flex flex-wrap gap-2 sm:col-span-2 lg:col-span-4 xl:col-span-8">
                 <button type="submit" class="btn-primary w-full sm:w-auto justify-center">Filtrele</button>
                 <a href="{{ route('sales.index') }}" class="btn-secondary w-full sm:w-auto justify-center">Temizle</a>
             </div>
