@@ -88,6 +88,14 @@
                 {{ $ticketCustomer->name }}
                 @endif
                 @endif
+                @if($serviceTicket->branch)
+                <span class="text-neutral-300 dark:text-neutral-600 mx-1">·</span>
+                @if(empty($hideCommercialData))
+                <a href="{{ route('branches.show', $serviceTicket->branch) }}" class="font-medium text-neutral-700 hover:text-emerald-600 dark:text-neutral-300 dark:hover:text-emerald-400">{{ $serviceTicket->branch->name }}</a>
+                @else
+                {{ $serviceTicket->branch->name }}
+                @endif
+                @endif
             </p>
         </div>
 
@@ -329,6 +337,18 @@
                         <dd class="text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap">{{ $ticketCustomer->full_address ?: '—' }}</dd>
                     </div>
                     @endif
+                    @endif
+                    @if($serviceTicket->branch)
+                    <div>
+                        <dt class="form-label">Şube</dt>
+                        <dd class="font-medium">
+                            @if(empty($hideCommercialData))
+                            <a href="{{ route('branches.show', $serviceTicket->branch) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">{{ $serviceTicket->branch->name }}</a>
+                            @else
+                            {{ $serviceTicket->branch->name }}
+                            @endif
+                        </dd>
+                    </div>
                     @endif
                     @if($serviceTicket->sale)
                     <div>

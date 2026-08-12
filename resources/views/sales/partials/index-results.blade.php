@@ -5,6 +5,7 @@
         request()->filled('search')
         || request()->filled('customerId')
         || request()->filled('personnelId')
+        || request()->filled('branchId')
         || \App\Support\SaleDelivery::isFilterValue(request('deliveryStatus'))
         || in_array(request('paymentStatus'), ['borclu', 'alacakli', 'odendi'], true)
         || request()->filled('from')
@@ -74,6 +75,9 @@
                         <p class="text-sm text-neutral-600 dark:text-neutral-400 truncate mt-0.5">{{ $s->customer?->name ?? '—' }}</p>
                         @if($s->personnel)
                             <p class="text-xs text-neutral-400 mt-0.5 col-hide-mobile">{{ $s->personnel->name }}</p>
+                        @endif
+                        @if($s->branch)
+                            <p class="text-xs text-emerald-700/80 dark:text-emerald-400/80 mt-0.5">{{ $s->branch->name }}</p>
                         @endif
                         @if($s->needsFinalMeasurement ?? false)
                             <span class="inline-block mt-1">@include('partials.final-measurement-badge', ['sale' => $s])</span>

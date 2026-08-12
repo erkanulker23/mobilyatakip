@@ -26,6 +26,9 @@
             @if(!empty($result['customerName']))
                 <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{{ $result['customerName'] }}</p>
             @endif
+            @if(!empty($result['branchName']))
+                <p class="text-sm text-neutral-600 dark:text-neutral-300 mt-0.5">{{ $result['branchName'] }} şubesi</p>
+            @endif
         </div>
         <span class="inline-flex self-start sm:self-auto items-center px-3 py-1.5 rounded-full text-sm font-medium {{ $badgeClass }}">
             {{ $result['currentStage']['label'] ?? '—' }}

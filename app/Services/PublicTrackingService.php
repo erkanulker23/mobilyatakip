@@ -25,6 +25,7 @@ class PublicTrackingService
             ->whereRaw('UPPER(saleNumber) = ?', [mb_strtoupper($code)])
             ->with([
                 'customer:id,name',
+                'branch:id,name',
                 'items.product:id,name',
                 'payments' => fn ($q) => $q->orderByDesc('paymentDate'),
                 'activities',
@@ -45,6 +46,7 @@ class PublicTrackingService
             ->whereRaw('UPPER(ticketNumber) = ?', [mb_strtoupper($code)])
             ->with([
                 'customer:id,name',
+                'branch:id,name',
                 'sale' => fn ($q) => $q->select([
                     'id', 'saleNumber', 'saleDate', 'dueDate', 'orderStatus', 'deliveredAt',
                     'workshopCompletedAt', 'needsFinalMeasurement', 'isCancelled',
@@ -130,6 +132,7 @@ class PublicTrackingService
             'type' => 'sale',
             'code' => $sale->saleNumber,
             'customerName' => $this->maskCustomerName($sale->customer?->name),
+            'branchName' => $sale->branch?->name,
             'saleDate' => $sale->saleDate?->format('d.m.Y'),
             'dueDate' => $sale->dueDate?->format('d.m.Y'),
             'dueHint' => $dueHint,
@@ -240,6 +243,7 @@ class PublicTrackingService
             'type' => 'ssh',
             'code' => $ticket->ticketNumber,
             'customerName' => $this->maskCustomerName($ticket->customer?->name),
+            'branchName' => $ticket->branch?->name,
             'openedAt' => $ticket->openedAt?->format('d.m.Y'),
             'openedAtFull' => $ticket->openedAt?->format('d.m.Y H:i'),
             'dueDate' => $ticket->dueDate?->format('d.m.Y'),

@@ -24,6 +24,9 @@
                 @if($showCustomerNames && $ticket->customer)
                 <p class="mt-0.5 text-sm text-neutral-600 dark:text-neutral-400 truncate">{{ $ticket->customer->name }}</p>
                 @endif
+                @if($ticket->branch)
+                <p class="mt-0.5 text-xs text-emerald-700/80 dark:text-emerald-400/80 truncate">{{ $ticket->branch->name }}</p>
+                @endif
             </div>
         </div>
         <span class="badge badge-green shrink-0">Tamamlandı</span>

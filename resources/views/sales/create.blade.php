@@ -178,6 +178,11 @@
                                     @endforeach
                                 </select>
                             </div>
+                            @include('partials.branch-select', [
+                                'branches' => $branches ?? collect(),
+                                'class' => 'form-select min-h-[44px]',
+                                'hint' => 'Bu siparişin hangi şubeye ait olduğunu seçin. Boş bırakılabilir.',
+                            ])
                             <div class="sm:col-span-2">
                                 <input type="hidden" name="needsFinalMeasurement" value="0">
                                 <label class="flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors {{ old('needsFinalMeasurement') ? 'border-amber-400 bg-amber-50' : 'border-amber-200 bg-amber-50/60 hover:border-amber-300' }}">

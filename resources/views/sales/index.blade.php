@@ -7,13 +7,14 @@
         request()->filled('search')
         || request()->filled('customerId')
         || request()->filled('personnelId')
+        || request()->filled('branchId')
         || \App\Support\SaleDelivery::isFilterValue(request('deliveryStatus'))
         || in_array(request('paymentStatus'), ['borclu', 'alacakli', 'odendi'], true)
         || request()->filled('from')
         || request()->filled('to')
         || request()->boolean('cancelled')
     );
-    $filterChip = fn (array $params) => route('sales.index', array_filter(array_merge(request()->only(['search', 'customerId', 'from', 'to', 'paymentStatus', 'deliveryStatus', 'cancelled']), $params)));
+    $filterChip = fn (array $params) => route('sales.index', array_filter(array_merge(request()->only(['search', 'customerId', 'from', 'to', 'paymentStatus', 'deliveryStatus', 'cancelled', 'branchId']), $params)));
 @endphp
 
 <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
@@ -62,6 +63,15 @@
                     @endforeach
                 </select>
                 <p class="mt-1 text-xs text-neutral-400">Müşteri adı için üstteki arama kutusunu kullanın.</p>
+            </div>
+            <div>
+                <label class="form-label">Şube</label>
+                <select name="branchId" class="form-select w-full">
+                    <option value="">Tümü</option>
+                    @foreach($branches ?? [] as $branch)
+                    <option value="{{ $branch->id }}" {{ request('branchId') == $branch->id ? 'selected' : '' }}>{{ $branch->displayName() }}</option>
+                    @endforeach
+                </select>
             </div>
             <div>
                 <label class="form-label">Teslim durumu</label>

@@ -17,6 +17,7 @@ use App\Models\ShippingCompanyPayment;
 use App\Models\Supplier;
 use App\Models\SupplierPayment;
 use App\Models\Warehouse;
+use App\Models\Branch;
 use Illuminate\Support\Str;
 
 class PageSeo
@@ -171,6 +172,19 @@ class PageSeo
             [
                 ['name' => 'Depolar', 'url' => route('warehouses.index')],
                 ['name' => $warehouse->name, 'url' => route('warehouses.show', $warehouse)],
+            ]
+        );
+    }
+
+    public static function branch(Branch $branch): array
+    {
+        return self::pack(
+            $branch->name,
+            "{$branch->name} şube detayı, satış ve SSH kayıtları.",
+            route('branches.show', $branch),
+            [
+                ['name' => 'Şubeler', 'url' => route('branches.index')],
+                ['name' => $branch->name, 'url' => route('branches.show', $branch)],
             ]
         );
     }

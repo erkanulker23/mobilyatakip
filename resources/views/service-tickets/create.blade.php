@@ -41,6 +41,11 @@
             </select>
             @error('customerId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
+        @include('partials.branch-select', [
+            'branches' => $branches ?? collect(),
+            'id' => 'branchSelect',
+            'hint' => 'Sipariş seçilirse şube otomatik gelir; isterseniz değiştirebilirsiniz.',
+        ])
         {{-- Müşteri adres bilgileri --}}
         <div id="customerInfoCard" class="hidden rounded-lg border border-neutral-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50 p-4">
             <h3 class="text-sm font-semibold text-neutral-700 dark:text-slate-300 mb-2">Müşteri Adres Bilgileri</h3>
@@ -137,6 +142,9 @@ document.getElementById('customerSelect')?.addEventListener('change', function()
     updateCustomerInfo(this);
     loadCustomerSales(this.value, '');
 });
+document.getElementById('saleSelect')?.addEventListener('change', function() {
+    applySaleBranch(this);
+});
 document.getElementById('refreshSalesBtn')?.addEventListener('click', function() {
     const customerId = document.getElementById('customerSelect')?.value;
     const currentSaleId = document.getElementById('saleSelect')?.value || selectedSaleId || '';
@@ -173,6 +181,7 @@ function renderSalesOptions(sales, preferredSaleId) {
         const opt = document.createElement('option');
         opt.value = s.id;
         opt.textContent = s.label;
+        if (s.branchId) opt.dataset.branchId = s.branchId;
         if (preferredSaleId && String(preferredSaleId) === String(s.id)) {
             opt.selected = true;
         }
@@ -181,6 +190,17 @@ function renderSalesOptions(sales, preferredSaleId) {
 
     if (emptyHint) {
         emptyHint.classList.toggle('hidden', sales.length > 0);
+    }
+    applySaleBranch(saleSelect);
+}
+
+function applySaleBranch(saleSelect) {
+    const branchSelect = document.getElementById('branchSelect');
+    if (!branchSelect || !saleSelect) return;
+    const opt = saleSelect.selectedOptions[0];
+    const branchId = opt?.dataset?.branchId || '';
+    if (branchId) {
+        branchSelect.value = branchId;
     }
 }
 

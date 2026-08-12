@@ -188,6 +188,7 @@ class CustomerController extends Controller
             ->map(fn ($s) => [
                 'id' => $s->id,
                 'customerId' => $s->customerId,
+                'branchId' => $s->branchId,
                 'label' => $s->saleNumber . ' · ' . ($s->saleDate?->format('d.m.Y') ?? '—') . ' · ' . number_format((float) $s->grandTotal, 0, ',', '.') . ' ₺',
             ])
             ->values();

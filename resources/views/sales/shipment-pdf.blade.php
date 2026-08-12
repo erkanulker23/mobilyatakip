@@ -72,6 +72,7 @@
             </td>
             <td class="right">
                 @if(!empty($personnelName))<p class="muted">Temsilci: <strong>{{ $personnelName }}</strong></p>@endif
+                @if(!empty($branchName))<p class="muted">Şube: <strong>{{ $branchName }}</strong></p>@endif
                 <p class="muted">Kalem: <strong>{{ count($items ?? []) }}</strong></p>
             </td>
         </tr>

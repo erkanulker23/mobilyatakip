@@ -15,6 +15,7 @@ class ServiceTicket extends BaseModel
         'ticketNumber',
         'saleId',
         'customerId',
+        'branchId',
         'status',
         'underWarranty',
         'issueType',
@@ -52,6 +53,11 @@ class ServiceTicket extends BaseModel
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'customerId');
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class, 'branchId');
     }
 
     public function assignedUser(): BelongsTo

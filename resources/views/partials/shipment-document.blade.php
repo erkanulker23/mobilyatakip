@@ -39,6 +39,9 @@
                         @if(!empty($personnelName))
                         <div class="print-kv-row"><span class="print-kv-label">Temsilci</span><span class="print-kv-value">{{ $personnelName }}</span></div>
                         @endif
+                        @if(!empty($branchName))
+                        <div class="print-kv-row"><span class="print-kv-label">Şube</span><span class="print-kv-value">{{ $branchName }}</span></div>
+                        @endif
                         <div class="print-kv-row"><span class="print-kv-label">Kalem Sayısı</span><span class="print-kv-value">{{ $itemCount }}</span></div>
                         @if(!empty($dueDate))
                         <div class="print-kv-row"><span class="print-kv-label">Termin</span><span class="print-kv-value">{{ $dueDate->format('d.m.Y') }}</span></div>

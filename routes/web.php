@@ -130,6 +130,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/products/actions/bulk-destroy', [ProductController::class, 'bulkDestroy'])->name('products.bulk-destroy');
     Route::resource('products', ProductController::class);
     Route::resource('warehouses', \App\Http\Controllers\WarehouseController::class);
+    Route::resource('branches', \App\Http\Controllers\BranchController::class);
     Route::delete('/personnel/{personnel}/resim-sil', [\App\Http\Controllers\PersonnelController::class, 'deletePhoto'])->name('personnel.delete-photo');
     Route::get('/personnel/{personnel}/log', [\App\Http\Controllers\PersonnelController::class, 'activities'])->name('personnel.activities');
     Route::resource('personnel', \App\Http\Controllers\PersonnelController::class);

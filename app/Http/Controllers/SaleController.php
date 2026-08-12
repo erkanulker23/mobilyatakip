@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Mail\SaleNotificationToSupplier;
 use App\Mail\SaleToCustomer;
 use App\Models\Personnel;
+use App\Models\Branch;
 use App\Models\Sale;
 use App\Models\SaleActivity;
 use App\Models\Quote;
@@ -43,9 +44,10 @@ class SaleController extends Controller
     {
         $customers = Customer::with(['city', 'district'])->where('isActive', true)->orderBy('name')->get();
         $personnel = Personnel::where('isActive', true)->orderBy('name')->get();
+        $branches = Branch::forSelect();
         $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
         $initialProducts = collect();
-        return view('sales.create', compact('customers', 'initialProducts', 'personnel', 'kasalar'));
+        return view('sales.create', compact('customers', 'initialProducts', 'personnel', 'branches', 'kasalar'));
     }
 
     public function store(Request $request)
@@ -56,6 +58,7 @@ class SaleController extends Controller
 
         $validated = $request->validate([
             'customerId' => 'required|exists:customers,id',
+            'branchId' => 'nullable|exists:branches,id',
             'personnelId' => 'nullable|exists:personnel,id',
             'saleDate' => 'required|date',
             'dueDate' => 'nullable|date',
@@ -120,6 +123,7 @@ class SaleController extends Controller
         try {
             $sale = $this->saleService->createDirect([
                 'customerId' => $validated['customerId'],
+                'branchId' => $validated['branchId'] ?? null,
                 'personnelId' => $validated['personnelId'] ?? null,
                 'saleDate' => $validated['saleDate'],
                 'dueDate' => $validated['dueDate'] ?? null,
@@ -236,7 +240,9 @@ class SaleController extends Controller
                 (int) Sale::count(),
             ));
 
-        return view('sales.index', compact('sales', 'filterCustomers', 'saleIds', 'stats', 'activeFilters'));
+        return view('sales.index', compact('sales', 'filterCustomers', 'saleIds', 'stats', 'activeFilters') + [
+            'branches' => Branch::forSelect(false),
+        ]);
     }
 
     public function delivered(Request $request)
@@ -263,7 +269,9 @@ class SaleController extends Controller
 
         $stats = $this->salesDeliveredStatsFromQuery($statsQuery, (int) $sales->total());
 
-        return view('sales.delivered', compact('sales', 'filterCustomers', 'saleIds', 'stats', 'activeFilters'));
+        return view('sales.delivered', compact('sales', 'filterCustomers', 'saleIds', 'stats', 'activeFilters') + [
+            'branches' => Branch::forSelect(false),
+        ]);
     }
 
     private function salesDeliveredHasFilters(Request $request): bool
@@ -271,6 +279,7 @@ class SaleController extends Controller
         return $request->filled('search')
             || $request->filled('customerId')
             || $request->filled('personnelId')
+            || $request->filled('branchId')
             || in_array($request->input('paymentStatus'), ['borclu', 'alacakli', 'odendi'], true)
             || $request->filled('from')
             || $request->filled('to');
@@ -279,7 +288,7 @@ class SaleController extends Controller
     /** @return \Illuminate\Database\Eloquent\Builder<Sale> */
     private function salesDeliveredQuery(Request $request)
     {
-        $q = Sale::with(['customer', 'personnel'])
+        $q = Sale::with(['customer', 'personnel', 'branch'])
             ->where('isCancelled', false)
             ->delivered()
             ->orderByDesc('deliveredAt')
@@ -297,6 +306,9 @@ class SaleController extends Controller
         }
         if ($request->filled('personnelId')) {
             $q->where('personnelId', $request->personnelId);
+        }
+        if ($request->filled('branchId')) {
+            $q->where('branchId', $request->branchId);
         }
         if ($request->filled('from')) {
             $q->whereDate('deliveredAt', '>=', $request->from);
@@ -344,6 +356,7 @@ class SaleController extends Controller
         return $request->filled('search')
             || $request->filled('customerId')
             || $request->filled('personnelId')
+            || $request->filled('branchId')
             || SaleDelivery::isFilterValue($request->input('deliveryStatus'))
             || in_array($request->input('paymentStatus'), ['borclu', 'alacakli', 'odendi'], true)
             || $request->filled('from')
@@ -354,7 +367,7 @@ class SaleController extends Controller
     /** @return \Illuminate\Database\Eloquent\Builder<Sale> */
     private function salesIndexQuery(Request $request)
     {
-        $q = Sale::with(['customer', 'personnel'])
+        $q = Sale::with(['customer', 'personnel', 'branch'])
             ->orderBy('isCancelled')
             ->orderByDesc('createdAt');
 
@@ -374,6 +387,9 @@ class SaleController extends Controller
         }
         if ($request->filled('personnelId')) {
             $q->where('personnelId', $request->personnelId);
+        }
+        if ($request->filled('branchId')) {
+            $q->where('branchId', $request->branchId);
         }
         if ($request->filled('from')) {
             $q->whereDate('saleDate', '>=', $request->from);
@@ -465,11 +481,15 @@ class SaleController extends Controller
         }
         $customers = Customer::with(['city', 'district'])->where('isActive', true)->orderBy('name')->get();
         $personnel = Personnel::where('isActive', true)->orderBy('name')->get();
+        $branches = Branch::forSelect();
+        if ($sale->branchId && ! $branches->contains('id', $sale->branchId) && $sale->branch) {
+            $branches = $branches->prepend($sale->branch);
+        }
         $productIds = $sale->items->pluck('productId')->filter()->unique()->values();
         $initialProducts = $productIds->isEmpty()
             ? collect()
             : Product::with('supplier:id,name')->whereIn('id', $productIds)->get();
-        return view('sales.edit', compact('sale', 'customers', 'initialProducts', 'personnel'));
+        return view('sales.edit', compact('sale', 'customers', 'initialProducts', 'personnel', 'branches'));
     }
 
     public function update(Request $request, Sale $sale)
@@ -479,6 +499,7 @@ class SaleController extends Controller
         }
         $validated = $request->validate([
             'customerId' => 'required|exists:customers,id',
+            'branchId' => 'nullable|exists:branches,id',
             'personnelId' => 'nullable|exists:personnel,id',
             'saleDate' => 'required|date',
             'dueDate' => 'nullable|date',
@@ -539,6 +560,7 @@ class SaleController extends Controller
             $oldCustomerId = $sale->customerId;
             $sale->update([
                 'customerId' => $validated['customerId'],
+                'branchId' => $validated['branchId'] ?? null,
                 'personnelId' => $validated['personnelId'] ?? null,
                 'saleDate' => $validated['saleDate'],
                 'dueDate' => $validated['dueDate'] ?? null,

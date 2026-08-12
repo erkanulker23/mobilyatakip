@@ -4,7 +4,7 @@
 @section('content')
 @php
     $listRoute = route('sales.delivered');
-    $filterChip = fn (array $params) => route('sales.delivered', array_filter(array_merge(request()->only(['search', 'customerId', 'from', 'to', 'paymentStatus']), $params)));
+    $filterChip = fn (array $params) => route('sales.delivered', array_filter(array_merge(request()->only(['search', 'customerId', 'from', 'to', 'paymentStatus', 'branchId']), $params)));
 @endphp
 
 <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
@@ -55,6 +55,15 @@
                     <option value="">Tümü</option>
                     @foreach($filterCustomers ?? [] as $c)
                     <option value="{{ $c->id }}" {{ request('customerId') == $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="form-label">Şube</label>
+                <select name="branchId" class="form-select w-full">
+                    <option value="">Tümü</option>
+                    @foreach($branches ?? [] as $branch)
+                    <option value="{{ $branch->id }}" {{ request('branchId') == $branch->id ? 'selected' : '' }}>{{ $branch->displayName() }}</option>
                     @endforeach
                 </select>
             </div>

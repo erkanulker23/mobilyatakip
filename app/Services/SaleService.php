@@ -45,6 +45,7 @@ class SaleService
                 'id' => (string) Str::uuid(),
                 'saleNumber' => $saleNumber,
                 'customerId' => $customerId,
+                'branchId' => $data['branchId'] ?? null,
                 'personnelId' => $data['personnelId'] ?? null,
                 'saleDate' => $data['saleDate'] ?? now(),
                 'dueDate' => $data['dueDate'] ?? null,
@@ -331,7 +332,7 @@ class SaleService
 
     public function find(int|string $id): ?Sale
     {
-        return Sale::with(['customer', 'personnel', 'quote', 'items.product.supplier', 'activities', 'payments', 'serviceTickets'])->find($id);
+        return Sale::with(['customer', 'personnel', 'branch', 'quote', 'items.product.supplier', 'activities', 'payments', 'serviceTickets'])->find($id);
     }
 
     /**

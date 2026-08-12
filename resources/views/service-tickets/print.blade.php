@@ -38,6 +38,7 @@
                         <div class="flex justify-between gap-2 text-sm"><dt class="print-muted">Telefon</dt><dd class="font-medium text-right">{{ $serviceTicket->assignedDriverPhone ?: '—' }}</dd></div>
                         <div class="flex justify-between gap-2 text-sm"><dt class="print-muted">Plaka</dt><dd class="font-medium text-right">{{ $serviceTicket->assignedVehiclePlate ?: '—' }}</dd></div>
                         <div class="flex justify-between gap-2 text-sm"><dt class="print-muted">Satış No</dt><dd class="font-medium text-right">{{ $serviceTicket->sale?->saleNumber ?? '—' }}</dd></div>
+                        <div class="flex justify-between gap-2 text-sm"><dt class="print-muted">Şube</dt><dd class="font-medium text-right">{{ $serviceTicket->branch?->name ?? '—' }}</dd></div>
                         <div class="flex justify-between gap-2 text-sm"><dt class="print-muted">Teknisyen</dt><dd class="font-medium text-right">{{ $serviceTicket->assignedUser?->name ?? '—' }}</dd></div>
                     </dl>
                 </div>

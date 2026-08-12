@@ -73,6 +73,7 @@ class SaleDocument
             'partyPhone2' => $sale->customer?->phone2 ?? null,
             'partyEmail' => $sale->customer?->email,
             'personnelName' => $sale->personnel?->name,
+            'branchName' => $sale->branch?->name,
             'documentNotice' => ($sale->needsFinalMeasurement ?? false)
                 ? '<strong>KESİN ÖLÇÜYE GİDİLECEK</strong> — '
                     . ($variant === 'shipment'
@@ -164,6 +165,13 @@ class SaleDocument
                 'key' => 'personnel',
                 'label' => 'Satış Temsilcisi',
                 'value' => $sale->personnel->name,
+            ];
+        }
+        if ($sale->branch) {
+            $rows[] = [
+                'key' => 'branch',
+                'label' => 'Şube',
+                'value' => $sale->branch->name,
             ];
         }
         if ($sale->needsFinalMeasurement ?? false) {

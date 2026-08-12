@@ -50,6 +50,10 @@
                 <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
                 <span>Müşteri: —</span>
                 @endif
+                @if($sale->branch)
+                <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
+                <span>Şube: <a href="{{ route('branches.show', $sale->branch) }}" class="font-medium text-neutral-800 dark:text-neutral-200 hover:text-emerald-600 dark:hover:text-emerald-400">{{ $sale->branch->name }}</a></span>
+                @endif
                 @if(!($sale->isCancelled ?? false) && \App\Support\SaleDelivery::currentStatus($sale) !== \App\Support\SaleDelivery::PENDING)
                 <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
                 <span class="inline-flex flex-wrap items-center gap-1.5">

@@ -12,15 +12,16 @@
     $activeTickets = $tickets->filter(fn ($ticket) => ($ticket->status ?? 'acildi') !== 'tamamlandi');
     $completedTickets = $tickets->filter(fn ($ticket) => ($ticket->status ?? '') === 'tamamlandi');
 
-    $colspan = $showCustomerNames ? 10 : 9;
+    $colspan = $showCustomerNames ? 11 : 10;
     $hasFilters = request()->filled('search')
         || request()->filled('status')
         || request()->filled('customerId')
+        || request()->filled('branchId')
         || request()->filled('from')
         || request()->filled('to');
 
     $filterChip = fn (array $params) => route('service-tickets.index', array_filter(
-        array_merge(request()->only(['search', 'customerId', 'from', 'to', 'status']), $params),
+        array_merge(request()->only(['search', 'customerId', 'from', 'to', 'status', 'branchId']), $params),
         fn ($v) => $v !== null && $v !== ''
     ));
 @endphp
@@ -68,7 +69,7 @@
 {{-- Hızlı durum çipleri --}}
 <div class="flex flex-wrap items-center gap-2 mb-5">
     <span class="text-xs font-medium text-neutral-500 dark:text-neutral-400 mr-1">Durum:</span>
-    <a href="{{ route('service-tickets.index', request()->only(['search', 'customerId', 'from', 'to'])) }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ !$statusFilter ? 'bg-neutral-800 text-white dark:bg-neutral-200 dark:text-neutral-900' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">Tümü</a>
+    <a href="{{ route('service-tickets.index', request()->only(['search', 'customerId', 'from', 'to', 'branchId'])) }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ !$statusFilter ? 'bg-neutral-800 text-white dark:bg-neutral-200 dark:text-neutral-900' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">Tümü</a>
     @foreach(ServiceTicketStatus::STATUSES as $value => $label)
     <a href="{{ $filterChip(['status' => $value]) }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ $statusFilter === $value ? 'bg-neutral-800 text-white dark:bg-neutral-200 dark:text-neutral-900' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}" title="{{ $label }}">
         {{ Str::limit($label, 28) }}
@@ -94,6 +95,15 @@
                 </select>
             </div>
             @endif
+            <div class="min-w-[150px]">
+                <label class="form-label">Şube</label>
+                <select name="branchId" class="form-select">
+                    <option value="">Tümü</option>
+                    @foreach($branches ?? [] as $branch)
+                    <option value="{{ $branch->id }}" {{ request('branchId') == $branch->id ? 'selected' : '' }}>{{ $branch->displayName() }}</option>
+                    @endforeach
+                </select>
+            </div>
             <div class="min-w-[150px]">
                 <label class="form-label">Durum</label>
                 <select name="status" class="form-select">
@@ -170,6 +180,7 @@
                 <thead>
                     <tr class="border-b border-neutral-100 dark:border-neutral-800">
                         <th class="table-th">No</th>
+                        <th class="table-th">Şube</th>
                         <th class="table-th">Satış</th>
                         @if($showCustomerNames)<th class="table-th">Müşteri</th>@endif
                         <th class="table-th">Problemler</th>

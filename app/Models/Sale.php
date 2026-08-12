@@ -15,6 +15,7 @@ class Sale extends BaseModel
     protected $fillable = [
         'saleNumber',
         'customerId',
+        'branchId',
         'personnelId',
         'kdvIncluded',
         'saleDiscountPercent',
@@ -61,6 +62,11 @@ class Sale extends BaseModel
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'customerId');
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class, 'branchId');
     }
 
     public function personnel(): BelongsTo

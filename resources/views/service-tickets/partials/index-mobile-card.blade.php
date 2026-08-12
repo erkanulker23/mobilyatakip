@@ -37,6 +37,9 @@
             @if($ticket->sale)
             <p class="text-xs text-neutral-500 mt-0.5">{{ $ticket->sale->saleNumber }}</p>
             @endif
+            @if($ticket->branch)
+            <p class="text-xs text-emerald-700/80 dark:text-emerald-400/80 mt-0.5">{{ $ticket->branch->name }}</p>
+            @endif
         </div>
         <span class="badge {{ ServiceTicketStatus::badgeClass($status) }} shrink-0">{{ ServiceTicketStatus::label($status) }}</span>
     </div>

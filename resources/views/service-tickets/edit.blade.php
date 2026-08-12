@@ -36,7 +36,7 @@
             <select name="saleId" class="form-select" id="saleSelect">
                 <option value="">— Sipariş yok —</option>
                 @foreach($sales as $s)
-                <option value="{{ $s->id }}" data-customer="{{ $s->customerId }}" {{ old('saleId', $serviceTicket->saleId) == $s->id ? 'selected' : '' }}>{{ $s->saleNumber }} - {{ $s->customer?->name }}</option>
+                <option value="{{ $s->id }}" data-customer="{{ $s->customerId }}" data-branch-id="{{ $s->branchId }}" {{ old('saleId', $serviceTicket->saleId) == $s->id ? 'selected' : '' }}>{{ $s->saleNumber }} - {{ $s->customer?->name }}</option>
                 @endforeach
             </select>
         </div>
@@ -48,6 +48,11 @@
                 @endforeach
             </select>
         </div>
+        @include('partials.branch-select', [
+            'branches' => $branches ?? collect(),
+            'selectedBranchId' => $serviceTicket->branchId,
+            'id' => 'branchSelect',
+        ])
         <div>
             <label class="form-label">Müşteri Problemleri *</label>
             <div id="editProblemsList" class="space-y-3">
@@ -221,6 +226,9 @@ document.getElementById('saleSelect')?.addEventListener('change', function() {
     const customerId = opt?.dataset?.customer;
     const customerSelect = document.getElementById('customerSelect');
     if (customerId && customerSelect) customerSelect.value = customerId;
+    const branchSelect = document.getElementById('branchSelect');
+    const branchId = opt?.dataset?.branchId;
+    if (branchSelect && branchId) branchSelect.value = branchId;
 });
 
 let editProblemIndex = {{ count($problems) }};

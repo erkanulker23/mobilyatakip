@@ -31,6 +31,17 @@
         @endif
     </td>
     <td class="table-td text-neutral-600 dark:text-neutral-400">
+        @if($ticket->branch)
+            @if(empty($hideCommercialData))
+            <a href="{{ route('branches.show', $ticket->branch) }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline">{{ $ticket->branch->name }}</a>
+            @else
+            {{ $ticket->branch->name }}
+            @endif
+        @else
+        —
+        @endif
+    </td>
+    <td class="table-td text-neutral-600 dark:text-neutral-400">
         @if($ticket->sale)
             @if(empty($hideCommercialData))
             <a href="{{ route('sales.show', $ticket->sale) }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline">{{ $ticket->sale->saleNumber }}</a>

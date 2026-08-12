@@ -7,6 +7,7 @@ use App\Models\ServiceTicketDetail;
 use App\Models\ServicePart;
 use App\Models\ShippingCompanyPayment;
 use App\Models\Sale;
+use App\Models\Branch;
 use App\Models\ShippingCompany;
 use App\Models\ShippingCompanyVehicle;
 use App\Models\User;
@@ -29,6 +30,7 @@ class ServiceTicketController extends Controller
         $q = ServiceTicket::with([
             'sale',
             'customer',
+            'branch',
             'openingDetail.user',
             'closingDetail.user',
             'legacyClosingDetail.user',
@@ -48,6 +50,9 @@ class ServiceTicketController extends Controller
         if ($request->filled('customerId')) {
             $q->where('customerId', $request->customerId);
         }
+        if ($request->filled('branchId')) {
+            $q->where('branchId', $request->branchId);
+        }
         if ($request->filled('from')) {
             $q->whereDate('createdAt', '>=', $request->from);
         }
@@ -56,6 +61,7 @@ class ServiceTicketController extends Controller
         }
         $tickets = $q->paginate(20)->withQueryString();
         $customers = Customer::with(['city', 'district'])->where('isActive', true)->orderBy('name')->get();
+        $branches = Branch::forSelect(false);
 
         $statusCounts = ServiceTicket::query()
             ->selectRaw('status, COUNT(*) as aggregate')
@@ -74,7 +80,7 @@ class ServiceTicketController extends Controller
             'total' => array_sum($statusCounts),
         ];
 
-        return view('service-tickets.index', compact('tickets', 'customers', 'stats'));
+        return view('service-tickets.index', compact('tickets', 'customers', 'branches', 'stats'));
     }
 
     public function show(ServiceTicket $serviceTicket)
@@ -83,6 +89,7 @@ class ServiceTicketController extends Controller
             'sale',
             'customer.city',
             'customer.district',
+            'branch',
             'assignedUser',
             'shippingCompany',
             'shippingVehicle',
@@ -98,7 +105,7 @@ class ServiceTicketController extends Controller
 
     public function print(ServiceTicket $serviceTicket)
     {
-        $serviceTicket->load(['sale.customer.city', 'sale.customer.district', 'customer.city', 'customer.district', 'assignedUser', 'shippingCompany', 'shippingVehicle', 'details.user']);
+        $serviceTicket->load(['sale.customer.city', 'sale.customer.district', 'customer.city', 'customer.district', 'branch', 'assignedUser', 'shippingCompany', 'shippingVehicle', 'details.user']);
 
         return view('service-tickets.print', compact('serviceTicket'));
     }
@@ -113,8 +120,9 @@ class ServiceTicketController extends Controller
         $selectedCustomerId = old('customerId', request('customerId'));
         $selectedSaleId = old('saleId', request('saleId'));
         $shippingFormData = $this->shippingFormData();
+        $branches = Branch::forSelect();
 
-        return view('service-tickets.create', compact('customers', 'selectedCustomerId', 'selectedSaleId') + $shippingFormData);
+        return view('service-tickets.create', compact('customers', 'selectedCustomerId', 'selectedSaleId', 'branches') + $shippingFormData);
     }
 
     public function store(Request $request)
@@ -136,6 +144,7 @@ class ServiceTicketController extends Controller
         $rules = [
             'saleId' => 'nullable|exists:sales,id',
             'customerId' => 'required|exists:customers,id',
+            'branchId' => 'nullable|exists:branches,id',
             'problems' => 'required|array|min:1',
             'problems.*' => 'required|string|max:500',
             'description' => 'nullable|string',
@@ -174,6 +183,9 @@ class ServiceTicketController extends Controller
             if ($sale->customerId !== $validated['customerId']) {
                 return back()->withInput()->with('error', 'Seçilen sipariş bu müşteriye ait değil.');
             }
+            if (empty($validated['branchId']) && $sale->branchId) {
+                $validated['branchId'] = $sale->branchId;
+            }
         }
 
         $reportedProblems = ServiceTicketStatus::normalizeProblems(
@@ -205,6 +217,7 @@ class ServiceTicketController extends Controller
                 'ticketNumber' => $ticketNumber,
                 'saleId' => $validated['saleId'] ?? null,
                 'customerId' => $validated['customerId'],
+                'branchId' => $validated['branchId'] ?? null,
                 'status' => 'acildi',
                 'underWarranty' => $request->boolean('underWarranty'),
                 'issueType' => $reportedProblems[0]['description'],
@@ -251,17 +264,22 @@ class ServiceTicketController extends Controller
         $serviceTicket->load([
             'sale.customer',
             'customer',
+            'branch',
             'openingDetail.user',
             'closingDetail.user',
             'legacyClosingDetail.user',
             'workshopFinishedDetail.user',
             'details.user',
         ]);
-        $sales = Sale::with('customer')->orderBy('createdAt', 'desc')->take(100)->get();
+        $sales = Sale::with(['customer', 'branch'])->orderBy('createdAt', 'desc')->take(100)->get();
         $users = User::where('isActive', true)->orderBy('name')->get();
         $shippingFormData = $this->shippingFormData();
+        $branches = Branch::forSelect();
+        if ($serviceTicket->branchId && ! $branches->contains('id', $serviceTicket->branchId) && $serviceTicket->branch) {
+            $branches = $branches->prepend($serviceTicket->branch);
+        }
 
-        return view('service-tickets.edit', compact('serviceTicket', 'sales', 'users') + $shippingFormData);
+        return view('service-tickets.edit', compact('serviceTicket', 'sales', 'users', 'branches') + $shippingFormData);
     }
 
     public function update(Request $request, ServiceTicket $serviceTicket)
@@ -277,6 +295,7 @@ class ServiceTicketController extends Controller
         $validated = $request->validate([
             'saleId' => 'nullable|exists:sales,id',
             'customerId' => 'required|exists:customers,id',
+            'branchId' => 'nullable|exists:branches,id',
             'problems' => 'required|array|min:1',
             'problems.*.description' => 'required|string|max:500',
             'problems.*.status' => 'nullable|in:bekliyor,duzeltildi,duzeltilemedi',
