@@ -57,7 +57,7 @@
     </div>
     <div class="card p-4">
         <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Rol</p>
-        <p class="text-sm font-medium text-neutral-900 dark:text-neutral-100 mt-2">{{ $personnel->user->role === 'admin' ? 'Yönetici' : 'Personel' }}</p>
+        <p class="text-sm font-medium text-neutral-900 dark:text-neutral-100 mt-2">{{ \App\Support\UserRole::label($personnel->user->role) }}</p>
     </div>
     <div class="card p-4">
         <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Son giriş</p>

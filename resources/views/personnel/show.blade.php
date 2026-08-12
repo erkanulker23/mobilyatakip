@@ -63,7 +63,7 @@
                 <dd class="font-medium mt-1">
                     @if($personnel->hasSystemAccess())
                         <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
-                            Giriş açık · {{ $personnel->user?->role === 'admin' ? 'Yönetici' : 'Personel' }}
+                            Giriş açık · {{ \App\Support\UserRole::label($personnel->user?->role) }}
                         </span>
                     @elseif($personnel->user)
                         <span class="text-neutral-500">Hesap var, giriş kapalı</span>

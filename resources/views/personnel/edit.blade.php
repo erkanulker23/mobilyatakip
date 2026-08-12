@@ -84,6 +84,7 @@
                     <option value="{{ $value }}" {{ old('category', $personnel->category) === $value ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
+                <p class="mt-1 text-xs text-neutral-500">Organizasyon etiketi. Tam yetki için aşağıdan Süper Admin seçin.</p>
                 @error('category')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
         </div>

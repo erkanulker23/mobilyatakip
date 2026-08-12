@@ -1,17 +1,27 @@
 @extends('layouts.app')
-@section('title', 'Yeni Personel')
+@section('title', request('role') === 'admin' ? 'Yeni Süper Admin' : 'Yeni Personel')
 @section('content')
 <div class="mb-6">
     <div class="flex items-center gap-2 text-neutral-500 text-sm mb-1">
         <a href="{{ route('personnel.index') }}" class="hover:text-neutral-900">Personel</a>
         <span>/</span>
-        <span class="text-neutral-700">Yeni Personel</span>
+        <span class="text-neutral-700">{{ request('role') === 'admin' ? 'Yeni Süper Admin' : 'Yeni Personel' }}</span>
     </div>
-    <h1 class="page-title">Yeni Personel</h1>
-    <p class="page-desc">Yeni personel bilgilerini girin</p>
+    <h1 class="page-title">{{ request('role') === 'admin' ? 'Yeni Süper Admin' : 'Yeni Personel' }}</h1>
+    <p class="page-desc">{{ request('role') === 'admin' ? 'Sisteme tam yetkili süper admin hesabı ekleyin' : 'Yeni personel bilgilerini girin' }}</p>
 </div>
 
 <div class="card p-6 max-w-2xl">
+    @if($errors->any())
+    <div class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <p class="font-semibold mb-1">Kayıt oluşturulamadı</p>
+        <ul class="list-disc list-inside space-y-0.5">
+            @foreach($errors->all() as $error)
+            <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+    @endif
     <form method="POST" action="{{ route('personnel.store') }}" enctype="multipart/form-data" class="space-y-5">
         @csrf
         <div>
@@ -56,6 +66,7 @@
                     <option value="{{ $value }}" {{ old('category') === $value ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
+                <p class="mt-1 text-xs text-neutral-500">Organizasyon etiketi. Tam yetki için aşağıdan Süper Admin seçin.</p>
                 @error('category')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
         </div>

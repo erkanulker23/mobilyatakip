@@ -94,7 +94,7 @@ class User extends Authenticatable implements CanResetPasswordContract
 
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return \App\Support\UserRole::isAdmin($this->role);
     }
 
     /** Personel: dashboard'da önce kendi yapılacak listesi. */

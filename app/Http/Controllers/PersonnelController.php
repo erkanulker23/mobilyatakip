@@ -100,7 +100,7 @@ class PersonnelController extends Controller
         $canAccess = $request->boolean('canAccessSystem');
         $rules = [
             'name' => 'required|string|max:255',
-            'email' => 'nullable|email',
+            'email' => 'nullable|email|max:100',
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
             'category' => ['nullable', 'string', Rule::in(PersonnelCategory::values())],
             'title' => 'nullable|string|max:255',
@@ -108,15 +108,22 @@ class PersonnelController extends Controller
             'photo' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:2048',
         ];
 
+        if ($canAccess && $this->accessService->canManageAccess($request->user())) {
+            $rules['email'] = 'required|email|max:100';
+        }
+
         if ($this->accessService->canManageAccess($request->user())) {
             $rules = array_merge($rules, $this->accessService->validationRules(new Personnel, $canAccess));
         }
 
         $validated = $request->validate($rules, [
             'phone.regex' => 'Geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67)',
+            'email.required' => 'Sistem erişimi için e-posta adresi zorunludur.',
         ]);
 
         unset($validated['photo'], $validated['canAccessSystem'], $validated['systemRole'], $validated['password'], $validated['password_confirmation']);
+
+        $validated['isActive'] = true;
 
         if ($request->hasFile('photo')) {
             $validated['photoUrl'] = '/storage/'.$request->file('photo')->store('personnel', 'public');
@@ -134,7 +141,12 @@ class PersonnelController extends Controller
 
         $this->auditService->logCreate('personnel', $person->id, ['name' => $person->name]);
 
-        return redirect()->route('personnel.index')->with('success', 'Personel kaydedildi.');
+        $isSuperAdmin = $canAccess && $request->input('systemRole') === 'admin';
+
+        return redirect()->route('personnel.index')->with(
+            'success',
+            $isSuperAdmin ? 'Süper admin kaydedildi. E-posta ve şifre ile giriş yapabilir.' : 'Personel kaydedildi.'
+        );
     }
 
     public function show(Personnel $personnel)
@@ -366,7 +378,7 @@ class PersonnelController extends Controller
     public function destroy(Personnel $personnel)
     {
         $this->authorizeManage($personnel);
-        $this->accessService->disableAccess($personnel);
+        $this->accessService->sync($personnel, ['canAccessSystem' => false]);
         $this->removePhotoFile($personnel);
         $this->auditService->logDelete('personnel', $personnel->id, ['name' => $personnel->name]);
         $personnel->delete();

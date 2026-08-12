@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\Personnel;
 use App\Models\User;
-use App\Support\UserSchema;
+use App\Support\UserRole;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -17,10 +17,13 @@ class PersonnelAccessService
     public function sync(Personnel $personnel, array $access): void
     {
         $canAccess = (bool) ($access['canAccessSystem'] ?? false);
-        $role = ($access['systemRole'] ?? 'staff') === 'admin' ? 'admin' : 'staff';
+        $role = ($access['systemRole'] ?? UserRole::STAFF) === UserRole::ADMIN
+            ? UserRole::ADMIN
+            : UserRole::STAFF;
         $password = $access['password'] ?? null;
 
         if (! $canAccess) {
+            $this->assertNotLastAdmin($personnel->user, remainingAdmin: false);
             $this->disableAccess($personnel);
 
             return;
@@ -35,6 +38,10 @@ class PersonnelAccessService
 
         DB::transaction(function () use ($personnel, $role, $password, $email) {
             $user = $this->resolveLinkedUser($personnel);
+
+            if ($user) {
+                $this->assertNotLastAdmin($user, remainingAdmin: $role === UserRole::ADMIN);
+            }
 
             if (! $user && empty($password)) {
                 throw ValidationException::withMessages([
@@ -60,7 +67,7 @@ class PersonnelAccessService
             $user->name = $personnel->name;
             $user->email = $email;
             $user->role = $role;
-            $user->isActive = (bool) $personnel->isActive;
+            $user->isActive = $personnel->isActive !== false;
 
             if (! empty($password)) {
                 $user->password = $password;
@@ -142,7 +149,7 @@ class PersonnelAccessService
 
         return [
             'canAccessSystem' => ['nullable', 'boolean'],
-            'systemRole' => ['nullable', Rule::in(['admin', 'staff'])],
+            'systemRole' => ['nullable', Rule::in([UserRole::ADMIN, UserRole::STAFF])],
             'password' => $passwordRules,
         ];
     }
@@ -150,5 +157,24 @@ class PersonnelAccessService
     public function canManageAccess(?User $actor): bool
     {
         return $actor !== null && $actor->isAdmin();
+    }
+
+    private function assertNotLastAdmin(?User $user, bool $remainingAdmin): void
+    {
+        if (! $user || $user->role !== UserRole::ADMIN || $remainingAdmin) {
+            return;
+        }
+
+        $otherAdmins = User::query()
+            ->where('role', UserRole::ADMIN)
+            ->where('isActive', true)
+            ->whereKeyNot($user->getKey())
+            ->exists();
+
+        if (! $otherAdmins) {
+            throw ValidationException::withMessages([
+                'systemRole' => 'Sistemde en az bir süper admin kalmalıdır.',
+            ]);
+        }
     }
 }

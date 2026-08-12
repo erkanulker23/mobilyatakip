@@ -4,12 +4,18 @@
 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
     <div>
         <h1 class="page-title">Personel</h1>
-        <p class="page-desc">Personel listesi ve yönetimi</p>
+        <p class="page-desc">Personel listesi, sistem girişi ve süper admin yönetimi</p>
     </div>
-    <a href="{{ route('personnel.create') }}" class="btn-primary">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
-        Yeni Personel
-    </a>
+    <div class="flex flex-wrap gap-2">
+        <a href="{{ route('personnel.create', ['role' => 'admin']) }}" class="btn-secondary">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            Süper Admin Ekle
+        </a>
+        <a href="{{ route('personnel.create') }}" class="btn-primary">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+            Yeni Personel
+        </a>
+    </div>
 </div>
 
 @php
@@ -88,6 +94,11 @@
                                 </div>
                             @endif
                             <span class="font-medium text-neutral-900">{{ $p->name }}</span>
+                            @if($p->user?->isAdmin())
+                            <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900">Süper Admin</span>
+                            @elseif($p->hasSystemAccess())
+                            <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">Giriş açık</span>
+                            @endif
                             @if(!($p->isActive ?? true))<span class="text-xs text-neutral-400">(Pasif)</span>@endif
                         </div>
                     </td>
