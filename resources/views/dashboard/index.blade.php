@@ -64,7 +64,7 @@
         @if(($todayKasaBreakdown['supplierTotal'] ?? 0) > 0)
             <p class="text-xs text-sky-700/90 dark:text-sky-300/90 mt-1 tabular-nums">Tedarikçiye: ₺{{ number_format($todayKasaBreakdown['supplierTotal'], 0, ',', '.') }}</p>
         @endif
-        <p class="text-xs text-neutral-500 mt-1">Kasalar + tedarikçiye ödeme</p>
+        <p class="text-xs text-neutral-500 mt-1">Ödeme tarihine göre</p>
     </a>
     <a href="{{ route('sales.index', ['from' => $weekStartStr, 'to' => $weekEndStr]) }}" class="card p-4 border-violet-200 dark:border-violet-800/60 bg-violet-50/40 dark:bg-violet-950/20 hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-colors">
         <p class="text-xs font-medium text-violet-800 dark:text-violet-300 uppercase tracking-wide">Bu ay satış</p>
@@ -76,9 +76,20 @@
         @endif
     </a>
     <a href="{{ route('customer-payments.create', ['list' => 1, 'from' => $weekStartStr, 'to' => $weekEndStr]) }}" class="card p-4 border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/40 dark:bg-indigo-950/20 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors">
-        <p class="text-xs font-medium text-indigo-800 dark:text-indigo-300 uppercase tracking-wide">Bu ay tahsilat</p>
+        <p class="text-xs font-medium text-indigo-800 dark:text-indigo-300 uppercase tracking-wide">Bu ay nakit tahsilat</p>
         <p class="text-2xl sm:text-3xl font-semibold text-indigo-700 dark:text-indigo-400 mt-1 tabular-nums">₺{{ number_format($weekKasaInflow, 0, ',', '.') }}</p>
-        <p class="text-xs text-neutral-500 mt-1">{{ $weekRangeLabel ?? '' }} · tüm tahsilatlar</p>
+        @if(($monthCashOnPriorSales ?? 0) > 0.005 || ($monthCashUnallocated ?? 0) > 0.005)
+            <p class="text-xs text-indigo-700/80 dark:text-indigo-300/80 mt-1 tabular-nums">
+                Bu ayki satışlara ₺{{ number_format($monthCashOnPeriodSales ?? 0, 0, ',', '.') }}
+                @if(($monthCashOnPriorSales ?? 0) > 0.005)
+                · eski satışlara ₺{{ number_format($monthCashOnPriorSales, 0, ',', '.') }}
+                @endif
+                @if(($monthCashUnallocated ?? 0) > 0.005)
+                · atanmamış ₺{{ number_format($monthCashUnallocated, 0, ',', '.') }}
+                @endif
+            </p>
+        @endif
+        <p class="text-xs text-neutral-500 mt-1">Ödeme tarihine göre · {{ $weekRangeLabel ?? '' }}</p>
     </a>
 </div>
 
@@ -137,12 +148,17 @@
 </div>
 @endif
 
-{{-- Özet kartlar --}}
-<div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
+{{-- Özet kartlar (sipariş / satış tarihi bazlı — nakit tahsilatla karıştırılmaz) --}}
+<div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-3 mb-6">
     <div class="card p-4">
         <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Bu ay ciro</p>
         <p class="text-xl sm:text-2xl font-semibold text-neutral-900 dark:text-neutral-100 mt-1 tabular-nums">₺{{ number_format($monthlySales, 0, ',', '.') }}</p>
         <p class="text-xs text-neutral-400 mt-1">{{ $monthlySalesCount }} satış · {{ $weekRangeLabel ?? '' }}</p>
+    </div>
+    <div class="card p-4">
+        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Bu ayki satışlardan tahsil</p>
+        <p class="text-xl sm:text-2xl font-semibold text-emerald-600 mt-1 tabular-nums">₺{{ number_format($monthlySalesCollected ?? $monthlyCollected, 0, ',', '.') }}</p>
+        <p class="text-xs text-neutral-400 mt-1">Siparişe işlenen · ciro − alınacak</p>
     </div>
     <a href="{{ route('sales.index', ['from' => $weekStartStr, 'to' => $weekEndStr, 'paymentStatus' => 'borclu']) }}" class="card p-4 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors {{ $monthlyReceivable > 0 ? 'ring-1 ring-amber-200 dark:ring-amber-800/60' : '' }}">
         <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Alınacak</p>

@@ -73,7 +73,7 @@
             </td>
             <td class="table-td text-right tabular-nums">{{ number_format($totals->grandTotal, 0, ',', '.') }} ₺</td>
             <td class="table-td text-right text-emerald-600 tabular-nums">{{ number_format($totals->paidAmount, 0, ',', '.') }} ₺</td>
-            <td class="table-td text-right tabular-nums {{ $totals->remaining > 0 ? 'text-red-600' : '' }}">{{ number_format($totals->remaining, 0, ',', '.') }} ₺</td>
+            <td class="table-td text-right tabular-nums {{ ($totals->netRemaining ?? $totals->remaining) > 0 ? 'text-red-600' : (($totals->netRemaining ?? $totals->remaining) < -0.005 ? 'text-blue-600' : '') }}">{{ number_format($totals->netRemaining ?? $totals->remaining, 0, ',', '.') }} ₺</td>
             <td class="table-td" colspan="{{ $print ? 1 : 2 }}"></td>
         </tr>
     </tfoot>

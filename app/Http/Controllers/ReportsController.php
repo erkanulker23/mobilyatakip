@@ -16,6 +16,7 @@ use App\Models\Supplier;
 use App\Models\SupplierPayment;
 use App\Support\CustomerBalance;
 use App\Support\CustomerLedger;
+use App\Support\PeriodAccounting;
 use App\Support\ReportFilters;
 use App\Support\SaleDelivery;
 use App\Support\SalesReportQuery;
@@ -513,16 +514,16 @@ class ReportsController extends Controller
             ->orderByDesc('createdAt')
             ->get();
 
+        $totals = PeriodAccounting::fromSalesCollection($sales);
+
         return [
             'sales' => $sales,
             'applyDateFilter' => $applyDateFilter,
             'statusOnlyList' => $statusOnlyList,
-            'totals' => (object) [
-                'count' => $sales->count(),
-                'grandTotal' => (float) $sales->sum('grandTotal'),
-                'paidAmount' => (float) $sales->sum('paidAmount'),
-                'remaining' => (float) $sales->sum(fn (Sale $s) => CustomerBalance::saleRemaining($s)),
-            ],
+            'totals' => $totals,
+            'cashAccounting' => $applyDateFilter
+                ? PeriodAccounting::forRange($from, $to)
+                : null,
         ];
     }
 

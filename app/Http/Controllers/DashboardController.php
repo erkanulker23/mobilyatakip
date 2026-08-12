@@ -13,6 +13,7 @@ use App\Models\ServiceTicket;
 use App\Models\User;
 use App\Services\StockService;
 use App\Support\PaymentType;
+use App\Support\PeriodAccounting;
 use App\Support\PersonnelSalesStats;
 use App\Support\SaleDelivery;
 use App\Support\SalesMonthStats;
@@ -71,17 +72,20 @@ class DashboardController extends Controller
             $weekSalesCount = SalesMonthStats::count($currentMonthSalesQuery);
             $weekSalesTotal = SalesMonthStats::turnover($currentMonthSalesQuery);
 
-            $weekKasaInflow = (float) CustomerPayment::query()
-                ->whereBetween('paymentDate', [$weekStart->toDateString(), $weekQueryEnd->toDateString()])
-                ->sum('amount');
+            $monthAccounting = PeriodAccounting::forRange($weekStart, $weekQueryEnd);
+            $weekKasaInflow = $monthAccounting['cashCollections'];
+            $monthlySalesCollected = $monthAccounting['collectedOnSales'];
+            $monthCashOnPeriodSales = $monthAccounting['cashOnPeriodSales'];
+            $monthCashOnPriorSales = $monthAccounting['cashOnPriorSales'];
+            $monthCashUnallocated = $monthAccounting['cashUnallocated'];
 
             $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
             $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
 
-            $monthlySales = SalesMonthStats::turnover($currentMonthSalesQuery);
-            $monthlyCollected = SalesMonthStats::collectedOnSales($currentMonthSalesQuery);
-            $monthlyReceivable = SalesMonthStats::receivable($currentMonthSalesQuery);
-            $monthlySalesCount = SalesMonthStats::count($currentMonthSalesQuery);
+            $monthlySales = $monthAccounting['revenue'];
+            $monthlyCollected = $monthAccounting['collectedOnSales'];
+            $monthlyReceivable = $monthAccounting['receivable'];
+            $monthlySalesCount = $monthAccounting['saleCount'];
 
             $lastMonthSales = SalesMonthStats::turnover(
                 SalesMonthStats::salesQuery($lastMonthStart, $lastMonthEnd)
@@ -132,6 +136,10 @@ class DashboardController extends Controller
             $weekSalesCount = 0;
             $weekSalesTotal = 0;
             $weekKasaInflow = 0;
+            $monthlySalesCollected = 0;
+            $monthCashOnPeriodSales = 0;
+            $monthCashOnPriorSales = 0;
+            $monthCashUnallocated = 0;
             $weekRangeLabel = SalesMonthStats::currentMonthRange($today)['label'];
             $monthlySales = 0;
             $monthlyCollected = 0;
@@ -260,6 +268,10 @@ class DashboardController extends Controller
             'weekSalesCount',
             'weekSalesTotal',
             'weekKasaInflow',
+            'monthlySalesCollected',
+            'monthCashOnPeriodSales',
+            'monthCashOnPriorSales',
+            'monthCashUnallocated',
             'weekStart',
             'weekEnd',
             'weekRangeLabel',
