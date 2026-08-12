@@ -4,6 +4,7 @@
 @php
     $selectedBranchId = request('branchId');
     $selectedBranch = ($branches ?? collect())->first(fn ($b) => (string) $b->id === (string) $selectedBranchId);
+    $branchLabel = $selectedBranch ? ' · '.$selectedBranch->name : ($selectedBranchId === 'none' ? ' · Şube belirtilmemiş' : '');
     $filterChip = fn (array $params) => route('quotes.index', array_filter(array_merge(
         request()->only(['search', 'customerId', 'personnelId', 'status', 'from', 'to', 'branchId']),
         $params
@@ -12,7 +13,7 @@
 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
     <div>
         <h1 class="page-title">Teklifler</h1>
-        <p class="page-desc">Teklif listesi ve satışa dönüştürme@if($selectedBranch) · {{ $selectedBranch->name }}@elseif($selectedBranchId === 'none') · Şube belirtilmemiş@endif</p>
+        <p class="page-desc">Teklif listesi ve satışa dönüştürme{{ $branchLabel }}</p>
     </div>
     <a href="{{ route('quotes.create') }}" class="btn-primary">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>

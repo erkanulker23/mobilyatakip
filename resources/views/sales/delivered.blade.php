@@ -7,6 +7,7 @@
     $filterChip = fn (array $params) => route('sales.delivered', array_filter(array_merge(request()->only(['search', 'customerId', 'from', 'to', 'paymentStatus', 'branchId']), $params), fn ($v) => $v !== null && $v !== ''));
     $selectedBranchId = request('branchId');
     $selectedBranch = ($branches ?? collect())->first(fn ($b) => (string) $b->id === (string) $selectedBranchId);
+    $branchLabel = $selectedBranch ? ' · '.$selectedBranch->name : ($selectedBranchId === 'none' ? ' · Şube belirtilmemiş' : '');
 @endphp
 
 <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
@@ -17,7 +18,7 @@
             <span class="text-neutral-700 dark:text-neutral-300">Teslim edilenler</span>
         </nav>
         <h1 class="page-title">Teslim Edilenler</h1>
-        <p class="page-desc mt-1">Müşteriye teslim edilmiş siparişler@if($selectedBranch) · {{ $selectedBranch->name }}@elseif($selectedBranchId === 'none') · Şube belirtilmemiş@endif</p>
+        <p class="page-desc mt-1">Müşteriye teslim edilmiş siparişler{{ $branchLabel }}</p>
     </div>
     <a href="{{ route('sales.index', request()->only(['branchId'])) }}" class="btn-secondary w-full sm:w-auto justify-center">← Tüm satışlar</a>
 </div>

@@ -17,12 +17,13 @@
     $filterChip = fn (array $params) => route('sales.index', array_filter(array_merge(request()->only(['search', 'customerId', 'from', 'to', 'paymentStatus', 'deliveryStatus', 'cancelled', 'branchId']), $params), fn ($v) => $v !== null && $v !== ''));
     $selectedBranchId = request('branchId');
     $selectedBranch = ($branches ?? collect())->first(fn ($b) => (string) $b->id === (string) $selectedBranchId);
+    $branchLabel = $selectedBranch ? ' · '.$selectedBranch->name : ($selectedBranchId === 'none' ? ' · Şube belirtilmemiş' : '');
 @endphp
 
 <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
     <div>
         <h1 class="page-title">Satışlar</h1>
-        <p class="page-desc mt-1">Siparişler, teslimat durumu ve tahsilat takibi@if($selectedBranch) · {{ $selectedBranch->name }}@elseif($selectedBranchId === 'none') · Şube belirtilmemiş@endif</p>
+        <p class="page-desc mt-1">Siparişler, teslimat durumu ve tahsilat takibi{{ $branchLabel }}</p>
     </div>
     <a href="{{ route('sales.create') }}" class="btn-primary w-full sm:w-auto justify-center">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>

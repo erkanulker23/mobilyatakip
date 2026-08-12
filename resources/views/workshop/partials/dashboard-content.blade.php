@@ -21,7 +21,7 @@
         </div>
         @endif
         <h1 class="page-title">{{ ($viewingOwnProfile ?? true) ? UserGreeting::message() : $personnel->name . ' — Atölye' }}</h1>
-        <p class="page-desc mt-1">Üretim takibi, terminler ve servis kayıtları — bugün odaklanmanız gereken işler@if($personnel->branch) · {{ $personnel->branch->name }}@endif</p>
+        <p class="page-desc mt-1">Üretim takibi, terminler ve servis kayıtları — bugün odaklanmanız gereken işler{{ $personnel->branch ? ' · '.$personnel->branch->name : '' }}</p>
     </div>
     <div class="flex flex-wrap gap-2">
         <a href="{{ route('reports.upcoming-due', ['days' => $terminDays]) }}" class="btn-secondary text-sm">Termin Raporu</a>

@@ -21,6 +21,7 @@
         || request()->filled('to');
     $selectedBranchId = request('branchId');
     $selectedBranch = ($branches ?? collect())->first(fn ($b) => (string) $b->id === (string) $selectedBranchId);
+    $branchLabel = $selectedBranch ? ' · '.$selectedBranch->name : ($selectedBranchId === 'none' ? ' · Şube belirtilmemiş' : '');
 
     $filterChip = fn (array $params) => route('service-tickets.index', array_filter(
         array_merge(request()->only(['search', 'customerId', 'from', 'to', 'status', 'branchId']), $params),
@@ -31,7 +32,7 @@
 <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
     <div>
         <h1 class="page-title">Servis Kayıtları (SSH)</h1>
-        <p class="page-desc">Servis ve garanti takibi — açık kayıtları hızlı yönetin@if($selectedBranch) · {{ $selectedBranch->name }}@elseif($selectedBranchId === 'none') · Şube belirtilmemiş@endif</p>
+        <p class="page-desc">Servis ve garanti takibi — açık kayıtları hızlı yönetin{{ $branchLabel }}</p>
     </div>
     @if(empty($hideCommercialData))
     <a href="{{ route('service-tickets.create') }}" class="btn-primary shrink-0">
