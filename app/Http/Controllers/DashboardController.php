@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\CustomerPayment;
 use App\Models\Kasa;
-use App\Models\KasaHareket;
 use App\Models\Personnel;
 use App\Models\Sale;
 use App\Models\Quote;
@@ -72,11 +71,8 @@ class DashboardController extends Controller
             $weekSalesCount = SalesMonthStats::count($currentMonthSalesQuery);
             $weekSalesTotal = SalesMonthStats::turnover($currentMonthSalesQuery);
 
-            $weekKasaInflow = (float) KasaHareket::query()
-                ->ledger()
-                ->where('refType', 'customer_payment')
-                ->whereBetween('movementDate', [$weekStart->toDateString(), $weekQueryEnd->toDateString()])
-                ->where('amount', '>', 0)
+            $weekKasaInflow = (float) CustomerPayment::query()
+                ->whereBetween('paymentDate', [$weekStart->toDateString(), $weekQueryEnd->toDateString()])
                 ->sum('amount');
 
             $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
@@ -132,7 +128,7 @@ class DashboardController extends Controller
             $todaySalesCount = 0;
             $todaySalesTotal = 0;
             $todayKasaInflow = 0;
-            $todayKasaBreakdown = ['total' => 0, 'nakitTotal' => 0, 'byType' => collect(), 'byKasa' => collect()];
+            $todayKasaBreakdown = ['total' => 0, 'nakitTotal' => 0, 'kasaTotal' => 0, 'supplierTotal' => 0, 'byType' => collect(), 'byKasa' => collect()];
             $weekSalesCount = 0;
             $weekSalesTotal = 0;
             $weekKasaInflow = 0;
@@ -305,44 +301,51 @@ class DashboardController extends Controller
 
     private function buildTodayKasaBreakdown(Carbon $date): array
     {
-        $movements = KasaHareket::query()
-            ->ledger()
-            ->where('refType', 'customer_payment')
-            ->whereDate('movementDate', $date)
-            ->where('amount', '>', 0)
-            ->get(['id', 'amount', 'kasaId', 'refId']);
+        $payments = CustomerPayment::query()
+            ->whereDate('paymentDate', $date)
+            ->get(['id', 'amount', 'kasaId', 'paymentType']);
 
-        if ($movements->isEmpty()) {
+        if ($payments->isEmpty()) {
             return [
                 'total' => 0.0,
                 'nakitTotal' => 0.0,
+                'kasaTotal' => 0.0,
+                'supplierTotal' => 0.0,
                 'byType' => collect(),
                 'byKasa' => collect(),
             ];
         }
 
-        $payments = CustomerPayment::query()
-            ->whereIn('id', $movements->pluck('refId')->filter()->unique())
-            ->get(['id', 'paymentType'])
-            ->keyBy('id');
-
         $kasalar = Kasa::query()
-            ->whereIn('id', $movements->pluck('kasaId')->filter()->unique())
+            ->whereIn('id', $payments->pluck('kasaId')->filter()->unique())
             ->get(['id', 'name', 'type', 'bankName'])
             ->keyBy('id');
 
         $byType = [];
         $byKasa = [];
+        $kasaTotal = 0.0;
+        $supplierTotal = 0.0;
 
-        foreach ($movements as $movement) {
-            $amount = (float) $movement->amount;
-            $kasa = $kasalar->get($movement->kasaId);
-            $storedType = $payments->get($movement->refId)?->paymentType;
-            $paymentType = PaymentType::effectiveTypeForKasaMovement($storedType, $kasa);
+        foreach ($payments as $payment) {
+            $amount = (float) $payment->amount;
+            $storedType = $payment->paymentType;
+            $kasa = $payment->kasaId ? $kasalar->get($payment->kasaId) : null;
+            $isSupplierPay = $storedType === 'tedarikciye_ode';
+            $paymentType = $isSupplierPay
+                ? 'tedarikciye_ode'
+                : PaymentType::effectiveTypeForKasaMovement($storedType, $kasa);
+
             $byType[$paymentType] = ($byType[$paymentType] ?? 0) + $amount;
 
-            if ($movement->kasaId) {
-                $kasaKey = (string) $movement->kasaId;
+            if ($isSupplierPay) {
+                $supplierTotal += $amount;
+                $byKasa['_supplier'] = ($byKasa['_supplier'] ?? 0) + $amount;
+                continue;
+            }
+
+            $kasaTotal += $amount;
+            if ($payment->kasaId) {
+                $kasaKey = (string) $payment->kasaId;
                 $byKasa[$kasaKey] = ($byKasa[$kasaKey] ?? 0) + $amount;
             }
         }
@@ -358,6 +361,15 @@ class DashboardController extends Controller
 
         $byKasaRows = collect($byKasa)
             ->map(function (float $amount, string $kasaId) use ($kasalar) {
+                if ($kasaId === '_supplier') {
+                    return [
+                        'id' => null,
+                        'name' => 'Tedarikçiye ödeme',
+                        'typeLabel' => 'Kasa dışı',
+                        'amount' => $amount,
+                    ];
+                }
+
                 $kasa = $kasalar->get($kasaId);
 
                 return [
@@ -371,8 +383,10 @@ class DashboardController extends Controller
             ->values();
 
         return [
-            'total' => (float) $movements->sum('amount'),
+            'total' => (float) $payments->sum('amount'),
             'nakitTotal' => (float) ($byType['nakit'] ?? 0),
+            'kasaTotal' => $kasaTotal,
+            'supplierTotal' => $supplierTotal,
             'byType' => $byTypeRows,
             'byKasa' => $byKasaRows,
         ];
