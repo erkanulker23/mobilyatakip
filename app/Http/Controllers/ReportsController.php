@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\CustomerPayment;
 use App\Models\Expense;
@@ -18,6 +19,7 @@ use App\Support\CustomerLedger;
 use App\Support\ReportFilters;
 use App\Support\SaleDelivery;
 use App\Support\SalesReportQuery;
+use App\Support\ServiceTicketStatus;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -73,6 +75,7 @@ class ReportsController extends Controller
 
         $monthLabel = Carbon::now()->locale('tr')->isoFormat('MMMM YYYY');
         $salesStageReports = $this->salesStageReportCards();
+        $branchReports = $this->branchReportCards($monthStart, $monthEnd);
 
         return view('reports.index', compact(
             'monthlySales',
@@ -86,6 +89,7 @@ class ReportsController extends Controller
             'supplierPayable',
             'monthLabel',
             'salesStageReports',
+            'branchReports',
         ));
     }
 
@@ -163,6 +167,67 @@ class ReportsController extends Controller
         return $cards;
     }
 
+    /** @return list<array<string, mixed>> */
+    private function branchReportCards(Carbon $monthStart, Carbon $monthEnd): array
+    {
+        $saleCounts = Sale::query()
+            ->where('isCancelled', false)
+            ->whereBetween('saleDate', [$monthStart->toDateString(), $monthEnd->toDateString()])
+            ->selectRaw('branchId, COUNT(*) as aggregate')
+            ->groupBy('branchId')
+            ->get()
+            ->mapWithKeys(fn ($row) => [$this->branchStatKey($row->branchId) => (int) $row->aggregate]);
+
+        $ticketCounts = ServiceTicket::query()
+            ->whereBetween('openedAt', [$monthStart, $monthEnd])
+            ->selectRaw('branchId, COUNT(*) as aggregate')
+            ->groupBy('branchId')
+            ->get()
+            ->mapWithKeys(fn ($row) => [$this->branchStatKey($row->branchId) => (int) $row->aggregate]);
+
+        $openTicketCounts = ServiceTicket::query()
+            ->whereNotIn('status', ['tamamlandi', 'iptal'])
+            ->selectRaw('branchId, COUNT(*) as aggregate')
+            ->groupBy('branchId')
+            ->get()
+            ->mapWithKeys(fn ($row) => [$this->branchStatKey($row->branchId) => (int) $row->aggregate]);
+
+        $cards = [];
+        foreach (Branch::query()->where('isActive', true)->orderBy('name')->get() as $branch) {
+            $key = (string) $branch->id;
+            $cards[] = [
+                'id' => $branch->id,
+                'label' => $branch->name,
+                'desc' => 'Bu ayın sipariş ve SSH özeti',
+                'salesCount' => (int) ($saleCounts[$key] ?? 0),
+                'sshCount' => (int) ($ticketCounts[$key] ?? 0),
+                'openSsh' => (int) ($openTicketCounts[$key] ?? 0),
+                'url' => route('reports.branches', ['branchId' => $branch->id, 'period' => 'this_month']),
+                'printUrl' => route('reports.branches.print', ['branchId' => $branch->id, 'period' => 'this_month']),
+                'keywords' => 'şube '.$branch->name.' sipariş ssh',
+            ];
+        }
+
+        $unassignedSales = (int) ($saleCounts['_none'] ?? 0);
+        $unassignedSsh = (int) ($ticketCounts['_none'] ?? 0);
+        $unassignedOpen = (int) ($openTicketCounts['_none'] ?? 0);
+        if ($unassignedSales > 0 || $unassignedSsh > 0 || $unassignedOpen > 0) {
+            $cards[] = [
+                'id' => 'none',
+                'label' => 'Şube belirtilmemiş',
+                'desc' => 'Şubeye bağlanmamış sipariş ve SSH kayıtları',
+                'salesCount' => $unassignedSales,
+                'sshCount' => $unassignedSsh,
+                'openSsh' => $unassignedOpen,
+                'url' => route('reports.branches', ['branchId' => 'none', 'period' => 'this_month']),
+                'printUrl' => route('reports.branches.print', ['branchId' => 'none', 'period' => 'this_month']),
+                'keywords' => 'şube belirtilmemiş sipariş ssh',
+            ];
+        }
+
+        return $cards;
+    }
+
     public function incomeExpense(Request $request)
     {
         ['from' => $from, 'to' => $to, 'year' => $year] = ReportFilters::range($request);
@@ -188,10 +253,11 @@ class ReportsController extends Controller
         ['from' => $from, 'to' => $to, 'year' => $year, 'month' => $month] = ReportFilters::range($request);
 
         $personnelOptions = $this->salesPersonnelOptions();
-        $filters = $this->salesFilterState($request, $personnelOptions);
+        $branchOptions = Branch::forSelect(false);
+        $filters = $this->salesFilterState($request, $personnelOptions, $branchOptions);
 
         return view('reports.sales', array_merge(
-            compact('from', 'to', 'year', 'month', 'personnelOptions', 'filters'),
+            compact('from', 'to', 'year', 'month', 'personnelOptions', 'branchOptions', 'filters'),
             $this->salesData($from, $to, $request),
         ));
     }
@@ -201,11 +267,32 @@ class ReportsController extends Controller
         ['from' => $from, 'to' => $to, 'year' => $year, 'month' => $month] = ReportFilters::range($request);
 
         $personnelOptions = $this->salesPersonnelOptions();
-        $filters = $this->salesFilterState($request, $personnelOptions);
+        $branchOptions = Branch::forSelect(false);
+        $filters = $this->salesFilterState($request, $personnelOptions, $branchOptions);
 
         return view('reports.print.sales', array_merge(
-            compact('from', 'to', 'year', 'month', 'personnelOptions', 'filters'),
+            compact('from', 'to', 'year', 'month', 'personnelOptions', 'branchOptions', 'filters'),
             $this->salesData($from, $to, $request),
+        ));
+    }
+
+    public function branches(Request $request)
+    {
+        ['from' => $from, 'to' => $to, 'year' => $year, 'month' => $month] = ReportFilters::range($request);
+
+        return view('reports.branches', array_merge(
+            compact('from', 'to', 'year', 'month'),
+            $this->branchReportData($from, $to, $request),
+        ));
+    }
+
+    public function branchesPrint(Request $request): View
+    {
+        ['from' => $from, 'to' => $to, 'year' => $year, 'month' => $month] = ReportFilters::range($request);
+
+        return view('reports.print.branches', array_merge(
+            compact('from', 'to', 'year', 'month'),
+            $this->branchReportData($from, $to, $request),
         ));
     }
 
@@ -213,11 +300,12 @@ class ReportsController extends Controller
     {
         $days = max(1, min(90, (int) $request->input('days', self::TERMIN_DEFAULT_DAYS)));
         $personnelOptions = $this->salesPersonnelOptions();
-        $filters = $this->salesFilterState($request, $personnelOptions);
+        $branchOptions = Branch::forSelect(false);
+        $filters = $this->salesFilterState($request, $personnelOptions, $branchOptions);
 
         return view('reports.upcoming-due', array_merge(
             $this->upcomingDueData($days, $request),
-            compact('personnelOptions', 'filters'),
+            compact('personnelOptions', 'branchOptions', 'filters'),
         ));
     }
 
@@ -225,11 +313,12 @@ class ReportsController extends Controller
     {
         $days = max(1, min(90, (int) $request->input('days', self::TERMIN_DEFAULT_DAYS)));
         $personnelOptions = $this->salesPersonnelOptions();
-        $filters = $this->salesFilterState($request, $personnelOptions);
+        $branchOptions = Branch::forSelect(false);
+        $filters = $this->salesFilterState($request, $personnelOptions, $branchOptions);
 
         return view('reports.print.upcoming-due', array_merge(
             $this->upcomingDueData($days, $request),
-            compact('personnelOptions', 'filters'),
+            compact('personnelOptions', 'branchOptions', 'filters'),
             ['print' => true, 'forShipment' => false],
         ));
     }
@@ -238,11 +327,12 @@ class ReportsController extends Controller
     {
         $days = max(1, min(90, (int) $request->input('days', self::TERMIN_DEFAULT_DAYS)));
         $personnelOptions = $this->salesPersonnelOptions();
-        $filters = $this->salesFilterState($request, $personnelOptions);
+        $branchOptions = Branch::forSelect(false);
+        $filters = $this->salesFilterState($request, $personnelOptions, $branchOptions);
 
         return view('reports.print.upcoming-due-shipment', array_merge(
             $this->upcomingDueData($days, $request),
-            compact('personnelOptions', 'filters'),
+            compact('personnelOptions', 'branchOptions', 'filters'),
             ['print' => true, 'forShipment' => true],
         ));
     }
@@ -446,10 +536,11 @@ class ReportsController extends Controller
             ->get();
     }
 
-    /** @return array{personnelId: ?string, odeme: ?string, deliveryStatus: ?string, label: ?string} */
-    private function salesFilterState(Request $request, $personnelOptions): array
+    /** @return array{personnelId: ?string, branchId: ?string, odeme: ?string, deliveryStatus: ?string, label: ?string} */
+    private function salesFilterState(Request $request, $personnelOptions, $branchOptions = null): array
     {
         $personnelId = $request->input('personnelId');
+        $branchId = $request->input('branchId');
         $odeme = $request->input('odeme');
         $deliveryStatus = SaleDelivery::isFilterValue($request->input('deliveryStatus'))
             ? $request->input('deliveryStatus')
@@ -464,6 +555,14 @@ class ReportsController extends Controller
             $labels[] = 'Personel: ' . ($person?->name ?? '—');
         }
 
+        if ($branchId === 'none') {
+            $labels[] = 'Şube belirtilmemiş';
+        } elseif ($branchId) {
+            $branch = ($branchOptions ?: collect())->firstWhere('id', $branchId)
+                ?? Branch::find($branchId);
+            $labels[] = 'Şube: ' . ($branch?->name ?? '—');
+        }
+
         if ($odeme === 'borclu') {
             $labels[] = 'Borçlu';
         } elseif ($odeme === 'borcsuz') {
@@ -476,9 +575,164 @@ class ReportsController extends Controller
 
         return [
             'personnelId' => $personnelId,
+            'branchId' => $branchId,
             'odeme' => $odeme,
             'deliveryStatus' => $deliveryStatus,
             'label' => $labels !== [] ? implode(' · ', $labels) : null,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function branchReportData(Carbon $from, Carbon $to, Request $request): array
+    {
+        $branches = Branch::query()->orderBy('name')->get();
+        $selectedBranchId = $request->input('branchId');
+
+        $saleStats = Sale::query()
+            ->where('isCancelled', false)
+            ->whereBetween('saleDate', [$from->toDateString(), $to->toDateString()])
+            ->selectRaw('branchId, COUNT(*) as sale_count, COALESCE(SUM(grandTotal), 0) as grand_total, COALESCE(SUM(paidAmount), 0) as paid_amount')
+            ->groupBy('branchId')
+            ->get()
+            ->keyBy(fn ($row) => $this->branchStatKey($row->branchId));
+
+        $ticketStats = ServiceTicket::query()
+            ->whereBetween('openedAt', [$from, $to])
+            ->selectRaw("branchId, COUNT(*) as ticket_count,
+                SUM(CASE WHEN status NOT IN ('tamamlandi', 'iptal') THEN 1 ELSE 0 END) as open_count,
+                SUM(CASE WHEN status = 'tamamlandi' THEN 1 ELSE 0 END) as done_count")
+            ->groupBy('branchId')
+            ->get()
+            ->keyBy(fn ($row) => $this->branchStatKey($row->branchId));
+
+        $rows = [];
+        foreach ($branches as $branch) {
+            $key = (string) $branch->id;
+            $rows[] = $this->makeBranchReportRow(
+                $key,
+                $branch->displayName(),
+                $saleStats->get($key),
+                $ticketStats->get($key),
+                (bool) $branch->isActive,
+            );
+        }
+
+        $unassignedSales = $saleStats->get('_none');
+        $unassignedTickets = $ticketStats->get('_none');
+        if ($unassignedSales || $unassignedTickets) {
+            $rows[] = $this->makeBranchReportRow(
+                'none',
+                'Şube belirtilmemiş',
+                $unassignedSales,
+                $unassignedTickets,
+                true,
+            );
+        }
+
+        $totals = [
+            'sale_count' => (int) collect($rows)->sum('sale_count'),
+            'grand_total' => (float) collect($rows)->sum('grand_total'),
+            'paid_amount' => (float) collect($rows)->sum('paid_amount'),
+            'remaining' => (float) collect($rows)->sum('remaining'),
+            'ticket_count' => (int) collect($rows)->sum('ticket_count'),
+            'open_count' => (int) collect($rows)->sum('open_count'),
+            'done_count' => (int) collect($rows)->sum('done_count'),
+        ];
+
+        $summaryTotals = $totals;
+        $detailSales = collect();
+        $detailTickets = collect();
+        $selectedLabel = null;
+        if (filled($selectedBranchId)) {
+            $selectedRow = collect($rows)->first(fn ($row) => (string) $row['id'] === (string) $selectedBranchId);
+            $selectedLabel = $selectedRow['name'] ?? null;
+            if ($selectedRow) {
+                $summaryTotals = [
+                    'sale_count' => $selectedRow['sale_count'],
+                    'grand_total' => $selectedRow['grand_total'],
+                    'paid_amount' => $selectedRow['paid_amount'],
+                    'remaining' => $selectedRow['remaining'],
+                    'ticket_count' => $selectedRow['ticket_count'],
+                    'open_count' => $selectedRow['open_count'],
+                    'done_count' => $selectedRow['done_count'],
+                ];
+            }
+
+            $detailSales = Sale::query()
+                ->with(['customer', 'branch'])
+                ->where('isCancelled', false)
+                ->whereBetween('saleDate', [$from->toDateString(), $to->toDateString()])
+                ->when(
+                    $selectedBranchId === 'none',
+                    fn ($q) => $q->whereNull('branchId'),
+                    fn ($q) => $q->where('branchId', $selectedBranchId),
+                )
+                ->orderByDesc('saleDate')
+                ->orderByDesc('createdAt')
+                ->limit(150)
+                ->get();
+
+            $detailTickets = ServiceTicket::query()
+                ->with(['customer', 'sale', 'branch'])
+                ->whereBetween('openedAt', [$from, $to])
+                ->when(
+                    $selectedBranchId === 'none',
+                    fn ($q) => $q->whereNull('branchId'),
+                    fn ($q) => $q->where('branchId', $selectedBranchId),
+                )
+                ->orderByDesc('openedAt')
+                ->limit(150)
+                ->get();
+        }
+
+        return [
+            'branchRows' => $rows,
+            'branchTotals' => $totals,
+            'summaryTotals' => $summaryTotals,
+            'branches' => $branches,
+            'selectedBranchId' => $selectedBranchId,
+            'selectedLabel' => $selectedLabel,
+            'detailSales' => $detailSales,
+            'detailTickets' => $detailTickets,
+        ];
+    }
+
+    private function branchStatKey(mixed $branchId): string
+    {
+        return $branchId === null || $branchId === '' ? '_none' : (string) $branchId;
+    }
+
+    private function applyBranchFilter($query, Request $request): void
+    {
+        if (! $request->filled('branchId')) {
+            return;
+        }
+
+        if ($request->input('branchId') === 'none') {
+            $query->whereNull('branchId');
+
+            return;
+        }
+
+        $query->where('branchId', $request->input('branchId'));
+    }
+
+    private function makeBranchReportRow(string $id, string $name, mixed $saleRow, mixed $ticketRow, bool $isActive): array
+    {
+        $grand = (float) ($saleRow?->grand_total ?? 0);
+        $paid = (float) ($saleRow?->paid_amount ?? 0);
+
+        return [
+            'id' => $id,
+            'name' => $name,
+            'isActive' => $isActive,
+            'sale_count' => (int) ($saleRow?->sale_count ?? 0),
+            'grand_total' => $grand,
+            'paid_amount' => $paid,
+            'remaining' => round($grand - $paid, 2),
+            'ticket_count' => (int) ($ticketRow?->ticket_count ?? 0),
+            'open_count' => (int) ($ticketRow?->open_count ?? 0),
+            'done_count' => (int) ($ticketRow?->done_count ?? 0),
         ];
     }
 
@@ -487,7 +741,7 @@ class ReportsController extends Controller
     {
         $horizon = Carbon::today()->addDays($days);
 
-        $salesQuery = Sale::with(['customer.city', 'customer.district', 'personnel'])
+        $salesQuery = Sale::with(['customer.city', 'customer.district', 'personnel', 'branch'])
             ->where('isCancelled', false)
             ->pendingDelivery()
             ->whereNotNull('dueDate')
@@ -501,7 +755,9 @@ class ReportsController extends Controller
             }
         }
 
-        $sshQuery = ServiceTicket::with(['customer.city', 'customer.district', 'sale'])
+        $this->applyBranchFilter($salesQuery, $request);
+
+        $sshQuery = ServiceTicket::with(['customer.city', 'customer.district', 'sale', 'branch'])
             ->whereNotIn('status', ['tamamlandi', 'iptal'])
             ->whereNotNull('dueDate')
             ->whereDate('dueDate', '<=', $horizon);
@@ -516,6 +772,8 @@ class ReportsController extends Controller
                 $sshQuery->whereHas('sale', fn ($s) => $s->where('personnelId', $request->input('personnelId')));
             }
         }
+
+        $this->applyBranchFilter($sshQuery, $request);
 
         return [
             'days' => $days,

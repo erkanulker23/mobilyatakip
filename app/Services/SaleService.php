@@ -8,6 +8,7 @@ use App\Models\SaleActivity;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Product;
+use App\Models\Personnel;
 use App\Support\DrawingFiles;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -41,11 +42,16 @@ class SaleService
             $subtotal = 0;
             $kdvTotal = 0;
 
+            $branchId = $data['branchId'] ?? null;
+            if (! filled($branchId) && filled($data['personnelId'] ?? null)) {
+                $branchId = Personnel::resolveBranchId(null, $data['personnelId']);
+            }
+
             $sale = Sale::create([
                 'id' => (string) Str::uuid(),
                 'saleNumber' => $saleNumber,
                 'customerId' => $customerId,
-                'branchId' => $data['branchId'] ?? null,
+                'branchId' => $branchId,
                 'personnelId' => $data['personnelId'] ?? null,
                 'saleDate' => $data['saleDate'] ?? now(),
                 'dueDate' => $data['dueDate'] ?? null,
@@ -165,10 +171,12 @@ class SaleService
                 throw new \RuntimeException('Bu teklif zaten satışa dönüştürülmüş.');
             }
             $saleNumber = $this->nextSaleNumber();
+            $branchId = Personnel::resolveBranchId($quote->branchId, $quote->personnelId);
             $sale = Sale::create([
                 'id' => (string) Str::uuid(),
                 'saleNumber' => $saleNumber,
                 'customerId' => $quote->customerId,
+                'branchId' => $branchId,
                 'personnelId' => $quote->personnelId,
                 'quoteId' => $quote->id,
                 'saleDate' => now(),
@@ -274,6 +282,7 @@ class SaleService
                 'quoteNumber' => $quoteNumber,
                 'customerId' => $sale->customerId,
                 'personnelId' => $sale->personnelId,
+                'branchId' => $sale->branchId,
                 'status' => 'taslak',
                 'kdvIncluded' => $sale->kdvIncluded ?? true,
                 'generalDiscountPercent' => 0,

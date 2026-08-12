@@ -180,7 +180,7 @@ class PageSeo
     {
         return self::pack(
             $branch->name,
-            "{$branch->name} şube detayı, satış ve SSH kayıtları.",
+            "{$branch->name} şube detayı, personel, teklif, satış ve SSH kayıtları.",
             route('branches.show', $branch),
             [
                 ['name' => 'Şubeler', 'url' => route('branches.index')],

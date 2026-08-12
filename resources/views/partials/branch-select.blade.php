@@ -7,7 +7,7 @@
 @endphp
 <div>
     <label class="form-label" @if(!empty($id)) for="{{ $id }}" @endif>Şube</label>
-    <select name="{{ $field }}" @if(!empty($id)) id="{{ $id }}" @endif class="{{ $inputClass }}">
+    <select name="{{ $field }}" @if(!empty($id)) id="{{ $id }}" @endif data-personnel-branch-target class="{{ $inputClass }}">
         <option value="">{{ $emptyLabel }}</option>
         @foreach($branches ?? [] as $branch)
         <option value="{{ $branch->id }}" {{ (string) $selected === (string) $branch->id ? 'selected' : '' }}>

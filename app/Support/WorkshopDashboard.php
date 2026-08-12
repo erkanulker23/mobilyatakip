@@ -18,7 +18,7 @@ final class WorkshopDashboard
         $terminHorizon = Carbon::today()->addDays(self::TERMIN_HORIZON_DAYS);
 
         $productionSalesQuery = Sale::query()
-            ->with(['customer', 'personnel'])
+            ->with(['customer', 'personnel', 'branch'])
             ->where('isCancelled', false)
             ->where('orderStatus', SaleDelivery::IN_PRODUCTION)
             ->whereNull('deliveredAt')
@@ -35,7 +35,7 @@ final class WorkshopDashboard
             ->values();
 
         $upcomingDueSales = SaleDelivery::upcomingDueQuery(self::TERMIN_HORIZON_DAYS)
-            ->with(['customer', 'personnel'])
+            ->with(['customer', 'personnel', 'branch'])
             ->orderBy('dueDate')
             ->get();
 
@@ -54,7 +54,7 @@ final class WorkshopDashboard
             ->count();
 
         $openServiceTickets = ServiceTicket::query()
-            ->with(['customer', 'sale'])
+            ->with(['customer', 'sale', 'branch'])
             ->whereNotIn('status', ['tamamlandi', 'iptal'])
             ->orderByRaw('CASE WHEN dueDate IS NULL THEN 1 ELSE 0 END')
             ->orderBy('dueDate')
@@ -88,6 +88,8 @@ final class WorkshopDashboard
                 ->get();
             $taskCompleterFallback = UserTaskCompletion::completerNameMap($personnelTasks);
         }
+
+        $personnel->loadMissing('branch');
 
         $viewingOwnProfile = auth()->user()?->personnel?->id === $personnel->id;
 

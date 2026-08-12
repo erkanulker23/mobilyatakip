@@ -174,7 +174,7 @@ class DashboardController extends Controller
             $finalMeasurementCount = 0;
             $defaultWorkTab = 'termin';
         } else {
-            $urgentDueSales = Sale::with('customer')
+            $urgentDueSales = Sale::with(['customer', 'branch'])
                 ->where('isCancelled', false)
                 ->pendingDelivery()
                 ->whereNotNull('dueDate')
@@ -182,7 +182,7 @@ class DashboardController extends Controller
                 ->orderBy('dueDate')
                 ->get();
 
-            $upcomingSales = Sale::with('customer')
+            $upcomingSales = Sale::with(['customer', 'branch'])
                 ->where('isCancelled', false)
                 ->pendingDelivery()
                 ->whereNotNull('dueDate')
@@ -191,7 +191,7 @@ class DashboardController extends Controller
                 ->take(8)
                 ->get();
 
-            $upcomingServiceTickets = ServiceTicket::with(['customer', 'sale'])
+            $upcomingServiceTickets = ServiceTicket::with(['customer', 'sale', 'branch'])
                 ->whereNotIn('status', ['tamamlandi', 'iptal'])
                 ->whereNotNull('dueDate')
                 ->whereDate('dueDate', '<=', $terminHorizon)
@@ -204,7 +204,7 @@ class DashboardController extends Controller
                 ->where('needsFinalMeasurement', true)
                 ->count();
 
-            $finalMeasurementSales = Sale::with(['customer', 'personnel'])
+            $finalMeasurementSales = Sale::with(['customer', 'personnel', 'branch'])
                 ->where('isCancelled', false)
                 ->where('needsFinalMeasurement', true)
                 ->orderBy('saleDate')

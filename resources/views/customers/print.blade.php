@@ -32,6 +32,7 @@
                     <thead>
                         <tr>
                             <th class="text-left">No</th>
+                            <th class="text-left">Şube</th>
                             <th class="text-left">Tarih</th>
                             <th class="text-right">Toplam</th>
                             <th class="text-right">Ödenen</th>
@@ -44,6 +45,7 @@
                         @php $saleStatus = \App\Support\CustomerBalance::saleStatus($s); @endphp
                         <tr>
                             <td>{{ $s->saleNumber }}</td>
+                            <td class="print-muted">{{ $s->branch?->name ?? '—' }}</td>
                             <td class="print-muted">{{ $s->saleDate?->format('d.m.Y') }}</td>
                             <td class="text-right">{{ number_format($s->grandTotal ?? 0, 0, ',', '.') }} ₺</td>
                             <td class="text-right">{{ number_format($s->paidAmount ?? 0, 0, ',', '.') }} ₺</td>
@@ -51,7 +53,7 @@
                             <td>{{ $saleStatus['label'] }}</td>
                         </tr>
                         @endforeach
-                        @if($customer->sales->isEmpty())<tr><td colspan="6" class="text-center print-muted py-4">Satış yok.</td></tr>@endif
+                        @if($customer->sales->isEmpty())<tr><td colspan="7" class="text-center print-muted py-4">Satış yok.</td></tr>@endif
                     </tbody>
                 </table>
             </div>

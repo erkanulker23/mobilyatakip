@@ -64,7 +64,7 @@
                     <td class="table-td font-medium text-neutral-900">{{ $s->saleNumber }}</td>
                     @if(!$hideCommercialData)
                     <td class="table-td">{{ $s->customer?->name ?? '—' }}</td>
-                    <td class="table-td text-neutral-600">{{ $s->personnel?->name ?? '—' }}</td>
+                    <td class="table-td text-neutral-600">{{ $s->personnel?->name ?? '—' }}@if($s->branch)<span class="block text-xs text-emerald-700/80 dark:text-emerald-400/80">{{ $s->branch->name }}</span>@endif</td>
                     <td class="table-td">{{ $s->customer?->city?->name ?? '—' }}</td>
                     <td class="table-td">{{ $s->customer?->district?->name ?? '—' }}</td>
                     @elseif($showCustomerNames || $showSalesPersonnel)
@@ -142,7 +142,7 @@
                 @forelse($upcomingServiceTickets as $t)
                 @php $daysLeft = $t->dueDate ? $today->diffInDays($t->dueDate, false) : null; @endphp
                 <tr>
-                    <td class="table-td font-medium">{{ $t->ticketNumber }}</td>
+                    <td class="table-td font-medium">{{ $t->ticketNumber }}@if($t->branch)<span class="block text-xs text-emerald-700/80 dark:text-emerald-400/80 font-normal">{{ $t->branch->name }}</span>@endif</td>
                     @if(!$hideCommercialData)
                     <td class="table-td">{{ $t->customer?->name ?? '—' }}</td>
                     <td class="table-td">{{ $t->customer?->city?->name ?? '—' }}</td>

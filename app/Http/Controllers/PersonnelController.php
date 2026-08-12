@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Services\AuditLogPruner;
+use App\Models\Branch;
 use App\Models\Personnel;
 use App\Models\Sale;
 use App\Models\UserTask;
@@ -45,7 +46,7 @@ class PersonnelController extends Controller
             abort(403, 'Personel kaydınız bulunamadı.');
         }
 
-        $q = Personnel::query()->with('user')->orderBy('name');
+        $q = Personnel::query()->with(['user', 'branch'])->orderBy('name');
         if ($request->filled('search')) {
             $s = $request->search;
             $q->where(function ($w) use ($s) {
@@ -62,11 +63,19 @@ class PersonnelController extends Controller
         if ($request->filled('category')) {
             $q->where('category', $request->category);
         }
+        if ($request->filled('branchId')) {
+            if ($request->input('branchId') === 'none') {
+                $q->whereNull('branchId');
+            } else {
+                $q->where('branchId', $request->input('branchId'));
+            }
+        }
         $personnel = $q->paginate(20)->withQueryString();
 
         $categoryOptions = PersonnelCategory::options();
+        $branchOptions = Branch::forSelect(false);
 
-        return view('personnel.index', compact('personnel', 'categoryOptions'));
+        return view('personnel.index', compact('personnel', 'categoryOptions', 'branchOptions'));
     }
 
     public function create()
@@ -77,8 +86,9 @@ class PersonnelController extends Controller
 
         $personnel = new Personnel;
         $categoryOptions = PersonnelCategory::options();
+        $branches = Branch::forSelect();
 
-        return view('personnel.create', compact('personnel', 'categoryOptions'));
+        return view('personnel.create', compact('personnel', 'categoryOptions', 'branches'));
     }
 
     public function store(Request $request)
@@ -94,6 +104,7 @@ class PersonnelController extends Controller
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
             'category' => ['nullable', 'string', Rule::in(PersonnelCategory::values())],
             'title' => 'nullable|string|max:255',
+            'branchId' => 'nullable|exists:branches,id',
             'photo' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:2048',
         ];
 
@@ -134,7 +145,7 @@ class PersonnelController extends Controller
 
         $this->authorizeView($personnel);
 
-        $personnel->load('user');
+        $personnel->load(['user', 'branch']);
 
         if (WorkshopUser::isWorkshopCategory($personnel->category)) {
             if (auth()->user()?->isWorkshop() && ! auth()->user()?->isAdmin()) {
@@ -144,7 +155,7 @@ class PersonnelController extends Controller
             return view('personnel.show-workshop', WorkshopDashboard::viewData($personnel));
         }
 
-        $salesQuery = $personnel->sales()->with('customer')->orderByDesc('saleDate')->orderByDesc('createdAt');
+        $salesQuery = $personnel->sales()->with(['customer', 'branch'])->orderByDesc('saleDate')->orderByDesc('createdAt');
 
         $activeSalesQuery = (clone $salesQuery)->where('isCancelled', false);
 
@@ -185,7 +196,7 @@ class PersonnelController extends Controller
         $terminHorizon = Carbon::today()->addDays(7);
 
         $upcomingDueSales = $personnel->sales()
-            ->with('customer')
+            ->with(['customer', 'branch'])
             ->where('isCancelled', false)
             ->pendingDelivery()
             ->whereNotNull('dueDate')
@@ -193,7 +204,7 @@ class PersonnelController extends Controller
             ->orderBy('dueDate')
             ->get();
 
-        $quotes = $personnel->quotes()->with('customer')->orderByDesc('createdAt')->limit(10)->get();
+        $quotes = $personnel->quotes()->with(['customer', 'branch'])->orderByDesc('createdAt')->limit(10)->get();
 
         $personnelTasks = collect();
         $taskCompleterFallback = [];
@@ -274,10 +285,14 @@ class PersonnelController extends Controller
     public function edit(Personnel $personnel)
     {
         $this->authorizeManage($personnel);
-        $personnel->load('user');
+        $personnel->load(['user', 'branch']);
         $categoryOptions = PersonnelCategory::options();
+        $branches = Branch::forSelect();
+        if ($personnel->branchId && ! $branches->contains('id', $personnel->branchId) && $personnel->branch) {
+            $branches = $branches->prepend($personnel->branch);
+        }
 
-        return view('personnel.edit', compact('personnel', 'categoryOptions'));
+        return view('personnel.edit', compact('personnel', 'categoryOptions', 'branches'));
     }
 
     public function update(Request $request, Personnel $personnel)
@@ -291,6 +306,7 @@ class PersonnelController extends Controller
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
             'category' => ['nullable', 'string', Rule::in(PersonnelCategory::values())],
             'title' => 'nullable|string|max:100',
+            'branchId' => 'nullable|exists:branches,id',
             'isActive' => 'nullable|boolean',
             'photo' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:2048',
         ];

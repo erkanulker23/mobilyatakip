@@ -26,6 +26,16 @@ class Branch extends BaseModel
         'isActive' => 'boolean',
     ];
 
+    public function personnel(): HasMany
+    {
+        return $this->hasMany(Personnel::class, 'branchId');
+    }
+
+    public function quotes(): HasMany
+    {
+        return $this->hasMany(Quote::class, 'branchId');
+    }
+
     public function sales(): HasMany
     {
         return $this->hasMany(Sale::class, 'branchId');

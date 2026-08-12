@@ -14,13 +14,15 @@
         || request()->filled('to')
         || request()->boolean('cancelled')
     );
-    $filterChip = fn (array $params) => route('sales.index', array_filter(array_merge(request()->only(['search', 'customerId', 'from', 'to', 'paymentStatus', 'deliveryStatus', 'cancelled', 'branchId']), $params)));
+    $filterChip = fn (array $params) => route('sales.index', array_filter(array_merge(request()->only(['search', 'customerId', 'from', 'to', 'paymentStatus', 'deliveryStatus', 'cancelled', 'branchId']), $params), fn ($v) => $v !== null && $v !== ''));
+    $selectedBranchId = request('branchId');
+    $selectedBranch = ($branches ?? collect())->first(fn ($b) => (string) $b->id === (string) $selectedBranchId);
 @endphp
 
 <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
     <div>
         <h1 class="page-title">Satışlar</h1>
-        <p class="page-desc mt-1">Siparişler, teslimat durumu ve tahsilat takibi</p>
+        <p class="page-desc mt-1">Siparişler, teslimat durumu ve tahsilat takibi@if($selectedBranch) · {{ $selectedBranch->name }}@elseif($selectedBranchId === 'none') · Şube belirtilmemiş@endif</p>
     </div>
     <a href="{{ route('sales.create') }}" class="btn-primary w-full sm:w-auto justify-center">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
@@ -47,6 +49,8 @@
     </a>
 </div>
 
+@include('partials.branch-filter-chips')
+
 <div class="card overflow-hidden" x-data="salesBulk" data-sale-ids='{{ json_encode($saleIds ?? []) }}'>
     <div class="p-4 border-b border-neutral-100 dark:border-neutral-800">
         <form method="GET" action="{{ route('sales.index') }}" id="salesFilterForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-end">
@@ -67,9 +71,10 @@
             <div>
                 <label class="form-label">Şube</label>
                 <select name="branchId" class="form-select w-full">
-                    <option value="">Tümü</option>
+                    <option value="">Tüm şubeler</option>
+                    <option value="none" {{ $selectedBranchId === 'none' ? 'selected' : '' }}>Şube belirtilmemiş</option>
                     @foreach($branches ?? [] as $branch)
-                    <option value="{{ $branch->id }}" {{ request('branchId') == $branch->id ? 'selected' : '' }}>{{ $branch->displayName() }}</option>
+                    <option value="{{ $branch->id }}" {{ (string) $selectedBranchId === (string) $branch->id ? 'selected' : '' }}>{{ $branch->displayName() }}</option>
                     @endforeach
                 </select>
             </div>
@@ -112,7 +117,7 @@
             <a href="{{ $filterChip(['deliveryStatus' => \App\Support\SaleDelivery::IN_PRODUCTION, 'paymentStatus' => null]) }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ request('deliveryStatus') === \App\Support\SaleDelivery::IN_PRODUCTION ? 'bg-violet-600 text-white' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">Üretimde</a>
             <a href="{{ $filterChip(['deliveryStatus' => \App\Support\SaleDelivery::PENDING, 'paymentStatus' => null, 'cancelled' => null]) }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ request('deliveryStatus') === \App\Support\SaleDelivery::PENDING ? 'bg-neutral-700 text-white dark:bg-neutral-500' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">Teslim bekliyor</a>
             <a href="{{ $filterChip(['cancelled' => 1, 'deliveryStatus' => null, 'paymentStatus' => null]) }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ request()->boolean('cancelled') ? 'bg-red-600 text-white' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">İptal edilenler{{ ($stats['cancelled'] ?? 0) > 0 ? ' ('.$stats['cancelled'].')' : '' }}</a>
-            <a href="{{ route('sales.delivered') }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700">Teslim edilenler →</a>
+            <a href="{{ route('sales.delivered', request()->only(['branchId'])) }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700">Teslim edilenler →</a>
         </div>
     </div>
 

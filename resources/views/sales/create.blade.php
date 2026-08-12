@@ -171,17 +171,18 @@
                             </div>
                             <div>
                                 <label class="form-label">Satışı Yapan Personel</label>
-                                <select name="personnelId" class="form-select min-h-[44px]">
+                                <select name="personnelId" class="form-select min-h-[44px]" data-personnel-branch-source>
                                     <option value="">Seçiniz</option>
                                     @foreach($personnel as $p)
-                                    <option value="{{ $p->id }}" {{ old('personnelId') == $p->id ? 'selected' : '' }}>{{ $p->name }}{{ $p->title ? ' — ' . $p->title : '' }}</option>
+                                    <option value="{{ $p->id }}" data-branch-id="{{ $p->branchId }}" {{ old('personnelId') == $p->id ? 'selected' : '' }}>{{ $p->name }}{{ $p->title ? ' — ' . $p->title : '' }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             @include('partials.branch-select', [
                                 'branches' => $branches ?? collect(),
                                 'class' => 'form-select min-h-[44px]',
-                                'hint' => 'Bu siparişin hangi şubeye ait olduğunu seçin. Boş bırakılabilir.',
+                                'id' => 'saleBranchSelect',
+                                'hint' => 'Personel seçilince şubesi otomatik gelir. Boş bırakılabilir.',
                             ])
                             <div class="sm:col-span-2">
                                 <input type="hidden" name="needsFinalMeasurement" value="0">
@@ -1047,4 +1048,5 @@ function initSalesForm() {
     updateSaleTotals();
 }
 </script>
+@include('partials.personnel-branch-sync')
 @endsection

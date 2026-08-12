@@ -250,6 +250,9 @@
                         <div class="min-w-0 flex-1">
                             <p class="font-medium text-neutral-900 dark:text-neutral-100">{{ $s->saleNumber }}</p>
                             <p class="text-sm text-neutral-500 truncate">{{ $s->customer?->name ?? '—' }}</p>
+                            @if($s->branch)
+                            <p class="text-xs text-emerald-700/80 dark:text-emerald-400/80 mt-0.5">{{ $s->branch->name }}</p>
+                            @endif
                         </div>
                         <div class="text-right shrink-0">
                             <p class="text-sm text-neutral-600 dark:text-neutral-400">{{ $s->dueDate?->format('d.m.Y') }}</p>
@@ -275,6 +278,9 @@
                         <div class="min-w-0 flex-1">
                             <p class="font-medium text-amber-700 dark:text-amber-400">{{ $s->saleNumber }}</p>
                             <p class="text-sm text-neutral-500 truncate">{{ $s->customer?->name ?? '—' }}</p>
+                            @if($s->branch)
+                            <p class="text-xs text-emerald-700/80 dark:text-emerald-400/80 mt-0.5">{{ $s->branch->name }}</p>
+                            @endif
                             @if($s->customer?->phone)
                                 <p class="text-xs text-neutral-400 mt-0.5">{{ $s->customer->phone }}</p>
                             @endif
@@ -322,6 +328,9 @@
                         <div class="min-w-0 flex-1">
                             <p class="font-medium text-neutral-900 dark:text-neutral-100">{{ $ticket->ticketNumber }}</p>
                             <p class="text-sm text-neutral-500 truncate">{{ $ticket->customer?->name ?? '—' }}</p>
+                            @if($ticket->branch)
+                            <p class="text-xs text-emerald-700/80 dark:text-emerald-400/80 mt-0.5">{{ $ticket->branch->name }}</p>
+                            @endif
                             <span class="inline-block mt-1 text-xs badge {{ $status === 'devam_ediyor' ? 'badge-amber' : 'badge-blue' }}">{{ \App\Support\ServiceTicketStatus::label($status) }}</span>
                         </div>
                         <div class="text-right shrink-0">

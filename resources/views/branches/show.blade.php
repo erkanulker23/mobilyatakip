@@ -15,7 +15,7 @@
                 <span class="text-sm font-normal px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">Pasif</span>
                 @endif
             </h1>
-            <p class="page-desc">Şube detayı, satış ve SSH özeti</p>
+            <p class="page-desc">Şube detayı, personel, teklif, satış ve SSH özeti</p>
         </div>
         <a href="{{ route('branches.edit', $branch) }}" class="btn-edit">Düzenle</a>
     </div>
@@ -38,18 +38,47 @@
                 <div><dt class="text-neutral-500">Adres</dt><dd class="font-medium">{{ $branch->full_address ?: '—' }}</dd></div>
             </dl>
         </div>
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <a href="{{ route('sales.index', ['branchId' => $branch->id]) }}" class="card p-4 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
                 <p class="text-xs text-neutral-500 uppercase tracking-wide">Satış</p>
                 <p class="text-2xl font-semibold mt-1 tabular-nums">{{ $branch->sales_count }}</p>
+            </a>
+            <a href="{{ route('quotes.index', ['branchId' => $branch->id]) }}" class="card p-4 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
+                <p class="text-xs text-neutral-500 uppercase tracking-wide">Teklif</p>
+                <p class="text-2xl font-semibold mt-1 tabular-nums">{{ $branch->quotes_count }}</p>
             </a>
             <a href="{{ route('service-tickets.index', ['branchId' => $branch->id]) }}" class="card p-4 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
                 <p class="text-xs text-neutral-500 uppercase tracking-wide">SSH</p>
                 <p class="text-2xl font-semibold mt-1 tabular-nums">{{ $branch->service_tickets_count }}</p>
             </a>
+            <a href="{{ route('personnel.index', ['branchId' => $branch->id]) }}" class="card p-4 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
+                <p class="text-xs text-neutral-500 uppercase tracking-wide">Personel</p>
+                <p class="text-2xl font-semibold mt-1 tabular-nums">{{ $branch->personnel_count }}</p>
+            </a>
         </div>
     </div>
     <div class="lg:col-span-2 space-y-6">
+        <div class="card overflow-hidden">
+            <div class="px-6 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Görevli personel</h2>
+                <a href="{{ route('personnel.index', ['branchId' => $branch->id]) }}" class="text-sm text-emerald-600 dark:text-emerald-400 hover:underline">Tümü</a>
+            </div>
+            <div class="divide-y divide-neutral-100 dark:divide-neutral-800">
+                @forelse($branchPersonnel as $person)
+                <a href="{{ route('personnel.show', $person) }}" class="flex items-center justify-between gap-3 px-6 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-900/40">
+                    <div class="min-w-0">
+                        <p class="font-medium text-neutral-900 dark:text-neutral-100 truncate">{{ $person->name }}</p>
+                        <p class="text-xs text-neutral-500 truncate">{{ $person->title ?: \App\Support\PersonnelCategory::label($person->category) }}</p>
+                    </div>
+                    @if(! $person->isActive)
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 dark:bg-neutral-800">Pasif</span>
+                    @endif
+                </a>
+                @empty
+                <p class="px-6 py-8 text-sm text-neutral-500 text-center">Bu şubeye henüz personel atanmamış.</p>
+                @endforelse
+            </div>
+        </div>
         <div class="card overflow-hidden">
             <div class="px-6 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
                 <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Son satışlar</h2>
@@ -66,6 +95,25 @@
                 </a>
                 @empty
                 <p class="px-6 py-8 text-sm text-neutral-500 text-center">Bu şubeye henüz satış bağlanmamış.</p>
+                @endforelse
+            </div>
+        </div>
+        <div class="card overflow-hidden">
+            <div class="px-6 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Son teklifler</h2>
+                <a href="{{ route('quotes.index', ['branchId' => $branch->id]) }}" class="text-sm text-emerald-600 dark:text-emerald-400 hover:underline">Tümü</a>
+            </div>
+            <div class="divide-y divide-neutral-100 dark:divide-neutral-800">
+                @forelse($recentQuotes as $quote)
+                <a href="{{ route('quotes.show', $quote) }}" class="flex items-center justify-between gap-3 px-6 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-900/40">
+                    <div class="min-w-0">
+                        <p class="font-mono text-sm font-medium text-neutral-900 dark:text-neutral-100">{{ $quote->quoteNumber }}</p>
+                        <p class="text-xs text-neutral-500 truncate">{{ $quote->customer?->name ?? '—' }}</p>
+                    </div>
+                    <span class="text-xs text-neutral-400 whitespace-nowrap">{{ $quote->createdAt?->format('d.m.Y') }}</span>
+                </a>
+                @empty
+                <p class="px-6 py-8 text-sm text-neutral-500 text-center">Bu şubeye henüz teklif bağlanmamış.</p>
                 @endforelse
             </div>
         </div>

@@ -35,35 +35,12 @@ class ServiceTicketController extends Controller
             'closingDetail.user',
             'legacyClosingDetail.user',
         ])->orderBy('createdAt', 'desc');
-        if ($request->filled('search')) {
-            $s = $request->search;
-            $q->where(function ($w) use ($s) {
-                $w->where('ticketNumber', 'like', "%{$s}%")
-                    ->orWhere('issueType', 'like', "%{$s}%")
-                    ->orWhere('description', 'like', "%{$s}%")
-                    ->orWhereHas('customer', fn ($q) => $q->where('name', 'like', "%{$s}%"));
-            });
-        }
-        if ($request->filled('status')) {
-            $q->where('status', $request->status);
-        }
-        if ($request->filled('customerId')) {
-            $q->where('customerId', $request->customerId);
-        }
-        if ($request->filled('branchId')) {
-            $q->where('branchId', $request->branchId);
-        }
-        if ($request->filled('from')) {
-            $q->whereDate('createdAt', '>=', $request->from);
-        }
-        if ($request->filled('to')) {
-            $q->whereDate('createdAt', '<=', $request->to);
-        }
+        $this->applyIndexFilters($q, $request, true);
         $tickets = $q->paginate(20)->withQueryString();
         $customers = Customer::with(['city', 'district'])->where('isActive', true)->orderBy('name')->get();
         $branches = Branch::forSelect(false);
 
-        $statusCounts = ServiceTicket::query()
+        $statusCounts = $this->applyIndexFilters(ServiceTicket::query(), $request, false)
             ->selectRaw('status, COUNT(*) as aggregate')
             ->groupBy('status')
             ->pluck('aggregate', 'status')
@@ -800,5 +777,39 @@ class ServiceTicketController extends Controller
                 SaleDelivery::syncFromServiceTickets($sale);
             }
         }
+    }
+
+    private function applyIndexFilters($query, Request $request, bool $applyStatus)
+    {
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($w) use ($s) {
+                $w->where('ticketNumber', 'like', "%{$s}%")
+                    ->orWhere('issueType', 'like', "%{$s}%")
+                    ->orWhere('description', 'like', "%{$s}%")
+                    ->orWhereHas('customer', fn ($q) => $q->where('name', 'like', "%{$s}%"));
+            });
+        }
+        if ($applyStatus && $request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('customerId')) {
+            $query->where('customerId', $request->customerId);
+        }
+        if ($request->filled('branchId')) {
+            if ($request->input('branchId') === 'none') {
+                $query->whereNull('branchId');
+            } else {
+                $query->where('branchId', $request->input('branchId'));
+            }
+        }
+        if ($request->filled('from')) {
+            $query->whereDate('createdAt', '>=', $request->from);
+        }
+        if ($request->filled('to')) {
+            $query->whereDate('createdAt', '<=', $request->to);
+        }
+
+        return $query;
     }
 }

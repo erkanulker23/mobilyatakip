@@ -142,7 +142,7 @@
                     $statusClass = \App\Support\ServiceTicketStatus::badgeClass($ticket->status);
                     @endphp
                 <tr class="border-b border-slate-50 dark:border-slate-700/50">
-                    <td class="table-td"><a href="{{ route('service-tickets.show', $ticket) }}" class="font-medium text-emerald-600 dark:text-emerald-400 hover:underline">{{ $ticket->ticketNumber }}</a></td>
+                    <td class="table-td"><a href="{{ route('service-tickets.show', $ticket) }}" class="font-medium text-emerald-600 dark:text-emerald-400 hover:underline">{{ $ticket->ticketNumber }}</a>@if($ticket->branch)<span class="block text-xs text-neutral-500">{{ $ticket->branch->name }}</span>@endif</td>
                     <td class="table-td"><span class="badge {{ $statusClass }}">{{ $statusLabel }}</span></td>
                     <td class="table-td text-neutral-500 dark:text-slate-400">{{ $ticket->openedAt?->format('d.m.Y') ?? $ticket->createdAt?->format('d.m.Y') ?? '—' }}</td>
                 </tr>
@@ -260,7 +260,7 @@
                 <a href="{{ route('sales.show', $sale) }}" class="flex items-center justify-between gap-3 px-4 py-3 hover:bg-neutral-50 dark:hover:bg-slate-800/50 transition-colors">
                     <div class="min-w-0">
                         <p class="font-medium text-sm text-neutral-900 dark:text-white truncate">{{ $sale->saleNumber }}</p>
-                        <p class="text-xs text-neutral-500 dark:text-slate-400">{{ $sale->saleDate?->format('d.m.Y') }} · {{ number_format($sale->grandTotal, 0, ',', '.') }} ₺</p>
+                        <p class="text-xs text-neutral-500 dark:text-slate-400">{{ $sale->saleDate?->format('d.m.Y') }} · {{ number_format($sale->grandTotal, 0, ',', '.') }} ₺@if($sale->branch) · {{ $sale->branch->name }}@endif</p>
                     </div>
                     @include('partials.payment-status-badge', ['status' => $saleStatus])
                 </a>

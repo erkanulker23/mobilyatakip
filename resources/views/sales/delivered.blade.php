@@ -4,7 +4,9 @@
 @section('content')
 @php
     $listRoute = route('sales.delivered');
-    $filterChip = fn (array $params) => route('sales.delivered', array_filter(array_merge(request()->only(['search', 'customerId', 'from', 'to', 'paymentStatus', 'branchId']), $params)));
+    $filterChip = fn (array $params) => route('sales.delivered', array_filter(array_merge(request()->only(['search', 'customerId', 'from', 'to', 'paymentStatus', 'branchId']), $params), fn ($v) => $v !== null && $v !== ''));
+    $selectedBranchId = request('branchId');
+    $selectedBranch = ($branches ?? collect())->first(fn ($b) => (string) $b->id === (string) $selectedBranchId);
 @endphp
 
 <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
@@ -15,9 +17,9 @@
             <span class="text-neutral-700 dark:text-neutral-300">Teslim edilenler</span>
         </nav>
         <h1 class="page-title">Teslim Edilenler</h1>
-        <p class="page-desc mt-1">Müşteriye teslim edilmiş siparişler</p>
+        <p class="page-desc mt-1">Müşteriye teslim edilmiş siparişler@if($selectedBranch) · {{ $selectedBranch->name }}@elseif($selectedBranchId === 'none') · Şube belirtilmemiş@endif</p>
     </div>
-    <a href="{{ route('sales.index') }}" class="btn-secondary w-full sm:w-auto justify-center">← Tüm satışlar</a>
+    <a href="{{ route('sales.index', request()->only(['branchId'])) }}" class="btn-secondary w-full sm:w-auto justify-center">← Tüm satışlar</a>
 </div>
 
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
@@ -42,6 +44,8 @@
     </a>
 </div>
 
+@include('partials.branch-filter-chips')
+
 <div class="card overflow-hidden" x-data="salesBulk" data-sale-ids='{{ json_encode($saleIds ?? []) }}'>
     <div class="p-4 border-b border-neutral-100 dark:border-neutral-800">
         <form method="GET" action="{{ $listRoute }}" id="salesFilterForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-end">
@@ -61,9 +65,10 @@
             <div>
                 <label class="form-label">Şube</label>
                 <select name="branchId" class="form-select w-full">
-                    <option value="">Tümü</option>
+                    <option value="">Tüm şubeler</option>
+                    <option value="none" {{ $selectedBranchId === 'none' ? 'selected' : '' }}>Şube belirtilmemiş</option>
                     @foreach($branches ?? [] as $branch)
-                    <option value="{{ $branch->id }}" {{ request('branchId') == $branch->id ? 'selected' : '' }}>{{ $branch->displayName() }}</option>
+                    <option value="{{ $branch->id }}" {{ (string) $selectedBranchId === (string) $branch->id ? 'selected' : '' }}>{{ $branch->displayName() }}</option>
                     @endforeach
                 </select>
             </div>

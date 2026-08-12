@@ -210,6 +210,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/raporlar/termin-yaklasan/sevkiyat-yazdir', [\App\Http\Controllers\ReportsController::class, 'upcomingDueShipmentPrint'])->name('reports.upcoming-due.shipment-print');
     Route::get('/raporlar/satislar', [\App\Http\Controllers\ReportsController::class, 'sales'])->name('reports.sales');
     Route::get('/raporlar/satislar/yazdir', [\App\Http\Controllers\ReportsController::class, 'salesPrint'])->name('reports.sales.print');
+    Route::get('/raporlar/subeler', [\App\Http\Controllers\ReportsController::class, 'branches'])->name('reports.branches');
+    Route::get('/raporlar/subeler/yazdir', [\App\Http\Controllers\ReportsController::class, 'branchesPrint'])->name('reports.branches.print');
     Route::get('/raporlar/gelir-gider', [\App\Http\Controllers\ReportsController::class, 'incomeExpense'])->name('reports.income-expense');
     Route::get('/raporlar/gelir-gider/yazdir', [\App\Http\Controllers\ReportsController::class, 'incomeExpensePrint'])->name('reports.income-expense.print');
     Route::get('/raporlar/kdv', [\App\Http\Controllers\ReportsController::class, 'kdvReport'])->name('reports.kdv');

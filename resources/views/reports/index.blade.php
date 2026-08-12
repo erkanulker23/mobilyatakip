@@ -27,6 +27,17 @@
             'keywords' => 'satış fatura ciro sipariş liste',
         ],
         [
+            'category' => 'satis',
+            'title' => 'Şube Raporu',
+            'desc' => 'Şube bazında sipariş cirosu, tahsilat ve SSH (açık / tamamlanan) özeti.',
+            'route' => 'reports.branches',
+            'icon' => 'building',
+            'tone' => 'teal',
+            'stat' => count($branchReports ?? []) . ' şube',
+            'statHint' => 'Sipariş ve SSH karşılaştırması',
+            'keywords' => 'şube sipariş ssh servis ciro tahsilat',
+        ],
+        [
             'category' => 'finans',
             'title' => 'Gelir – Gider Raporu',
             'desc' => 'Seçilen dönemde satış geliri, tahsilat, gider ve tedarikçi ödemeleri.',
@@ -134,6 +145,7 @@
 @endif
 
 @include('reports.partials.sales-stage-cards', ['salesStageReports' => $salesStageReports ?? []])
+@include('reports.partials.branch-cards', ['branchReports' => $branchReports ?? []])
 
 <div id="reportSections" class="space-y-8">
     @foreach($categories as $catKey => $cat)
@@ -159,6 +171,7 @@
                             'violet' => 'bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400',
                             'sky' => 'bg-sky-50 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400',
                             'orange' => 'bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400',
+                            'teal' => 'bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400',
                             default => 'bg-neutral-100 text-neutral-600',
                         };
                     @endphp

@@ -221,10 +221,10 @@ class CustomerController extends Controller
 
     public function show(Customer $customer)
     {
-        $customer->load(['quotes', 'sales', 'payments.sale', 'serviceTickets.sale', 'city', 'district']);
+        $customer->load(['quotes.branch', 'sales.branch', 'payments.sale', 'serviceTickets.sale', 'city', 'district']);
 
         $serviceTickets = \App\Models\ServiceTicket::query()
-            ->with('sale')
+            ->with(['sale', 'branch'])
             ->where(function ($q) use ($customer) {
                 $q->where('customerId', $customer->id)
                     ->orWhereIn('saleId', $customer->sales->pluck('id'));
@@ -237,10 +237,10 @@ class CustomerController extends Controller
 
     public function edit(Customer $customer)
     {
-        $customer->load(['quotes', 'sales', 'payments', 'city', 'district']);
+        $customer->load(['quotes.branch', 'sales.branch', 'payments', 'city', 'district']);
 
         $serviceTickets = ServiceTicket::query()
-            ->with('sale')
+            ->with(['sale', 'branch'])
             ->where(function ($q) use ($customer) {
                 $q->where('customerId', $customer->id)
                     ->orWhereIn('saleId', $customer->sales->pluck('id'));
@@ -291,7 +291,7 @@ class CustomerController extends Controller
 
     public function print(Customer $customer)
     {
-        $customer->load(['quotes', 'sales.items.product', 'payments', 'city', 'district']);
+        $customer->load(['quotes.branch', 'sales.branch', 'sales.items.product', 'payments', 'city', 'district']);
         $totalSales = $customer->sales->where('isCancelled', false)->sum('grandTotal');
         $totalPaid = $customer->payments->sum('amount');
         $customerBalance = \App\Support\CustomerBalance::customerStatus((float) $totalSales, (float) $totalPaid);

@@ -7,6 +7,8 @@ use App\Models\QuoteItem;
 use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Personnel;
+use App\Models\Branch;
+use App\Models\Sale;
 use App\Services\SaleService;
 use App\Services\AuditService;
 use App\Support\DrawingFiles;
@@ -24,7 +26,7 @@ class QuoteController extends Controller
 
     public function index(Request $request)
     {
-        $q = Quote::with(['customer', 'personnel', 'createdByUser.personnel', 'convertedSale'])->orderBy('createdAt', 'desc');
+        $q = Quote::with(['customer', 'personnel', 'branch', 'createdByUser.personnel', 'convertedSale'])->orderBy('createdAt', 'desc');
         if ($request->filled('search')) {
             $s = $request->search;
             $q->where(function ($w) use ($s) {
@@ -45,6 +47,13 @@ class QuoteController extends Controller
         if ($request->filled('personnelId')) {
             $q->where('personnelId', $request->personnelId);
         }
+        if ($request->filled('branchId')) {
+            if ($request->input('branchId') === 'none') {
+                $q->whereNull('branchId');
+            } else {
+                $q->where('branchId', $request->input('branchId'));
+            }
+        }
         if ($request->filled('from')) {
             $q->whereDate('createdAt', '>=', $request->from);
         }
@@ -54,10 +63,11 @@ class QuoteController extends Controller
         $quotes = $q->paginate(20)->withQueryString();
         $customers = Customer::orderBy('name')->get();
         $personnel = Personnel::where('isActive', true)->orderBy('name')->get();
+        $branches = Branch::forSelect(false);
         $quoteIds = $quotes->getCollection()->filter(fn ($q) => ! $q->convertedSaleId)->pluck('id')->values()->all();
         $creatorFallbackMap = QuoteCreator::creatorNameMapFromAudit($quotes->getCollection());
 
-        return view('quotes.index', compact('quotes', 'customers', 'personnel', 'quoteIds', 'creatorFallbackMap'));
+        return view('quotes.index', compact('quotes', 'customers', 'personnel', 'branches', 'quoteIds', 'creatorFallbackMap'));
     }
 
     public function bulkDestroy(Request $request)
@@ -92,8 +102,9 @@ class QuoteController extends Controller
         $customers = Customer::with(['city', 'district'])->where('isActive', true)->orderBy('name')->get();
         $initialProducts = collect();
         $personnel = Personnel::where('isActive', true)->orderBy('name')->get();
+        $branches = Branch::forSelect();
 
-        return view('quotes.create', compact('customers', 'initialProducts', 'personnel'));
+        return view('quotes.create', compact('customers', 'initialProducts', 'personnel', 'branches'));
     }
 
     public function store(Request $request)
@@ -106,6 +117,7 @@ class QuoteController extends Controller
             'validUntil' => 'nullable|date',
             'notes' => 'nullable|string',
             'personnelId' => 'nullable|exists:personnel,id',
+            'branchId' => 'nullable|exists:branches,id',
             'items' => 'required|array|min:1',
             'items.*.productId' => 'nullable|string',
             'items.*.productName' => 'nullable|string|max:255',
@@ -145,6 +157,7 @@ class QuoteController extends Controller
                 'validUntil' => $validated['validUntil'] ?? null,
                 'notes' => $validated['notes'] ?? null,
                 'personnelId' => $validated['personnelId'] ?? null,
+                'branchId' => Personnel::resolveBranchId($validated['branchId'] ?? null, $validated['personnelId'] ?? null),
                 'createdBy' => auth()->id() ?: null,
                 'subtotal' => 0,
                 'kdvTotal' => 0,
@@ -171,14 +184,14 @@ class QuoteController extends Controller
 
     public function show(Quote $quote)
     {
-        $quote->load(['customer', 'personnel', 'createdByUser.personnel', 'items.product']);
+        $quote->load(['customer', 'personnel', 'branch', 'createdByUser.personnel', 'items.product']);
 
         return view('quotes.show', compact('quote'));
     }
 
     public function print(Quote $quote)
     {
-        $quote->load(['customer', 'personnel', 'createdByUser.personnel', 'items.product']);
+        $quote->load(['customer', 'personnel', 'branch', 'createdByUser.personnel', 'items.product']);
 
         return view('quotes.print', compact('quote'));
     }
@@ -225,15 +238,19 @@ class QuoteController extends Controller
         if ($quote->convertedSaleId) {
             return redirect()->route('quotes.show', $quote)->with('error', 'Satışa dönüştürülmüş teklif düzenlenemez.');
         }
-        $quote->load('items.product');
+        $quote->load(['items.product', 'branch']);
         $customers = Customer::with(['city', 'district'])->where('isActive', true)->orderBy('name')->get();
         $productIds = $quote->items->pluck('productId')->filter()->unique()->values();
         $initialProducts = $productIds->isEmpty()
             ? collect()
             : Product::with('supplier:id,name')->whereIn('id', $productIds)->get();
         $personnel = Personnel::where('isActive', true)->orderBy('name')->get();
+        $branches = Branch::forSelect();
+        if ($quote->branchId && ! $branches->contains('id', $quote->branchId) && $quote->branch) {
+            $branches = $branches->prepend($quote->branch);
+        }
 
-        return view('quotes.edit', compact('quote', 'customers', 'initialProducts', 'personnel'));
+        return view('quotes.edit', compact('quote', 'customers', 'initialProducts', 'personnel', 'branches'));
     }
 
     public function update(Request $request, Quote $quote)
@@ -250,6 +267,7 @@ class QuoteController extends Controller
             'validUntil' => 'nullable|date',
             'notes' => 'nullable|string',
             'personnelId' => 'nullable|exists:personnel,id',
+            'branchId' => 'nullable|exists:branches,id',
             'status' => 'nullable|in:taslak,onaylandi,reddedildi',
             'items' => 'required|array|min:1',
             'items.*.productId' => 'nullable|string',
@@ -278,6 +296,7 @@ class QuoteController extends Controller
             'validUntil' => $validated['validUntil'] ?? null,
             'notes' => $validated['notes'] ?? null,
             'personnelId' => $validated['personnelId'] ?? null,
+            'branchId' => Personnel::resolveBranchId($validated['branchId'] ?? null, $validated['personnelId'] ?? null),
             'status' => $validated['status'] ?? $quote->status,
             'drawingFiles' => DrawingFiles::syncFromRequest(
                 $request,
@@ -324,6 +343,7 @@ class QuoteController extends Controller
                 'validUntil' => $quote->validUntil,
                 'notes' => $quote->notes,
                 'personnelId' => $quote->personnelId,
+                'branchId' => $quote->branchId,
                 'createdBy' => auth()->id() ?: null,
                 'customerSource' => $quote->customerSource,
                 'subtotal' => $quote->subtotal,

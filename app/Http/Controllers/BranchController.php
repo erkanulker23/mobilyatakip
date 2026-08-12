@@ -29,7 +29,7 @@ class BranchController extends Controller
             $q->where('isActive', $request->status === 'active');
         }
 
-        $branches = $q->withCount(['sales', 'serviceTickets'])->paginate(20)->withQueryString();
+        $branches = $q->withCount(['sales', 'quotes', 'serviceTickets', 'personnel'])->paginate(20)->withQueryString();
 
         return view('branches.index', compact('branches'));
     }
@@ -57,11 +57,13 @@ class BranchController extends Controller
 
     public function show(Branch $branch)
     {
-        $branch->loadCount(['sales', 'serviceTickets']);
+        $branch->loadCount(['sales', 'quotes', 'serviceTickets', 'personnel']);
         $recentSales = $branch->sales()->with('customer:id,name')->orderByDesc('createdAt')->limit(10)->get();
+        $recentQuotes = $branch->quotes()->with('customer:id,name')->orderByDesc('createdAt')->limit(10)->get();
         $recentTickets = $branch->serviceTickets()->with('customer:id,name')->orderByDesc('createdAt')->limit(10)->get();
+        $branchPersonnel = $branch->personnel()->orderBy('name')->get(['id', 'name', 'title', 'category', 'isActive', 'photoUrl']);
 
-        return view('branches.show', compact('branch', 'recentSales', 'recentTickets'));
+        return view('branches.show', compact('branch', 'recentSales', 'recentQuotes', 'recentTickets', 'branchPersonnel'));
     }
 
     public function edit(Branch $branch)
@@ -90,11 +92,13 @@ class BranchController extends Controller
     public function destroy(Branch $branch)
     {
         $salesCount = $branch->sales()->count();
+        $quoteCount = $branch->quotes()->count();
         $ticketCount = $branch->serviceTickets()->count();
-        if ($salesCount > 0 || $ticketCount > 0) {
+        $personnelCount = $branch->personnel()->count();
+        if ($salesCount > 0 || $quoteCount > 0 || $ticketCount > 0 || $personnelCount > 0) {
             return redirect()->route('branches.show', $branch)->with(
                 'error',
-                'Bu şubeye bağlı '.($salesCount + $ticketCount).' kayıt var. Silmek yerine şubeyi pasif yapın veya kayıtları başka şubeye taşıyın.'
+                'Bu şubeye bağlı '.($salesCount + $quoteCount + $ticketCount + $personnelCount).' kayıt var. Silmek yerine şubeyi pasif yapın veya kayıtları başka şubeye taşıyın.'
             );
         }
 

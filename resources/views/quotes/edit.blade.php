@@ -130,13 +130,18 @@
                             </div>
                             <div>
                                 <label class="form-label">Teklifi Hazırlayan</label>
-                                <select name="personnelId" class="form-select min-h-[44px]">
+                                <select name="personnelId" class="form-select min-h-[44px]" data-personnel-branch-source>
                                     <option value="">Seçiniz</option>
                                     @foreach($personnel as $p)
-                                    <option value="{{ $p->id }}" {{ old('personnelId', $quote->personnelId) == $p->id ? 'selected' : '' }}>{{ $p->name }}{{ $p->title ? ' — ' . $p->title : '' }}</option>
+                                    <option value="{{ $p->id }}" data-branch-id="{{ $p->branchId }}" {{ old('personnelId', $quote->personnelId) == $p->id ? 'selected' : '' }}>{{ $p->name }}{{ $p->title ? ' — ' . $p->title : '' }}</option>
                                     @endforeach
                                 </select>
                             </div>
+                            @include('partials.branch-select', [
+                                'branches' => $branches ?? collect(),
+                                'selectedBranchId' => $quote->branchId,
+                                'class' => 'form-select min-h-[44px]',
+                            ])
                             <div>
                                 <label class="form-label">Durum</label>
                                 <select name="status" class="form-select min-h-[44px]">
@@ -801,4 +806,5 @@ function initQuoteForm() {
     updateQuoteTotals();
 }
 </script>
+@include('partials.personnel-branch-sync')
 @endsection

@@ -6,6 +6,11 @@
     use App\Support\SaleDelivery;
 
     $scope = $scope ?? 'uretim';
+    $selectedBranchId = request('branchId');
+    $filterChip = fn (array $params) => route('workshop.index', array_filter(array_merge(
+        request()->only(['search', 'type', 'scope', 'branchId']),
+        $params
+    ), fn ($v) => $v !== null && $v !== ''));
 @endphp
 <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     <div>
@@ -62,11 +67,22 @@
                 </select>
             </div>
             @endif
+            <div class="min-w-[160px]">
+                <label class="form-label">Şube</label>
+                <select name="branchId" class="form-select">
+                    <option value="">Tüm şubeler</option>
+                    <option value="none" {{ $selectedBranchId === 'none' ? 'selected' : '' }}>Şube belirtilmemiş</option>
+                    @foreach($branches ?? [] as $branch)
+                    <option value="{{ $branch->id }}" {{ (string) $selectedBranchId === (string) $branch->id ? 'selected' : '' }}>{{ $branch->displayName() }}</option>
+                    @endforeach
+                </select>
+            </div>
             <div class="flex gap-2">
                 <button type="submit" class="btn-primary">Filtrele</button>
                 <a href="{{ route('workshop.index', ['scope' => $scope]) }}" class="btn-secondary">Temizle</a>
             </div>
         </form>
+        @include('partials.branch-filter-chips', ['wrapperClass' => 'pt-1'])
     </div>
 
     @if($sales->isEmpty())

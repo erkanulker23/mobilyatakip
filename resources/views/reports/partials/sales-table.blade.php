@@ -4,6 +4,7 @@
         <tr>
             <th class="table-th">No</th>
             <th class="table-th">Müşteri</th>
+            <th class="table-th">Şube</th>
             <th class="table-th">Satışı Yapan</th>
             <th class="table-th">Satış Tarihi</th>
             <th class="table-th">Termin</th>
@@ -31,6 +32,7 @@
         <tr class="{{ $print ? '' : 'hover:bg-slate-50' }}">
             <td class="table-td font-medium">{{ $s->saleNumber }}</td>
             <td class="table-td">{{ $s->customer?->name ?? '—' }}</td>
+            <td class="table-td text-neutral-600">{{ $s->branch?->name ?? '—' }}</td>
             <td class="table-td text-neutral-600">{{ $s->personnel?->name ?? '—' }}</td>
             <td class="table-td">{{ $s->saleDate?->format('d.m.Y') ?? '—' }}</td>
             <td class="table-td {{ $dueClass }}">{{ $s->dueDate?->format('d.m.Y') ?? '—' }}</td>
@@ -57,13 +59,13 @@
             @endif
         </tr>
         @empty
-        <tr><td colspan="{{ $print ? 9 : 10 }}" class="px-6 py-8 text-center text-neutral-500">Seçilen filtreye uygun satış bulunamadı.</td></tr>
+        <tr><td colspan="{{ $print ? 10 : 11 }}" class="px-6 py-8 text-center text-neutral-500">Seçilen filtreye uygun satış bulunamadı.</td></tr>
         @endforelse
     </tbody>
     @if($sales->isNotEmpty())
     <tfoot class="{{ $print ? '' : 'bg-slate-50 border-t-2 border-neutral-200' }}">
         <tr class="font-semibold">
-            <td class="table-td" colspan="5">
+            <td class="table-td" colspan="6">
                 Dönem toplamı ({{ $totals->count }} satış)
                 @if(!$print)
                 <span class="block text-xs font-normal text-neutral-500 mt-0.5">Satış tarihine göre filtrelenir · tablodaki tüm satırların toplamı</span>

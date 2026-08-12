@@ -15,6 +15,17 @@
         @endforeach
     </select>
 </div>
+@php $selectedBranchId = $filters['branchId'] ?? request('branchId'); @endphp
+<div class="min-w-[180px]">
+    <label class="form-label">Şube</label>
+    <select name="branchId" class="form-select">
+        <option value="">Tüm şubeler</option>
+        <option value="none" {{ $selectedBranchId === 'none' ? 'selected' : '' }}>Şube belirtilmemiş</option>
+        @foreach($branchOptions ?? [] as $branch)
+        <option value="{{ $branch->id }}" {{ (string) $selectedBranchId === (string) $branch->id ? 'selected' : '' }}>{{ $branch->displayName() }}</option>
+        @endforeach
+    </select>
+</div>
 @if($showOdemeFilter)
 <div class="min-w-[160px]">
     <label class="form-label">Ödeme durumu</label>

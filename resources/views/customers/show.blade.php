@@ -169,6 +169,9 @@
                         <tr class="border-b border-neutral-50 dark:border-neutral-800/60 hover:bg-neutral-50/50 dark:hover:bg-neutral-900/40 transition-colors">
                             <td class="table-td min-w-[8rem]">
                                 <a href="{{ route('sales.show', $s) }}" class="font-medium hover:underline {{ $saleNumberClass }}">{{ $s->saleNumber }}</a>
+                                @if($s->branch)
+                                <span class="block mt-0.5 text-xs text-emerald-700/80 dark:text-emerald-400/80">{{ $s->branch->name }}</span>
+                                @endif
                                 <span class="block mt-1 md:hidden text-xs text-neutral-400">{{ $s->saleDate?->format('d.m.Y') ?? '—' }}</span>
                                 <span class="inline-flex mt-1 md:hidden">
                                     <span class="inline-flex px-2 py-0.5 rounded-md text-[11px] font-medium {{ \App\Support\SaleDelivery::badgeClass($deliveryStatus) }}">{{ \App\Support\SaleDelivery::label($deliveryStatus) }}</span>
@@ -356,7 +359,7 @@
                 <a href="{{ route('quotes.show', $q) }}" class="flex items-center justify-between gap-3 p-4 hover:bg-neutral-50 dark:hover:bg-neutral-900/40 transition-colors">
                     <div class="min-w-0">
                         <p class="font-medium text-neutral-900 dark:text-neutral-100 truncate">{{ $q->quoteNumber }}</p>
-                        <p class="text-xs text-neutral-500 mt-0.5">{{ ucfirst($q->status ?? '—') }}</p>
+                        <p class="text-xs text-neutral-500 mt-0.5">{{ ucfirst($q->status ?? '—') }}@if($q->branch) · {{ $q->branch->name }}@endif</p>
                     </div>
                     <p class="font-semibold tabular-nums text-neutral-700 dark:text-neutral-300 shrink-0">{{ number_format($q->grandTotal ?? 0, 0, ',', '.') }} ₺</p>
                 </a>
@@ -381,7 +384,7 @@
                     <div class="flex items-start justify-between gap-2">
                         <div class="min-w-0">
                             <p class="font-medium text-neutral-900 dark:text-neutral-100">{{ $ticket->ticketNumber }}</p>
-                            <p class="text-xs text-neutral-500 mt-0.5 truncate">{{ Str::limit($ticket->description ?? $ticket->issueType ?? '—', 40) }}</p>
+                            <p class="text-xs text-neutral-500 mt-0.5 truncate">{{ Str::limit($ticket->description ?? $ticket->issueType ?? '—', 40) }}@if($ticket->branch) · {{ $ticket->branch->name }}@endif</p>
                         </div>
                         <span class="badge {{ $statusClass }} shrink-0">{{ $statusLabel }}</span>
                     </div>

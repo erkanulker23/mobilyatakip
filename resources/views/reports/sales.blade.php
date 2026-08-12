@@ -6,7 +6,7 @@
         ? \App\Support\ReportFilters::periodLabel($from, $to, $year ?? null, $month ?? null)
         : 'Tüm dönem';
     $filterDesc = $filters['label'] ?? null;
-    $queryKeys = ['from', 'to', 'year', 'month', 'period', 'personnelId', 'odeme', 'deliveryStatus', 'allTime'];
+    $queryKeys = ['from', 'to', 'year', 'month', 'period', 'personnelId', 'branchId', 'odeme', 'deliveryStatus', 'allTime'];
     $reportChip = fn (array $params) => route('reports.sales', array_filter(array_merge(
         request()->only($queryKeys),
         $params

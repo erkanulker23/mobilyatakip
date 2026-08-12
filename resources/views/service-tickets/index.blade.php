@@ -19,6 +19,8 @@
         || request()->filled('branchId')
         || request()->filled('from')
         || request()->filled('to');
+    $selectedBranchId = request('branchId');
+    $selectedBranch = ($branches ?? collect())->first(fn ($b) => (string) $b->id === (string) $selectedBranchId);
 
     $filterChip = fn (array $params) => route('service-tickets.index', array_filter(
         array_merge(request()->only(['search', 'customerId', 'from', 'to', 'status', 'branchId']), $params),
@@ -29,7 +31,7 @@
 <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
     <div>
         <h1 class="page-title">Servis Kayıtları (SSH)</h1>
-        <p class="page-desc">Servis ve garanti takibi — açık kayıtları hızlı yönetin</p>
+        <p class="page-desc">Servis ve garanti takibi — açık kayıtları hızlı yönetin@if($selectedBranch) · {{ $selectedBranch->name }}@elseif($selectedBranchId === 'none') · Şube belirtilmemiş@endif</p>
     </div>
     @if(empty($hideCommercialData))
     <a href="{{ route('service-tickets.create') }}" class="btn-primary shrink-0">
@@ -48,7 +50,7 @@
 
 {{-- Özet kartları --}}
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5">
-    <a href="{{ route('service-tickets.index') }}" class="card p-4 hover:border-neutral-300 dark:hover:border-neutral-600 transition-colors {{ !$statusFilter ? 'ring-2 ring-neutral-900/10 dark:ring-white/10' : '' }}">
+    <a href="{{ $filterChip(['status' => null]) }}" class="card p-4 hover:border-neutral-300 dark:hover:border-neutral-600 transition-colors {{ !$statusFilter ? 'ring-2 ring-neutral-900/10 dark:ring-white/10' : '' }}">
         <p class="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Açık</p>
         <p class="mt-1 text-2xl font-semibold text-neutral-900 dark:text-neutral-100 tabular-nums">{{ $stats['open'] ?? 0 }}</p>
     </a>
@@ -65,6 +67,18 @@
         <p class="mt-1 text-2xl font-semibold text-emerald-700 dark:text-emerald-300 tabular-nums">{{ $stats['tamamlandi'] ?? 0 }}</p>
     </a>
 </div>
+
+{{-- Hızlı şube çipleri --}}
+@if(($branches ?? collect())->isNotEmpty())
+<div class="flex flex-wrap items-center gap-2 mb-3">
+    <span class="text-xs font-medium text-neutral-500 dark:text-neutral-400 mr-1">Şube:</span>
+    <a href="{{ $filterChip(['branchId' => null]) }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ !$selectedBranchId ? 'bg-teal-700 text-white dark:bg-teal-500 dark:text-neutral-900' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">Tümü</a>
+    @foreach($branches as $branch)
+    <a href="{{ $filterChip(['branchId' => $branch->id]) }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ (string) $selectedBranchId === (string) $branch->id ? 'bg-teal-700 text-white dark:bg-teal-500 dark:text-neutral-900' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">{{ $branch->name }}</a>
+    @endforeach
+    <a href="{{ $filterChip(['branchId' => 'none']) }}" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors {{ $selectedBranchId === 'none' ? 'bg-teal-700 text-white dark:bg-teal-500 dark:text-neutral-900' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">Şube belirtilmemiş</a>
+</div>
+@endif
 
 {{-- Hızlı durum çipleri --}}
 <div class="flex flex-wrap items-center gap-2 mb-5">
@@ -98,9 +112,10 @@
             <div class="min-w-[150px]">
                 <label class="form-label">Şube</label>
                 <select name="branchId" class="form-select">
-                    <option value="">Tümü</option>
+                    <option value="">Tüm şubeler</option>
+                    <option value="none" {{ $selectedBranchId === 'none' ? 'selected' : '' }}>Şube belirtilmemiş</option>
                     @foreach($branches ?? [] as $branch)
-                    <option value="{{ $branch->id }}" {{ request('branchId') == $branch->id ? 'selected' : '' }}>{{ $branch->displayName() }}</option>
+                    <option value="{{ $branch->id }}" {{ (string) $selectedBranchId === (string) $branch->id ? 'selected' : '' }}>{{ $branch->displayName() }}</option>
                     @endforeach
                 </select>
             </div>

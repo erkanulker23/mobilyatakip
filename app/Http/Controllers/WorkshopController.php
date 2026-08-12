@@ -33,6 +33,7 @@ class WorkshopController extends Controller
             'customer.city',
             'customer.district',
             'personnel',
+            'branch',
             'items.product',
         ];
 
@@ -87,10 +88,19 @@ class WorkshopController extends Controller
             }
         }
 
+        if ($request->filled('branchId')) {
+            if ($request->input('branchId') === 'none') {
+                $q->whereNull('branchId');
+            } else {
+                $q->where('branchId', $request->input('branchId'));
+            }
+        }
+
         $sales = $q->paginate(10)->withQueryString();
         $productionStagesReady = SaleProductionStageSchema::isReady();
+        $branches = \App\Models\Branch::forSelect(false);
 
-        return view('workshop.index', compact('sales', 'scope', 'productionStagesReady'));
+        return view('workshop.index', compact('sales', 'scope', 'productionStagesReady', 'branches'));
     }
 
     public function show(Request $request, Sale $sale)
@@ -101,6 +111,7 @@ class WorkshopController extends Controller
             'customer.city',
             'customer.district',
             'personnel',
+            'branch',
             'items.product.supplier',
         ]);
 

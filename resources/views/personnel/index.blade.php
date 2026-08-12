@@ -12,6 +12,15 @@
     </a>
 </div>
 
+@php
+    $selectedBranchId = request('branchId');
+    $filterChip = fn (array $params) => route('personnel.index', array_filter(array_merge(
+        request()->only(['search', 'category', 'isActive', 'branchId']),
+        $params
+    ), fn ($v) => $v !== null && $v !== ''));
+@endphp
+@include('partials.branch-filter-chips', ['branches' => $branchOptions ?? collect()])
+
 <div class="card overflow-hidden">
     <div class="p-4 border-b border-neutral-100">
         <form method="GET" class="flex flex-wrap gap-4 items-end">
@@ -25,6 +34,16 @@
                     <option value="">Tümü</option>
                     @foreach($categoryOptions as $value => $label)
                     <option value="{{ $value }}" {{ request('category') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="min-w-[160px]">
+                <label class="form-label">Şube</label>
+                <select name="branchId" class="form-select">
+                    <option value="">Tüm şubeler</option>
+                    <option value="none" {{ request('branchId') === 'none' ? 'selected' : '' }}>Şube belirtilmemiş</option>
+                    @foreach($branchOptions ?? [] as $branch)
+                    <option value="{{ $branch->id }}" {{ (string) request('branchId') === (string) $branch->id ? 'selected' : '' }}>{{ $branch->displayName() }}</option>
                     @endforeach
                 </select>
             </div>
@@ -50,6 +69,7 @@
                     <th class="table-th">E-posta</th>
                     <th class="table-th">Telefon</th>
                     <th class="table-th">Unvan</th>
+                    <th class="table-th">Şube</th>
                     <th class="table-th">Kategori</th>
                     <th class="table-th">Son giriş</th>
                     <th class="table-th text-right w-40">İşlemler</th>
@@ -74,6 +94,13 @@
                     <td class="table-td text-neutral-500">{{ $p->email ?? '—' }}</td>
                     <td class="table-td text-neutral-500">{{ $p->phone ?? '—' }}</td>
                     <td class="table-td text-neutral-500">{{ $p->title ?? '—' }}</td>
+                    <td class="table-td text-neutral-500">
+                        @if($p->branch)
+                            <a href="{{ route('branches.show', $p->branch) }}" class="hover:text-emerald-600 dark:hover:text-emerald-400">{{ $p->branch->name }}</a>
+                        @else
+                            —
+                        @endif
+                    </td>
                     <td class="table-td text-neutral-500">{{ \App\Support\PersonnelCategory::label($p->category) }}</td>
                     <td class="table-td text-neutral-500 whitespace-nowrap">
                         @if($p->user?->lastLoginAt)
@@ -95,7 +122,7 @@
                     </td>
                 </tr>
                 @empty
-                <x-data-table-empty :colspan="6" message="Kayıt bulunamadı." :action-url="route('personnel.create')" action-label="Yeni Personel" />
+                <x-data-table-empty :colspan="8" message="Kayıt bulunamadı." :action-url="route('personnel.create')" action-label="Yeni Personel" />
                 @endforelse
             </tbody>
         </table>

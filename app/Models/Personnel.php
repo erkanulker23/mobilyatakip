@@ -16,6 +16,7 @@ class Personnel extends BaseModel
         'phone',
         'category',
         'title',
+        'branchId',
         'photoUrl',
         'vehiclePlate',
         'driverInfo',
@@ -25,6 +26,11 @@ class Personnel extends BaseModel
     protected $casts = [
         'isActive' => 'boolean',
     ];
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class, 'branchId');
+    }
 
     public function quotes(): HasMany
     {
@@ -57,5 +63,18 @@ class Personnel extends BaseModel
         }
 
         return User::query()->whereKey($this->userId)->where('isActive', true)->exists();
+    }
+
+    public static function resolveBranchId(?string $branchId, ?string $personnelId): ?string
+    {
+        if (filled($branchId)) {
+            return $branchId;
+        }
+
+        if (! filled($personnelId)) {
+            return null;
+        }
+
+        return static::whereKey($personnelId)->value('branchId');
     }
 }

@@ -307,9 +307,7 @@ class SaleController extends Controller
         if ($request->filled('personnelId')) {
             $q->where('personnelId', $request->personnelId);
         }
-        if ($request->filled('branchId')) {
-            $q->where('branchId', $request->branchId);
-        }
+        $this->applyBranchFilter($q, $request);
         if ($request->filled('from')) {
             $q->whereDate('deliveredAt', '>=', $request->from);
         }
@@ -388,9 +386,7 @@ class SaleController extends Controller
         if ($request->filled('personnelId')) {
             $q->where('personnelId', $request->personnelId);
         }
-        if ($request->filled('branchId')) {
-            $q->where('branchId', $request->branchId);
-        }
+        $this->applyBranchFilter($q, $request);
         if ($request->filled('from')) {
             $q->whereDate('saleDate', '>=', $request->from);
         }
@@ -436,6 +432,21 @@ class SaleController extends Controller
                 ->pendingDelivery()
                 ->count(),
         ];
+    }
+
+    private function applyBranchFilter($query, Request $request): void
+    {
+        if (! $request->filled('branchId')) {
+            return;
+        }
+
+        if ($request->input('branchId') === 'none') {
+            $query->whereNull('branchId');
+
+            return;
+        }
+
+        $query->where('branchId', $request->input('branchId'));
     }
 
     public function bulkDestroy(Request $request)
@@ -560,7 +571,7 @@ class SaleController extends Controller
             $oldCustomerId = $sale->customerId;
             $sale->update([
                 'customerId' => $validated['customerId'],
-                'branchId' => $validated['branchId'] ?? null,
+                'branchId' => Personnel::resolveBranchId($validated['branchId'] ?? null, $validated['personnelId'] ?? null),
                 'personnelId' => $validated['personnelId'] ?? null,
                 'saleDate' => $validated['saleDate'],
                 'dueDate' => $validated['dueDate'] ?? null,

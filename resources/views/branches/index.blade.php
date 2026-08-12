@@ -4,7 +4,7 @@
 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
     <div>
         <h1 class="page-title">Şubeler</h1>
-        <p class="page-desc">Satış ve SSH kayıtlarının bağlı olduğu şubeler</p>
+        <p class="page-desc">Satış, teklif ve SSH kayıtlarının bağlı olduğu şubeler</p>
     </div>
     <a href="{{ route('branches.create') }}" class="btn-primary">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -49,7 +49,9 @@
                     <th class="table-th">Telefon</th>
                     <th class="table-th">Adres</th>
                     <th class="table-th text-right">Satış</th>
+                    <th class="table-th text-right">Teklif</th>
                     <th class="table-th text-right">SSH</th>
+                    <th class="table-th text-right">Personel</th>
                     <th class="table-th">Durum</th>
                     <th class="table-th text-center w-40">İşlem</th>
                 </tr>
@@ -64,7 +66,9 @@
                     <td class="table-td text-sm">{{ $branch->phone ?: '—' }}</td>
                     <td class="table-td text-slate-600 dark:text-neutral-400 text-sm">{{ Str::limit($branch->full_address, 50) ?: '—' }}</td>
                     <td class="table-td text-right tabular-nums">{{ $branch->sales_count }}</td>
+                    <td class="table-td text-right tabular-nums">{{ $branch->quotes_count }}</td>
                     <td class="table-td text-right tabular-nums">{{ $branch->service_tickets_count }}</td>
+                    <td class="table-td text-right tabular-nums">{{ $branch->personnel_count }}</td>
                     <td class="table-td">
                         @if($branch->isActive)
                         <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">Aktif</span>
@@ -81,7 +85,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="8" class="px-6 py-12 text-center text-neutral-500">Henüz şube yok. Yeni şube ekleyerek satış ve SSH kayıtlarını ayırabilirsiniz.</td></tr>
+                <tr><td colspan="10" class="px-6 py-12 text-center text-neutral-500">Henüz şube yok. Yeni şube ekleyerek satış, teklif ve SSH kayıtlarını ayırabilirsiniz.</td></tr>
                 @endforelse
             </tbody>
         </table>

@@ -87,6 +87,12 @@
                 @error('category')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
         </div>
+        @include('partials.branch-select', [
+            'branches' => $branches ?? collect(),
+            'selectedBranchId' => $personnel->branchId,
+            'emptyLabel' => 'Şube seçilmedi',
+            'hint' => 'Personelin görev yaptığı şube. Boş bırakılabilir.',
+        ])
         <div class="flex items-center gap-2">
             <input type="hidden" name="isActive" value="0">
             <input type="checkbox" name="isActive" value="1" {{ old('isActive', $personnel->isActive ?? true) ? 'checked' : '' }} class="rounded border-slate-300 text-green-600 focus:ring-green-500">

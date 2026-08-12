@@ -29,6 +29,9 @@
                     @if($showSalesPersonnel && $sale->personnel?->name)
                     <div><dt class="text-neutral-500 inline">Satış temsilcisi: </dt><dd class="inline font-medium">{{ $sale->personnel->name }}</dd></div>
                     @endif
+                    @if($sale->branch?->name)
+                    <div><dt class="text-neutral-500 inline">Şube: </dt><dd class="inline font-medium">{{ $sale->branch->name }}</dd></div>
+                    @endif
                     <div>
                         <dt class="text-neutral-500 inline">Termin: </dt>
                         <dd class="inline font-medium {{ $termin['class'] ?? '' }}">

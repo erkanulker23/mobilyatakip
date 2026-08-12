@@ -20,7 +20,7 @@ final class SalesReportQuery
         $applyDateFilter = ! $statusOnlyList;
 
         $query = Sale::query()
-            ->with(['customer', 'personnel'])
+            ->with(['customer', 'personnel', 'branch'])
             ->where('isCancelled', false);
 
         if ($applyDateFilter) {
@@ -32,6 +32,14 @@ final class SalesReportQuery
                 $query->whereNull('personnelId');
             } else {
                 $query->where('personnelId', $request->input('personnelId'));
+            }
+        }
+
+        if ($request->filled('branchId')) {
+            if ($request->input('branchId') === 'none') {
+                $query->whereNull('branchId');
+            } else {
+                $query->where('branchId', $request->input('branchId'));
             }
         }
 

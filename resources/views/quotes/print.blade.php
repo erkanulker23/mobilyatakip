@@ -22,6 +22,7 @@
         . '<div class="print-kv-row"><span class="print-kv-label">Son Geçerlilik</span><span class="print-kv-value">' . e($quoteValidUntil?->format('d.m.Y') ?? '-') . '</span></div>'
         . '<div class="print-kv-row"><span class="print-kv-label">Oluşturan</span><span class="print-kv-value">' . e(\App\Support\QuoteCreator::displayNameForQuote($quote) ?? '-') . '</span></div>'
         . '<div class="print-kv-row"><span class="print-kv-label">Teklifi hazırlayan</span><span class="print-kv-value">' . e($quote->personnel?->name ?? '-') . '</span></div>'
+        . ($quote->branch ? '<div class="print-kv-row"><span class="print-kv-label">Şube</span><span class="print-kv-value">' . e($quote->branch->name) . '</span></div>' : '')
         . '</div>',
     'footerNote' => 'Teklif belgesi — fatura yerine geçmez. Geçerlilik süresi 3 gündür.',
     'items' => $quote->items->map(fn($i) => ['name' => $i->product?->name ?? $i->productName, 'description' => $i->description, 'unitPrice' => $i->unitPrice, 'quantity' => $i->quantity, 'kdvRate' => $i->kdvRate, 'lineTotal' => $i->lineTotal])->toArray(),

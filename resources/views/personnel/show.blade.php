@@ -55,6 +55,7 @@
             <div><dt class="text-neutral-500">E-posta</dt><dd class="font-medium text-neutral-900 dark:text-white">{{ $personnel->email ?: '—' }}</dd></div>
             <div><dt class="text-neutral-500">Telefon</dt><dd class="font-medium text-neutral-900 dark:text-white">{{ $personnel->phone ?: '—' }}</dd></div>
             <div><dt class="text-neutral-500">Unvan</dt><dd class="font-medium text-neutral-900 dark:text-white">{{ $personnel->title ?: '—' }}</dd></div>
+            <div><dt class="text-neutral-500">Şube</dt><dd class="font-medium text-neutral-900 dark:text-white">@if($personnel->branch)<a href="{{ route('branches.show', $personnel->branch) }}" class="hover:text-emerald-600 dark:hover:text-emerald-400">{{ $personnel->branch->displayName() }}</a>@else—@endif</dd></div>
             <div><dt class="text-neutral-500">Kategori</dt><dd class="font-medium text-neutral-900 dark:text-white">{{ \App\Support\PersonnelCategory::label($personnel->category) }}</dd></div>
             @if(auth()->user()?->isAdmin())
             <div class="pt-2 border-t border-neutral-100 dark:border-slate-700">
@@ -292,6 +293,9 @@
                 <tr class="hover:bg-neutral-50/50 dark:hover:bg-slate-800/40 transition-colors">
                     <td class="table-td">
                         <a href="{{ route('sales.show', $sale) }}" class="font-medium text-neutral-900 dark:text-white hover:text-emerald-600">{{ $sale->saleNumber }}</a>
+                        @if($sale->branch)
+                        <span class="block text-xs text-emerald-700/80 dark:text-emerald-400/80 font-normal mt-0.5">{{ $sale->branch->name }}</span>
+                        @endif
                     </td>
                     <td class="table-td">{{ $sale->customer?->name ?? '—' }}</td>
                     <td class="table-td text-neutral-600 dark:text-slate-300">{{ $sale->customer?->phone ?? '—' }}</td>
@@ -347,6 +351,9 @@
                         <a href="{{ route('sales.show', $sale) }}" class="font-medium text-neutral-900 dark:text-white hover:text-emerald-600">{{ $sale->saleNumber }}</a>
                         @if($sale->isCancelled ?? false)
                         <span class="ml-1 text-[10px] px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 font-medium">İptal</span>
+                        @endif
+                        @if($sale->branch)
+                        <span class="block text-xs text-emerald-700/80 dark:text-emerald-400/80 font-normal mt-0.5">{{ $sale->branch->name }}</span>
                         @endif
                         @if($sale->needsFinalMeasurement ?? false)
                         <span class="block mt-1">@include('partials.final-measurement-badge', ['sale' => $sale])</span>
@@ -408,7 +415,7 @@
                     <tbody class="divide-y divide-neutral-100 dark:divide-slate-700">
                         @foreach($quotes as $q)
                         <tr class="hover:bg-neutral-50/50 dark:hover:bg-slate-800/40">
-                            <td class="table-td"><a href="{{ route('quotes.show', $q) }}" class="font-medium text-emerald-600 hover:text-emerald-700">{{ $q->quoteNumber }}</a></td>
+                            <td class="table-td"><a href="{{ route('quotes.show', $q) }}" class="font-medium text-emerald-600 hover:text-emerald-700">{{ $q->quoteNumber }}</a>@if($q->branch)<span class="block text-xs text-emerald-700/80 dark:text-emerald-400/80 font-normal mt-0.5">{{ $q->branch->name }}</span>@endif</td>
                             <td class="table-td">{{ $q->customer?->name ?? '—' }}</td>
                             <td class="table-td text-right font-medium tabular-nums">₺{{ number_format($q->grandTotal ?? 0, 0, ',', '.') }}</td>
                             <td class="table-td text-neutral-600 dark:text-slate-300">{{ $q->createdAt?->format('d.m.Y') }}</td>

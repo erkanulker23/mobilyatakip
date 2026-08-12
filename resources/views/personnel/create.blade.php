@@ -59,6 +59,11 @@
                 @error('category')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
         </div>
+        @include('partials.branch-select', [
+            'branches' => $branches ?? collect(),
+            'emptyLabel' => 'Şube seçilmedi',
+            'hint' => 'Personelin görev yaptığı şube. Boş bırakılabilir.',
+        ])
 
         @include('partials.personnel-system-access-fields', ['personnel' => $personnel])
 

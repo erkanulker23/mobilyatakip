@@ -21,7 +21,7 @@
         </div>
         @endif
         <h1 class="page-title">{{ ($viewingOwnProfile ?? true) ? UserGreeting::message() : $personnel->name . ' — Atölye' }}</h1>
-        <p class="page-desc mt-1">Üretim takibi, terminler ve servis kayıtları — bugün odaklanmanız gereken işler</p>
+        <p class="page-desc mt-1">Üretim takibi, terminler ve servis kayıtları — bugün odaklanmanız gereken işler@if($personnel->branch) · {{ $personnel->branch->name }}@endif</p>
     </div>
     <div class="flex flex-wrap gap-2">
         <a href="{{ route('reports.upcoming-due', ['days' => $terminDays]) }}" class="btn-secondary text-sm">Termin Raporu</a>
@@ -161,6 +161,10 @@
                         <span class="text-neutral-400">·</span>
                         <span>Satış: {{ $sale->personnel->name }}</span>
                         @endif
+                        @if($sale->branch?->name)
+                        <span class="text-neutral-400">·</span>
+                        <span>{{ $sale->branch->name }}</span>
+                        @endif
                     </div>
                     <div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
                         @if($sale->dueDate)
@@ -233,6 +237,10 @@
                         <span class="text-neutral-400">·</span>
                         <span>Satış: {{ $sale->personnel->name }}</span>
                         @endif
+                        @if($sale->branch?->name)
+                        <span class="text-neutral-400">·</span>
+                        <span>{{ $sale->branch->name }}</span>
+                        @endif
                     </div>
                     <div class="mt-2 flex flex-wrap items-center gap-2 text-sm">
                         <span class="text-neutral-600 dark:text-neutral-400">{{ $sale->dueDate?->format('d.m.Y') ?? '—' }}</span>
@@ -280,6 +288,10 @@
                         @if($ticket->sale?->saleNumber)
                         <span class="text-neutral-400">·</span>
                         <span>{{ $ticket->sale->saleNumber }}</span>
+                        @endif
+                        @if($ticket->branch?->name)
+                        <span class="text-neutral-400">·</span>
+                        <span>{{ $ticket->branch->name }}</span>
                         @endif
                     </div>
                     @if($problems[0]['description'] ?? null)

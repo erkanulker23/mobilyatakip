@@ -1,16 +1,26 @@
 @extends('layouts.app')
 @section('title', 'Teklifler')
 @section('content')
+@php
+    $selectedBranchId = request('branchId');
+    $selectedBranch = ($branches ?? collect())->first(fn ($b) => (string) $b->id === (string) $selectedBranchId);
+    $filterChip = fn (array $params) => route('quotes.index', array_filter(array_merge(
+        request()->only(['search', 'customerId', 'personnelId', 'status', 'from', 'to', 'branchId']),
+        $params
+    ), fn ($v) => $v !== null && $v !== ''));
+@endphp
 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
     <div>
         <h1 class="page-title">Teklifler</h1>
-        <p class="page-desc">Teklif listesi ve satışa dönüştürme</p>
+        <p class="page-desc">Teklif listesi ve satışa dönüştürme@if($selectedBranch) · {{ $selectedBranch->name }}@elseif($selectedBranchId === 'none') · Şube belirtilmemiş@endif</p>
     </div>
     <a href="{{ route('quotes.create') }}" class="btn-primary">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
         Teklif Oluştur
     </a>
 </div>
+
+@include('partials.branch-filter-chips')
 
 <div class="card overflow-hidden" x-data="quotesBulk" data-quote-ids='{{ json_encode($quoteIds ?? []) }}'>
     <div class="p-4 border-b border-neutral-100">
@@ -34,6 +44,16 @@
                     <option value="">Tümü</option>
                     @foreach($personnel ?? [] as $p)
                     <option value="{{ $p->id }}" {{ request('personnelId') == $p->id ? 'selected' : '' }}>{{ $p->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="min-w-[160px]">
+                <label class="form-label">Şube</label>
+                <select name="branchId" class="form-select">
+                    <option value="">Tüm şubeler</option>
+                    <option value="none" {{ $selectedBranchId === 'none' ? 'selected' : '' }}>Şube belirtilmemiş</option>
+                    @foreach($branches ?? [] as $branch)
+                    <option value="{{ $branch->id }}" {{ (string) $selectedBranchId === (string) $branch->id ? 'selected' : '' }}>{{ $branch->displayName() }}</option>
                     @endforeach
                 </select>
             </div>
@@ -80,7 +100,8 @@
                     </th>
                     <th class="table-th">No</th>
                     <th class="table-th">Müşteri</th>
-                        <th class="table-th">Oluşturan</th>
+                    <th class="table-th">Şube</th>
+                    <th class="table-th">Oluşturan</th>
                     <th class="table-th">Tarih</th>
                     <th class="table-th text-right">Toplam</th>
                     <th class="table-th">Durum</th>
@@ -100,6 +121,7 @@
                         <span class="font-medium text-neutral-900">{{ $q->quoteNumber }}</span>
                     </td>
                     <td class="table-td">{{ $q->customer?->name ?? '-' }}</td>
+                    <td class="table-td text-neutral-600">{{ $q->branch?->name ?? '—' }}</td>
                     <td class="table-td text-neutral-600">{{ \App\Support\QuoteCreator::displayNameForQuote($q, $creatorFallbackMap ?? []) ?? '—' }}</td>
                     <td class="table-td">{{ $q->createdAt?->format('d.m.Y') ?? '-' }}</td>
                     <td class="table-td text-right font-medium text-neutral-900">{{ number_format($q->grandTotal ?? 0, 0, ',', '.') }} ₺</td>
@@ -139,7 +161,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="px-6 py-16 text-center">
+                    <td colspan="9" class="px-6 py-16 text-center">
                         <div class="max-w-sm mx-auto">
                             <div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-neutral-800 flex items-center justify-center mx-auto">
                                 <svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
