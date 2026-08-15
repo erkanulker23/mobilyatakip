@@ -19,7 +19,7 @@
             @endif
         </div>
     </div>
-    <div class="print-doc-meta">
+    <aside class="print-doc-meta" aria-label="Belge bilgisi">
         <span class="print-doc-type">{{ $documentTitle ?? 'BELGE' }}</span>
         <span class="print-doc-no">{{ $documentNumber ?? '—' }}</span>
         @if(!empty($documentSubtitle))
@@ -30,5 +30,5 @@
             Tarih: {{ $documentDate instanceof \DateTimeInterface ? $documentDate->format('d.m.Y') : $documentDate }}
         </span>
         @endif
-    </div>
+    </aside>
 </header>
