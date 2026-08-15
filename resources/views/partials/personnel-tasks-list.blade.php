@@ -5,11 +5,11 @@
     $tasksCalendarUrl = route('tasks.index', ['personnelId' => $personnel->id]);
 @endphp
 <div class="card overflow-hidden mb-6 w-full">
-    <div class="px-6 py-4 border-b border-neutral-200 dark:border-slate-700 bg-neutral-50/80 dark:bg-slate-800/40 flex flex-wrap items-center justify-between gap-3">
+    <div class="px-5 sm:px-6 py-4 border-b border-neutral-200 dark:border-slate-700 bg-neutral-50/80 dark:bg-slate-800/40 flex flex-wrap items-center justify-between gap-3">
         <div>
-            <h2 class="text-lg font-semibold text-neutral-900 dark:text-white">Yapılacaklar Listesi</h2>
+            <h2 class="text-lg font-semibold text-neutral-900 dark:text-white">Yapılacaklar</h2>
             <p class="text-sm text-neutral-500 dark:text-slate-400 mt-1">
-                {{ $personnel->name }} — {{ $openTasks->count() }} bekleyen, {{ $doneTasks->count() }} tamamlanan görev
+                {{ $openTasks->count() }} bekleyen · {{ $doneTasks->count() }} tamamlanan
             </p>
         </div>
         <a href="{{ $tasksCalendarUrl }}" class="text-sm font-medium text-emerald-600 hover:text-emerald-700 shrink-0">
