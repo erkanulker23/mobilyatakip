@@ -104,6 +104,7 @@ class PersonnelController extends Controller
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
             'category' => ['nullable', 'string', Rule::in(PersonnelCategory::values())],
             'title' => 'nullable|string|max:255',
+            'commissionRate' => 'nullable|numeric|min:0|max:100',
             'branchId' => 'nullable|exists:branches,id',
             'photo' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:2048',
         ];
@@ -124,6 +125,7 @@ class PersonnelController extends Controller
         unset($validated['photo'], $validated['canAccessSystem'], $validated['systemRole'], $validated['password'], $validated['password_confirmation']);
 
         $validated['isActive'] = true;
+        $validated['commissionRate'] = round((float) ($validated['commissionRate'] ?? 0), 2);
 
         if ($request->hasFile('photo')) {
             $validated['photoUrl'] = '/storage/'.$request->file('photo')->store('personnel', 'public');
@@ -201,6 +203,7 @@ class PersonnelController extends Controller
             'countChange' => $this->periodChangePercent($thisMonthStats['count'], $lastMonthStats['count']),
             'totalChange' => $this->periodChangePercent($thisMonthStats['total'], $lastMonthStats['total']),
             'collectedChange' => $this->periodChangePercent($thisMonthStats['collected'], $lastMonthStats['collected']),
+            'commissionChange' => $this->periodChangePercent($thisMonthStats['commission'], $lastMonthStats['commission']),
         ];
 
         $sales = $salesQuery->paginate(20)->withQueryString();
@@ -318,6 +321,7 @@ class PersonnelController extends Controller
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+][0-9\s\-()]{9,19}$/'],
             'category' => ['nullable', 'string', Rule::in(PersonnelCategory::values())],
             'title' => 'nullable|string|max:100',
+            'commissionRate' => 'nullable|numeric|min:0|max:100',
             'branchId' => 'nullable|exists:branches,id',
             'isActive' => 'nullable|boolean',
             'photo' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:2048',
@@ -339,6 +343,7 @@ class PersonnelController extends Controller
         unset($validated['photo'], $validated['canAccessSystem'], $validated['systemRole'], $validated['password'], $validated['password_confirmation']);
 
         $validated['isActive'] = $request->boolean('isActive', true);
+        $validated['commissionRate'] = round((float) ($validated['commissionRate'] ?? 0), 2);
 
         if ($request->hasFile('photo')) {
             $this->removePhotoFile($personnel);
@@ -403,10 +408,13 @@ class PersonnelController extends Controller
             ->where('isCancelled', false)
             ->whereBetween('saleDate', [$start->toDateString(), $end->toDateString()]);
 
+        $total = (float) (clone $base)->sum('grandTotal');
+
         return [
             'count' => (int) (clone $base)->count(),
-            'total' => (float) (clone $base)->sum('grandTotal'),
+            'total' => $total,
             'collected' => PersonnelSalesStats::collectedInPeriod($personnel, $start, $end),
+            'commission' => PersonnelSalesStats::commissionFromTurnover($total, $personnel->commissionRate),
         ];
     }
 

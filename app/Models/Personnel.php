@@ -16,6 +16,7 @@ class Personnel extends BaseModel
         'phone',
         'category',
         'title',
+        'commissionRate',
         'branchId',
         'photoUrl',
         'vehiclePlate',
@@ -25,6 +26,7 @@ class Personnel extends BaseModel
 
     protected $casts = [
         'isActive' => 'boolean',
+        'commissionRate' => 'decimal:2',
     ];
 
     public function branch(): BelongsTo

@@ -55,6 +55,7 @@
             <div><dt class="text-neutral-500">E-posta</dt><dd class="font-medium text-neutral-900 dark:text-white">{{ $personnel->email ?: '—' }}</dd></div>
             <div><dt class="text-neutral-500">Telefon</dt><dd class="font-medium text-neutral-900 dark:text-white">{{ $personnel->phone ?: '—' }}</dd></div>
             <div><dt class="text-neutral-500">Unvan</dt><dd class="font-medium text-neutral-900 dark:text-white">{{ $personnel->title ?: '—' }}</dd></div>
+            <div><dt class="text-neutral-500">Prim oranı</dt><dd class="font-medium text-neutral-900 dark:text-white">%{{ number_format((float) ($personnel->commissionRate ?? 0), 2, ',', '.') }}</dd></div>
             <div><dt class="text-neutral-500">Şube</dt><dd class="font-medium text-neutral-900 dark:text-white">@if($personnel->branch)<a href="{{ route('branches.show', $personnel->branch) }}" class="hover:text-emerald-600 dark:hover:text-emerald-400">{{ $personnel->branch->displayName() }}</a>@else—@endif</dd></div>
             <div><dt class="text-neutral-500">Kategori</dt><dd class="font-medium text-neutral-900 dark:text-white">{{ \App\Support\PersonnelCategory::label($personnel->category) }}</dd></div>
             @if(auth()->user()?->isAdmin())
@@ -176,7 +177,7 @@
 <div class="card overflow-hidden mb-6">
     <div class="px-6 py-4 border-b border-neutral-200 dark:border-slate-700 bg-neutral-50/80 dark:bg-slate-800/40">
         <h2 class="text-lg font-semibold text-neutral-900 dark:text-white">Aylık Performans</h2>
-        <p class="text-sm text-neutral-500 dark:text-slate-400 mt-1">Geçen ay ile bu ay karşılaştırması (iptal edilmeyen siparişler)</p>
+        <p class="text-sm text-neutral-500 dark:text-slate-400 mt-1">Geçen ay ile bu ay karşılaştırması (iptal edilmeyen siparişler). Prim = aylık satış cirosu × prim oranı.</p>
     </div>
     <div class="p-6">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -200,6 +201,11 @@
                     <div>
                         <dt class="text-xs text-neutral-500 dark:text-slate-400 mb-1">Tahsil edilen</dt>
                         <dd class="text-lg font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">₺{{ number_format($perf['lastMonth']['collected'], 0, ',', '.') }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-neutral-500 dark:text-slate-400 mb-1">Prim</dt>
+                        <dd class="text-lg font-semibold tabular-nums text-violet-700 dark:text-violet-300">₺{{ number_format($perf['lastMonth']['commission'] ?? 0, 0, ',', '.') }}</dd>
+                        <p class="mt-1 text-xs text-neutral-500">Ciro × %{{ number_format((float) ($personnel->commissionRate ?? 0), 2, ',', '.') }}</p>
                     </div>
                 </dl>
             </div>
@@ -235,6 +241,16 @@
                             <span class="text-lg font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">₺{{ number_format($perf['thisMonth']['collected'], 0, ',', '.') }}</span>
                             @include('partials.performance-change-badge', ['change' => $perf['collectedChange']])
                         </dd>
+                    </div>
+                    <div class="rounded-xl border border-violet-200/80 dark:border-violet-800/50 bg-violet-50/70 dark:bg-violet-950/30 p-4">
+                        <dt class="text-xs font-semibold uppercase tracking-wider text-violet-700 dark:text-violet-300 mb-1">Bu ay prim</dt>
+                        <dd class="flex items-center justify-between gap-3 flex-wrap">
+                            <span class="text-2xl font-bold tabular-nums text-violet-700 dark:text-violet-300">₺{{ number_format($perf['thisMonth']['commission'] ?? 0, 0, ',', '.') }}</span>
+                            @include('partials.performance-change-badge', ['change' => $perf['commissionChange'] ?? 0])
+                        </dd>
+                        <p class="mt-2 text-xs text-violet-700/80 dark:text-violet-300/80">
+                            ₺{{ number_format($perf['thisMonth']['total'] ?? 0, 0, ',', '.') }} ciro × %{{ number_format((float) ($personnel->commissionRate ?? 0), 2, ',', '.') }}
+                        </p>
                     </div>
                 </dl>
             </div>

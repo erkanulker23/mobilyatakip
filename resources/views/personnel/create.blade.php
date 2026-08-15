@@ -70,6 +70,12 @@
                 @error('category')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
         </div>
+        <div>
+            <label class="form-label">Prim oranı (%)</label>
+            <input type="number" name="commissionRate" value="{{ old('commissionRate', 0) }}" class="form-input" min="0" max="100" step="0.01" inputmode="decimal" placeholder="Örn: 3">
+            <p class="mt-1 text-xs text-neutral-500">Aylık satış cirosunun yüzdesi. Örn: %3 → bu ay ₺100.000 ciro için ₺3.000 prim.</p>
+            @error('commissionRate')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+        </div>
         @include('partials.branch-select', [
             'branches' => $branches ?? collect(),
             'emptyLabel' => 'Şube seçilmedi',

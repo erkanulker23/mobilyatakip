@@ -27,4 +27,15 @@ final class PersonnelSalesStats
             ->selectRaw('COALESCE(SUM(GREATEST(grandTotal - COALESCE(paidAmount, 0), 0)), 0) as receivable')
             ->value('receivable');
     }
+
+    /** Satış cirosu × prim oranı (%). */
+    public static function commissionFromTurnover(float $turnover, float|string|null $ratePercent): float
+    {
+        $rate = (float) ($ratePercent ?? 0);
+        if ($rate <= 0 || $turnover <= 0) {
+            return 0.0;
+        }
+
+        return round($turnover * $rate / 100, 2);
+    }
 }
