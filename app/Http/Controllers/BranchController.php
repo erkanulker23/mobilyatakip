@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\ValidatesTurkeyAddress;
 use App\Models\Branch;
 use App\Services\AuditService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class BranchController extends Controller
@@ -58,12 +59,113 @@ class BranchController extends Controller
     public function show(Branch $branch)
     {
         $branch->loadCount(['sales', 'quotes', 'serviceTickets', 'personnel']);
-        $recentSales = $branch->sales()->with('customer:id,name')->orderByDesc('createdAt')->limit(10)->get();
-        $recentQuotes = $branch->quotes()->with('customer:id,name')->orderByDesc('createdAt')->limit(10)->get();
-        $recentTickets = $branch->serviceTickets()->with('customer:id,name')->orderByDesc('createdAt')->limit(10)->get();
-        $branchPersonnel = $branch->personnel()->orderBy('name')->get(['id', 'name', 'title', 'category', 'isActive', 'photoUrl']);
 
-        return view('branches.show', compact('branch', 'recentSales', 'recentQuotes', 'recentTickets', 'branchPersonnel'));
+        $thisMonthStart = Carbon::now()->startOfMonth();
+        $thisMonthEnd = Carbon::now()->endOfMonth();
+        $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
+        $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
+
+        $thisMonthStats = $this->branchPeriodStats($branch, $thisMonthStart, $thisMonthEnd);
+        $lastMonthStats = $this->branchPeriodStats($branch, $lastMonthStart, $lastMonthEnd);
+
+        $allTimeSalesQuery = $branch->sales()->where('isCancelled', false);
+        $salesStats = (object) [
+            'total' => (float) (clone $allTimeSalesQuery)->sum('grandTotal'),
+            'receivable' => (float) (clone $allTimeSalesQuery)
+                ->selectRaw('COALESCE(SUM(GREATEST(grandTotal - COALESCE(paidAmount, 0), 0)), 0) as receivable')
+                ->value('receivable'),
+            'activeCount' => (int) (clone $allTimeSalesQuery)->count(),
+        ];
+
+        $terminHorizon = Carbon::today()->addDays(7);
+        $upcomingDueSales = $branch->sales()
+            ->with('customer:id,name,phone')
+            ->where('isCancelled', false)
+            ->pendingDelivery()
+            ->whereNotNull('dueDate')
+            ->whereDate('dueDate', '<=', $terminHorizon)
+            ->orderBy('dueDate')
+            ->limit(12)
+            ->get();
+
+        $recentSales = $branch->sales()
+            ->with('customer:id,name')
+            ->orderByDesc('saleDate')
+            ->orderByDesc('createdAt')
+            ->limit(10)
+            ->get();
+
+        $recentQuotes = $branch->quotes()
+            ->with('customer:id,name')
+            ->orderByDesc('createdAt')
+            ->limit(10)
+            ->get();
+
+        $recentTickets = $branch->serviceTickets()
+            ->with('customer:id,name')
+            ->orderByDesc('createdAt')
+            ->limit(10)
+            ->get();
+
+        $branchPersonnel = $branch->personnel()
+            ->orderByDesc('isActive')
+            ->orderBy('name')
+            ->get(['id', 'name', 'title', 'category', 'isActive', 'photoUrl', 'phone']);
+
+        $activePersonnelCount = $branchPersonnel->where('isActive', true)->count();
+
+        $monthlyPerformance = [
+            'thisMonth' => [
+                'label' => $thisMonthStart->locale('tr')->isoFormat('MMMM YYYY'),
+                ...$thisMonthStats,
+            ],
+            'lastMonth' => [
+                'label' => $lastMonthStart->locale('tr')->isoFormat('MMMM YYYY'),
+                ...$lastMonthStats,
+            ],
+            'countChange' => $this->periodChangePercent($thisMonthStats['count'], $lastMonthStats['count']),
+            'totalChange' => $this->periodChangePercent($thisMonthStats['total'], $lastMonthStats['total']),
+        ];
+
+        return view('branches.show', compact(
+            'branch',
+            'recentSales',
+            'recentQuotes',
+            'recentTickets',
+            'branchPersonnel',
+            'salesStats',
+            'monthlyPerformance',
+            'upcomingDueSales',
+            'activePersonnelCount',
+        ));
+    }
+
+    /** @return array{count: int, total: float, receivable: float} */
+    private function branchPeriodStats(Branch $branch, Carbon $start, Carbon $end): array
+    {
+        $base = $branch->sales()
+            ->where('isCancelled', false)
+            ->whereBetween('saleDate', [$start->toDateString(), $end->toDateString()]);
+
+        return [
+            'count' => (int) (clone $base)->count(),
+            'total' => (float) (clone $base)->sum('grandTotal'),
+            'receivable' => (float) (clone $base)
+                ->selectRaw('COALESCE(SUM(GREATEST(grandTotal - COALESCE(paidAmount, 0), 0)), 0) as receivable')
+                ->value('receivable'),
+        ];
+    }
+
+    private function periodChangePercent(float|int $current, float|int $previous): float
+    {
+        $current = (float) $current;
+        $previous = (float) $previous;
+
+        if ($previous <= 0.005) {
+            return $current > 0.005 ? 100.0 : 0.0;
+        }
+
+        return round((($current - $previous) / $previous) * 100, 1);
     }
 
     public function edit(Branch $branch)
