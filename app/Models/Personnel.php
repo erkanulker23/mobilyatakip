@@ -22,12 +22,30 @@ class Personnel extends BaseModel
         'vehiclePlate',
         'driverInfo',
         'isActive',
+        'hiredAt',
+        'leftAt',
     ];
 
     protected $casts = [
         'isActive' => 'boolean',
         'commissionRate' => 'decimal:2',
+        'hiredAt' => 'date',
+        'leftAt' => 'date',
     ];
+
+    public function hasLeft(): bool
+    {
+        return $this->leftAt !== null;
+    }
+
+    public function employmentStatusLabel(): string
+    {
+        if ($this->hasLeft()) {
+            return 'İşten ayrıldı';
+        }
+
+        return ($this->isActive ?? true) ? 'Aktif' : 'Pasif';
+    }
 
     public function branch(): BelongsTo
     {

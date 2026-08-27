@@ -73,10 +73,20 @@
                 <p class="text-lg font-semibold text-neutral-900 dark:text-white truncate">{{ $personnel->name }}</p>
                 <p class="text-sm text-neutral-500 truncate">{{ $personnel->title ?: \App\Support\PersonnelCategory::label($personnel->category) }}</p>
                 <div class="mt-2 flex flex-wrap gap-1.5">
-                    @if($personnel->isActive)
+                    @if($personnel->hasLeft())
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">
+                            İşten ayrıldı
+                            @if($personnel->leftAt)
+                                · {{ $personnel->leftAt->format('d.m.Y') }}
+                            @endif
+                        </span>
+                    @elseif($personnel->isActive)
                         <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">Aktif</span>
                     @else
                         <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-neutral-100 text-neutral-600 dark:bg-slate-700 dark:text-slate-300">Pasif</span>
+                    @endif
+                    @if($personnel->hiredAt)
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-neutral-100 text-neutral-700 dark:bg-slate-800 dark:text-slate-300">Giriş {{ $personnel->hiredAt->format('d.m.Y') }}</span>
                     @endif
                     @if($personnel->branch)
                         <a href="{{ route('branches.show', $personnel->branch) }}" class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-sky-50 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300 hover:underline">{{ $personnel->branch->displayName() }}</a>
@@ -143,6 +153,18 @@
                 <span class="text-neutral-400">E-posta</span>
                 <span class="font-medium truncate max-w-[16rem]">{{ $personnel->email }}</span>
             </a>
+        @endif
+        @if($personnel->hiredAt)
+            <span class="inline-flex items-center gap-1.5 text-neutral-600 dark:text-neutral-400">
+                <span class="text-neutral-400">İşe giriş</span>
+                <span class="font-medium text-neutral-800 dark:text-neutral-200">{{ $personnel->hiredAt->format('d.m.Y') }}</span>
+            </span>
+        @endif
+        @if($personnel->hasLeft())
+            <span class="inline-flex items-center gap-1.5 text-red-700 dark:text-red-300">
+                <span class="text-red-500/80">Ayrılış</span>
+                <span class="font-medium">{{ $personnel->leftAt?->format('d.m.Y') ?? '—' }}</span>
+            </span>
         @endif
         <span class="inline-flex items-center gap-1.5 text-neutral-600 dark:text-neutral-400">
             <span class="text-neutral-400">Kategori</span>

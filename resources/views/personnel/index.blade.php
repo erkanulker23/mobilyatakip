@@ -99,7 +99,8 @@
                             @elseif($p->hasSystemAccess())
                             <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">Giriş açık</span>
                             @endif
-                            @if(!($p->isActive ?? true))<span class="text-xs text-neutral-400">(Pasif)</span>@endif
+                            @if($p->leftAt)<span class="text-xs text-red-600 dark:text-red-400">(İşten ayrıldı{{ $p->leftAt ? ' · '.$p->leftAt->format('d.m.Y') : '' }})</span>
+                            @elseif(!($p->isActive ?? true))<span class="text-xs text-neutral-400">(Pasif)</span>@endif
                         </div>
                     </td>
                     <td class="table-td text-neutral-500">{{ $p->email ?? '—' }}</td>

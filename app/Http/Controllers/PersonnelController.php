@@ -106,6 +106,7 @@ class PersonnelController extends Controller
             'title' => 'nullable|string|max:255',
             'commissionRate' => 'nullable|numeric|min:0|max:100',
             'branchId' => 'nullable|exists:branches,id',
+            'hiredAt' => 'nullable|date',
             'photo' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:2048',
         ];
 
@@ -125,6 +126,8 @@ class PersonnelController extends Controller
         unset($validated['photo'], $validated['canAccessSystem'], $validated['systemRole'], $validated['password'], $validated['password_confirmation']);
 
         $validated['isActive'] = true;
+        $validated['leftAt'] = null;
+        $validated['hiredAt'] = filled($validated['hiredAt'] ?? null) ? $validated['hiredAt'] : null;
         $validated['commissionRate'] = round((float) ($validated['commissionRate'] ?? 0), 2);
 
         if ($request->hasFile('photo')) {
@@ -324,6 +327,9 @@ class PersonnelController extends Controller
             'commissionRate' => 'nullable|numeric|min:0|max:100',
             'branchId' => 'nullable|exists:branches,id',
             'isActive' => 'nullable|boolean',
+            'hiredAt' => 'nullable|date',
+            'hasLeft' => 'nullable|boolean',
+            'leftAt' => 'nullable|date|required_if:hasLeft,1|after_or_equal:hiredAt',
             'photo' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:2048',
         ];
 
@@ -338,12 +344,23 @@ class PersonnelController extends Controller
         $validated = $request->validate($rules, [
             'phone.regex' => 'Geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67)',
             'email.required' => 'Sistem erişimi için e-posta adresi zorunludur.',
+            'leftAt.required_if' => 'İşten ayrılma tarihi zorunludur.',
+            'leftAt.after_or_equal' => 'Ayrılış tarihi, işe giriş tarihinden önce olamaz.',
         ]);
 
-        unset($validated['photo'], $validated['canAccessSystem'], $validated['systemRole'], $validated['password'], $validated['password_confirmation']);
+        unset($validated['photo'], $validated['canAccessSystem'], $validated['systemRole'], $validated['password'], $validated['password_confirmation'], $validated['hasLeft']);
 
-        $validated['isActive'] = $request->boolean('isActive', true);
+        $hasLeft = $request->boolean('hasLeft');
+        $validated['hiredAt'] = filled($validated['hiredAt'] ?? null) ? $validated['hiredAt'] : null;
+        $validated['leftAt'] = $hasLeft && filled($request->input('leftAt'))
+            ? $request->input('leftAt')
+            : null;
+        $validated['isActive'] = $hasLeft ? false : $request->boolean('isActive', true);
         $validated['commissionRate'] = round((float) ($validated['commissionRate'] ?? 0), 2);
+
+        if ($hasLeft) {
+            $canAccess = false;
+        }
 
         if ($request->hasFile('photo')) {
             $this->removePhotoFile($personnel);

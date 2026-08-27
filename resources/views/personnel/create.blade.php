@@ -81,6 +81,12 @@
             'emptyLabel' => 'Şube seçilmedi',
             'hint' => 'Personelin görev yaptığı şube. Boş bırakılabilir.',
         ])
+        <div>
+            <label class="form-label">İşe giriş tarihi</label>
+            <input type="date" name="hiredAt" value="{{ old('hiredAt', now()->toDateString()) }}" class="form-input">
+            <p class="mt-1 text-xs text-neutral-500">Boş bırakılabilir.</p>
+            @error('hiredAt')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+        </div>
 
         @include('partials.personnel-system-access-fields', ['personnel' => $personnel])
 

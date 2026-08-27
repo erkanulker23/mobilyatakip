@@ -100,10 +100,68 @@
             'emptyLabel' => 'Şube seçilmedi',
             'hint' => 'Personelin görev yaptığı şube. Boş bırakılabilir.',
         ])
-        <div class="flex items-center gap-2">
-            <input type="hidden" name="isActive" value="0">
-            <input type="checkbox" name="isActive" value="1" {{ old('isActive', $personnel->isActive ?? true) ? 'checked' : '' }} class="rounded border-slate-300 text-green-600 focus:ring-green-500">
-            <label class="form-label mb-0">Aktif</label>
+
+        @php
+            $oldHasLeft = old('hasLeft');
+            $hasLeftInitial = $oldHasLeft !== null
+                ? (bool) $oldHasLeft
+                : (bool) $personnel->leftAt;
+            $leftAtInitial = old('leftAt', $personnel->leftAt?->format('Y-m-d') ?: now()->toDateString());
+        @endphp
+        <div
+            class="rounded-xl border border-neutral-200 p-4 space-y-4"
+            x-data="{
+                hasLeft: @js($hasLeftInitial),
+                isActive: @js((bool) old('isActive', $personnel->isActive ?? true)),
+                markLeft() {
+                    this.hasLeft = true;
+                    this.isActive = false;
+                    if (!$refs.leftAt.value) {
+                        $refs.leftAt.value = @js(now()->toDateString());
+                    }
+                },
+                restore() {
+                    this.hasLeft = false;
+                    this.isActive = true;
+                }
+            }"
+        >
+            <div>
+                <label class="form-label">İşe giriş tarihi</label>
+                <input type="date" name="hiredAt" value="{{ old('hiredAt', $personnel->hiredAt?->format('Y-m-d')) }}" class="form-input">
+                @error('hiredAt')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+            </div>
+
+            <input type="hidden" name="hasLeft" :value="hasLeft ? 1 : 0">
+
+            <div x-show="!hasLeft" class="space-y-3">
+                <div class="flex items-center gap-2">
+                    <input type="hidden" name="isActive" value="0">
+                    <input type="checkbox" name="isActive" value="1" x-model="isActive" class="rounded border-slate-300 text-green-600 focus:ring-green-500">
+                    <label class="form-label mb-0">Aktif personel</label>
+                </div>
+                <button
+                    type="button"
+                    @click="markLeft()"
+                    class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100"
+                >
+                    İşten ayrıldı olarak işaretle
+                </button>
+                <p class="text-xs text-neutral-500">İşten ayrılan personel pasife alınır ve sistem girişi kapatılır.</p>
+            </div>
+
+            <div x-show="hasLeft" x-cloak class="rounded-lg border border-red-200 bg-red-50/70 p-4 space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-red-100 text-red-800">İşten ayrıldı</span>
+                    <button type="button" @click="restore()" class="text-sm font-medium text-emerald-700 hover:underline">Tekrar işe al</button>
+                </div>
+                <div>
+                    <label class="form-label">Ayrılış tarihi *</label>
+                    <input type="date" name="leftAt" x-ref="leftAt" value="{{ $leftAtInitial }}" class="form-input" :required="hasLeft">
+                    @error('leftAt')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+                <p class="text-xs text-red-700/80">Personel pasif tutulur; sistem erişimi güncellemede kapatılır.</p>
+            </div>
         </div>
 
         @include('partials.personnel-system-access-fields', ['personnel' => $personnel])
