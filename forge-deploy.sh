@@ -117,12 +117,27 @@ if [ ! -f public/build/manifest.json ]; then
   exit 1
 fi
 
-# 5. storage / bootstrap/cache — web ve deploy kullanıcısı yazabilsin (laravel.log Permission denied önlenir)
+# 5. storage / bootstrap/cache — önce sahiplik (touch'tan önce; aksi halde Permission denied)
 mkdir -p storage/logs storage/framework/{sessions,views,cache,data} storage/app/public bootstrap/cache
-touch storage/logs/laravel.log
-chmod -R ug+rwx storage bootstrap/cache 2>/dev/null || chmod -R 775 storage bootstrap/cache
-if id forge >/dev/null 2>&1; then
-  chown -R forge:forge storage bootstrap/cache 2>/dev/null || true
+
+STORAGE_OWNER="${FORGE_SITE_USER:-forge}"
+if id "$STORAGE_OWNER" >/dev/null 2>&1; then
+  STORAGE_CHOWN="$STORAGE_OWNER:$STORAGE_OWNER"
+else
+  STORAGE_CHOWN="$(whoami):$(whoami)"
+fi
+
+if command -v sudo >/dev/null 2>&1; then
+  sudo chown -R "$STORAGE_CHOWN" storage bootstrap/cache 2>/dev/null || true
+  sudo chmod -R ug+rwx storage bootstrap/cache 2>/dev/null || sudo chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+else
+  chmod -R ug+rwx storage bootstrap/cache 2>/dev/null || chmod -R 775 storage bootstrap/cache
+  chown -R "$STORAGE_CHOWN" storage bootstrap/cache 2>/dev/null || true
+fi
+
+if ! touch storage/logs/laravel.log 2>/dev/null; then
+  sudo touch storage/logs/laravel.log 2>/dev/null || true
+  sudo chown "$STORAGE_CHOWN" storage/logs/laravel.log 2>/dev/null || true
 fi
 
 # 6. Cache (config/route/view — veritabanına dokunmaz)
