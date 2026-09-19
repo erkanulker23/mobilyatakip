@@ -22,8 +22,7 @@
     'extraInfo' => '<div class="print-kv-list">'
         . '<div class="print-kv-row"><span class="print-kv-label">Teklif Tarihi</span><span class="print-kv-value">' . e($quoteIssuedAt?->format('d.m.Y') ?? '-') . '</span></div>'
         . '<div class="print-kv-row"><span class="print-kv-label">Son Geçerlilik</span><span class="print-kv-value">' . e($quoteValidUntil?->format('d.m.Y') ?? '-') . '</span></div>'
-        . '<div class="print-kv-row"><span class="print-kv-label">Oluşturan</span><span class="print-kv-value">' . e(\App\Support\QuoteCreator::displayNameForQuote($quote) ?? '-') . '</span></div>'
-        . '<div class="print-kv-row"><span class="print-kv-label">Teklifi hazırlayan</span><span class="print-kv-value">' . e($quote->personnel?->name ?? '-') . '</span></div>'
+        . '<div class="print-kv-row"><span class="print-kv-label">Teklifi Hazırlayan</span><span class="print-kv-value">' . e($quote->personnel?->name ?? \App\Support\QuoteCreator::displayNameForQuote($quote) ?? '-') . '</span></div>'
         . ($quote->branch ? '<div class="print-kv-row"><span class="print-kv-label">Şube</span><span class="print-kv-value">' . e($quote->branch->name) . '</span></div>' : '')
         . '</div>',
     'footerNote' => null,
