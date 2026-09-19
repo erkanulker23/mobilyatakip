@@ -18,21 +18,23 @@ if ! flock -n 200; then
 fi
 
 BRANCH="${FORGE_SITE_BRANCH:-main}"
+FORGE_COMPOSER="${FORGE_COMPOSER:-composer}"
+FORGE_PHP="${FORGE_PHP:-php}"
 
 # 1. Son kodu çek
 git pull origin "$BRANCH"
 
 # 2. PHP bağımlılıkları (production)
-composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+$FORGE_COMPOSER install --no-interaction --prefer-dist --optimize-autoloader --no-dev
 
 # 3. Veritabanı — sadece bekleyen migration'lar (idempotent, veri silmez)
-php artisan migrate --force
+$FORGE_PHP artisan migrate --force
 
 # 3b. Admin kullanıcı yoksa oluştur; mevcut şifreye dokunma
-php artisan db:seed --class=Database\\Seeders\\SuperAdminSeeder --force
+$FORGE_PHP artisan db:seed --class=Database\\Seeders\\SuperAdminSeeder --force
 
 # 3c. İl/ilçe — tablo boşsa bir kez doldur (mevcut kayıtları ezmez)
-php artisan turkey-locations:sync --if-empty || echo "Turkiye konum senkronu atlandı."
+$FORGE_PHP artisan turkey-locations:sync --if-empty || echo "Turkiye konum senkronu atlandı."
 
 # 4. Frontend build (Vite production dependencies — Forge NODE_ENV=production güvenli)
 # Forge panelinde ekstra "npm install && npm run build" SATIRI OLMASIN; sadece bu script.
@@ -83,27 +85,32 @@ if id forge >/dev/null 2>&1; then
 fi
 
 # 6. Cache (config/route/view — veritabanına dokunmaz)
-php artisan optimize:clear
-php artisan config:cache
-php artisan route:clear
-php artisan route:cache
-php artisan route:list --name=sales.delivered --quiet || { echo "HATA: sales.delivered route kaydı yok."; exit 1; }
-php artisan view:cache
+$FORGE_PHP artisan optimize:clear
+$FORGE_PHP artisan config:cache
+$FORGE_PHP artisan route:clear
+$FORGE_PHP artisan route:cache
+$FORGE_PHP artisan route:list --name=sales.delivered --quiet || { echo "HATA: sales.delivered route kaydı yok."; exit 1; }
+$FORGE_PHP artisan view:cache
 
-# OPcache eski route/config dosyalarını tutmasın
+# OPcache eski route/config dosyalarını tutmasın (eşzamanlı reload kilidi)
 if [ -n "${FORGE_PHP_FPM:-}" ]; then
-  sudo service "$FORGE_PHP_FPM" reload || true
+  touch /tmp/fpmlock 2>/dev/null || true
+  (
+    flock -w 10 9 || exit 1
+    echo 'Reloading PHP FPM...'
+    sudo service "$FORGE_PHP_FPM" reload
+  ) 9</tmp/fpmlock || true
 fi
 
 # 7. Storage link (dosya silmez, sembolik link oluşturur)
 if [ ! -L public/storage ]; then
-  php artisan storage:link
+  $FORGE_PHP artisan storage:link
 else
   echo "Storage link zaten mevcut."
 fi
 
 # 8. Queue worker yenile
-php artisan queue:restart || true
+$FORGE_PHP artisan queue:restart || true
 
 echo "Deploy tamamlandı: $(date -Iseconds)"
 echo ""
