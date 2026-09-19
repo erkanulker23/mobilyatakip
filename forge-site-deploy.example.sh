@@ -1,6 +1,13 @@
-# Laravel Forge → Site → Deploy Script
-# Eski satırları TAMAMEN silin: git pull, composer, FPM reload, npm ci, npm run build, artisan migrate...
-# Log'da "Deploy başladı:" görünmüyorsa hâlâ eski script çalışıyordur → ENOTEMPTY / vite 127 devam eder.
+# Forge Deploy Script — tüm siteler için aynı (forge-site-deploy.example.sh)
+# Detaylı checklist: deploy/FORGE-SITELER.md
 
-cd $FORGE_SITE_PATH
+set -e
+
+cd "$FORGE_SITE_PATH"
+
+if [ ! -f forge-deploy.sh ]; then
+  echo "HATA: forge-deploy.sh bulunamadı ($FORGE_SITE_PATH)."
+  exit 1
+fi
+
 bash forge-deploy.sh

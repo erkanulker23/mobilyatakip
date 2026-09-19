@@ -39,11 +39,27 @@ $FORGE_PHP artisan turkey-locations:sync --if-empty || echo "Turkiye konum senkr
 # 4. Frontend — repoda public/build varsa sunucuda npm çalıştırmayız (Forge npm hatalarını önler)
 # CSS değiştirdiyseniz: yerelde npm run build + public/build ve .frontend-build-hash commit edin.
 # Sunucuda zorunlu npm: FORCE_NPM_BUILD=1 bash forge-deploy.sh
+sha256_files() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$@" | sha256sum | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$@" | shasum -a 256 | awk '{print $1}'
+  else
+    echo ""
+  fi
+}
+
 frontend_deps_hash() {
   if [ -f package-lock.json ]; then
-    shasum -a 256 package.json package-lock.json 2>/dev/null | shasum -a 256 | awk '{print $1}'
+    sha256_files package.json package-lock.json
   elif [ -f package.json ]; then
-    shasum -a 256 package.json 2>/dev/null | awk '{print $1}'
+    if command -v sha256sum >/dev/null 2>&1; then
+      sha256sum package.json | awk '{print $1}'
+    elif command -v shasum >/dev/null 2>&1; then
+      shasum -a 256 package.json | awk '{print $1}'
+    else
+      echo ""
+    fi
   else
     echo ""
   fi
