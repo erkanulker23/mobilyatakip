@@ -70,11 +70,29 @@
             <p class="page-desc">{{ $quote->quoteNumber }} — teklif kalemleri (satış değil, tahsilat yok)@if($quote->customer) · Müşteri: <a href="{{ route('customers.show', $quote->customer) }}" class="font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300">{{ $quote->customer->name }}</a>@endif</p>
         </div>
         <div class="flex flex-wrap items-center gap-2 self-start">
-            @if(!$quote->convertedSaleId && ($quote->status ?? '') == 'taslak')
+            @if(!$quote->convertedSaleId)
+            <form method="POST" action="{{ route('quotes.update-status', $quote) }}" class="inline-flex">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="status" value="onaylandi">
+                <button type="submit" class="inline-flex items-center px-3 py-2 rounded-xl text-sm font-semibold transition-colors {{ ($quote->status ?? '') === 'onaylandi' ? 'bg-green-600 text-white ring-2 ring-green-700/30' : 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50' }}">
+                    Teklif Onaylandı
+                </button>
+            </form>
+            <form method="POST" action="{{ route('quotes.update-status', $quote) }}" class="inline-flex">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="status" value="reddedildi">
+                <button type="submit" class="inline-flex items-center px-3 py-2 rounded-xl text-sm font-semibold transition-colors {{ ($quote->status ?? '') === 'reddedildi' ? 'bg-red-600 text-white ring-2 ring-red-700/30' : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900/50 dark:hover:bg-red-950/60' }}">
+                    Teklif Onaylanmadı
+                </button>
+            </form>
+            @if(in_array($quote->status ?? '', ['taslak', 'onaylandi'], true))
             <form method="POST" action="{{ route('quotes.convert', $quote) }}" class="inline-flex" onsubmit="return confirm('Bu teklifi siparişe (satışa) dönüştürmek istediğinize emin misiniz?');">
                 @csrf
                 <button type="submit" class="btn-primary text-sm">Siparişe Dönüştür</button>
             </form>
+            @endif
             @elseif($quote->convertedSaleId && $quote->convertedSale)
             <a href="{{ route('sales.show', $quote->convertedSale) }}" class="btn-secondary text-sm">Satış #{{ $quote->convertedSale->saleNumber }}</a>
             @endif
@@ -95,6 +113,9 @@
     <form method="POST" action="{{ route('quotes.update', $quote) }}" id="quoteForm" enctype="multipart/form-data">
         @csrf
         @method('PUT')
+        @if(session('success'))
+        <div class="mb-4 p-4 rounded-xl bg-green-50 text-green-800 text-sm border border-green-100">{{ session('success') }}</div>
+        @endif
         @if(session('error'))
         <div class="mb-4 p-4 rounded-xl bg-red-50 text-red-700 text-sm border border-red-100">{{ session('error') }}</div>
         @endif

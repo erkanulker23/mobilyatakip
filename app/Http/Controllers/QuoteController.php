@@ -212,6 +212,32 @@ class QuoteController extends Controller
         return redirect()->route('quotes.show', $quote)->with('success', 'Teklif e-posta ile gönderildi.');
     }
 
+    public function updateStatus(Request $request, Quote $quote)
+    {
+        if ($quote->convertedSaleId) {
+            return redirect()->route('quotes.show', $quote)->with('error', 'Satışa dönüştürülmüş teklifin durumu değiştirilemez.');
+        }
+
+        $validated = $request->validate([
+            'status' => 'required|in:onaylandi,reddedildi',
+        ]);
+
+        $previousStatus = $quote->status;
+        $quote->update(['status' => $validated['status']]);
+
+        $this->auditService->logAction('quote', $quote->id, 'status', [
+            'quoteNumber' => $quote->quoteNumber,
+            'from' => $previousStatus,
+            'to' => $validated['status'],
+        ]);
+
+        $message = $validated['status'] === 'onaylandi'
+            ? 'Teklif onaylandı olarak işaretlendi.'
+            : 'Teklif onaylanmadı olarak işaretlendi.';
+
+        return redirect()->route('quotes.edit', $quote)->with('success', $message);
+    }
+
     public function convert(Quote $quote)
     {
         if ($quote->convertedSaleId) {

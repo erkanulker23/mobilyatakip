@@ -149,6 +149,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/quotes/{quote}/email', [QuoteController::class, 'email'])->name('quotes.email');
     Route::post('/quotes/{quote}/send-email', [QuoteController::class, 'sendEmail'])->name('quotes.sendEmail');
     Route::post('/quotes/{quote}/convert', [QuoteController::class, 'convert'])->name('quotes.convert');
+    Route::patch('/quotes/{quote}/status', [QuoteController::class, 'updateStatus'])->name('quotes.update-status');
     Route::post('/quotes/{quote}/duplicate', [QuoteController::class, 'duplicate'])->name('quotes.duplicate');
     Route::resource('quotes', QuoteController::class);
 
