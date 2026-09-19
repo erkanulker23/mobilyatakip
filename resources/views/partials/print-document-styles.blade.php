@@ -1057,3 +1057,103 @@
 .print-document--quote .print-info-banner {
     display: none;
 }
+
+/* ── Teklif / satış ek çizim dosyaları (ayrı sayfa) ── */
+.print-drawing-page {
+    max-width: 210mm;
+    margin: 16px auto 0;
+    background: #fff;
+    border: 1px solid var(--print-border);
+    border-radius: 12px;
+    box-shadow:
+        0 1px 2px rgba(15, 23, 42, 0.04),
+        0 12px 32px rgba(15, 23, 42, 0.08);
+    overflow: hidden;
+}
+
+.print-drawing-page-header {
+    padding: 14px 18px 10px;
+    border-bottom: 1px solid var(--print-border);
+}
+
+.print-drawing-page-label {
+    margin: 0;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--print-muted);
+}
+
+.print-drawing-page-title {
+    margin: 4px 0 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--print-ink);
+    word-break: break-word;
+}
+
+.print-drawing-page-body {
+    padding: 12px 18px 18px;
+}
+
+.print-drawing-page-body--image,
+.print-drawing-page-body--pdf {
+    padding: 0;
+}
+
+.print-drawing-image {
+    display: block;
+    width: 100%;
+    max-height: 277mm;
+    object-fit: contain;
+    margin: 0 auto;
+}
+
+.print-drawing-pdf-loading,
+.print-drawing-pdf-error {
+    margin: 0;
+    padding: 24px 18px;
+    font-size: 11px;
+    color: var(--print-muted);
+    text-align: center;
+}
+
+.print-drawing-pdf-pages {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.print-drawing-pdf-canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+@media print {
+    .print-drawing-page {
+        break-before: page;
+        page-break-before: always;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        max-width: none !important;
+        margin: 0 !important;
+    }
+
+    .print-drawing-page-header {
+        padding: 0 0 6px !important;
+        border-bottom: 1px solid var(--print-border) !important;
+        margin-bottom: 8px !important;
+    }
+
+    .print-drawing-pdf-canvas + .print-drawing-pdf-canvas {
+        break-before: page;
+        page-break-before: always;
+    }
+
+    .print-drawing-pdf-loading {
+        display: none !important;
+    }
+}

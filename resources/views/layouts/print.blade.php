@@ -58,10 +58,18 @@
     <div class="px-4 pb-10 print:px-0 print:pb-0">
         @yield('content')
     </div>
+    @stack('print-scripts')
     <script>
         window.addEventListener('load', function () {
-            if (window.location.search.includes('auto=1')) {
-                window.setTimeout(function () { window.print(); }, 300);
+            var runAutoPrint = function () {
+                if (window.location.search.includes('auto=1')) {
+                    window.setTimeout(function () { window.print(); }, 300);
+                }
+            };
+            if (window.__drawingPrintReadyPromise) {
+                window.__drawingPrintReadyPromise.then(runAutoPrint).catch(runAutoPrint);
+            } else {
+                runAutoPrint();
             }
         });
     </script>

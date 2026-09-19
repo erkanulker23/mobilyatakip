@@ -38,4 +38,6 @@
     'grandTotal' => $quote->grandTotal,
     'notes' => $quote->notes,
 ])
+
+@include('partials.drawing-files-print', ['drawingFiles' => $quote->drawingFiles ?? []])
 @endsection
