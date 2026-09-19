@@ -2,7 +2,13 @@
 
 Tüm siteler **aynı GitHub repo** (`mobilyatakip`) ve **aynı deploy script** kullanır. Site farkı yalnızca `.env` (APP_URL, veritabanı) ve Forge domain ayarıdır.
 
-## 1. Deploy Script (her site — kopyala yapıştır)
+## 1. Deploy Script (her site — iki seçenek)
+
+### A) Klasik (eski Forge alışkanlığınız — önerilen)
+
+Tanınık sıra: composer → migrate → cache → **en sonda** FPM. `deploy/forge-classic-panel.sh` içeriğini Forge’a yapıştırın.
+
+### B) Tek satır wrapper
 
 Forge → **Site** → **Deploy Script** → içeriği **tamamen sil**, şunu yapıştır:
 
