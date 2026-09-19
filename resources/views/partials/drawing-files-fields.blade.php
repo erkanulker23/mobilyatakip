@@ -7,17 +7,30 @@
         $removePaths = [];
     }
     $lightboxImages = [];
+    $fileCards = [];
+    $imageIndex = 0;
     foreach ($entries as $entry) {
-        if (! \App\Support\DrawingFiles::isImage($entry)) {
-            continue;
+        $filePath = $entry['path'];
+        $fileUrl = \App\Support\DrawingFiles::url($filePath);
+        $isImage = \App\Support\DrawingFiles::isImage($entry);
+        $isPdf = \App\Support\DrawingFiles::isPdf($entry);
+        $lightboxIndex = null;
+        if ($isImage && $fileUrl) {
+            $lightboxImages[] = [
+                'url' => $fileUrl,
+                'name' => $entry['name'] ?? 'Görsel',
+            ];
+            $lightboxIndex = $imageIndex++;
         }
-        $url = \App\Support\DrawingFiles::url($entry['path']);
-        if (! $url) {
-            continue;
-        }
-        $lightboxImages[] = [
-            'url' => $url,
-            'name' => $entry['name'] ?? 'Görsel',
+        $fileCards[] = [
+            'path' => $filePath,
+            'url' => $fileUrl,
+            'name' => $entry['name'] ?? basename($filePath),
+            'kindLabel' => \App\Support\DrawingFiles::kindLabel($entry),
+            'isImage' => $isImage,
+            'isPdf' => $isPdf,
+            'isDwg' => \App\Support\DrawingFiles::isDwg($entry),
+            'lightboxIndex' => $lightboxIndex,
         ];
     }
 @endphp
@@ -30,15 +43,35 @@
         pdfName: '',
         index: 0,
         images: @js($lightboxImages),
+        files: @js($fileCards),
         removedPaths: @js(array_values($removePaths)),
         isRemoved(path) {
             return this.removedPaths.includes(path);
+        },
+        isRemovedAt(i) {
+            const f = this.files[i];
+            return f ? this.isRemoved(f.path) : false;
+        },
+        toggleRemoveAt(i) {
+            const f = this.files[i];
+            if (f) this.toggleRemove(f.path);
         },
         toggleRemove(path) {
             if (this.isRemoved(path)) {
                 this.removedPaths = this.removedPaths.filter(p => p !== path);
             } else {
                 this.removedPaths.push(path);
+            }
+        },
+        previewAt(i) {
+            const f = this.files[i];
+            if (!f || !f.url) return;
+            if (f.isImage && f.lightboxIndex !== null) {
+                this.openAt(f.lightboxIndex);
+            } else if (f.isPdf) {
+                this.openPdf(f.url, f.name || 'PDF');
+            } else {
+                window.open(f.url, '_blank', 'noopener');
             }
         },
         openAt(i) {
@@ -67,100 +100,87 @@
 >
     <div class="sale-form-section-head">
         <h2 class="sale-form-section-title">Çizim Dosyaları</h2>
-        <span class="text-xs text-neutral-500">{{ count($entries) }} kayıtlı dosya</span>
+        <span class="text-xs text-neutral-500">{{ count($fileCards) }} kayıtlı dosya</span>
     </div>
     <div class="sale-form-section-body space-y-5">
-        @if(count($entries) > 0)
+        @if(count($fileCards) > 0)
         <p class="text-xs text-neutral-500 dark:text-neutral-400">Önizlemek için görsele veya PDF alanına tıklayın. Kaldırdığınız dosyalar <strong>Değişiklikleri Kaydet</strong> ile silinir.</p>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            @php $imageIndex = 0; @endphp
-            @foreach($entries as $entry)
+            @foreach($fileCards as $fileIndex => $card)
             @php
-                $filePath = $entry['path'];
-                $fileUrl = \App\Support\DrawingFiles::url($filePath);
-                $kindLabel = \App\Support\DrawingFiles::kindLabel($entry);
-                $isImage = \App\Support\DrawingFiles::isImage($entry);
-                $isPdf = \App\Support\DrawingFiles::isPdf($entry);
-                $isDwg = \App\Support\DrawingFiles::isDwg($entry);
-                $thisImageIndex = $isImage && $fileUrl ? $imageIndex++ : null;
                 $previewClass = match (true) {
-                    $isImage => 'bg-neutral-50 dark:bg-slate-800',
-                    $isPdf => 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100/80',
-                    $isDwg => 'bg-sky-50 dark:bg-sky-900/20 hover:bg-sky-100/80',
+                    $card['isImage'] => 'bg-neutral-50 dark:bg-slate-800',
+                    $card['isPdf'] => 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100/80',
+                    $card['isDwg'] => 'bg-sky-50 dark:bg-sky-900/20 hover:bg-sky-100/80',
                     default => 'bg-neutral-50 dark:bg-slate-800',
                 };
             @endphp
             <div
                 class="rounded-xl border border-neutral-200 dark:border-slate-700 overflow-hidden transition-opacity"
-                x-data="{
-                    path: @js($filePath),
-                    fileUrl: @js($fileUrl),
-                    fileName: @js($entry['name'] ?? '')
-                }"
-                x-bind:class="isRemoved(path) ? 'opacity-50 ring-2 ring-red-300 dark:ring-red-800' : ''"
+                x-bind:class="isRemovedAt({{ $fileIndex }}) ? 'opacity-50 ring-2 ring-red-300 dark:ring-red-800' : ''"
             >
-                @if($isImage && $fileUrl)
+                @if($card['isImage'] && $card['url'])
                 <button
                     type="button"
-                    @click="openAt({{ $thisImageIndex }})"
+                    @click="previewAt({{ $fileIndex }})"
                     class="block w-full aspect-video {{ $previewClass }} cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-inset"
-                    aria-label="{{ $entry['name'] }} önizle"
+                    aria-label="{{ $card['name'] }} önizle"
                 >
-                    <img src="{{ $fileUrl }}" alt="{{ $entry['name'] }}" class="w-full h-full object-contain p-2 pointer-events-none">
+                    <img src="{{ $card['url'] }}" alt="{{ $card['name'] }}" class="w-full h-full object-contain p-2 pointer-events-none">
                 </button>
-                @elseif($isPdf && $fileUrl)
+                @elseif($card['isPdf'] && $card['url'])
                 <button
                     type="button"
-                    @click="openPdf(fileUrl, fileName || 'PDF')"
+                    @click="previewAt({{ $fileIndex }})"
                     class="flex w-full aspect-video items-center justify-center {{ $previewClass }} transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-inset"
-                    aria-label="{{ $entry['name'] }} PDF önizle"
+                    aria-label="{{ $card['name'] }} PDF önizle"
                 >
                     <div class="text-center px-4">
                         <svg class="w-10 h-10 mx-auto text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                         <p class="mt-2 text-xs font-semibold uppercase tracking-wide text-red-700 dark:text-red-300">PDF · Önizle</p>
                     </div>
                 </button>
-                @elseif($fileUrl)
-                <a href="{{ $fileUrl }}" target="_blank" rel="noopener" class="flex aspect-video items-center justify-center {{ $previewClass }} transition-colors">
+                @elseif($card['url'])
+                <a href="{{ $card['url'] }}" target="_blank" rel="noopener" class="flex aspect-video items-center justify-center {{ $previewClass }} transition-colors">
                     <div class="text-center px-4">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-neutral-600 dark:text-neutral-300">{{ $kindLabel }}</p>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-neutral-600 dark:text-neutral-300">{{ $card['kindLabel'] }}</p>
                         <p class="mt-1 text-[11px] text-neutral-500">İndir / aç</p>
                     </div>
                 </a>
                 @else
                 <div class="flex aspect-video items-center justify-center {{ $previewClass }}">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-neutral-500">{{ $kindLabel }}</p>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-neutral-500">{{ $card['kindLabel'] }}</p>
                 </div>
                 @endif
 
                 <div class="p-3 border-t border-neutral-100 dark:border-slate-700 space-y-2">
-                    <p class="text-sm font-medium text-neutral-900 dark:text-white break-all">{{ $entry['name'] }}</p>
-                    <p class="text-[11px] text-neutral-500">{{ $kindLabel }}</p>
+                    <p class="text-sm font-medium text-neutral-900 dark:text-white break-all">{{ $card['name'] }}</p>
+                    <p class="text-[11px] text-neutral-500">{{ $card['kindLabel'] }}</p>
                     <div class="flex flex-wrap items-center gap-2 pt-1">
-                        @if($fileUrl && ! $isImage && ! $isPdf)
-                        <a href="{{ $fileUrl }}" target="_blank" rel="noopener" class="text-xs font-medium text-emerald-600 hover:underline">Aç</a>
+                        @if($card['url'] && ! $card['isImage'] && ! $card['isPdf'])
+                        <a href="{{ $card['url'] }}" target="_blank" rel="noopener" class="text-xs font-medium text-emerald-600 hover:underline">Aç</a>
                         @endif
-                        @if($isPdf && $fileUrl)
-                        <button type="button" @click="openPdf(fileUrl, fileName || 'PDF')" class="text-xs font-medium text-emerald-600 hover:underline">Önizle</button>
+                        @if($card['url'])
+                        <button type="button" @click="previewAt({{ $fileIndex }})" class="text-xs font-medium text-emerald-600 hover:underline">Önizle</button>
                         @endif
                         <button
                             type="button"
-                            @click="toggleRemove(path)"
+                            @click="toggleRemoveAt({{ $fileIndex }})"
                             class="text-xs font-semibold"
-                            x-bind:class="isRemoved(path) ? 'text-neutral-600 hover:text-neutral-800' : 'text-red-600 hover:text-red-700'"
-                            x-text="isRemoved(path) ? 'Geri al' : 'Kaldır'"
+                            x-bind:class="isRemovedAt({{ $fileIndex }}) ? 'text-neutral-600 hover:text-neutral-800' : 'text-red-600 hover:text-red-700'"
+                            x-text="isRemovedAt({{ $fileIndex }}) ? 'Geri al' : 'Kaldır'"
                         ></button>
                     </div>
                     <input
                         type="checkbox"
                         name="remove_drawing_files[]"
-                        value="{{ $filePath }}"
+                        value="{{ $card['path'] }}"
                         class="sr-only"
-                        x-bind:checked="isRemoved(path)"
+                        x-bind:checked="isRemovedAt({{ $fileIndex }})"
                         tabindex="-1"
                         aria-hidden="true"
                     >
-                    <p x-show="isRemoved(path)" x-cloak class="text-[11px] text-red-600 dark:text-red-400">Kaydedince silinecek</p>
+                    <p x-show="isRemovedAt({{ $fileIndex }})" x-cloak class="text-[11px] text-red-600 dark:text-red-400">Kaydedince silinecek</p>
                 </div>
             </div>
             @endforeach
