@@ -21,8 +21,9 @@ BRANCH="${FORGE_SITE_BRANCH:-main}"
 FORGE_COMPOSER="${FORGE_COMPOSER:-composer}"
 FORGE_PHP="${FORGE_PHP:-php}"
 
-# 1. Son kodu çek
-git pull origin "$BRANCH"
+# 1. Son kodu çek — sunucuda kalan npm/package-lock değişikliklerini repoya hizala (.env dokunulmaz)
+git fetch origin "$BRANCH"
+git reset --hard "origin/$BRANCH"
 
 # 2. PHP bağımlılıkları (production)
 $FORGE_COMPOSER install --no-interaction --prefer-dist --optimize-autoloader --no-dev

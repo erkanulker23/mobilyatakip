@@ -59,7 +59,11 @@ cd $FORGE_SITE_PATH
 FORCE_NPM_BUILD=1 bash forge-deploy.sh
 ```
 
-## 6. Deploy log doğrulama
+## 6. `package-lock.json would be overwritten by merge`
+
+Sunucuda eski npm denemeleri lock dosyasını değiştirmiş olabilir. Güncel `forge-deploy.sh` `git reset --hard origin/main` kullanır; bir kez deploy yeterli. Manuel: `git fetch origin main && git reset --hard origin/main`
+
+## 7. Deploy log doğrulama
 
 - **Yanlış script:** `git pull` + hemen `Reloading PHP FPM` + `npm error` — panel script’i hâl eski.
 - **Doğru script:** `Deploy başladı:` ile başlar, npm atlanır veya kontrollü çalışır, `Deploy tamamlandı:` ile biter.
