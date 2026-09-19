@@ -56,49 +56,65 @@
 </style>
 @endpush
 @section('content')
-<div class="mb-6">
-    <nav class="flex items-center gap-2 text-neutral-500 text-sm mb-1">
-        <a href="{{ route('quotes.index') }}" class="hover:text-neutral-900 transition-colors">Teklifler</a>
-        <span aria-hidden="true">/</span>
-        <a href="{{ route('quotes.show', $quote) }}" class="hover:text-neutral-900 transition-colors">{{ $quote->quoteNumber }}</a>
-        <span aria-hidden="true">/</span>
-        <span class="text-neutral-700">Düzenle</span>
-    </nav>
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-            <h1 class="page-title">Teklif Düzenle</h1>
-            <p class="page-desc">{{ $quote->quoteNumber }} — teklif kalemleri (satış değil, tahsilat yok)@if($quote->customer) · Müşteri: <a href="{{ route('customers.show', $quote->customer) }}" class="font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300">{{ $quote->customer->name }}</a>@endif</p>
-        </div>
-        <div class="flex flex-wrap items-center gap-2 self-start">
-            @if(!$quote->convertedSaleId)
-            <form method="POST" action="{{ route('quotes.update-status', $quote) }}" class="inline-flex">
-                @csrf
-                @method('PATCH')
-                <input type="hidden" name="status" value="onaylandi">
-                <button type="submit" class="inline-flex items-center px-3 py-2 rounded-xl text-sm font-semibold transition-colors {{ ($quote->status ?? '') === 'onaylandi' ? 'bg-green-600 text-white ring-2 ring-green-700/30' : 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50' }}">
-                    Teklif Onaylandı
-                </button>
-            </form>
-            <form method="POST" action="{{ route('quotes.update-status', $quote) }}" class="inline-flex">
-                @csrf
-                @method('PATCH')
-                <input type="hidden" name="status" value="reddedildi">
-                <button type="submit" class="inline-flex items-center px-3 py-2 rounded-xl text-sm font-semibold transition-colors {{ ($quote->status ?? '') === 'reddedildi' ? 'bg-red-600 text-white ring-2 ring-red-700/30' : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900/50 dark:hover:bg-red-950/60' }}">
-                    Teklif Onaylanmadı
-                </button>
-            </form>
+<div class="mb-6 space-y-4">
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <nav class="flex flex-wrap items-center gap-x-2 gap-y-1 text-neutral-500 text-sm">
+            <a href="{{ route('quotes.index') }}" class="hover:text-neutral-900 transition-colors">Teklifler</a>
+            <span aria-hidden="true">/</span>
+            <a href="{{ route('quotes.show', $quote) }}" class="hover:text-neutral-900 transition-colors">{{ $quote->quoteNumber }}</a>
+            <span aria-hidden="true">/</span>
+            <span class="text-neutral-700">Düzenle</span>
+        </nav>
+        <a href="{{ route('quotes.show', $quote) }}" class="btn-secondary text-sm self-start sm:self-auto shrink-0">
+            ← Teklif detayı
+        </a>
+    </div>
+
+    <div>
+        <h1 class="page-title">Teklif Düzenle</h1>
+        <p class="page-desc">{{ $quote->quoteNumber }} — teklif kalemleri (satış değil, tahsilat yok)@if($quote->customer) · Müşteri: <a href="{{ route('customers.show', $quote->customer) }}" class="font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300">{{ $quote->customer->name }}</a>@endif</p>
+    </div>
+
+    @if(!$quote->convertedSaleId)
+    <div class="flex flex-col gap-3 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 py-3 sm:px-5 sm:py-4 shadow-sm">
+        <p class="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Teklif işlemleri</p>
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 min-w-0">
+                <span class="text-sm font-medium text-neutral-600 dark:text-neutral-300 shrink-0">Müşteri yanıtı</span>
+                <div class="inline-flex w-full sm:w-auto max-w-full rounded-xl border border-neutral-200 dark:border-neutral-600 overflow-hidden shadow-sm">
+                    <form method="POST" action="{{ route('quotes.update-status', $quote) }}" class="flex-1 sm:flex-initial min-w-0">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="status" value="onaylandi">
+                        <button type="submit" class="w-full sm:w-auto inline-flex items-center justify-center px-3 py-2.5 text-sm font-semibold transition-colors whitespace-nowrap {{ ($quote->status ?? '') === 'onaylandi' ? 'bg-green-600 text-white' : 'bg-white dark:bg-neutral-800 text-green-800 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-950/40' }}">
+                            Onaylandı
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ route('quotes.update-status', $quote) }}" class="flex-1 sm:flex-initial min-w-0 border-l border-neutral-200 dark:border-neutral-600">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="status" value="reddedildi">
+                        <button type="submit" class="w-full sm:w-auto inline-flex items-center justify-center px-3 py-2.5 text-sm font-semibold transition-colors whitespace-nowrap {{ ($quote->status ?? '') === 'reddedildi' ? 'bg-red-600 text-white' : 'bg-white dark:bg-neutral-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40' }}">
+                            Onaylanmadı
+                        </button>
+                    </form>
+                </div>
+            </div>
             @if(in_array($quote->status ?? '', ['taslak', 'onaylandi'], true))
-            <form method="POST" action="{{ route('quotes.convert', $quote) }}" class="inline-flex" onsubmit="return confirm('Bu teklifi siparişe (satışa) dönüştürmek istediğinize emin misiniz?');">
+            <form method="POST" action="{{ route('quotes.convert', $quote) }}" class="w-full lg:w-auto shrink-0" onsubmit="return confirm('Bu teklifi siparişe (satışa) dönüştürmek istediğinize emin misiniz?');">
                 @csrf
-                <button type="submit" class="btn-primary text-sm">Siparişe Dönüştür</button>
+                <button type="submit" class="btn-primary text-sm w-full lg:w-auto justify-center min-h-[44px] px-5">Siparişe Dönüştür</button>
             </form>
             @endif
-            @elseif($quote->convertedSaleId && $quote->convertedSale)
-            <a href="{{ route('sales.show', $quote->convertedSale) }}" class="btn-secondary text-sm">Satış #{{ $quote->convertedSale->saleNumber }}</a>
-            @endif
-            <a href="{{ route('quotes.show', $quote) }}" class="btn-secondary text-sm">← Teklif detayı</a>
         </div>
     </div>
+    @elseif($quote->convertedSaleId && $quote->convertedSale)
+    <div class="rounded-2xl border border-green-200 dark:border-green-900/50 bg-green-50 dark:bg-green-950/30 px-4 py-3 sm:px-5">
+        <a href="{{ route('sales.show', $quote->convertedSale) }}" class="inline-flex items-center gap-2 text-sm font-semibold text-green-800 dark:text-green-300 hover:underline">
+            Bu teklif satışa dönüştürüldü — Satış #{{ $quote->convertedSale->saleNumber }} →
+        </a>
+    </div>
+    @endif
 </div>
 
 @php
