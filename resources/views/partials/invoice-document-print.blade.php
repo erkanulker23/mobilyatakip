@@ -7,7 +7,7 @@
     $displaySubtotal = !$kdvIncludedDoc && isset($subtotal);
     $footerNote = $footerNote ?? null;
 @endphp
-<div class="print-document print-document--fit {{ $compactTable ? 'print-document--compact' : '' }} card overflow-hidden print:shadow-none print:border-0" id="invoice-document" role="document" aria-label="Fatura belgesi">
+<div class="print-document print-document--fit {{ $compactTable ? 'print-document--compact' : '' }}{{ ! empty($printVariant) ? ' print-document--' . $printVariant : '' }} card overflow-hidden print:shadow-none print:border-0" id="invoice-document" role="document" aria-label="Fatura belgesi">
     <div class="print-fit-target">
         <div class="print-doc-inner">
             @include('partials.print-brand-header-sheet', [
@@ -34,7 +34,7 @@
                 </div>
                 @if(isset($extraInfo) && $extraInfo)
                 <div class="print-card print-card--meta">
-                    <p class="print-label">Sipariş Bilgileri</p>
+                    <p class="print-label">{{ $metaLabel ?? 'Sipariş Bilgileri' }}</p>
                     {!! $extraInfo !!}
                 </div>
                 @endif
@@ -125,7 +125,7 @@
                     <span>{{ number_format(($grandTotal ?? 0) - ($paidAmount ?? 0), 0, ',', '.') }} ₺</span>
                 </div>
                 @endif
-                @if(isset($grandTotal))
+                @if(isset($grandTotal) && ($printVariant ?? null) !== 'quote')
                 @php $docPaymentStatus = $paymentStatus ?? \App\Support\CustomerBalance::statusFromTotals((float) $grandTotal, (float) ($paidAmount ?? 0)); @endphp
                 <div class="print-totals-row print-totals-row--status">
                     <span>Ödeme Durumu</span>
@@ -133,6 +133,17 @@
                 </div>
                 @endif
             </div>
+
+            @if(! empty($terms))
+            <div class="print-terms-block print-section">
+                <p class="print-terms-title">{{ $termsTitle ?? 'TEKLİF VE SİPARİŞ KOŞULLARI' }}</p>
+                <ol class="print-terms-list">
+                    @foreach($terms as $term)
+                    <li>{{ $term }}</li>
+                    @endforeach
+                </ol>
+            </div>
+            @endif
 
             @if(isset($notes) && $notes)
             <div class="print-notes-block print-section">

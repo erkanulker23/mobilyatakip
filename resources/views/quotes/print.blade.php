@@ -6,9 +6,10 @@
     $quoteValidUntil = $quoteIssuedAt?->copy()->addDays(3);
 @endphp
 @include('partials.invoice-document-print', [
-    'documentTitle' => 'TEKLİFTİR',
-    'documentSubtitle' => 'Teklif süresi 3 gündür.',
-    'documentNotice' => '<strong>TEKLİFTİR — FATURA DEĞİLDİR.</strong> Bu belge bilgilendirme amaçlıdır. Teklif süresi 3 gündür.',
+    'printVariant' => 'quote',
+    'documentTitle' => 'TEKLİF',
+    'documentSubtitle' => 'Geçerlilik: ' . ($quoteValidUntil?->format('d.m.Y') ?? '—') . ' · Fatura değildir',
+    'documentNotice' => null,
     'documentNumber' => $quote->quoteNumber,
     'documentDate' => $quoteIssuedAt,
     'partyLabel' => 'Müşteri',
@@ -17,6 +18,7 @@
     'partyPhone' => $quote->customer?->phone,
     'partyEmail' => $quote->customer?->email,
     'partyTax' => ($quote->customer?->taxNumber ? $quote->customer->taxNumber . ($quote->customer->taxOffice ? ' / ' . $quote->customer->taxOffice : '') : null),
+    'metaLabel' => 'Teklif Bilgileri',
     'extraInfo' => '<div class="print-kv-list">'
         . '<div class="print-kv-row"><span class="print-kv-label">Teklif Tarihi</span><span class="print-kv-value">' . e($quoteIssuedAt?->format('d.m.Y') ?? '-') . '</span></div>'
         . '<div class="print-kv-row"><span class="print-kv-label">Son Geçerlilik</span><span class="print-kv-value">' . e($quoteValidUntil?->format('d.m.Y') ?? '-') . '</span></div>'
@@ -24,8 +26,10 @@
         . '<div class="print-kv-row"><span class="print-kv-label">Teklifi hazırlayan</span><span class="print-kv-value">' . e($quote->personnel?->name ?? '-') . '</span></div>'
         . ($quote->branch ? '<div class="print-kv-row"><span class="print-kv-label">Şube</span><span class="print-kv-value">' . e($quote->branch->name) . '</span></div>' : '')
         . '</div>',
-    'footerNote' => 'Teklif belgesi — fatura yerine geçmez. Geçerlilik süresi 3 gündür.',
-    'items' => $quote->items->map(fn($i) => ['name' => $i->product?->name ?? $i->productName, 'description' => $i->description, 'unitPrice' => $i->unitPrice, 'quantity' => $i->quantity, 'kdvRate' => $i->kdvRate, 'lineTotal' => $i->lineTotal])->toArray(),
+    'footerNote' => null,
+    'termsTitle' => 'TEKLİF VE SİPARİŞ KOŞULLARI',
+    'terms' => \App\Support\QuotePrintTerms::items(),
+    'items' => $quote->items->map(fn ($i) => ['name' => $i->product?->name ?? $i->productName, 'description' => $i->description, 'unitPrice' => $i->unitPrice, 'quantity' => $i->quantity, 'kdvRate' => $i->kdvRate, 'lineTotal' => $i->lineTotal])->toArray(),
     'showKdv' => true,
     'kdvIncluded' => (bool) ($quote->kdvIncluded ?? true),
     'subtotal' => $quote->subtotal,

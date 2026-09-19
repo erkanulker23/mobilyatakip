@@ -934,3 +934,126 @@
         display: none !important;
     }
 }
+
+/* ── Teklif çıktısı: sade, yeşilsiz ── */
+.print-document--quote .print-brand-header::after {
+    display: none;
+}
+
+.print-document--quote .print-brand-header {
+    border-bottom: 1px solid var(--print-border);
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+}
+
+.print-document--quote .print-doc-meta {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    border-top: none;
+    box-shadow: none;
+    padding: 0 0 0 12px;
+}
+
+.print-document--quote .print-doc-type {
+    color: var(--print-muted) !important;
+    letter-spacing: 0.12em;
+}
+
+.print-document--quote .print-card {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+}
+
+.print-document--quote .print-meta-grid {
+    gap: 20px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--print-border);
+}
+
+.print-document--quote .print-kv-row {
+    border-bottom: none;
+}
+
+.print-document--quote .print-table {
+    border: none;
+    border-radius: 0;
+}
+
+.print-document--quote .print-table thead {
+    background: transparent !important;
+    border-bottom: 1px solid var(--print-ink);
+}
+
+.print-document--quote .print-table thead th {
+    background: transparent !important;
+    color: var(--print-ink) !important;
+    font-size: 9px;
+    padding: 6px 8px !important;
+    border-bottom: 1px solid var(--print-ink) !important;
+}
+
+.print-document--quote .print-table tbody td {
+    background: #fff !important;
+    border-bottom: 1px solid var(--print-border) !important;
+    padding: 7px 8px !important;
+}
+
+.print-document--quote .print-table tbody tr:nth-child(even) td {
+    background: #fff !important;
+}
+
+.print-document--quote .print-totals-panel {
+    background: transparent;
+    border: none;
+    border-top: 1px solid var(--print-border);
+    border-radius: 0;
+    padding: 10px 0 0;
+    margin-top: 10px;
+}
+
+.print-document--quote .print-totals-grand span:last-child {
+    color: var(--print-ink) !important;
+}
+
+.print-document--quote .print-notes-block {
+    background: transparent;
+    border: none;
+    border-top: 1px solid var(--print-border);
+    border-radius: 0;
+    padding: 12px 0 0;
+}
+
+.print-terms-block {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--print-border);
+}
+
+.print-terms-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--print-ink) !important;
+    margin-bottom: 8px;
+}
+
+.print-terms-list {
+    margin: 0;
+    padding-left: 1.15rem;
+    font-size: 10.5px;
+    line-height: 1.5;
+    color: var(--print-muted) !important;
+}
+
+.print-terms-list li {
+    margin-bottom: 4px;
+}
+
+.print-document--quote .print-info-banner {
+    display: none;
+}
