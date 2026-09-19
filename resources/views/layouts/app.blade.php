@@ -43,12 +43,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://unpkg.com/alpinejs@3/dist/cdn.min.js"></script>
+    {{-- Alpine en sonda: TurkeyAddress vb. defer scriptler önce yüklenmeli --}}
+    <script defer src="{{ asset('js/turkey-address.js') }}?v={{ @filemtime(public_path('js/turkey-address.js')) ?: 1 }}"></script>
     <script defer src="{{ route('assets.js', ['file' => 'money.js']) }}?v={{ @filemtime(public_path('js/money.js')) ?: 1 }}"></script>
     <script defer src="{{ route('assets.js', ['file' => 'payment-kasa.js']) }}?v={{ @filemtime(public_path('js/payment-kasa.js')) ?: 1 }}"></script>
-    <script defer src="{{ route('assets.js', ['file' => 'turkey-address.js']) }}?v={{ @filemtime(public_path('js/turkey-address.js')) ?: 1 }}"></script>
     <script defer src="{{ route('assets.js', ['file' => 'form-inputs.js']) }}?v={{ @filemtime(public_path('js/form-inputs.js')) ?: 1 }}"></script>
     <script defer src="{{ route('assets.js', ['file' => 'image-upload-compress.js']) }}?v={{ @filemtime(public_path('js/image-upload-compress.js')) ?: 1 }}"></script>
+    <script defer src="https://unpkg.com/alpinejs@3/dist/cdn.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
