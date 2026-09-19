@@ -28,9 +28,9 @@ php artisan turkey-locations:sync --if-empty || echo "Turkiye konum senkronu atl
 
 # 4. Frontend build
 if [ -f package-lock.json ]; then
-  npm ci --no-audit --prefer-offline --no-progress
+  npm ci --no-audit --prefer-offline --no-progress --include=dev
 else
-  npm install --no-audit --no-progress
+  npm install --no-audit --no-progress --include=dev
 fi
 npm run build
 

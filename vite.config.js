@@ -5,7 +5,8 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js'],
+            // Blade panel Alpine + public/js kullanır; build yalnızca Tailwind CSS (axios vb. gerekmez).
+            input: ['resources/css/app.css'],
             refresh: true,
         }),
         tailwindcss(),
