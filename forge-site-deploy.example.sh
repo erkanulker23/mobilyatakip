@@ -1,6 +1,6 @@
 # Laravel Forge → Site → Deploy Script
-# Eski npm / composer / migrate satırlarını SİLİN; aşağıdakini yapıştırın.
-# git pull, composer, migrate, npm, vite build, cache ve FPM reload forge-deploy.sh içindedir.
+# Eski satırları TAMAMEN silin: git pull, composer, FPM reload, npm ci, npm run build, artisan migrate...
+# Log'da "Deploy başladı:" görünmüyorsa hâlâ eski script çalışıyordur → ENOTEMPTY / vite 127 devam eder.
 
 cd $FORGE_SITE_PATH
 bash forge-deploy.sh

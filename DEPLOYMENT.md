@@ -53,11 +53,12 @@ Forge **Deploy Script** alanına **yalnızca** şunu yazın (altına ekstra `npm
 
 ```bash
 cd $FORGE_SITE_PATH
-git pull origin $FORGE_SITE_BRANCH
 bash forge-deploy.sh
 ```
 
-**Önemli:** Eski Forge şablonundaki `npm ci`, `npm install`, `npm run build` satırlarını **silin**. Aksi halde iki npm aynı anda `node_modules` üzerinde çalışır ve `ENOTEMPTY` hatası alırsınız. `forge-deploy.sh` içinde npm + Vite build zaten vardır.
+**Önemli:** Eski Forge şablonundaki `npm ci`, `npm install`, `npm run build` satırlarını **silin**. Aksi halde iki npm aynı anda `node_modules` üzerinde çalışır ve `ENOTEMPTY` / `vite: not found (127)` alırsınız. Log’da **`Deploy başladı:`** yoksa eski script hâlâ çalışıyordur.
+
+**CSS / Vite:** `public/build` repoda tutulur; normal deploy’da sunucuda **npm çalışmaz**. Stil değiştirdiğinizde yerelde `npm run build`, ardından `public/build` ve `.frontend-build-hash` dosyasını commit edin.
 
 **Seçenek B — Script’i doğrudan yapıştırma:**
 
@@ -70,7 +71,7 @@ Deploy script sırasıyla şunları yapar:
 3. `php artisan migrate --force`
 4. `php artisan db:seed --force` (süper admin yoksa oluşturur; mevcut şifreyi değiştirmez)
 5. `php artisan turkey-locations:sync --if-empty` (tablo boşsa doldurur; mevcut veriyi ezmez)
-6. `npm ci` + `npm run build` (Vite asset'leri; `package-lock.json` repoda)
+6. Vite çıktısı (`public/build`) — repodan gelir; gerekirse sunucuda npm (nadiren)
 7. `php artisan config:cache` / `route:cache` / `view:cache`
 8. `php artisan storage:link` (gerekirse)
 9. `php artisan queue:restart`

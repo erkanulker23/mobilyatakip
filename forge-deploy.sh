@@ -36,21 +36,39 @@ $FORGE_PHP artisan db:seed --class=Database\\Seeders\\SuperAdminSeeder --force
 # 3c. İl/ilçe — tablo boşsa bir kez doldur (mevcut kayıtları ezmez)
 $FORGE_PHP artisan turkey-locations:sync --if-empty || echo "Turkiye konum senkronu atlandı."
 
-# 4. Frontend build (Vite production dependencies — Forge NODE_ENV=production güvenli)
-# Forge panelinde ekstra "npm install && npm run build" SATIRI OLMASIN; sadece bu script.
-export NPM_CONFIG_PRODUCTION=false
-export CI=true
-
-if [ -f package.json ]; then
-  if [ -d node_modules ]; then
-    STALE_NM="node_modules.stale.$$"
-    rm -rf "$STALE_NM" 2>/dev/null || true
-    if mv node_modules "$STALE_NM" 2>/dev/null; then
-      rm -rf "$STALE_NM" &
-    else
-      rm -rf node_modules || true
-    fi
+# 4. Frontend — repoda public/build varsa sunucuda npm çalıştırmayız (Forge npm hatalarını önler)
+# CSS değiştirdiyseniz: yerelde npm run build + public/build ve .frontend-build-hash commit edin.
+# Sunucuda zorunlu npm: FORCE_NPM_BUILD=1 bash forge-deploy.sh
+frontend_deps_hash() {
+  if [ -f package-lock.json ]; then
+    shasum -a 256 package.json package-lock.json 2>/dev/null | shasum -a 256 | awk '{print $1}'
+  elif [ -f package.json ]; then
+    shasum -a 256 package.json 2>/dev/null | awk '{print $1}'
+  else
+    echo ""
   fi
+}
+
+need_npm_build=0
+if [ ! -f public/build/manifest.json ]; then
+  need_npm_build=1
+elif [ "${FORCE_NPM_BUILD:-0}" = "1" ]; then
+  need_npm_build=1
+else
+  CURRENT_HASH="$(frontend_deps_hash)"
+  SAVED_HASH=""
+  [ -f .frontend-build-hash ] && SAVED_HASH="$(tr -d '[:space:]' < .frontend-build-hash)"
+  if [ -n "$CURRENT_HASH" ] && [ "$CURRENT_HASH" != "$SAVED_HASH" ]; then
+    need_npm_build=1
+  fi
+fi
+
+if [ "$need_npm_build" -eq 0 ]; then
+  echo "public/build repoda güncel; sunucuda npm atlandı."
+elif [ -f package.json ]; then
+  export NPM_CONFIG_PRODUCTION=false
+  export CI=true
+  rm -rf node_modules node_modules.stale.* 2>/dev/null || true
 
   npm_install_frontend() {
     if [ -f package-lock.json ]; then
@@ -72,8 +90,14 @@ if [ -f package.json ]; then
     exit 1
   fi
   node_modules/.bin/vite build
+  frontend_deps_hash > .frontend-build-hash
 else
   echo "package.json yok; npm atlandı."
+fi
+
+if [ ! -f public/build/manifest.json ]; then
+  echo "HATA: public/build/manifest.json yok. Yerelde npm run build yapıp public/build commit edin."
+  exit 1
 fi
 
 # 5. storage / bootstrap/cache — web ve deploy kullanıcısı yazabilsin (laravel.log Permission denied önlenir)
