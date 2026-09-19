@@ -49,11 +49,15 @@ Her deploy’da Forge’un çalıştırdığı script’i aşağıdaki gibi ayar
 
 **Seçenek A — Repodaki script’i kullan (önerilen):**
 
-Forge **Deploy Script** alanına sadece şunu yazın:
+Forge **Deploy Script** alanına **yalnızca** şunu yazın (altına ekstra `npm install` / `npm run build` eklemeyin):
 
 ```bash
+cd $FORGE_SITE_PATH
+git pull origin $FORGE_SITE_BRANCH
 bash forge-deploy.sh
 ```
+
+**Önemli:** Eski Forge şablonundaki `npm ci`, `npm install`, `npm run build` satırlarını **silin**. Aksi halde iki npm aynı anda `node_modules` üzerinde çalışır ve `ENOTEMPTY` hatası alırsınız. `forge-deploy.sh` içinde npm + Vite build zaten vardır.
 
 **Seçenek B — Script’i doğrudan yapıştırma:**
 

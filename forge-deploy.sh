@@ -9,6 +9,14 @@ set -e
 
 echo "Deploy başladı: $(date -Iseconds)"
 
+# Aynı anda iki deploy (Forge + manuel) npm'i bozar → ENOTEMPTY
+DEPLOY_LOCK="${FORGE_SITE_PATH:-$(pwd)}/.forge-deploy.lock"
+exec 200>"$DEPLOY_LOCK"
+if ! flock -n 200; then
+  echo "Başka bir deploy çalışıyor, sıra bekleniyor..."
+  flock 200
+fi
+
 BRANCH="${FORGE_SITE_BRANCH:-main}"
 
 # 1. Son kodu çek
@@ -27,19 +35,44 @@ php artisan db:seed --class=Database\\Seeders\\SuperAdminSeeder --force
 php artisan turkey-locations:sync --if-empty || echo "Turkiye konum senkronu atlandı."
 
 # 4. Frontend build (Vite production dependencies — Forge NODE_ENV=production güvenli)
+# Forge panelinde ekstra "npm install && npm run build" SATIRI OLMASIN; sadece bu script.
 export NPM_CONFIG_PRODUCTION=false
 export CI=true
-rm -rf node_modules
-if [ -f package-lock.json ]; then
-  npm ci --no-audit --no-fund
+
+if [ -f package.json ]; then
+  if [ -d node_modules ]; then
+    STALE_NM="node_modules.stale.$$"
+    rm -rf "$STALE_NM" 2>/dev/null || true
+    if mv node_modules "$STALE_NM" 2>/dev/null; then
+      rm -rf "$STALE_NM" &
+    else
+      rm -rf node_modules || true
+    fi
+  fi
+
+  npm_install_frontend() {
+    if [ -f package-lock.json ]; then
+      npm ci --no-audit --no-fund
+    else
+      npm install --no-audit --no-fund
+    fi
+  }
+
+  if ! npm_install_frontend; then
+    echo "npm kurulumu başarısız; node_modules silinip yeniden denenecek..."
+    rm -rf node_modules
+    sleep 2
+    npm_install_frontend
+  fi
+
+  if [ ! -x node_modules/.bin/vite ]; then
+    echo "HATA: vite bulunamadı (node_modules/.bin/vite)."
+    exit 1
+  fi
+  node_modules/.bin/vite build
 else
-  npm install --no-audit --no-fund
+  echo "package.json yok; npm atlandı."
 fi
-if [ ! -x node_modules/.bin/vite ]; then
-  echo "HATA: vite bulunamadı (node_modules/.bin/vite)."
-  exit 1
-fi
-node_modules/.bin/vite build
 
 # 5. storage / bootstrap/cache — web ve deploy kullanıcısı yazabilsin (laravel.log Permission denied önlenir)
 mkdir -p storage/logs storage/framework/{sessions,views,cache,data} storage/app/public bootstrap/cache
