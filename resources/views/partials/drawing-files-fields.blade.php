@@ -92,7 +92,12 @@
             @endphp
             <div
                 class="rounded-xl border border-neutral-200 dark:border-slate-700 overflow-hidden transition-opacity"
-                x-bind:class="isRemoved(@js($filePath)) ? 'opacity-50 ring-2 ring-red-300 dark:ring-red-800' : ''"
+                x-data="{
+                    path: @js($filePath),
+                    fileUrl: @js($fileUrl),
+                    fileName: @js($entry['name'] ?? '')
+                }"
+                x-bind:class="isRemoved(path) ? 'opacity-50 ring-2 ring-red-300 dark:ring-red-800' : ''"
             >
                 @if($isImage && $fileUrl)
                 <button
@@ -106,7 +111,7 @@
                 @elseif($isPdf && $fileUrl)
                 <button
                     type="button"
-                    @click="openPdf(@js($fileUrl), @js($entry['name'] ?? 'PDF'))"
+                    @click="openPdf(fileUrl, fileName || 'PDF')"
                     class="flex w-full aspect-video items-center justify-center {{ $previewClass }} transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-inset"
                     aria-label="{{ $entry['name'] }} PDF önizle"
                 >
@@ -136,14 +141,14 @@
                         <a href="{{ $fileUrl }}" target="_blank" rel="noopener" class="text-xs font-medium text-emerald-600 hover:underline">Aç</a>
                         @endif
                         @if($isPdf && $fileUrl)
-                        <button type="button" @click="openPdf(@js($fileUrl), @js($entry['name'] ?? 'PDF'))" class="text-xs font-medium text-emerald-600 hover:underline">Önizle</button>
+                        <button type="button" @click="openPdf(fileUrl, fileName || 'PDF')" class="text-xs font-medium text-emerald-600 hover:underline">Önizle</button>
                         @endif
                         <button
                             type="button"
-                            @click="toggleRemove(@js($filePath))"
+                            @click="toggleRemove(path)"
                             class="text-xs font-semibold"
-                            x-bind:class="isRemoved(@js($filePath)) ? 'text-neutral-600 hover:text-neutral-800' : 'text-red-600 hover:text-red-700'"
-                            x-text="isRemoved(@js($filePath)) ? 'Geri al' : 'Kaldır'"
+                            x-bind:class="isRemoved(path) ? 'text-neutral-600 hover:text-neutral-800' : 'text-red-600 hover:text-red-700'"
+                            x-text="isRemoved(path) ? 'Geri al' : 'Kaldır'"
                         ></button>
                     </div>
                     <input
@@ -151,11 +156,11 @@
                         name="remove_drawing_files[]"
                         value="{{ $filePath }}"
                         class="sr-only"
-                        x-bind:checked="isRemoved(@js($filePath))"
+                        x-bind:checked="isRemoved(path)"
                         tabindex="-1"
                         aria-hidden="true"
                     >
-                    <p x-show="isRemoved(@js($filePath))" x-cloak class="text-[11px] text-red-600 dark:text-red-400">Kaydedince silinecek</p>
+                    <p x-show="isRemoved(path)" x-cloak class="text-[11px] text-red-600 dark:text-red-400">Kaydedince silinecek</p>
                 </div>
             </div>
             @endforeach

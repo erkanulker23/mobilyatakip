@@ -34,9 +34,13 @@ else
 fi
 npm run build
 
-# 5. Oturum dizini (file driver)
-mkdir -p storage/framework/sessions
-chmod -R ug+rwx storage bootstrap/cache || true
+# 5. storage / bootstrap/cache — web ve deploy kullanıcısı yazabilsin (laravel.log Permission denied önlenir)
+mkdir -p storage/logs storage/framework/{sessions,views,cache,data} storage/app/public bootstrap/cache
+touch storage/logs/laravel.log
+chmod -R ug+rwx storage bootstrap/cache 2>/dev/null || chmod -R 775 storage bootstrap/cache
+if id forge >/dev/null 2>&1; then
+  chown -R forge:forge storage bootstrap/cache 2>/dev/null || true
+fi
 
 # 6. Cache (config/route/view — veritabanına dokunmaz)
 php artisan optimize:clear
