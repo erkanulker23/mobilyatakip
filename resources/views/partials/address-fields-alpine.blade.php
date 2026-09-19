@@ -1,7 +1,14 @@
-<div class="space-y-4" x-data="TurkeyAddress.initAlpine('{{ $model ?? 'quickCustomer' }}')" x-init="initPicker()">
+@php
+    $modelKey = $model ?? 'quickCustomer';
+@endphp
+<div
+    class="space-y-4"
+    x-data="TurkeyAddress.initAlpine(@js($modelKey))"
+    x-init="$nextTick(() => initPicker())"
+>
     <div>
         <label class="form-label">Adres</label>
-        <textarea x-model="{{ $model ?? 'quickCustomer' }}.address" rows="2" class="form-input form-textarea" placeholder="Mahalle, sokak, bina no..."></textarea>
+        <textarea x-model="$root.{{ $modelKey }}.address" rows="2" class="form-input form-textarea" placeholder="Mahalle, sokak, bina no..."></textarea>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>

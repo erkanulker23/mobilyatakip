@@ -42,7 +42,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
+    @vite(['resources/css/app.css'])
     {{-- Alpine en sonda: TurkeyAddress vb. defer scriptler önce yüklenmeli --}}
     <script defer src="{{ asset('js/turkey-address.js') }}?v={{ @filemtime(public_path('js/turkey-address.js')) ?: 1 }}"></script>
     <script defer src="{{ route('assets.js', ['file' => 'money.js']) }}?v={{ @filemtime(public_path('js/money.js')) ?: 1 }}"></script>
@@ -50,23 +50,6 @@
     <script defer src="{{ route('assets.js', ['file' => 'form-inputs.js']) }}?v={{ @filemtime(public_path('js/form-inputs.js')) ?: 1 }}"></script>
     <script defer src="{{ route('assets.js', ['file' => 'image-upload-compress.js']) }}?v={{ @filemtime(public_path('js/image-upload-compress.js')) ?: 1 }}"></script>
     <script defer src="https://unpkg.com/alpinejs@3/dist/cdn.min.js"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Montserrat', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
-                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
-                        display: ['Montserrat', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
-                    },
-                    colors: {
-                        primary: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' },
-                    }
-                }
-            }
-        }
-    </script>
     <style>
         html, body {
             font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;

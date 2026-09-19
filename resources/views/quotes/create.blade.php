@@ -304,10 +304,7 @@
                     <label class="form-label">E-posta</label>
                     <input type="email" x-model="quickCustomer.email" class="form-input min-h-[44px]" placeholder="ornek@email.com">
                 </div>
-                <div>
-                    <label class="form-label">Adres</label>
-                    @include('partials.address-fields-alpine')
-                </div>
+                @include('partials.address-fields-alpine')
                 <p x-show="quickAddCustomerError" x-text="quickAddCustomerError" class="text-sm text-red-600 dark:text-red-400"></p>
                 <div class="flex gap-3 justify-end pt-2">
                     <button type="button" @click="showQuickAddCustomer = false" class="btn-secondary min-h-[44px]">İptal</button>

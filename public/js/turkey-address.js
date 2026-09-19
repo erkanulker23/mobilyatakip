@@ -147,8 +147,18 @@
                 if (staticRoot) {
                     return staticRoot;
                 }
-                if (modelKey && component.$parent) {
-                    return component.$parent[modelKey];
+                if (!modelKey) {
+                    return null;
+                }
+                if (component.$root && component.$root[modelKey] != null) {
+                    return component.$root[modelKey];
+                }
+                var parent = component.$parent;
+                while (parent) {
+                    if (parent[modelKey] != null) {
+                        return parent[modelKey];
+                    }
+                    parent = parent.$parent;
                 }
                 return null;
             }
