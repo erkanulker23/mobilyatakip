@@ -26,13 +26,20 @@ php artisan db:seed --class=Database\\Seeders\\SuperAdminSeeder --force
 # 3c. İl/ilçe — tablo boşsa bir kez doldur (mevcut kayıtları ezmez)
 php artisan turkey-locations:sync --if-empty || echo "Turkiye konum senkronu atlandı."
 
-# 4. Frontend build
+# 4. Frontend build (Vite production dependencies — Forge NODE_ENV=production güvenli)
+export NPM_CONFIG_PRODUCTION=false
+export CI=true
+rm -rf node_modules
 if [ -f package-lock.json ]; then
-  npm ci --no-audit --prefer-offline --no-progress --include=dev
+  npm ci --no-audit --no-fund
 else
-  npm install --no-audit --no-progress --include=dev
+  npm install --no-audit --no-fund
 fi
-npm run build
+if [ ! -x node_modules/.bin/vite ]; then
+  echo "HATA: vite bulunamadı (node_modules/.bin/vite)."
+  exit 1
+fi
+node_modules/.bin/vite build
 
 # 5. storage / bootstrap/cache — web ve deploy kullanıcısı yazabilsin (laravel.log Permission denied önlenir)
 mkdir -p storage/logs storage/framework/{sessions,views,cache,data} storage/app/public bootstrap/cache
