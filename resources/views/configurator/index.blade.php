@@ -206,6 +206,21 @@
         .layout-ico { width: 40px; height: 40px; color: inherit; }
         .layout-ico svg { width: 100%; height: 100%; display: block; }
         .style-swatches { align-items: center; }
+        .feature-btn {
+            width: 100%; display: flex; align-items: center; gap: 12px;
+            padding: 12px 14px; border: 1.5px solid #e5e7eb; border-radius: 14px;
+            background: #fff; cursor: pointer; font: inherit; text-align: left;
+            color: #334155; transition: border-color .15s, background .15s, color .15s;
+        }
+        .feature-btn:hover { border-color: #94a3b8; }
+        .feature-btn.active {
+            border-color: var(--accent); background: #eff6ff; color: var(--accent);
+        }
+        .feature-ico { flex: 0 0 auto; display: grid; place-items: center; color: inherit; }
+        .feature-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .feature-text strong { font-size: 13px; font-weight: 700; }
+        .feature-text small { font-size: 11px; font-weight: 500; color: var(--muted); line-height: 1.35; }
+        .feature-btn.active .feature-text small { color: #3b82f6; }
         .chip {
             border: 1px solid var(--line); background: #fff; border-radius: 999px;
             padding: 7px 11px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
@@ -239,12 +254,26 @@
         .side-actions { padding: 4px 12px 20px; display: grid; gap: 8px; }
         .side-actions .danger { width: 100%; margin: 0; }
         .mat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .mat-swatch[draggable="true"] { cursor: grab; }
+        .mat-swatch[draggable="true"]:active { cursor: grabbing; }
         .mat-swatch {
             aspect-ratio: 1; border-radius: 10px; border: 2px solid transparent;
             overflow: hidden; cursor: pointer; padding: 0; background: #eee;
         }
         .mat-swatch img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .mat-swatch.active { border-color: var(--accent); }
+        .color-picks { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+        .color-pick {
+            min-width: 84px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+            padding: 8px 8px; border: 1.5px solid #e5e7eb; border-radius: 12px;
+            background: #fff; cursor: pointer; font: inherit; font-size: 11px; font-weight: 700;
+            color: #334155; text-align: center; line-height: 1.2;
+        }
+        .color-pick .dot {
+            width: 36px; height: 36px; border-radius: 8px;
+            border: 1px solid rgba(0,0,0,.14); box-shadow: inset 0 0 0 1px rgba(255,255,255,.4);
+        }
+        .color-pick.active { border-color: var(--accent); background: #eff6ff; color: var(--accent); }
         .info-box {
             margin: 12px 16px; padding: 11px; border-radius: 12px; background: #f8fafc;
             border: 1px solid var(--line); font-size: 12px; color: #475569; line-height: 1.45;
@@ -393,6 +422,6 @@
   }
 }
 </script>
-<script type="module" src="{{ asset('js/tv-configurator.js') }}?v=25"></script>
+<script type="module" src="{{ asset('js/tv-configurator.js') }}?v=38"></script>
 </body>
 </html>
