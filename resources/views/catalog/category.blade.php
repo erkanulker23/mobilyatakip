@@ -58,6 +58,12 @@
         .swatch-img {
             transition: transform 0.45s ease;
         }
+        .swatch-placeholder {
+            background: linear-gradient(135deg, #e5e7eb 0%, #f3f4f6 50%, #d1d5db 100%);
+        }
+        .dark .swatch-placeholder {
+            background: linear-gradient(135deg, #374151 0%, #1f2937 50%, #4b5563 100%);
+        }
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
@@ -147,113 +153,7 @@
             @endif
         @else
         <div class="lg:grid lg:grid-cols-12 lg:gap-8">
-            {{-- Sidebar filtre --}}
-            <aside class="lg:col-span-3 mb-8 lg:mb-0">
-                <div class="lg:sticky lg:top-20 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 p-5">
-                    <h2 class="text-base font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Filtre</h2>
-
-                    <form method="GET" action="{{ route('catalog.category', [$manufacturer['slug'], $category['slug']]) }}" class="space-y-5" id="catalog-filter">
-                        <input type="hidden" name="gorunum" value="{{ $viewMode }}">
-                        <input type="hidden" name="sekme" value="urunler">
-
-                        <div>
-                            <label for="q" class="sr-only">Ürün ara</label>
-                            <div class="relative">
-                                <input type="search" name="q" id="q" value="{{ $q }}" placeholder="Ürün ara"
-                                       class="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm pl-3 pr-9 py-2.5 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20">
-                                <button type="submit" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-emerald-600" aria-label="Ara">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div>
-                            <div class="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-2">Kategoriler</div>
-                            <ul class="space-y-1 text-sm">
-                                @foreach($siblingCategories as $sib)
-                                    @php $isActive = ($sib['slug'] ?? '') === ($category['slug'] ?? ''); @endphp
-                                    <li>
-                                        @if(!empty($sib['available']) || $isActive)
-                                            <a href="{{ route('catalog.category', [$manufacturer['slug'], $sib['slug']]) }}"
-                                               class="flex items-center justify-between gap-2 py-1.5 {{ $isActive ? 'text-emerald-700 dark:text-emerald-400 font-semibold' : 'text-neutral-600 dark:text-neutral-300 hover:text-emerald-600' }}">
-                                                <span>{{ $sib['name'] }}</span>
-                                                @if(!empty($sib['is_new']))
-                                                    <span class="text-[10px] font-bold uppercase tracking-wide bg-keas-800 text-white px-1.5 py-0.5 rounded-sm">Yeni</span>
-                                                @endif
-                                            </a>
-                                        @else
-                                            <span class="flex items-center justify-between gap-2 py-1.5 text-neutral-400 dark:text-neutral-600 cursor-default" title="Yakında eklenecek">
-                                                <span>{{ $sib['name'] }}</span>
-                                                @if(!empty($sib['is_new']))
-                                                    <span class="text-[10px] font-bold uppercase tracking-wide bg-keas-800/60 text-white px-1.5 py-0.5 rounded-sm">Yeni</span>
-                                                @endif
-                                            </span>
-                                        @endif
-                                    </li>
-                                @endforeach
-                            </ul>
-                        </div>
-
-                        @if(count($brands) > 0)
-                            <div>
-                                <div class="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-2">Markalar</div>
-                                <ul class="space-y-1 text-sm">
-                                    <li>
-                                        <a href="{{ request()->fullUrlWithQuery(['marka' => null]) }}"
-                                           class="block py-1 {{ $selectedBrand === '' ? 'text-emerald-700 dark:text-emerald-400 font-semibold' : 'text-neutral-600 dark:text-neutral-300 hover:text-emerald-600' }}">
-                                            Tümü
-                                        </a>
-                                    </li>
-                                    @foreach($brands as $b)
-                                        <li>
-                                            <a href="{{ request()->fullUrlWithQuery(['marka' => $b]) }}"
-                                               class="block py-1 {{ $selectedBrand === $b ? 'text-emerald-700 dark:text-emerald-400 font-semibold' : 'text-neutral-600 dark:text-neutral-300 hover:text-emerald-600' }}">
-                                                {{ $b }}
-                                            </a>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        @endif
-
-                        @if(count($seriesList ?? []) > 0)
-                            <div>
-                                <div class="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-2">Seriler</div>
-                                <ul class="space-y-1 text-sm">
-                                    <li>
-                                        <a href="{{ request()->fullUrlWithQuery(['seri' => null]) }}"
-                                           class="block py-1 {{ ($selectedSeries ?? '') === '' ? 'text-emerald-700 dark:text-emerald-400 font-semibold' : 'text-neutral-600 dark:text-neutral-300 hover:text-emerald-600' }}">
-                                            Tümü
-                                        </a>
-                                    </li>
-                                    @foreach($seriesList as $s)
-                                        <li>
-                                            <a href="{{ request()->fullUrlWithQuery(['seri' => $s]) }}"
-                                               class="block py-1 {{ ($selectedSeries ?? '') === $s ? 'text-emerald-700 dark:text-emerald-400 font-semibold' : 'text-neutral-600 dark:text-neutral-300 hover:text-emerald-600' }}">
-                                                {{ $s }}
-                                            </a>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        @endif
-
-                        <label class="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300 cursor-pointer">
-                            <input type="checkbox" name="yeni" value="1" @checked($onlyNew)
-                                   class="rounded border-neutral-300 text-emerald-600 focus:ring-emerald-500"
-                                   onchange="this.form.submit()">
-                            Sadece yeniler
-                        </label>
-
-                        @if($q !== '' || $selectedBrand !== '' || ($selectedSeries ?? '') !== '' || $onlyNew)
-                            <a href="{{ route('catalog.category', [$manufacturer['slug'], $category['slug']]) }}"
-                               class="block text-center text-sm font-medium text-emerald-600 hover:text-emerald-700 py-2 border border-emerald-200 dark:border-emerald-900 rounded-lg">
-                                Filtreleri temizle
-                            </a>
-                        @endif
-                    </form>
-                </div>
-            </aside>
+            @include('catalog.partials.category-sidebar')
 
             {{-- Product grid --}}
             <div class="lg:col-span-9">
@@ -305,22 +205,13 @@
                 @else
                     <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                         @foreach($products as $i => $product)
-                            @php
-                                $img = null;
-                                if ($viewMode === 'ic-mekan' && !empty($product['image_interior'])) {
-                                    $img = $assetBase.'/'.$product['image_interior'];
-                                } elseif (!empty($product['image'])) {
-                                    $img = $assetBase.'/'.$product['image'];
-                                } elseif (!empty($product['image_interior'])) {
-                                    $img = $assetBase.'/'.$product['image_interior'];
-                                }
-                            @endphp
+                            @php $img = $product['image_url'] ?? null; @endphp
                             <article class="swatch-card fade-up group rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden hover:shadow-lg hover:border-neutral-300 dark:hover:border-neutral-700 transition-all"
                                      style="animation-delay: {{ min($i * 20, 400) }}ms"
                                      data-code="{{ $product['code'] }}"
                                      data-name="{{ $product['name'] }}"
                                      data-brand="{{ $product['brand'] }}"
-                                     data-img="{{ $img }}">
+                                     data-img="{{ $img ?? '' }}">
                                 <button type="button" class="block w-full text-left open-swatch" aria-label="{{ $product['name'] }} detay">
                                     <div class="relative aspect-square bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
                                         @if(!empty($product['is_new']))
@@ -328,9 +219,17 @@
                                         @endif
                                         @if($img)
                                             <img src="{{ $img }}" alt="{{ $product['name'] }}" loading="lazy"
-                                                 class="swatch-img w-full h-full object-cover">
+                                                 class="swatch-img w-full h-full object-cover"
+                                                 onerror="this.classList.add('hidden'); this.nextElementSibling?.classList.remove('hidden');">
+                                            <div class="hidden swatch-placeholder w-full h-full flex flex-col items-center justify-center text-neutral-500 dark:text-neutral-400 px-2 text-center">
+                                                <span class="text-[10px] uppercase tracking-wide">Görsel yüklenemedi</span>
+                                                <span class="text-xs font-medium mt-1">{{ $product['code'] }}</span>
+                                            </div>
                                         @else
-                                            <div class="w-full h-full flex items-center justify-center text-neutral-400 text-xs">Görsel yok</div>
+                                            <div class="swatch-placeholder w-full h-full flex flex-col items-center justify-center text-neutral-500 dark:text-neutral-400 px-2 text-center">
+                                                <span class="text-[10px] uppercase tracking-wide">Görsel yok</span>
+                                                <span class="text-xs font-medium mt-1">{{ $product['code'] }}</span>
+                                            </div>
                                         @endif
                                     </div>
                                     <div class="p-3 sm:p-3.5">

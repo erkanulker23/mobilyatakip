@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Company;
+use App\Support\CatalogAssets;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\View\View;
@@ -48,6 +49,10 @@ class PublicCatalogController extends Controller
         $q = trim((string) $request->query('q', ''));
         $brand = trim((string) $request->query('marka', ''));
         $series = trim((string) $request->query('seri', ''));
+        $tone = trim((string) $request->query('ton', ''));
+        if (! in_array($tone, ['acik', 'koyu'], true)) {
+            $tone = '';
+        }
         $onlyNew = $request->boolean('yeni');
         $viewMode = $request->query('gorunum', 'dekor') === 'ic-mekan' ? 'ic-mekan' : 'dekor';
         $tab = $request->query('sekme', 'urunler');
@@ -94,7 +99,16 @@ class PublicCatalogController extends Controller
             $products = $products->filter(fn (array $p) => ! empty($p['is_new']));
         }
 
-        $products = $products->values()->all();
+        if ($tone !== '') {
+            $products = $products->filter(fn (array $p) => CatalogAssets::productTone($p) === $tone);
+        }
+
+        $products = $products->map(function (array $p) use ($manufacturer, $category, $viewMode) {
+            $p['image_url'] = CatalogAssets::productImageUrl($manufacturer, $category, $p, $viewMode);
+            $p['tone_key'] = CatalogAssets::productTone($p);
+
+            return $p;
+        })->values()->all();
         $assetBase = asset('catalog/'.$manufacturer.'/'.$category);
         $documents = collect($catalog['documents'] ?? [])
             ->filter(fn ($doc) => is_array($doc) && ! empty($doc['file']))
@@ -118,6 +132,7 @@ class PublicCatalogController extends Controller
             'selectedBrand' => $brand,
             'selectedSeries' => $series,
             'onlyNew' => $onlyNew,
+            'selectedTone' => $tone,
             'viewMode' => $viewMode,
             'tab' => $tab,
             'assetBase' => $assetBase,
