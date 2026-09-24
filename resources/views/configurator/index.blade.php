@@ -98,6 +98,17 @@
             text-align: center;
         }
         .hint.show { opacity: 1; }
+        .hover-tag {
+            position: fixed; z-index: 40; pointer-events: none;
+            transform: translate(-50%, calc(-100% - 12px));
+            background: #111; color: #fff; padding: 6px 12px; border-radius: 999px;
+            font-size: 12px; font-weight: 700; letter-spacing: .02em;
+            box-shadow: 0 6px 18px rgba(0,0,0,.2); display: none;
+            white-space: nowrap; align-items: center; gap: 6px;
+        }
+        .hover-tag.show { display: inline-flex; }
+        .hover-tag.move { background: var(--accent); }
+        .hover-tag svg { flex-shrink: 0; }
         #drop-overlay {
             position: absolute; inset: 0; z-index: 25; display: none;
             align-items: center; justify-content: center;
@@ -181,6 +192,20 @@
         }
         .dim-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
         .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+        .layout-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+        }
+        .layout-btn {
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            padding: 10px 4px 8px; border: 1.5px solid #e5e7eb; border-radius: 12px;
+            background: #fff; cursor: pointer; font: inherit; font-size: 10px; font-weight: 600;
+            color: #64748b; transition: border-color .15s, color .15s, background .15s;
+        }
+        .layout-btn:hover { border-color: #94a3b8; color: #334155; }
+        .layout-btn.active { border-color: var(--accent); color: var(--accent); background: #eff6ff; }
+        .layout-ico { width: 40px; height: 40px; color: inherit; }
+        .layout-ico svg { width: 100%; height: 100%; display: block; }
+        .style-swatches { align-items: center; }
         .chip {
             border: 1px solid var(--line); background: #fff; border-radius: 999px;
             padding: 7px 11px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
@@ -296,6 +321,7 @@
             </div>
         </div>
         <div class="hint" id="hint">Sağdan ürün seçin veya sürükleyip sahneye bırakın</div>
+        <div class="hover-tag" id="hover-tag" aria-hidden="true">Taşı</div>
         <div class="fab-stack">
             <button type="button" class="fab" id="fab-tv" title="TV ayarları" aria-label="TV">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
@@ -367,6 +393,6 @@
   }
 }
 </script>
-<script type="module" src="{{ asset('js/tv-configurator.js') }}?v=10"></script>
+<script type="module" src="{{ asset('js/tv-configurator.js') }}?v=21"></script>
 </body>
 </html>
