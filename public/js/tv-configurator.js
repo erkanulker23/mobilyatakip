@@ -15,16 +15,29 @@ const CATALOG = {
     { id: 'f120x40', label: 'İskelet geniş', w: 120, d: 40, h: 38, price: 3200 },
     { id: 'f60x64', label: 'İskelet yüksek', w: 60, d: 40, h: 64, price: 2800 },
     { id: 'f180x40', label: 'TV banko', w: 180, d: 40, h: 38, price: 4500 },
+    { id: 'f60x200', label: 'Kule iskelet', w: 60, d: 35, h: 200, price: 4800 },
+    { id: 'f40x200', label: 'Dar kule', w: 40, d: 35, h: 200, price: 3600 },
   ],
   plinth: [
-    { id: 'p120', label: 'Alt blok', w: 120, d: 40, h: 12, price: 900 },
-    { id: 'p180', label: 'Alt blok geniş', w: 180, d: 40, h: 12, price: 1200 },
-    { id: 'p60', label: 'Alt blok dar', w: 60, d: 40, h: 12, price: 600 },
+    { id: 'p120', label: 'Alt blok', w: 120, d: 40, h: 38, price: 900 },
+    { id: 'p180', label: 'Alt blok geniş', w: 180, d: 40, h: 38, price: 1200 },
+    { id: 'p240', label: 'Alt blok 240', w: 240, d: 40, h: 38, price: 1600 },
+    { id: 'p60', label: 'Alt blok dar', w: 60, d: 40, h: 38, price: 600 },
+    { id: 'pf180', label: 'Yüzen banko 180', w: 180, d: 40, h: 35, floatY: 18, led: true, price: 1400 },
+    { id: 'pf240', label: 'Yüzen banko 240', w: 240, d: 40, h: 35, floatY: 18, led: true, price: 1800 },
+  ],
+  wallPanel: [
+    { id: 'wp160', label: 'Duvar paneli 160', w: 160, d: 3, h: 200, price: 2200 },
+    { id: 'wp180', label: 'Duvar paneli 180', w: 180, d: 3, h: 220, price: 2600 },
+    { id: 'wp120', label: 'Duvar paneli 120', w: 120, d: 3, h: 200, price: 1800 },
+    { id: 'wp200', label: 'Duvar paneli 200', w: 200, d: 3, h: 240, price: 3000 },
   ],
   shelf: [
     { id: 's120', label: 'Açık raf ünitesi', w: 120, d: 35, h: 40, price: 1400 },
     { id: 's60', label: 'Raf ünitesi', w: 60, d: 35, h: 40, price: 900 },
     { id: 's180', label: 'Geniş raf', w: 180, d: 35, h: 30, price: 1800 },
+    { id: 'st40', label: 'Kule raf', w: 40, d: 35, h: 200, price: 2200 },
+    { id: 'st60', label: 'Kule raf geniş', w: 60, d: 35, h: 200, price: 2800 },
   ],
   door: [
     { id: 'd-hinge', label: 'Menteşeli kapak', w: 60, d: 2, h: 38, price: 900, doorStyle: 'hinge' },
@@ -36,23 +49,29 @@ const CATALOG = {
   back: [
     { id: 'b120', label: 'Arka panel', w: 120, d: 1, h: 64, price: 500 },
     { id: 'b180', label: 'Arka panel geniş', w: 180, d: 1, h: 64, price: 700 },
+    { id: 'b160t', label: 'Özellik paneli 160', w: 160, d: 2, h: 200, price: 1200 },
   ],
   slat: [
     { id: 'sl120', label: 'Çıta panel', w: 120, d: 3, h: 40, price: 1100 },
     { id: 'sl180', label: 'Çıta panel geniş', w: 180, d: 3, h: 40, price: 1500 },
+    { id: 'slw60', label: 'Çıta duvar 60', w: 60, d: 3, h: 220, price: 1600 },
+    { id: 'slw80', label: 'Çıta duvar 80', w: 80, d: 3, h: 220, price: 1900 },
+    { id: 'slw40', label: 'Çıta duvar 40', w: 40, d: 3, h: 220, price: 1200 },
   ],
   top: [
     { id: 't120', label: 'Üst panel', w: 120, d: 42, h: 2.5, price: 800 },
     { id: 't180', label: 'Üst panel geniş', w: 180, d: 42, h: 2.5, price: 1100 },
+    { id: 't240', label: 'Üst panel 240', w: 240, d: 42, h: 2.5, price: 1400 },
   ],
   leg: [
     { id: 'l60', label: 'Ayak seti', w: 60, d: 40, h: 10, price: 350 },
     { id: 'l120', label: 'Ayak seti geniş', w: 120, d: 40, h: 10, price: 450 },
+    { id: 'l180', label: 'Ayak seti 180', w: 180, d: 40, h: 10, price: 550 },
   ],
 };
 
 const PRICES = {
-  frame: 1500, door: 900, shelf: 900, back: 400, slat: 650, top: 800, leg: 250, plinth: 700,
+  frame: 1500, door: 900, shelf: 900, back: 400, slat: 650, top: 800, leg: 250, plinth: 700, wallPanel: 2000,
 };
 
 const FINISHES = [
@@ -76,6 +95,41 @@ const TV_BENCH_PRESETS = [
   { id: 'tv120', label: 'TV banko 120 cm', bays: 2, bayW: 60, d: 40, h: 38, inch: 43 },
   { id: 'tv180', label: 'TV banko 180 cm', bays: 3, bayW: 60, d: 40, h: 38, inch: 55 },
   { id: 'tv240', label: 'TV banko 240 cm', bays: 4, bayW: 60, d: 40, h: 38, inch: 65 },
+];
+
+/**
+ * Referans görsellerdeki gibi tam TV duvarı kompozisyonları.
+ * base + feature panel + çıta + kule raf + LED + TV.
+ */
+const WALL_COMPOSITIONS = [
+  {
+    id: 'lux-marble',
+    label: 'Mermer TV duvarı',
+    desc: 'Yüzen banko · mermer panel · çıta · kule',
+    inch: 65,
+    build: 'marble',
+  },
+  {
+    id: 'lux-wood',
+    label: 'Ahşap çıta duvarı',
+    desc: 'Banko · çıta panel · yan raflar',
+    inch: 55,
+    build: 'wood',
+  },
+  {
+    id: 'lux-sym',
+    label: 'Simetrik TV duvarı',
+    desc: 'Orta panel · iki yan kule · banko',
+    inch: 65,
+    build: 'sym',
+  },
+  {
+    id: 'lux-float',
+    label: 'Minimal yüzen',
+    desc: 'Yüzen banko · LED · düz panel',
+    inch: 55,
+    build: 'float',
+  },
 ];
 
 const BAY_W = 60; // BESTÅ standart iskelet eni cm
@@ -395,18 +449,39 @@ function buildTv() {
   const { w, h, d } = tvSizeFromInch(state.tvInch);
   const g = new THREE.Group();
   g.name = 'tv';
-  const y = 1.05 + h / 2;
-  const z = -(FLOOR_D * CM) / 2 + 0.08;
+
+  // TV'yi duvar paneli / özellik paneli / banko üstüne ortala
+  const panel = state.modules.find((m) => m.type === 'wallPanel')
+    || state.modules.find((m) => m.type === 'back' && m.h >= 80)
+    || null;
+  const bench = state.modules.find((m) => m.type === 'plinth' || (m.type === 'frame' && !m.parentId && m.h <= 50));
+  let x = 0;
+  let yCm;
+  let zCm;
+  if (panel) {
+    x = panel.x;
+    yCm = panel.y + panel.h * 0.52;
+    zCm = panel.z + panel.d / 2 + 3;
+  } else if (bench) {
+    x = bench.x;
+    yCm = (bench.y || 0) + bench.h + 55;
+    zCm = bench.z - bench.d / 2 - 2;
+  } else {
+    yCm = 105;
+    zCm = -(FLOOR_D / 2) + 8;
+  }
+  const y = yCm * CM;
+  const z = zCm * CM;
   const screen = new THREE.Mesh(
     new THREE.BoxGeometry(w, h, d),
     new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.35, metalness: 0.4 })
   );
-  screen.position.set(0, y, z);
+  screen.position.set(x * CM, y, z);
   const glass = new THREE.Mesh(
     new THREE.PlaneGeometry(w * 0.94, h * 0.9),
     new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.2, metalness: 0.55 })
   );
-  glass.position.set(0, y, z + d / 2 + 0.002);
+  glass.position.set(x * CM, y, z + d / 2 + 0.002);
   g.add(screen, glass);
   tvMesh = g;
   scene.add(tvMesh);
@@ -424,6 +499,48 @@ function frameShellGeometry(w, h, d, thick = 1.8) {
     ],
     W, H, D, t,
   };
+}
+
+function addLedStrip(group, mod, where) {
+  const glow = new THREE.MeshStandardMaterial({
+    color: 0xffe6b8,
+    emissive: new THREE.Color(0xffcc66),
+    emissiveIntensity: state.night ? 2.2 : 1.1,
+    roughness: 1,
+    metalness: 0,
+  });
+  if (where === 'under') {
+    const strip = new THREE.Mesh(
+      new THREE.BoxGeometry(mod.w * CM * 0.92, 0.4 * CM, 1.2 * CM),
+      glow
+    );
+    strip.position.set(0, -0.3 * CM, 0);
+    group.add(strip);
+    const light = new THREE.PointLight(0xffddaa, 0.55, 1.8);
+    light.position.set(0, -0.02, 0.05);
+    group.add(light);
+  } else if (where === 'back') {
+    // Yan + üst halo
+    const edge = 0.5 * CM;
+    const H = mod.h * CM;
+    const W = mod.w * CM;
+    const D = Math.max(1.5, mod.d) * CM;
+    [[-W / 2 - edge, H / 2, -D / 2 - 0.01], [W / 2 + edge, H / 2, -D / 2 - 0.01]].forEach(([x, y, z]) => {
+      const s = new THREE.Mesh(new THREE.BoxGeometry(edge, H * 0.96, edge), glow.clone());
+      s.position.set(x, y, z);
+      group.add(s);
+    });
+    const top = new THREE.Mesh(new THREE.BoxGeometry(W * 0.96, edge, edge), glow.clone());
+    top.position.set(0, H + edge, -D / 2 - 0.01);
+    group.add(top);
+  } else if (where === 'shelf') {
+    const strip = new THREE.Mesh(
+      new THREE.BoxGeometry(mod.w * CM * 0.9, 0.3 * CM, 0.8 * CM),
+      glow
+    );
+    strip.position.set(0, -0.2 * CM, 0);
+    group.add(strip);
+  }
 }
 
 async function createModuleMesh(mod) {
@@ -456,6 +573,7 @@ async function createModuleMesh(mod) {
       mesh.position.y = (Math.max(1.5, mod.h) * CM) / 2;
       mesh.castShadow = true;
       group.add(mesh);
+      if (mod.led) addLedStrip(group, mod, 'shelf');
       group.userData.originAtBottom = true;
     } else {
       // Bağımsız açık raf ünitesi
@@ -476,6 +594,16 @@ async function createModuleMesh(mod) {
         sh.position.set(0, y, 0);
         sh.castShadow = true;
         group.add(sh);
+        if (mod.led) {
+          const glow = new THREE.Mesh(
+            new THREE.BoxGeometry(W - 0.06, 0.25 * CM, 0.6 * CM),
+            new THREE.MeshStandardMaterial({
+              color: 0xffe6b8, emissive: 0xffcc66, emissiveIntensity: 1.2, roughness: 1,
+            })
+          );
+          glow.position.set(0, y - 0.8 * CM, 0);
+          group.add(glow);
+        }
       }
     }
   } else if (mod.type === 'door') {
@@ -485,8 +613,31 @@ async function createModuleMesh(mod) {
     mesh.position.y = (mod.h * CM) / 2;
     mesh.castShadow = true;
     group.add(mesh);
-    // visual offset: origin at bottom
     group.userData.originAtBottom = true;
+    if (mod.led) addLedStrip(group, mod, 'under');
+  } else if (mod.type === 'wallPanel') {
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(mod.w * CM, mod.h * CM, Math.max(1.5, mod.d) * CM),
+      mat
+    );
+    mesh.position.y = (mod.h * CM) / 2;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    group.add(mesh);
+    if (mod.metalStrips) {
+      const n = Math.max(2, Math.floor(mod.w / 40));
+      const metal = new THREE.MeshStandardMaterial({ color: 0xc9a66b, metalness: 0.9, roughness: 0.25 });
+      for (let i = 1; i < n; i++) {
+        const strip = new THREE.Mesh(
+          new THREE.BoxGeometry(0.4 * CM, mod.h * CM * 0.98, (mod.d + 0.4) * CM),
+          metal.clone()
+        );
+        strip.position.set((-mod.w / 2 + (mod.w / n) * i) * CM, mod.h * CM / 2, 0);
+        group.add(strip);
+      }
+    }
+    group.userData.originAtBottom = true;
+    if (mod.led) addLedStrip(group, mod, 'back');
   } else if (mod.type === 'back') {
     const mesh = new THREE.Mesh(
       new THREE.BoxGeometry(mod.w * CM, mod.h * CM, Math.max(0.6, mod.d) * CM),
@@ -496,6 +647,7 @@ async function createModuleMesh(mod) {
     mesh.castShadow = true;
     group.add(mesh);
     group.userData.originAtBottom = true;
+    if (mod.led) addLedStrip(group, mod, 'back');
   } else if (mod.type === 'slat') {
     const slatW = mod.slatWidth || 1.6; // cm
     const gapCm = mod.slatGap != null ? mod.slatGap : 2.5; // cm between slats
@@ -718,7 +870,7 @@ function updateSelectionVisual() {
   if (bar) bar.hidden = !state.selectedId;
 }
 
-const HOST_TYPES = new Set(['frame', 'plinth', 'shelf']);
+const HOST_TYPES = new Set(['frame', 'plinth', 'shelf', 'wallPanel']);
 const ATTACH_FRONT = new Set(['door', 'slat']);
 const ATTACH_BACK = new Set(['back']);
 const ATTACH_TOP = new Set(['top']);
@@ -738,7 +890,6 @@ function findNearestHost(x, z, maxDist = 55) {
     if (!isHost(m)) continue;
     const dx = Math.abs(x - m.x);
     const dz = Math.abs(z - m.z);
-    // Prefer overlapping X range + nearby Z
     const xOverlap = dx < (m.w / 2 + 25);
     const dist = Math.sqrt(dx * dx + dz * dz);
     if (xOverlap && dist < bestD) {
@@ -749,83 +900,114 @@ function findNearestHost(x, z, maxDist = 55) {
   return best;
 }
 
-/** Pose a part flush to host: back / front / top */
+/** Pose a part flush to host — bayIndex / yOffset / relX korunur */
 function attachToHost(host, type, extras = {}) {
   const doorStyle = extras.doorStyle || 'push';
+  const baseY = host.y || 0;
+
   if (type === 'back') {
-    const d = 1;
-    return {
-      w: host.w,
-      h: host.h,
-      d,
-      x: host.x,
-      y: host.y,
-      z: host.z - host.d / 2 - d / 2 - 0.2,
-    };
-  }
-  if (type === 'slat') {
-    const d = extras.d || 3;
-    return {
-      w: host.w,
-      h: host.h,
-      d,
-      x: host.x,
-      y: host.y,
-      z: host.z + host.d / 2 + d / 2 + 0.3,
-      slatWidth: extras.slatWidth || 1.6,
-      slatGap: extras.slatGap || 2.5,
-    };
-  }
-  if (type === 'door') {
-    if (doorStyle === 'drawer') {
+    if (host.type === 'wallPanel') {
       return {
-        w: Math.max(20, host.w - 2),
-        h: Math.min(extras.h || Math.max(16, (host.h - 4) / 2), host.h - 2),
-        d: Math.max(20, host.d - 4),
-        x: host.x,
-        y: host.y + (extras.yOffset || 1),
-        z: host.z,
+        w: host.w, h: host.h, d: 1,
+        x: host.x, y: host.y,
+        z: host.z + host.d / 2 + 0.6,
       };
     }
+    const d = extras.d || 2;
+    const h = extras.h || host.h;
+    const y = extras.yOffset != null ? baseY + extras.yOffset : baseY;
     return {
-      w: Math.max(20, extras.w || host.w - 2),
-      h: Math.max(16, extras.h || host.h - 2),
-      d: 2,
-      x: extras.x != null ? extras.x : host.x,
-      y: host.y + 1,
-      z: host.z + host.d / 2 + 1.1,
+      w: extras.w || host.w,
+      h,
+      d,
+      x: extras.relX != null ? host.x + extras.relX : host.x,
+      y,
+      z: host.z - host.d / 2 - d / 2 - 0.3,
     };
   }
+
+  if (type === 'slat') {
+    const d = extras.d || 3;
+    const h = extras.h || host.h;
+    const y = extras.yOffset != null ? baseY + extras.yOffset : baseY;
+    return {
+      w: extras.w || host.w,
+      h,
+      d,
+      x: extras.relX != null ? host.x + extras.relX : host.x,
+      y,
+      z: host.z + host.d / 2 + d / 2 + 0.3,
+      slatWidth: extras.slatWidth || 1.6,
+      slatGap: extras.slatGap != null ? extras.slatGap : 2.5,
+    };
+  }
+
+  if (type === 'door') {
+    const bays = Math.max(1, extras.bays || bayCountForWidth(host.w));
+    const bayIndex = extras.bayIndex != null ? extras.bayIndex : 0;
+    if (doorStyle === 'drawer') {
+      const rows = extras.rows || (host.h >= 50 ? 2 : 1);
+      const row = extras.drawerRow != null ? extras.drawerRow : 0;
+      const rowH = (host.h - 3) / rows;
+      const yOff = 1.5 + row * rowH;
+      return {
+        w: Math.max(20, host.w - 2),
+        h: Math.max(12, rowH - 0.5),
+        d: Math.max(18, host.d - 4),
+        x: host.x,
+        y: baseY + yOff,
+        z: host.z,
+        drawerRow: row,
+        rows,
+        yOffset: yOff,
+      };
+    }
+    const doorW = extras.w || (host.w / bays - 1.2);
+    const left = host.x - host.w / 2;
+    const cx = extras.x != null
+      ? extras.x
+      : left + doorW / 2 + 0.6 + bayIndex * (doorW + 1.2);
+    return {
+      w: doorW,
+      h: Math.max(12, extras.h || host.h - 2),
+      d: 2,
+      x: cx,
+      y: baseY + 1,
+      z: host.z + host.d / 2 + 1.1,
+      bayIndex,
+      bays,
+    };
+  }
+
   if (type === 'shelf' || type === 'innerShelf') {
-    // İç raf — iskeletin içinde
+    const yOff = extras.yOffset != null ? extras.yOffset : host.h / 2;
     return {
       w: host.w - 3.6,
       h: 1.8,
       d: host.d - 2.5,
       x: host.x,
-      y: host.y + (extras.yOffset != null ? extras.yOffset : host.h / 2),
+      y: baseY + yOff,
       z: host.z,
       interior: true,
+      yOffset: yOff,
     };
   }
+
   if (type === 'leg') {
     const h = extras.h || 10;
     return {
-      w: host.w,
-      h,
-      d: host.d,
-      x: host.x,
-      y: 0,
-      z: host.z,
+      w: host.w, h, d: host.d,
+      x: host.x, y: 0, z: host.z,
     };
   }
+
   if (type === 'top') {
     return {
       w: host.w + 2,
       h: 2.5,
       d: host.d + 2,
       x: host.x,
-      y: host.y + host.h,
+      y: baseY + host.h,
       z: host.z,
     };
   }
@@ -838,11 +1020,44 @@ function syncAttachedToHost(host) {
       doorStyle: child.doorStyle,
       d: child.d,
       h: child.h,
+      w: child.w,
+      bayIndex: child.bayIndex,
+      bays: child.bays,
+      drawerRow: child.drawerRow,
+      rows: child.rows,
+      yOffset: child.yOffset,
+      relX: child.relX,
       slatWidth: child.slatWidth,
       slatGap: child.slatGap,
+      x: child.bayIndex != null ? undefined : child.x,
     });
     if (!pose) return;
-    Object.assign(child, pose);
+    child.w = pose.w;
+    child.h = pose.h;
+    child.d = pose.d;
+    child.x = pose.x;
+    child.y = pose.y;
+    child.z = pose.z;
+    if (pose.bayIndex != null) child.bayIndex = pose.bayIndex;
+    if (pose.bays != null) child.bays = pose.bays;
+    if (pose.drawerRow != null) child.drawerRow = pose.drawerRow;
+    if (pose.yOffset != null) child.yOffset = pose.yOffset;
+    if (pose.slatWidth != null) child.slatWidth = pose.slatWidth;
+    if (pose.slatGap != null) child.slatGap = pose.slatGap;
+  });
+}
+
+/** Bench'teki yan yana hostları ayak yüksekliğine yükselt */
+function raiseBenchHosts(sourceHost, legH) {
+  const band = 12;
+  state.modules.forEach((m) => {
+    if (!isHost(m) || m.type === 'wallPanel') return;
+    if (Math.abs(m.z - sourceHost.z) > band) return;
+    // Aynı yatay bandodaki banko parçaları
+    if (m.h > 80 && m.id !== sourceHost.id) return;
+    m.y = legH;
+    m.floatY = legH;
+    syncAttachedToHost(m);
   });
 }
 
@@ -851,13 +1066,22 @@ function defaultMaterial(type, doorStyle) {
     return { finish: 'gloss', color: '#c5d5e8', materialName: 'Cam' };
   }
   if (type === 'door') {
-    return { finish: 'highgloss', color: '#111111', materialName: 'Siyah High Gloss' };
+    return { finish: 'matte', color: '#e8e4df', materialName: 'Krem Mat' };
   }
-  if (type === 'plinth' || type === 'slat') {
-    return { finish: 'matte', color: type === 'slat' ? '#c4a574' : '#1a1a1a', materialName: type === 'slat' ? 'Ahşap çıta' : 'Siyah' };
+  if (type === 'wallPanel') {
+    return { finish: 'ceramic', color: '#f0ebe3', materialName: 'Mermer / Taş' };
+  }
+  if (type === 'plinth') {
+    return { finish: 'matte', color: '#e8e4df', materialName: 'Krem Mat' };
+  }
+  if (type === 'slat') {
+    return { finish: 'matte', color: '#c4a574', materialName: 'Ahşap çıta' };
   }
   if (type === 'top') {
     return { finish: 'ceramic', color: '#e8e4df', materialName: 'Seramik' };
+  }
+  if (type === 'back') {
+    return { finish: 'ceramic', color: '#f5f0ea', materialName: 'Panel' };
   }
   return { finish: 'matte', color: '#f7f7f7', materialName: 'Beyaz' };
 }
@@ -867,7 +1091,7 @@ function addAttachedPart(type, opts = {}) {
     || (selected() && isHost(selected()) ? selected() : null)
     || state.modules.filter((m) => isHost(m)).at(-1);
   if (!host) {
-    showHint('Önce iskelet, alt blok veya raf seçin');
+    showHint('Önce iskelet, alt blok veya duvar paneli seçin');
     return;
   }
   const doorStyle = opts.doorStyle || (type === 'door' ? 'push' : undefined);
@@ -884,7 +1108,7 @@ function addAttachedPart(type, opts = {}) {
     parentId: host.id,
     ...pose,
     finish: mat.finish,
-    color: mat.color,
+    color: opts.color || mat.color,
     materialId: null,
     materialImage: null,
     materialName: mat.materialName,
@@ -892,11 +1116,16 @@ function addAttachedPart(type, opts = {}) {
     doorStyle,
     frameColor: doorStyle === 'glass' ? '#c0c4c8' : undefined,
     glassColor: doorStyle === 'glass' ? '#c5d5e8' : undefined,
+    led: opts.led,
+    bayIndex: pose.bayIndex,
+    bays: pose.bays,
+    drawerRow: pose.drawerRow,
+    yOffset: pose.yOffset,
+    relX: opts.relX,
   };
   state.modules.push(mod);
   if (type === 'leg') {
-    host.y = mod.h;
-    syncAttachedToHost(host);
+    raiseBenchHosts(host, mod.h);
   }
   state.selectedId = mod.id;
   rebuildModules().then(() => {
@@ -916,14 +1145,11 @@ function addFrontsToHost(host, doorStyle) {
     showHint('Önce bir iskelet veya alt blok seçin');
     return;
   }
-  // Mevcut ön kapakları kaldır
   const oldDoors = childrenOf(host.id).filter((c) => c.type === 'door');
+  pushHistory();
   if (oldDoors.length) {
-    pushHistory();
     const kill = new Set(oldDoors.map((d) => d.id));
     state.modules = state.modules.filter((m) => !kill.has(m.id));
-  } else {
-    pushHistory();
   }
 
   const style = doorStyle || 'push';
@@ -931,12 +1157,11 @@ function addFrontsToHost(host, doorStyle) {
 
   if (style === 'drawer') {
     const rows = host.h >= 50 ? 2 : 1;
-    const rowH = (host.h - 3) / rows;
     for (let r = 0; r < rows; r++) {
       const pose = attachToHost(host, 'door', {
         doorStyle: 'drawer',
-        h: rowH - 0.5,
-        yOffset: 1.5 + r * rowH,
+        drawerRow: r,
+        rows,
       });
       state.modules.push({
         id: uid(),
@@ -951,19 +1176,18 @@ function addFrontsToHost(host, doorStyle) {
         materialName: mat.materialName,
         materialCode: '',
         doorStyle: 'drawer',
+        drawerRow: r,
+        rows,
+        yOffset: pose.yOffset,
       });
     }
   } else {
     const bays = bayCountForWidth(host.w);
-    const doorW = host.w / bays - 1.2;
-    const left = host.x - host.w / 2;
     for (let i = 0; i < bays; i++) {
-      const cx = left + doorW / 2 + 0.6 + i * (doorW + 1.2);
       const pose = attachToHost(host, 'door', {
         doorStyle: style,
-        w: doorW,
-        h: host.h - 2,
-        x: cx,
+        bayIndex: i,
+        bays,
       });
       state.modules.push({
         id: uid(),
@@ -978,6 +1202,8 @@ function addFrontsToHost(host, doorStyle) {
         materialName: mat.materialName,
         materialCode: '',
         doorStyle: style,
+        bayIndex: i,
+        bays,
         frameColor: style === 'glass' ? '#c0c4c8' : undefined,
         glassColor: style === 'glass' ? '#c5d5e8' : undefined,
       });
@@ -994,10 +1220,20 @@ function addFrontsToHost(host, doorStyle) {
 
 function addInteriorShelf(host) {
   if (!host) return;
+  const existing = childrenOf(host.id).filter((c) => c.type === 'shelf' && c.interior);
+  const n = existing.length + 1;
+  const slots = Math.max(n + 1, 3);
+  const yOffset = (host.h / slots) * n;
+  // Mevcut rafları yeniden dağıt
+  existing.forEach((s, i) => {
+    s.yOffset = (host.h / (n + 1)) * (i + 1);
+  });
+  if (existing.length) syncAttachedToHost(host);
   addAttachedPart('shelf', {
     host,
     label: 'İç raf',
-    yOffset: host.h / 2,
+    yOffset: (host.h / (n + 1)) * n,
+    led: true,
   });
 }
 
@@ -1040,6 +1276,182 @@ function startTvBench(presetId) {
     renderSidebar();
     $('#fab-tv')?.classList.add('active');
     showHint(`${preset.label} hazır — iskelete kapak / çekmece ekleyin`);
+  });
+}
+
+function pushMod(partial) {
+  const id = uid();
+  state.modules.push({ id, materialId: null, materialImage: null, materialCode: '', ...partial });
+  return id;
+}
+
+/** Referans görsellerdeki gibi hazır TV duvarı */
+function startWallComposition(compId) {
+  const comp = WALL_COMPOSITIONS.find((c) => c.id === compId) || WALL_COMPOSITIONS[0];
+  pushHistory();
+  state.modules = [];
+  const wallZ = -(FLOOR_D / 2);
+  const panelZ = wallZ + 2;
+  const benchZ = wallZ + 22;
+
+  if (comp.build === 'marble') {
+    // Yüzen banko 240 + bas-aç · mermer panel · sağ çıta · sol kule
+    const floatY = 18;
+    const benchId = pushMod({
+      type: 'plinth', label: 'Yüzen banko', w: 240, h: 35, d: 40,
+      x: 0, y: floatY, z: benchZ, floatY, led: true,
+      finish: 'matte', color: '#e8e4df', materialName: 'Krem Mat',
+    });
+    const panelId = pushMod({
+      type: 'wallPanel', label: 'Mermer panel', w: 140, h: 200, d: 3,
+      x: 10, y: floatY + 35, z: panelZ, led: true, metalStrips: true,
+      finish: 'ceramic', color: '#f2ebe3', materialName: 'Mermer',
+    });
+    pushMod({
+      type: 'slat', label: 'Çıta duvar', w: 55, h: 200, d: 3,
+      x: 10 + 70 + 27.5, y: floatY + 35, z: panelZ + 1.5,
+      slatWidth: 2, slatGap: 1.5,
+      finish: 'matte', color: '#c4a574', materialName: 'Ahşap çıta',
+    });
+    const towerId = pushMod({
+      type: 'shelf', label: 'Kule raf', w: 40, h: 200, d: 35, led: true,
+      x: 10 - 70 - 20, y: floatY + 35, z: benchZ - 2,
+      finish: 'matte', color: '#d4b896', materialName: 'Ahşap',
+    });
+    // Cam kule solunda
+    pushMod({
+      type: 'frame', label: 'Cam kule', w: 40, h: 200, d: 35,
+      x: 10 - 70 - 20 - 42, y: floatY + 35, z: benchZ - 2,
+      finish: 'matte', color: '#f7f7f7', materialName: 'Beyaz',
+    });
+    // Bankoya bas-aç kapaklar
+    const bench = state.modules.find((m) => m.id === benchId);
+    const bays = 4;
+    for (let i = 0; i < bays; i++) {
+      const pose = attachToHost(bench, 'door', { doorStyle: 'push', bayIndex: i, bays });
+      pushMod({
+        type: 'door', label: 'Bas-aç', parentId: benchId, ...pose,
+        doorStyle: 'push', bayIndex: i, bays,
+        finish: 'matte', color: '#e8e4df', materialName: 'Krem Mat',
+      });
+    }
+    state.selectedId = panelId;
+  } else if (comp.build === 'wood') {
+    const floatY = 15;
+    const benchId = pushMod({
+      type: 'plinth', label: 'Yüzen banko', w: 220, h: 32, d: 38,
+      x: 0, y: floatY, z: benchZ, floatY, led: true,
+      finish: 'matte', color: '#ebe6df', materialName: 'Grej',
+    });
+    pushMod({
+      type: 'wallPanel', label: 'Çıta TV paneli', w: 160, h: 210, d: 3,
+      x: 0, y: floatY + 32, z: panelZ, led: true,
+      finish: 'matte', color: '#c4a574', materialName: 'Ahşap panel',
+    });
+    // Çıta görünümü için wallPanel üzerine slat overlay değil — ayrı slat host olarak panel genişliğinde
+    pushMod({
+      type: 'slat', label: 'Dikey çıtalar', w: 160, h: 210, d: 2.5,
+      x: 0, y: floatY + 32, z: panelZ + 2.5,
+      slatWidth: 2.2, slatGap: 1.2,
+      finish: 'matte', color: '#b8956a', materialName: 'Ahşap çıta',
+    });
+    pushMod({
+      type: 'shelf', label: 'Sol raf', w: 35, h: 180, d: 30, led: true,
+      x: -100, y: floatY + 32, z: benchZ - 4,
+      finish: 'matte', color: '#c4a574', materialName: 'Ahşap',
+    });
+    pushMod({
+      type: 'shelf', label: 'Sağ raf', w: 35, h: 180, d: 30, led: true,
+      x: 100, y: floatY + 32, z: benchZ - 4,
+      finish: 'matte', color: '#c4a574', materialName: 'Ahşap',
+    });
+    const bench = state.modules.find((m) => m.id === benchId);
+    const bays = 4;
+    for (let i = 0; i < bays; i++) {
+      const pose = attachToHost(bench, 'door', { doorStyle: 'push', bayIndex: i, bays });
+      pushMod({
+        type: 'door', label: 'Bas-aç', parentId: benchId, ...pose,
+        doorStyle: 'push', bayIndex: i, bays,
+        finish: 'matte', color: '#ebe6df', materialName: 'Grej',
+      });
+    }
+    state.selectedId = benchId;
+  } else if (comp.build === 'sym') {
+    const floatY = 0;
+    const benchId = pushMod({
+      type: 'plinth', label: 'Alt blok', w: 200, h: 40, d: 40,
+      x: 0, y: floatY, z: benchZ, led: true,
+      finish: 'matte', color: '#e8e4df', materialName: 'Krem',
+    });
+    pushMod({
+      type: 'wallPanel', label: 'Orta taş panel', w: 120, h: 220, d: 4,
+      x: 0, y: 40, z: panelZ, led: true, metalStrips: false,
+      finish: 'ceramic', color: '#ebe6de', materialName: 'Traverten',
+    });
+    pushMod({
+      type: 'shelf', label: 'Sol kule', w: 45, h: 220, d: 35, led: true,
+      x: -82.5, y: 0, z: benchZ - 2,
+      finish: 'matte', color: '#c4a574', materialName: 'Ahşap',
+    });
+    pushMod({
+      type: 'shelf', label: 'Sağ kule', w: 45, h: 220, d: 35, led: true,
+      x: 82.5, y: 0, z: benchZ - 2,
+      finish: 'matte', color: '#c4a574', materialName: 'Ahşap',
+    });
+    const bench = state.modules.find((m) => m.id === benchId);
+    const bays = 3;
+    for (let i = 0; i < bays; i++) {
+      const pose = attachToHost(bench, 'door', { doorStyle: 'drawer', drawerRow: 0, rows: 1, bayIndex: i, bays });
+      // drawer uses full width — for multi bay use push instead
+    }
+    for (let i = 0; i < bays; i++) {
+      const pose = attachToHost(bench, 'door', { doorStyle: 'push', bayIndex: i, bays });
+      pushMod({
+        type: 'door', label: 'Bas-aç', parentId: benchId, ...pose,
+        doorStyle: 'push', bayIndex: i, bays,
+        finish: 'matte', color: '#e8e4df', materialName: 'Krem',
+      });
+    }
+    state.selectedId = benchId;
+  } else {
+    // float minimal
+    const floatY = 20;
+    const benchId = pushMod({
+      type: 'plinth', label: 'Yüzen banko', w: 200, h: 32, d: 38,
+      x: 0, y: floatY, z: benchZ, floatY, led: true,
+      finish: 'matte', color: '#f5f0ea', materialName: 'Krem',
+    });
+    pushMod({
+      type: 'wallPanel', label: 'Düz panel', w: 180, h: 160, d: 2.5,
+      x: 0, y: floatY + 32 + 10, z: panelZ, led: true,
+      finish: 'matte', color: '#f0ebe4', materialName: 'Panel',
+    });
+    pushMod({
+      type: 'top', label: 'Üst kaplama', w: 202, h: 2.5, d: 40,
+      x: 0, y: floatY + 32, z: benchZ,
+      finish: 'matte', color: '#d4b896', materialName: 'Ahşap üst',
+    });
+    const bench = state.modules.find((m) => m.id === benchId);
+    const bays = 3;
+    for (let i = 0; i < bays; i++) {
+      const pose = attachToHost(bench, 'door', { doorStyle: 'push', bayIndex: i, bays });
+      pushMod({
+        type: 'door', label: 'Bas-aç', parentId: benchId, ...pose,
+        doorStyle: 'push', bayIndex: i, bays,
+        finish: 'matte', color: '#f5f0ea', materialName: 'Krem',
+      });
+    }
+    state.selectedId = benchId;
+  }
+
+  state.showTv = true;
+  state.tvInch = comp.inch;
+  buildTv();
+  rebuildModules().then(() => {
+    state.view = 'customize';
+    renderSidebar();
+    $('#fab-tv')?.classList.add('active');
+    showHint(`${comp.label} hazır — ölçü ve kaplamayı özelleştirin`, 3600);
   });
 }
 
