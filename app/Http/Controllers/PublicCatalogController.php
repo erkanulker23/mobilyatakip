@@ -55,10 +55,6 @@ class PublicCatalogController extends Controller
         }
         $onlyNew = $request->boolean('yeni');
         $viewMode = $request->query('gorunum', 'dekor') === 'ic-mekan' ? 'ic-mekan' : 'dekor';
-        $tab = $request->query('sekme', 'urunler');
-        if (! in_array($tab, ['urunler', 'ozellikler', 'dokumanlar'], true)) {
-            $tab = 'urunler';
-        }
 
         $products = collect($catalog['products'] ?? []);
 
@@ -110,10 +106,6 @@ class PublicCatalogController extends Controller
             return $p;
         })->values()->all();
         $assetBase = asset('catalog/'.$manufacturer.'/'.$category);
-        $documents = collect($catalog['documents'] ?? [])
-            ->filter(fn ($doc) => is_array($doc) && ! empty($doc['file']))
-            ->values()
-            ->all();
 
         return view('catalog.category', [
             'company' => $company,
@@ -123,8 +115,6 @@ class PublicCatalogController extends Controller
             'products' => $products,
             'brands' => $brands,
             'seriesList' => $seriesList,
-            'documents' => $documents,
-            'features' => $catalog['features'] ?? [],
             'specs' => $catalog['specs'] ?? [],
             'totalCount' => count($catalog['products'] ?? []),
             'filteredCount' => count($products),
@@ -134,7 +124,6 @@ class PublicCatalogController extends Controller
             'onlyNew' => $onlyNew,
             'selectedTone' => $tone,
             'viewMode' => $viewMode,
-            'tab' => $tab,
             'assetBase' => $assetBase,
         ]);
     }

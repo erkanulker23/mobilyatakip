@@ -5,7 +5,6 @@
 
             <form method="GET" action="{{ route('catalog.category', [$manufacturer['slug'], $category['slug']]) }}" class="space-y-4" id="catalog-filter">
                 <input type="hidden" name="gorunum" value="{{ $viewMode }}">
-                <input type="hidden" name="sekme" value="urunler">
                 @if(($selectedTone ?? '') !== '')
                     <input type="hidden" name="ton" value="{{ $selectedTone }}">
                 @endif

@@ -83,7 +83,7 @@
         @endphp
         <div class="catalog-hero relative min-h-[220px] sm:min-h-[280px] lg:min-h-[320px] bg-neutral-800"
              @if($hero) style="background-image: linear-gradient(to bottom, rgba(15,23,42,.35), rgba(15,23,42,.55)), url('{{ $hero }}');" @endif>
-            <div class="max-w-6xl mx-auto px-4 pt-6 pb-16 sm:pb-20 relative z-10">
+            <div class="max-w-6xl mx-auto px-4 pt-6 pb-12 sm:pb-14 relative z-10">
                 <nav class="text-sm text-white/80 mb-8 flex flex-wrap items-center gap-1.5">
                     <a href="{{ route('catalog.index') }}" class="hover:text-white">Katalog</a>
                     <span aria-hidden="true">›</span>
@@ -94,64 +94,9 @@
                 <h1 class="text-3xl sm:text-4xl lg:text-5xl font-semibold text-white tracking-tight drop-shadow">{{ $category['name'] }}</h1>
             </div>
         </div>
-
-        {{-- Tabs --}}
-        <div class="bg-neutral-700 dark:bg-neutral-800 -mt-10 relative z-20">
-            <div class="max-w-6xl mx-auto px-4">
-                <div class="flex gap-0 overflow-x-auto text-sm font-semibold tracking-wide">
-                    <a href="{{ request()->fullUrlWithQuery(['sekme' => 'urunler']) }}"
-                       class="px-5 py-3.5 whitespace-nowrap {{ $tab === 'urunler' ? 'text-white border-b-2 border-emerald-400' : 'text-white/60 hover:text-white' }}">ÜRÜNLER</a>
-                    <a href="{{ request()->fullUrlWithQuery(['sekme' => 'ozellikler']) }}"
-                       class="px-5 py-3.5 whitespace-nowrap {{ $tab === 'ozellikler' ? 'text-white border-b-2 border-emerald-400' : 'text-white/60 hover:text-white' }}">GENEL ÖZELLİKLER</a>
-                    <a href="{{ request()->fullUrlWithQuery(['sekme' => 'dokumanlar']) }}"
-                       class="px-5 py-3.5 whitespace-nowrap {{ $tab === 'dokumanlar' ? 'text-white border-b-2 border-emerald-400' : 'text-white/60 hover:text-white' }}">DOKÜMANLAR</a>
-                </div>
-            </div>
-        </div>
     </section>
 
     <main class="max-w-6xl mx-auto px-4 py-8">
-        @if($tab === 'ozellikler')
-            <div class="max-w-4xl space-y-10">
-                @forelse($features as $feature)
-                    <section>
-                        <h2 class="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">{{ $feature['title'] ?? '' }}</h2>
-                        <div class="space-y-6">
-                            @foreach($feature['blocks'] ?? [] as $block)
-                                <div>
-                                    @if(!empty($block['heading']))
-                                        <h3 class="text-sm font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400 mb-2">{{ $block['heading'] }}</h3>
-                                    @endif
-                                    <p class="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 leading-relaxed">{{ $block['text'] ?? '' }}</p>
-                                </div>
-                            @endforeach
-                        </div>
-                    </section>
-                @empty
-                    @if(!empty($category['description']))
-                        <p class="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 leading-relaxed">{{ $category['description'] }}</p>
-                    @else
-                        <p class="text-neutral-500">Bu kategori için özellik bilgisi henüz eklenmedi.</p>
-                    @endif
-                @endforelse
-            </div>
-        @elseif($tab === 'dokumanlar')
-            @if(count($documents) === 0)
-                <div class="rounded-xl border border-neutral-200 dark:border-neutral-800 p-10 text-center text-neutral-500">
-                    Bu kategori için doküman henüz eklenmedi.
-                </div>
-            @else
-                <div class="grid sm:grid-cols-2 gap-3 max-w-3xl">
-                    @foreach($documents as $doc)
-                        <a href="{{ $assetBase.'/'.$doc['file'] }}" target="_blank" rel="noopener noreferrer"
-                           class="flex items-center justify-between gap-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3.5 hover:border-emerald-500/50 hover:shadow-sm transition-all">
-                            <span class="text-sm font-medium text-neutral-900 dark:text-neutral-100">{{ $doc['title'] ?? 'Doküman' }}</span>
-                            <span class="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400 shrink-0">İndir</span>
-                        </a>
-                    @endforeach
-                </div>
-            @endif
-        @else
         <div class="lg:grid lg:grid-cols-12 lg:gap-8">
             @include('catalog.partials.category-sidebar')
 
@@ -260,11 +205,9 @@
                 @endif
             </div>
         </div>
-        @endif
     </main>
 
     {{-- Lightbox --}}
-    @if($tab === 'urunler')
     <div id="swatch-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="swatch-modal-title">
         <div class="relative w-full max-w-lg bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl">
             <button type="button" id="swatch-modal-close" class="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-black/50 text-white hover:bg-black/70 flex items-center justify-center" aria-label="Kapat">
@@ -283,11 +226,9 @@
             </div>
         </div>
     </div>
-    @endif
 
     @include('catalog.partials.footer')
 
-    @if($tab === 'urunler')
     <script>
         (function () {
             var modal = document.getElementById('swatch-modal');
@@ -342,6 +283,5 @@
             });
         })();
     </script>
-    @endif
 </body>
 </html>
