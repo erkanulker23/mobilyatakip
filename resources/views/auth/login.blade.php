@@ -92,6 +92,10 @@
                     Malzeme renklerini mi inceliyorsunuz?
                     <a href="{{ url('/katalog') }}" class="font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">Kataloga göz at</a>
                 </p>
+                <p>
+                    TV ünitesi mi tasarlıyorsunuz?
+                    <a href="{{ url('/tasarla') }}" class="font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">3D tasarımcıya git</a>
+                </p>
             </div>
         </div>
     </div>

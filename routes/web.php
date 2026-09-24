@@ -87,6 +87,11 @@ Route::prefix('katalog')->middleware('throttle:60,1')->group(function () {
         ->name('catalog.category');
 });
 
+Route::prefix('tasarla')->middleware('throttle:60,1')->group(function () {
+    Route::get('/', [\App\Http\Controllers\PublicConfiguratorController::class, 'index'])->name('configurator.index');
+    Route::get('/malzemeler', [\App\Http\Controllers\PublicConfiguratorController::class, 'materials'])->name('configurator.materials');
+});
+
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/bildirimler/temizle', [\App\Http\Controllers\NotificationController::class, 'dismiss'])->name('notifications.dismiss');
