@@ -66,7 +66,7 @@ Forge **Deploy Script** alanına `forge-deploy.sh` dosyasının içeriğini kopy
 
 Deploy script sırasıyla şunları yapar:
 
-1. `git pull` (Forge’un seçtiği branch)
+1. `git fetch` + `git reset --hard origin/$BRANCH` (sunucuyu remote ile hizalar; `git pull` kullanmayın)
 2. `composer install --no-dev --optimize-autoloader`
 3. `php artisan migrate --force`
 4. `php artisan db:seed --force` (süper admin yoksa oluşturur; mevcut şifreyi değiştirmez)
@@ -211,7 +211,7 @@ Her Git push sonrası Forge **yalnızca** `forge-deploy.sh` çalıştırır. Bu 
 
 | Çalışır | Çalışmaz |
 |---------|----------|
-| `git pull` | `migrate:fresh` |
+| `git fetch` + `reset --hard` | `migrate:fresh` |
 | `composer install --no-dev` | `migrate:refresh` / `migrate:reset` |
 | `migrate --force` (yeni migration'lar) | `db:wipe` |
 | `SuperAdminSeeder` (admin yoksa) | `TestDataSeeder` |

@@ -36,16 +36,19 @@ Kaynak dosya: [`deploy/forge-panel-deploy.sh`](forge-panel-deploy.sh)
 | PHP | 8.2+ |
 | `.env` | Canlı DB, `APP_URL`, `APP_DEBUG=false` |
 
-## 3. İlk geçiş / bozuk node_modules
+## 3. İlk geçiş / bozuk node_modules / divergent branches (`fatal: Need to specify how to reconcile`)
 
-Bir kez SSH (site dizinini kendi path’inizle değiştirin):
+Sunucuda eski `git pull` yüzünden dal ayrışmış olabilir. SSH ile bir kez (path’i siteye göre değiştirin):
 
 ```bash
 cd /home/forge/ORNEK.awapanel.com
 rm -rf node_modules node_modules.stale.*
-git pull origin main
+git fetch origin main
+git reset --hard origin/main
 bash forge-deploy.sh
 ```
+
+Forge → **Deploy Script** içinde `git pull` varsa silin; yerine `git fetch` + `git reset --hard origin/$FORGE_SITE_BRANCH` kullanın (`deploy/forge-classic-panel.sh`).
 
 ## 4. CSS değişince (geliştirici makinesi)
 
