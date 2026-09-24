@@ -71,6 +71,15 @@ const DOOR_STYLES = [
 
 const TV_INCHES = [32, 43, 50, 55, 65, 75];
 
+/** BESTÅ tarzı TV banko hazır başlangıçlar (iskeletler yan yana) */
+const TV_BENCH_PRESETS = [
+  { id: 'tv120', label: 'TV banko 120 cm', bays: 2, bayW: 60, d: 40, h: 38, inch: 43 },
+  { id: 'tv180', label: 'TV banko 180 cm', bays: 3, bayW: 60, d: 40, h: 38, inch: 55 },
+  { id: 'tv240', label: 'TV banko 240 cm', bays: 4, bayW: 60, d: 40, h: 38, inch: 65 },
+];
+
+const BAY_W = 60; // BESTÅ standart iskelet eni cm
+
 const appEl = document.getElementById('app');
 const materialsUrl = appEl.dataset.materialsUrl;
 const brandName = appEl.dataset.brand || 'Meemare';
@@ -438,24 +447,36 @@ async function createModuleMesh(mod) {
     inner.position.set(0, H / 2, -D / 2 + 0.005);
     group.add(inner);
   } else if (mod.type === 'shelf') {
-    // Independent open shelf unit (not inside a frame)
-    const { parts, W, H, D } = frameShellGeometry(mod.w, mod.h, mod.d, 1.6);
-    for (const part of parts) {
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(...part.s), mat.clone());
-      mesh.position.set(...part.p);
+    if (mod.interior || mod.parentId || mod.h <= 4) {
+      // İç raf paneli
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(mod.w * CM, Math.max(1.5, mod.h) * CM, mod.d * CM),
+        mat
+      );
+      mesh.position.y = (Math.max(1.5, mod.h) * CM) / 2;
       mesh.castShadow = true;
       group.add(mesh);
-    }
-    const shelfCount = Math.max(1, Math.floor(mod.h / 22));
-    for (let i = 1; i <= shelfCount; i++) {
-      const y = (H / (shelfCount + 1)) * i;
-      const sh = new THREE.Mesh(
-        new THREE.BoxGeometry(W - 0.04, 1.5 * CM, D - 0.02),
-        mat.clone()
-      );
-      sh.position.set(0, y, 0);
-      sh.castShadow = true;
-      group.add(sh);
+      group.userData.originAtBottom = true;
+    } else {
+      // Bağımsız açık raf ünitesi
+      const { parts, W, H, D } = frameShellGeometry(mod.w, mod.h, mod.d, 1.6);
+      for (const part of parts) {
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(...part.s), mat.clone());
+        mesh.position.set(...part.p);
+        mesh.castShadow = true;
+        group.add(mesh);
+      }
+      const shelfCount = Math.max(1, Math.floor(mod.h / 22));
+      for (let i = 1; i <= shelfCount; i++) {
+        const y = (H / (shelfCount + 1)) * i;
+        const sh = new THREE.Mesh(
+          new THREE.BoxGeometry(W - 0.04, 1.5 * CM, D - 0.02),
+          mat.clone()
+        );
+        sh.position.set(0, y, 0);
+        sh.castShadow = true;
+        group.add(sh);
+      }
     }
   } else if (mod.type === 'door') {
     await buildDoorMesh(group, mod, mat);
@@ -759,20 +780,43 @@ function attachToHost(host, type, extras = {}) {
     if (doorStyle === 'drawer') {
       return {
         w: Math.max(20, host.w - 2),
-        h: Math.min(extras.h || 20, host.h - 2),
+        h: Math.min(extras.h || Math.max(16, (host.h - 4) / 2), host.h - 2),
         d: Math.max(20, host.d - 4),
         x: host.x,
-        y: host.y + 1,
+        y: host.y + (extras.yOffset || 1),
         z: host.z,
       };
     }
     return {
-      w: Math.max(20, host.w - 2),
-      h: Math.max(16, host.h - 2),
+      w: Math.max(20, extras.w || host.w - 2),
+      h: Math.max(16, extras.h || host.h - 2),
       d: 2,
-      x: host.x,
+      x: extras.x != null ? extras.x : host.x,
       y: host.y + 1,
       z: host.z + host.d / 2 + 1.1,
+    };
+  }
+  if (type === 'shelf' || type === 'innerShelf') {
+    // İç raf — iskeletin içinde
+    return {
+      w: host.w - 3.6,
+      h: 1.8,
+      d: host.d - 2.5,
+      x: host.x,
+      y: host.y + (extras.yOffset != null ? extras.yOffset : host.h / 2),
+      z: host.z,
+      interior: true,
+    };
+  }
+  if (type === 'leg') {
+    const h = extras.h || 10;
+    return {
+      w: host.w,
+      h,
+      d: host.d,
+      x: host.x,
+      y: 0,
+      z: host.z,
     };
   }
   if (type === 'top') {
@@ -850,11 +894,152 @@ function addAttachedPart(type, opts = {}) {
     glassColor: doorStyle === 'glass' ? '#c5d5e8' : undefined,
   };
   state.modules.push(mod);
+  if (type === 'leg') {
+    host.y = mod.h;
+    syncAttachedToHost(host);
+  }
   state.selectedId = mod.id;
   rebuildModules().then(() => {
     state.view = 'customize';
     renderSidebar();
-    showHint(`${mod.label} → ${typeTitle(host.type)} arkası/önü`);
+    showHint(`${mod.label} → ${typeTitle(host.type)}`);
+  });
+}
+
+/** BESTÅ: geniş iskelete 60 cm bölmeli ön kapaklar */
+function bayCountForWidth(w) {
+  return Math.max(1, Math.round(w / BAY_W));
+}
+
+function addFrontsToHost(host, doorStyle) {
+  if (!host || !isHost(host)) {
+    showHint('Önce bir iskelet veya alt blok seçin');
+    return;
+  }
+  // Mevcut ön kapakları kaldır
+  const oldDoors = childrenOf(host.id).filter((c) => c.type === 'door');
+  if (oldDoors.length) {
+    pushHistory();
+    const kill = new Set(oldDoors.map((d) => d.id));
+    state.modules = state.modules.filter((m) => !kill.has(m.id));
+  } else {
+    pushHistory();
+  }
+
+  const style = doorStyle || 'push';
+  const mat = defaultMaterial('door', style);
+
+  if (style === 'drawer') {
+    const rows = host.h >= 50 ? 2 : 1;
+    const rowH = (host.h - 3) / rows;
+    for (let r = 0; r < rows; r++) {
+      const pose = attachToHost(host, 'door', {
+        doorStyle: 'drawer',
+        h: rowH - 0.5,
+        yOffset: 1.5 + r * rowH,
+      });
+      state.modules.push({
+        id: uid(),
+        type: 'door',
+        label: 'Çekmece',
+        parentId: host.id,
+        ...pose,
+        finish: mat.finish,
+        color: mat.color,
+        materialId: null,
+        materialImage: null,
+        materialName: mat.materialName,
+        materialCode: '',
+        doorStyle: 'drawer',
+      });
+    }
+  } else {
+    const bays = bayCountForWidth(host.w);
+    const doorW = host.w / bays - 1.2;
+    const left = host.x - host.w / 2;
+    for (let i = 0; i < bays; i++) {
+      const cx = left + doorW / 2 + 0.6 + i * (doorW + 1.2);
+      const pose = attachToHost(host, 'door', {
+        doorStyle: style,
+        w: doorW,
+        h: host.h - 2,
+        x: cx,
+      });
+      state.modules.push({
+        id: uid(),
+        type: 'door',
+        label: DOOR_STYLES.find((d) => d.id === style)?.label || 'Kapak',
+        parentId: host.id,
+        ...pose,
+        finish: mat.finish,
+        color: style === 'glass' ? '#c5d5e8' : mat.color,
+        materialId: null,
+        materialImage: null,
+        materialName: mat.materialName,
+        materialCode: '',
+        doorStyle: style,
+        frameColor: style === 'glass' ? '#c0c4c8' : undefined,
+        glassColor: style === 'glass' ? '#c5d5e8' : undefined,
+      });
+    }
+  }
+
+  state.selectedId = host.id;
+  rebuildModules().then(() => {
+    state.view = 'customize';
+    renderSidebar();
+    showHint('Ön paneller eklendi — kaplama seçebilirsiniz');
+  });
+}
+
+function addInteriorShelf(host) {
+  if (!host) return;
+  addAttachedPart('shelf', {
+    host,
+    label: 'İç raf',
+    yOffset: host.h / 2,
+  });
+}
+
+/** Yan yana iskeletlerden TV bankosu kur (BESTÅ akışı) */
+function startTvBench(presetId) {
+  const preset = TV_BENCH_PRESETS.find((p) => p.id === presetId) || TV_BENCH_PRESETS[1];
+  pushHistory();
+  state.modules = [];
+  const totalW = preset.bays * preset.bayW;
+  const startX = -totalW / 2 + preset.bayW / 2;
+  const z = -(FLOOR_D / 2) + preset.d / 2 + 2;
+  let firstId = null;
+  for (let i = 0; i < preset.bays; i++) {
+    const id = uid();
+    if (!firstId) firstId = id;
+    state.modules.push({
+      id,
+      type: 'frame',
+      label: 'İskelet',
+      w: preset.bayW,
+      h: preset.h,
+      d: preset.d,
+      x: startX + i * preset.bayW,
+      y: 0,
+      z,
+      finish: 'matte',
+      color: '#f7f7f7',
+      materialId: null,
+      materialImage: null,
+      materialName: 'Beyaz',
+      materialCode: '',
+    });
+  }
+  state.showTv = true;
+  state.tvInch = preset.inch;
+  buildTv();
+  state.selectedId = firstId;
+  rebuildModules().then(() => {
+    state.view = 'customize';
+    renderSidebar();
+    $('#fab-tv')?.classList.add('active');
+    showHint(`${preset.label} hazır — iskelete kapak / çekmece ekleyin`);
   });
 }
 
@@ -1165,15 +1350,15 @@ function onPointerUp() {
 
 function menuItems() {
   return [
-    { kind: 'frame', label: 'İskeletler', icon: '□', desc: 'Bağımsız gövde blokları' },
-    { kind: 'plinth', label: 'Alt blok / Baza', icon: '▄', desc: 'Ayrı yükseltme bloğu' },
-    { kind: 'shelf', label: 'Raf üniteleri', icon: '☰', desc: 'Açık raf — ayrı ürün' },
-    { kind: 'door', label: 'Kapaklar', icon: '▣', desc: 'Seçili bloğa yapışır' },
-    { kind: 'back', label: 'Arka paneller', icon: '▦', desc: 'Bloğun arkasına yapışır' },
-    { kind: 'slat', label: 'Çıtalar', icon: '▥', desc: 'Öne yapışır · boşluk cm' },
-    { kind: 'top', label: 'Üst paneller', icon: '▬', desc: 'Tezgah / üst yüzey' },
+    { kind: 'frame', label: 'İskeletler', icon: '□', desc: 'BESTÅ tarzı gövde — yan yana' },
+    { kind: 'plinth', label: 'Alt blok / Baza', icon: '▄', desc: 'Yükseltme bloğu' },
+    { kind: 'shelf', label: 'Raf üniteleri', icon: '☰', desc: 'Açık raf ünitesi' },
+    { kind: 'door', label: 'Kapaklar', icon: '▣', desc: 'Seçili iskelete yapışır' },
+    { kind: 'back', label: 'Arka paneller', icon: '▦', desc: 'Bloğun arkasına' },
+    { kind: 'slat', label: 'Çıtalar', icon: '▥', desc: 'Ön çıta · boşluk cm' },
+    { kind: 'top', label: 'Üst paneller', icon: '▬', desc: 'Tezgah / üst' },
     { kind: 'leg', label: 'Ayaklar', icon: '⊓', desc: 'Metal / ahşap ayak' },
-    { kind: 'tv', label: 'TV', icon: '▣', desc: 'İsteğe bağlı · inch ayarı' },
+    { kind: 'tv', label: 'TV', icon: '▣', desc: 'İsteğe bağlı · inch' },
     { kind: 'materials', label: 'Malzeme & kaplama', icon: '◆', desc: 'Kastamonu renkleri' },
   ];
 }
@@ -1321,16 +1506,34 @@ function renderSidebar() {
 
   if (state.view === 'home') {
     sideTitle.textContent = 'Kendi TV ünitenizi oluşturun';
-    sideBody.innerHTML = menuItems().map((item) => `
+    sideBody.innerHTML = `
+      <div class="panel-section">
+        <div class="section-title">Hızlı başlangıç · TV bankosu</div>
+        <div class="product-grid">
+          ${TV_BENCH_PRESETS.map((p) => `
+            <button type="button" class="product-card" data-bench="${p.id}">
+              <div class="thumb"><img src="${presetThumbDataUrl('frame', { w: p.bays * p.bayW, d: p.d, h: p.h })}" alt=""></div>
+              <div class="meta">
+                <strong>${p.label}</strong>
+                <span>${p.bays}×${p.bayW} cm · TV ${p.inch}"</span>
+              </div>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+      <div class="info-box">BESTÅ mantığı: önce iskeletleri yan yana koyun, sonra her iskelete kapak/çekmece ve iç raf ekleyin.</div>
+    ` + menuItems().map((item) => `
       <button type="button" class="menu-item" data-kind="${item.kind}">
         <span class="ico">${item.icon}</span>
         <span class="label">${item.label}<small>${item.desc}</small></span>
         <span class="chev">›</span>
       </button>
     `).join('') + `
-      <div class="info-box">Her ürün bağımsız eklenir. Kartı sürükleyip sahneye bırakın veya tıklayın. Kaplamalar katalogdan seçilince hemen uygulanır.</div>
       ${state.modules.length ? `<button type="button" class="danger" id="btn-clear-all">Tasarımı temizle</button>` : ''}
     `;
+    sideBody.querySelectorAll('[data-bench]').forEach((btn) => {
+      btn.addEventListener('click', () => startTvBench(btn.dataset.bench));
+    });
     sideBody.querySelectorAll('[data-kind]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const kind = btn.dataset.kind;
@@ -1516,18 +1719,20 @@ function renderSidebar() {
     ` : '';
 
     const hostAddUI = isHost(mod) ? `
-      <div class="section-title">Kapak ekle</div>
+      <div class="section-title">Ön düzen · kapak ekle</div>
       <div class="chip-row">
-        <button type="button" class="chip" data-add-door="push">Bas-aç</button>
-        <button type="button" class="chip" data-add-door="drawer">Çekmece</button>
-        <button type="button" class="chip" data-add-door="hinge">Menteşeli</button>
-        <button type="button" class="chip" data-add-door="glass">Cam kapak</button>
+        <button type="button" class="chip" data-front="push">Bas-aç kapak</button>
+        <button type="button" class="chip" data-front="drawer">Çekmece</button>
+        <button type="button" class="chip" data-front="hinge">Menteşeli</button>
+        <button type="button" class="chip" data-front="glass">Cam kapak</button>
       </div>
-      <div class="section-title">Parça ekle</div>
+      <div class="section-title">İç donanım</div>
       <div class="chip-row">
+        <button type="button" class="chip" data-add-part="shelf">İç raf</button>
         <button type="button" class="chip" data-add-part="back">Arka panel</button>
-        <button type="button" class="chip" data-add-part="slat">Çıta</button>
+        <button type="button" class="chip" data-add-part="slat">Ön çıta</button>
         <button type="button" class="chip" data-add-part="top">Üst panel</button>
+        <button type="button" class="chip" data-add-part="leg">Ayak</button>
       </div>
     ` : '';
 
@@ -1569,7 +1774,7 @@ function renderSidebar() {
           `).join('')}
         </div>
       </div>
-      <div class="info-box">${isHost(mod) ? 'Kapak / arka panel / çıta bu bloğun önüne veya arkasına yapışır.' : 'Sağ tık ile menü · sürükleyince yakındaki bloğa yapışır.'}</div>
+      <div class="info-box">${isHost(mod) ? 'Ön kapaklar iskeleti 60 cm bölmelere ayırır (BESTÅ). İç raf gövdenin içine oturur; arka panel arkaya, çıta öne yapışır.' : 'Sağ tık menü · sürükleyince yakındaki bloğa yapışır.'}</div>
       <button type="button" class="btn" id="btn-dup" style="width:calc(100% - 32px);margin:8px 16px;justify-content:center;border-radius:12px;box-shadow:none;border:1px solid #e5e7eb">Çoğalt</button>
       <button type="button" class="danger" id="btn-del">Seçili parçayı sil</button>
     `;
@@ -1584,14 +1789,14 @@ function renderSidebar() {
     };
     ['dim-w', 'dim-d', 'dim-h'].forEach((id) => $(`#${id}`)?.addEventListener('change', applyDims));
 
-    sideBody.querySelectorAll('[data-add-door]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        addAttachedPart('door', { host: mod, doorStyle: btn.dataset.addDoor });
-      });
+    sideBody.querySelectorAll('[data-front]').forEach((btn) => {
+      btn.addEventListener('click', () => addFrontsToHost(mod, btn.dataset.front));
     });
     sideBody.querySelectorAll('[data-add-part]').forEach((btn) => {
       btn.addEventListener('click', () => {
-        addAttachedPart(btn.dataset.addPart, { host: mod, slatWidth: 1.6, slatGap: 2.5 });
+        const t = btn.dataset.addPart;
+        if (t === 'shelf') addInteriorShelf(mod);
+        else addAttachedPart(t, { host: mod, slatWidth: 1.6, slatGap: 2.5 });
       });
     });
 
