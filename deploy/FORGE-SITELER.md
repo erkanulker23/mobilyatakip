@@ -72,7 +72,20 @@ FORCE_NPM_BUILD=1 bash forge-deploy.sh
 
 Sunucuda eski npm denemeleri lock dosyasını değiştirmiş olabilir. Güncel `forge-deploy.sh` `git reset --hard origin/main` kullanır; bir kez deploy yeterli. Manuel: `git fetch origin main && git reset --hard origin/main`
 
-## 7. Deploy log doğrulama
+## 7. `vite: not found` (127) veya npm ENOTEMPTY
+
+Log sırası **`composer` → `Reloading PHP FPM` → `npm`** ise Forge’da **eski script** çalışıyor. `npm ci`, `npm install`, `npm run build` satırlarını silin; `deploy/forge-classic-panel.sh` içeriğini yapıştırın.
+
+Bir kez SSH (meemare örneği):
+
+```bash
+cd /home/forge/meemare.awapanel.com
+rm -rf node_modules
+git fetch origin main && git reset --hard origin/main
+# Forge panel script güncellendikten sonra Deploy
+```
+
+## 8. Deploy log doğrulama
 
 - **Yanlış script:** `git pull` + hemen `Reloading PHP FPM` + `npm error` — panel script’i hâl eski.
 - **Doğru script:** `Deploy başladı:` ile başlar, npm atlanır veya kontrollü çalışır, `Deploy tamamlandı:` ile biter.
