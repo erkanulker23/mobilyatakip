@@ -1425,7 +1425,7 @@ function renderSidebar() {
           `).join('')}
         </div>
       </div>
-      <div class="info-box">Ürünler yan yana eklenir; birbirinin içine girmez. Sahneye sürükleyebilirsiniz.</div>
+      <div class="info-box">${['door','back','slat','top'].includes(kind) ? 'Seçili iskelet/alt blok/rafa yapışır. Sürükleyip bloğun üzerine de bırakabilirsiniz.' : 'Yan yana eklenir. Kartı sürükleyip sahneye bırakın.'}</div>
     `;
     sideBody.querySelectorAll('.product-card').forEach((btn) => {
       const readPreset = () => JSON.parse(decodeURIComponent(btn.dataset.preset));
