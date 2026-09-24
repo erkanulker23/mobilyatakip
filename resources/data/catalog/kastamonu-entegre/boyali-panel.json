@@ -1,0 +1,456 @@
+{
+  "manufacturer": {
+    "slug": "kastamonu-entegre",
+    "name": "Kastamonu Entegre",
+    "short_name": "KEAS"
+  },
+  "category": {
+    "slug": "boyali-panel",
+    "name": "Boyalı Panel",
+    "description": "PRINTPAN boyalı paneller; mobilya arka panelleri, kapanan elemanlar, çekmece zeminleri ve kapı panelleri için.",
+    "hero_image": "hero.webp",
+    "source_url": "https://www.kastamonuentegre.com/tr_tr/urunler/boyali-panel"
+  },
+  "sibling_categories": [
+    {
+      "slug": "akrilik-kapli-panel",
+      "name": "Akrilik Kaplı Panel",
+      "is_new": false,
+      "available": false
+    },
+    {
+      "slug": "boyali-panel",
+      "name": "Boyalı Panel",
+      "is_new": false,
+      "available": true
+    },
+    {
+      "slug": "kenar-bandi",
+      "name": "Kenar Bandı",
+      "is_new": true,
+      "available": false
+    },
+    {
+      "slug": "lakli-panel",
+      "name": "Laklı Panel",
+      "is_new": false,
+      "available": true
+    },
+    {
+      "slug": "melamin-kapli-compact-panel",
+      "name": "Melamin Kaplı Compact Panel",
+      "is_new": false,
+      "available": true
+    },
+    {
+      "slug": "melamin-kapli-panel",
+      "name": "Melamin Kaplı Panel",
+      "is_new": false,
+      "available": true
+    },
+    {
+      "slug": "pvc-pet-kapli-panel",
+      "name": "PVC-PET Kaplı Panel",
+      "is_new": false,
+      "available": false
+    }
+  ],
+  "products": [
+    {
+      "code": "PP01",
+      "name": "Beyaz",
+      "brand": "Printpan",
+      "line": "PP01 - Printpan",
+      "image": "decors/PP01.jpg",
+      "image_interior": "interiors/PP01.jpg",
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/beyaz-pp01-ksdp-00527",
+      "order": 1628
+    },
+    {
+      "code": "PP02",
+      "name": "Açık Bej",
+      "brand": "Printpan",
+      "line": "PP02 - Printpan",
+      "image": "decors/PP02.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/acik-bej-pp02-ksdp-00528",
+      "order": 1629
+    },
+    {
+      "code": "PP03",
+      "name": "Açık Gri",
+      "brand": "Printpan",
+      "line": "PP03 - Printpan",
+      "image": "decors/PP03.jpg",
+      "image_interior": "interiors/PP03.jpg",
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/acik-gri-pp03-ksdp-00529",
+      "order": 1630
+    },
+    {
+      "code": "PP05",
+      "name": "Akçağaç",
+      "brand": "Printpan",
+      "line": "PP05 - Printpan",
+      "image": "decors/PP05.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/akcagac",
+      "order": 163
+    },
+    {
+      "code": "PP07",
+      "name": "Armut",
+      "brand": "Printpan",
+      "line": "PP07 - Printpan",
+      "image": "decors/PP07.jpg",
+      "image_interior": "interiors/PP07.jpg",
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/armut-pp07-ksdp-00530",
+      "order": 1631
+    },
+    {
+      "code": "PP08",
+      "name": "Aytaşı",
+      "brand": "Printpan",
+      "line": "PP08 - Printpan",
+      "image": "decors/PP08.jpg",
+      "image_interior": "interiors/PP08.jpg",
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/aytasi-pp08-ksdp-00531",
+      "order": 1632
+    },
+    {
+      "code": "PP09",
+      "name": "Bej",
+      "brand": "Printpan",
+      "line": "PP09 - Printpan",
+      "image": "decors/PP09.jpg",
+      "image_interior": "interiors/PP09.jpg",
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/bej-pp09-ksdp-00532",
+      "order": 1633
+    },
+    {
+      "code": "PP101",
+      "name": "Kaşmir",
+      "brand": "Printpan",
+      "line": "PP101 - Printpan",
+      "image": "decors/PP101.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/kasmir",
+      "order": 159
+    },
+    {
+      "code": "PP102",
+      "name": "Barok",
+      "brand": "Printpan",
+      "line": "PP102 - Printpan",
+      "image": "decors/PP102.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/barok",
+      "order": 158
+    },
+    {
+      "code": "PP105",
+      "name": "Dafne",
+      "brand": "Printpan",
+      "line": "PP105 - Printpan",
+      "image": "decors/PP105.png",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/dafne-2",
+      "order": 157
+    },
+    {
+      "code": "PP106",
+      "name": "Bilbao",
+      "brand": "Printpan",
+      "line": "PP106 - Printpan",
+      "image": "decors/PP106.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/bilbao",
+      "order": 156
+    },
+    {
+      "code": "PP107",
+      "name": "Kül Gri",
+      "brand": "Printpan",
+      "line": "PP107 - Printpan",
+      "image": "decors/PP107.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/kul-gri",
+      "order": 155
+    },
+    {
+      "code": "PP109",
+      "name": "Buz Gri",
+      "brand": "Printpan",
+      "line": "PP109 - Printpan",
+      "image": "decors/PP109.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/buz-gri",
+      "order": 154
+    },
+    {
+      "code": "PP11",
+      "name": "Cappucino",
+      "brand": "Printpan",
+      "line": "PP11 - Printpan",
+      "image": "decors/PP11.jpg",
+      "image_interior": "interiors/PP11.jpg",
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/cappucino-pp11-ksdp-00533",
+      "order": 1634
+    },
+    {
+      "code": "PP114",
+      "name": "Agra",
+      "brand": "Printpan",
+      "line": "PP114 - Printpan",
+      "image": "decors/PP114.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/agra-1",
+      "order": 136
+    },
+    {
+      "code": "PP115",
+      "name": "Hotan",
+      "brand": "Printpan",
+      "line": "PP115 - Printpan",
+      "image": "decors/PP115.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/hotan-1",
+      "order": 134
+    },
+    {
+      "code": "PP116",
+      "name": "Herat",
+      "brand": "Printpan",
+      "line": "PP116 - Printpan",
+      "image": "decors/PP116.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/herat-1",
+      "order": 135
+    },
+    {
+      "code": "PP117",
+      "name": "Kaşgar",
+      "brand": "Printpan",
+      "line": "PP117 - Printpan",
+      "image": "decors/PP117.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/kasgar-1",
+      "order": 133
+    },
+    {
+      "code": "PP12",
+      "name": "Cordoba",
+      "brand": "Printpan",
+      "line": "PP12 - Printpan",
+      "image": "decors/PP12.jpg",
+      "image_interior": "interiors/PP12.jpg",
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/cordoba-pp12-ksdp-00534",
+      "order": 1635
+    },
+    {
+      "code": "PP13",
+      "name": "Elvira",
+      "brand": "Printpan",
+      "line": "PP13 - Printpan",
+      "image": "decors/PP13.jpg",
+      "image_interior": "interiors/PP13.jpg",
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/elvira-pp13-ksdp-00535",
+      "order": 1636
+    },
+    {
+      "code": "PP14",
+      "name": "Fildişi",
+      "brand": "Printpan",
+      "line": "PP14 - Printpan",
+      "image": "decors/PP14.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/fildisi-pp14-ksdp-00536",
+      "order": 1637
+    },
+    {
+      "code": "PP16",
+      "name": "Kanvas Gri",
+      "brand": "Printpan",
+      "line": "PP16 - Printpan",
+      "image": "decors/PP16.jpg",
+      "image_interior": "interiors/PP16.jpg",
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/kanvas-gri-f252-ksdp-00378",
+      "order": 1461
+    },
+    {
+      "code": "PP17",
+      "name": "Kanvas Kahve",
+      "brand": "Printpan",
+      "line": "PP17 - Printpan",
+      "image": "decors/PP17.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/kanvas-kahve-f253-ksdp-00379",
+      "order": 1462
+    },
+    {
+      "code": "PP20",
+      "name": "Koton Latte",
+      "brand": "Printpan",
+      "line": "PP20 - Printpan",
+      "image": "decors/PP20.jpg",
+      "image_interior": "interiors/PP20.jpg",
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/koton-latte-pp20-ksdp-00538",
+      "order": 1638
+    },
+    {
+      "code": "PP21",
+      "name": "Koton Vizon",
+      "brand": "Printpan",
+      "line": "PP21 - Printpan",
+      "image": "decors/PP21.jpg",
+      "image_interior": "interiors/PP21.jpg",
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/koton-vizon-pp21-ksdp-00539",
+      "order": 1639
+    },
+    {
+      "code": "PP22",
+      "name": "Kumtaşı",
+      "brand": "Printpan",
+      "line": "PP22 - Printpan",
+      "image": "decors/PP22.jpg",
+      "image_interior": "interiors/PP22.jpg",
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/kumtasi-pp22-ksdp-00540",
+      "order": 1641
+    },
+    {
+      "code": "PP23",
+      "name": "Latin Ceviz",
+      "brand": "Printpan",
+      "line": "PP23 - Printpan",
+      "image": "decors/PP23.jpg",
+      "image_interior": "interiors/PP23.jpg",
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/latin-ceviz-pp23-ksdp-00541",
+      "order": 1640
+    },
+    {
+      "code": "PP25",
+      "name": "N. Kayın 4",
+      "brand": "Printpan",
+      "line": "PP25 - Printpan",
+      "image": "decors/PP25.jpg",
+      "image_interior": "interiors/PP25.jpg",
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/n-kayin-4-pp25-ksdp-00542",
+      "order": 1642
+    },
+    {
+      "code": "PP27",
+      "name": "Siyah",
+      "brand": "Printpan",
+      "line": "PP27 - Printpan",
+      "image": "decors/PP27.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/siyah-4",
+      "order": 162
+    },
+    {
+      "code": "PP28",
+      "name": "Trend Gri",
+      "brand": "Printpan",
+      "line": "PP28 - Printpan",
+      "image": "decors/PP28.jpg",
+      "image_interior": "interiors/PP28.jpg",
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/trend-gri-f238-ksdp-00373",
+      "order": 1457
+    },
+    {
+      "code": "PP29",
+      "name": "Trend Bej",
+      "brand": "Printpan",
+      "line": "PP29 - Printpan",
+      "image": "decors/PP29.jpg",
+      "image_interior": "interiors/PP29.jpg",
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/trend-bej-f239-ksdp-00375",
+      "order": 1459
+    },
+    {
+      "code": "PP32",
+      "name": "Vizon",
+      "brand": "Printpan",
+      "line": "PP32 - Printpan",
+      "image": "decors/PP32.jpg",
+      "image_interior": "interiors/PP32.jpg",
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/vizon-pp32-ksdp-00543",
+      "order": 1643
+    },
+    {
+      "code": "PP33",
+      "name": "Wenge",
+      "brand": "Printpan",
+      "line": "PP33 - Printpan",
+      "image": "decors/PP33.jpg",
+      "image_interior": "interiors/PP33.jpg",
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/wenge-pp33-ksdp-00544",
+      "order": 1644
+    },
+    {
+      "code": "PP40",
+      "name": "Antrasit",
+      "brand": "Printpan",
+      "line": "PP40 - Printpan",
+      "image": "decors/PP40.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/antrasit-7",
+      "order": 161
+    },
+    {
+      "code": "PP50",
+      "name": "L.. Sonoma",
+      "brand": "Printpan",
+      "line": "PP50 - Printpan",
+      "image": "decors/PP50.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/l-sonoma",
+      "order": 153
+    },
+    {
+      "code": "PP97",
+      "name": "Luna",
+      "brand": "Printpan",
+      "line": "PP97 - Printpan",
+      "image": "decors/PP97.png",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/luna-1",
+      "order": 160
+    }
+  ]
+}

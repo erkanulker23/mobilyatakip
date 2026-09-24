@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>VEEUZE material demo</title>
+<meta charset="utf-8">
+<meta name="viewport"
+	content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+<link rel="stylesheet" href="css/vendor/jquery-ui.min.css">
+<link rel="stylesheet" href="css/vendor/jquery-ui.structure.min.css">
+<link rel="stylesheet" href="css/vendor/jquery-ui.theme.min.css">
+<link rel="stylesheet" href="css/3dviewer.css?ver=0.3">
+<script src="js/vendor/ba-debug.min.js"></script>
+<script src="js/vendor/three.min.js"></script>
+<script src="js/vendor/Detector.js"></script>
+<script src="js/vendor/jquery-3.2.1.min.js"></script>
+<script src="js/vendor/jquery-ui.min.js"></script>
+<script src="js/vendor/jquery.mousewheel.js"></script>
+<script src='js/vendor/threex.windowresize.js'></script>
+<script src="js/vendor/jquery.ui.touch-punch.min.js"></script>
+</head>
+<body>
+		<div id="loader-wrapper" style="background-color: transparent;">
+		<div id="loader-wrapper-wrapper">
+			<div id="loader">
+				<div id="loader2">
+					<div id="loader3">
+						<div id="loader4"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div id="info">
+		<div id="zoomSlider"></div>
+		&nbsp;&nbsp;
+					<input
+			id="scaleInp" type="text" value="" oninput="changeScale(this.value)" />&nbsp;&nbsp;<label
+			for="bumpInp" id="bumpLabel">Bump:</label><input id="bumpInp"
+			name="bumpInp" />&nbsp;&nbsp;<label for="shineInp" id="shineLabel">Shine:</label><input
+			id="shineInp" name="shineInp" />&nbsp;&nbsp;
+					<!-- zoom:
+			<a href="javascript:change_distance(0);">Distance view</a>&nbsp;&nbsp;<a
+			href="javascript:change_distance(1);">Normal view</a>&nbsp;&nbsp;<a
+			href="javascript:change_distance(2);">Zoom view</a>&nbsp;&nbsp;  -->
+		<!-- Autoscale:
+		<input id="autoscale" type="checkbox" checked="checked"
+			onclick="autoscaleChange(this)" /> -->
+	</div>
+	<script>
+									var smode=2;
+			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+			var background_color = "#333333";
+			
+			var container, stats, loader;
+			var camera, scene, renderer;
+			var current_mat=1;
+			var mesh;
+			var material;
+			var material2;
+			var material3;
+			var material2_shown=0;
+			var material3_shown=0;
+			var materialW = 500;
+			var materialH = 500;
+			var spotLight;
+			var mouseX = 0;
+			var mouseY = 0;
+			var targetX = 0;
+			var targetY = 0;
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+			var winResize;
+			var tex_cnt=0;
+			var load_tex_cnt=0;
+						init();
+			animate();
+			function tex_counter()
+			{
+				load_tex_cnt++;
+				debug.log(load_tex_cnt+ "---" + tex_cnt);
+				if (load_tex_cnt>=tex_cnt)
+				{
+					debug.log("done");
+					$('#loader-wrapper').hide();
+				}
+			}
+			function init() {
+				
+				
+				$('#loader2, #loader4').css({'border-top-color':'#ce8f34'});
+				$('#loader, #loader3').css({'border-top-color':'#565657'});
+				container = document.createElement( 'div' );
+				container.setAttribute("id", "canvasDiv");
+				document.body.appendChild( container );
+				camera = new THREE.PerspectiveCamera( 27, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.z = 1200;
+				scene = new THREE.Scene();
+				
+								scene.background = new THREE.Color( background_color );
+								// LIGHTS
+				//scene.add( new THREE.HemisphereLight( 0x443333, 0x111122 ) );
+				//spotLight = new THREE.SpotLight( 0xffffff, 1 );
+				scene.add( new THREE.HemisphereLight( 0xaaaaaa, 0x111122 ) );
+				spotLight = new THREE.SpotLight( 0xffffff, 1 );
+				spotLight.position.set( 0.5, 1, 1 );
+				spotLight.position.multiplyScalar( 700 );
+				scene.add( spotLight );
+				spotLight.castShadow = true;
+				spotLight.shadow.camera.visible = true;
+				spotLight.shadow.mapSize.width = 2048;
+				spotLight.shadow.mapSize.height = 2048;
+				spotLight.shadow.camera.near = 200;
+				spotLight.shadow.camera.far = 1500;
+				spotLight.shadow.camera.fov = 40;
+				spotLight.shadow.bias = -0.005;
+				//
+				tex_cnt++;
+				var map = new THREE.TextureLoader().load( "", function(texture){tex_counter();} );
+				map.repeat.set( 1, 1 );
+				map.wrapS = map.wrapT = THREE.RepeatWrapping;
+				map.format = THREE.RGBFormat;
+				tex_cnt++;
+				var mapHeight = new THREE.TextureLoader().load( "" , function(texture){tex_counter();});
+								mapHeight.anisotropy = 4;
+				mapHeight.repeat.set( 1, 1 );
+				//mapHeight.offset.set( 0.001, 0.001 );
+				mapHeight.wrapS = mapHeight.wrapT = THREE.RepeatWrapping;
+				mapHeight.format = THREE.RGBFormat;
+				tex_cnt++;
+				var mapGloss1 = new THREE.TextureLoader().load( "", function(texture){tex_counter();} );
+				mapGloss1.anisotropy = 4;
+				mapGloss1.repeat.set( 1, 1 );
+				//mapGloss.offset.set( 0.001, 0.001 );
+				mapGloss1.wrapS = mapGloss1.wrapT = THREE.RepeatWrapping;
+				mapGloss1.format = THREE.RGBFormat;
+				//var mapHeight = new THREE.TextureLoader().load( "obj/leeperrysmith/Infinite-Level_02_Disp_NoSmoothUV-4096.jpg" );
+				var bumpScale = 0.5;
+				var shininess = 60;
+								$('#bumpInp').val(bumpScale);
+				$('#shineInp').val(shininess);
+				material = new THREE.MeshPhongMaterial( {
+					color: 0xdddddd,
+					specular: 0x222222,
+					shininess: shininess,
+					map: map,
+					specularMap: mapGloss1,
+					bumpMap: mapHeight,
+															bumpScale: bumpScale,
+					transparent: true
+				} );
+				
+				loader = new THREE.JSONLoader();
+				var scale = 1;
+// 				var autoscale = document.getElementById('autoscale').checked;
+// 				if(autoscale){
+					var widthFactor = materialW/window.innerWidth;
+					var heightFactor = materialH/window.innerHeight;
+					if(widthFactor > heightFactor){
+						scale = 1/widthFactor;
+					} else{
+						scale= 1/heightFactor;
+					}
+					scale = (2*scale).toFixed(2);
+					document.getElementById('scaleInp').value=scale;
+// 				}
+								createScene( new THREE.BoxGeometry(materialW,materialH,2,1,1,1), scale, material );
+								//createScene( new THREE.PlaneGeometry(80,120,32,8), scale, material );
+				
+				
+				renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true } );
+				//renderer = new THREE.WebGLRenderer( { alpha: true } );
+				//renderer.setClearColor( 0x060708 );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setClearColor( 0xffffff, 0);
+				container.appendChild( renderer.domElement );
+				winResize	= new THREEx.WindowResize(renderer, camera);
+				
+				renderer.shadowMap.enabled = true;
+				renderer.shadowMapSoft = true;
+				renderer.shadowMap.renderReverseSided = false;
+				renderer.shadowMap.renderSingleSided = false
+				renderer.shadowMap.Bias = 0.0039;
+				renderer.shadowMap.Darkness = 0.5;
+				renderer.shadowMap.Width = 1024;
+				renderer.shadowMap.Height = 1024;
+				//
+				renderer.gammaInput = true;
+				renderer.gammaOutput = true;
+				
+				//
+				// EVENTS
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+				container.addEventListener( 'touchmove', onDocumentTouchMove, false );
+				//window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+			function createScene( geometry, scale, material ) {
+				mesh = new THREE.Mesh( geometry, material );
+				mesh.position.z = -1500;
+				mesh.position.y = - 40;
+				mesh.scale.set( scale, scale, scale );
+				mesh.castShadow = true;
+				mesh.receiveShadow = true;
+				spotLight.intensity = 0.8;
+				scene.add( mesh );
+			}
+			function change_distance(val)
+			{
+				if (val==0)
+				{
+					mesh.position.z = -1200;	
+				}
+				else if (val==1)
+				{
+					mesh.position.z = -600;	
+				}
+				else if (val==2)
+				{
+					mesh.position.z = 300;	
+				}
+			}
+			function onWindowResize( event ) {
+				SCREEN_WIDTH = window.innerWidth;
+				SCREEN_HEIGHT = window.innerHeight;
+				
+				camera.aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+				camera.updateProjectionMatrix();
+				renderer.setSize( SCREEN_WIDTH, SCREEN_HEIGHT );
+				debug.log(SCREEN_WIDTH);
+			}
+			function onDocumentMouseMove( event ) {
+				mouseX = ( event.clientX - windowHalfX );
+				mouseY = ( event.clientY - windowHalfY );
+			}
+			function onDocumentTouchMove( event ) {
+				event.preventDefault();
+				mouseX = event.touches[0].clientX - windowHalfX;
+				mouseY = event.touches[0].clientY - windowHalfY;
+			}
+			//
+			function animate() {
+				requestAnimationFrame( animate );
+				render();
+			}
+			function switch_mode(val)
+			{
+				mesh.needsUpdate = true;
+				smode = val;
+				if (val == 1)
+				{
+					spotLight.position.set( 0.5, 1, 0.8 );
+					spotLight.angle = 1.2;
+					mesh.rotation.y = 0;
+					mesh.rotation.x = 0;
+					document.getElementById("mode1").style.display = "none";
+					document.getElementById("mode2").style.display = "inline-block";
+					
+				}
+				else if (val == 2)
+				{
+					//spotLight.position.set( 0.2, 0.2, 1.5 );
+					spotLight.position.set( 0.2, 0.2, 1.5 );
+					spotLight.angle = 1.8;
+					document.getElementById("mode1").style.display = "inline-block";
+					document.getElementById("mode2").style.display = "none";
+					
+				}
+				spotLight.position.multiplyScalar( 700 );
+			}
+			function render() {
+				if (smode == 1)
+				{
+					targetX = mouseX * 2;
+					targetY = mouseY * -2;
+					spotLight.position.x = targetX;
+					spotLight.position.y = targetY;
+					//spotLight.target=mesh;
+				}
+				else if (smode == 2)
+				{
+					if ( mesh ) 
+					{
+						targetX = mouseX * .002;
+						targetY = mouseY * .003;
+						mesh.rotation.y += 0.05 * ( targetX - mesh.rotation.y );
+						mesh.rotation.x += 0.05 * ( targetY - mesh.rotation.x );
+						if (mesh.rotation.y > 1.1)
+						{
+							mesh.rotation.y = 1.1;
+						}
+						if (mesh.rotation.y < -1.1)
+						{
+							mesh.rotation.y = -1.1;
+						}
+						if (mesh.rotation.x > 1.1)
+						{
+							mesh.rotation.x = 1.1;
+						}
+						if (mesh.rotation.x < -1.1)
+						{
+							mesh.rotation.x = -1.1;
+						}
+					}
+				}		
+				renderer.autoClear = false;
+				renderer.clear();
+				//renderer.render(backgroundScene , backgroundCamera );
+				renderer.render( scene, camera );
+			}
+			function changeScale(val){
+				mesh.scale.set(val,val,val);
+			}
+			function changeBump(val){
+				material.bumpScale=val;
+			}
+			function changeShine(val){
+				material.shininess=val;
+			}
+			function changeDisplacement(val){
+				material.displacementScale=val;
+				material.displacementBias=val*(-0.5);
+			}
+			function autoscaleChange(obj){
+				if(obj.checked){
+					var widthFactor = materialW/window.innerWidth;
+					var heightFactor = materialH/window.innerHeight;
+					if(widthFactor > heightFactor){
+						scale = 1/widthFactor;
+					} else{
+						scale= 1/heightFactor;
+					}
+					scale = scale.toFixed(2);
+					document.getElementById('scaleInp').value=scale;
+					mesh.scale.set(scale,scale,scale);
+				}
+			}
+			if(typeof internal != "undefined" && internal == 1){
+				$('#bumpInp,#shineInp,#displaceInp,#bumpLabel,#shineLabel,#displaceLabel').show();
+				$('#bumpInp,#shineInp,#displaceInp').spinner({
+				    spin: function( event, ui ) {
+						if($(event.target).attr('id') == "bumpInp"){
+							changeBump(ui.value);
+						}
+						if($(event.target).attr('id') == "shineInp"){
+							changeShine(ui.value);
+						}
+						if($(event.target).attr('id') == "displaceInp"){
+							changeDisplacement(ui.value);
+						}
+					},
+					change: function( event, ui ) {
+						debug.log("ev",event);
+						debug.log("ui",ui);
+						if($(event.target).attr('id') == "bumpInp"){
+							changeBump(event.target.value);
+						}
+						if($(event.target).attr('id') == "shineInp"){
+							changeShine(event.target.value);
+						}
+						if($(event.target).attr('id') == "displaceInp"){
+							changeDisplacement(event.target.value);
+						}
+					}
+				});
+				$('#bumpInp','#shineInp','#displaceInp').spinner("option","mouseWheel",true);
+				$( "#bumpInp" ).spinner( "option", "step", 0.01 );
+				
+			}
+			$( "#zoomSlider" ).slider({
+			      value: -1500,
+			      min: -1500,
+			      max: 300,
+			      step: 20,
+			      slide: function( event, ui ) {
+			        mesh.position.z = ui.value
+			      }
+			    });
+		</script>
+</body>
+</html>

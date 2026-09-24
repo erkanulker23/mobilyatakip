@@ -83,10 +83,16 @@
                     Giriş Yap
                 </button>
             </form>
-            <p class="mt-6 text-center text-sm text-neutral-500 dark:text-neutral-400">
-                Siparişinizi mi takip ediyorsunuz?
-                <a href="{{ url('/takip') }}" class="font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">Takip kodu sorgula</a>
-            </p>
+            <div class="mt-6 space-y-2 text-center text-sm text-neutral-500 dark:text-neutral-400">
+                <p>
+                    Siparişinizi mi takip ediyorsunuz?
+                    <a href="{{ url('/takip') }}" class="font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">Takip kodu sorgula</a>
+                </p>
+                <p>
+                    Malzeme renklerini mi inceliyorsunuz?
+                    <a href="{{ url('/katalog') }}" class="font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">Kataloga göz at</a>
+                </p>
+            </div>
         </div>
     </div>
     <script>

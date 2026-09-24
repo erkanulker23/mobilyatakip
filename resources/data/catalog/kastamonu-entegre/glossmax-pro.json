@@ -1,0 +1,287 @@
+{
+  "manufacturer": {
+    "slug": "kastamonu-entegre",
+    "name": "Kastamonu Entegre",
+    "short_name": "KEAS"
+  },
+  "category": {
+    "slug": "glossmax-pro",
+    "name": "Glossmax Pro",
+    "description": "High gloss levha; Calender Coating Inert teknolojisiyle etkileyici parlaklık. 8-16-18 mm, 2100×2800 mm. Yalın ve doğal renk koleksiyonu.",
+    "hero_image": "hero.webp",
+    "source_url": "https://www.kastamonuentegre.com/tr_tr/urunler/lakli-panel",
+    "parent_category": "lakli-panel",
+    "catalog_pdf": "docs/glossmax-pro-katalog.pdf"
+  },
+  "sibling_categories": [
+    {
+      "slug": "akrilik-kapli-panel",
+      "name": "Akrilik Kaplı Panel",
+      "is_new": false,
+      "available": false
+    },
+    {
+      "slug": "boyali-panel",
+      "name": "Boyalı Panel",
+      "is_new": false,
+      "available": true
+    },
+    {
+      "slug": "kenar-bandi",
+      "name": "Kenar Bandı",
+      "is_new": true,
+      "available": false
+    },
+    {
+      "slug": "lakli-panel",
+      "name": "Laklı Panel",
+      "is_new": false,
+      "available": true
+    },
+    {
+      "slug": "melamin-kapli-compact-panel",
+      "name": "Melamin Kaplı Compact Panel",
+      "is_new": false,
+      "available": true
+    },
+    {
+      "slug": "melamin-kapli-panel",
+      "name": "Melamin Kaplı Panel",
+      "is_new": false,
+      "available": true
+    },
+    {
+      "slug": "pvc-pet-kapli-panel",
+      "name": "PVC-PET Kaplı Panel",
+      "is_new": false,
+      "available": false
+    }
+  ],
+  "documents": [
+    {
+      "title": "Glossmax Pro Katalog (PDF)",
+      "file": "docs/glossmax-pro-katalog.pdf"
+    }
+  ],
+  "specs": [
+    {
+      "label": "Levha tipi",
+      "value": "MDF / Yonga Levha"
+    },
+    {
+      "label": "Kalınlık",
+      "value": "8 · 16 · 18 mm"
+    },
+    {
+      "label": "Ebat",
+      "value": "2100 × 2800 mm"
+    },
+    {
+      "label": "Ön yüz",
+      "value": "UV akrilik lak + Calender Coating Inert"
+    },
+    {
+      "label": "Arka yüz",
+      "value": "Emprenyeli kağıt (aynı dekor)"
+    }
+  ],
+  "features": [
+    {
+      "title": "Glossmax Pro Nedir?",
+      "blocks": [
+        {
+          "heading": null,
+          "text": "GLOSSMAX PRO high gloss levha; melamin kaplı MDF veya yonga levhanın yüzeyine tutkal ve UV akrilik lak uygulanmasıyla elde edilen dekoratif parlak paneldir. Calender Coating Inert teknolojisiyle yüksek yüzey kalitesi ve etkileyici parlaklık sağlar."
+        }
+      ]
+    },
+    {
+      "title": "Avantajlar",
+      "blocks": [
+        {
+          "heading": "Mükemmel performans",
+          "text": "Etkileyici parlaklık, yüksek yüzey dayanımı, üstün kesim ve işlenebilirlik. Teslimatta folyo ve şilte koruması."
+        },
+        {
+          "heading": "Mükemmel uyum",
+          "text": "Medelam & Teknolam ile aynı renk ve desenler. Ön yüz parlak, arka yüz aynı dekor kağıdıyla renk bütünlüğü."
+        },
+        {
+          "heading": "Dayanım",
+          "text": "Kimyasallara ve renklenmeye dirençli, yüksek çizilme direnci, kolay temizlenebilirlik, yüksek çatlama direnci."
+        }
+      ]
+    },
+    {
+      "title": "Koleksiyonlar",
+      "blocks": [
+        {
+          "heading": "Yalın",
+          "text": "11 düz/pigmentli renk: Lake Beyaz, Kumtaşı, Antrasit, Aytaşı, Dafne, Süper Beyaz, Piyano Siyah, Porselen Beyaz, Kutup Beyaz, Buz Gri, Kaşmir."
+        },
+        {
+          "heading": "Doğal",
+          "text": "Tunus Mermer (F291) — doğal mermer ışıltısı."
+        }
+      ]
+    }
+  ],
+  "products": [
+    {
+      "code": "D129",
+      "name": "Lake Beyaz (Pigmentli)",
+      "brand": "Glossmax Pro",
+      "line": "D129 - Glossmax Pro",
+      "series": "Yalın",
+      "image": "decors/D129.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/lake-beyaz-pigmentli-d129-ksdp-00266",
+      "order": 1339,
+      "pigmented": true
+    },
+    {
+      "code": "D140",
+      "name": "Kumtaşı",
+      "brand": "Glossmax Pro",
+      "line": "D140 - Glossmax Pro",
+      "series": "Yalın",
+      "image": "decors/D140.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/kumtasi-d140-ksdp-00272",
+      "order": 1345,
+      "pigmented": false
+    },
+    {
+      "code": "D143",
+      "name": "Antrasit",
+      "brand": "Glossmax Pro",
+      "line": "D143 - Glossmax Pro",
+      "series": "Yalın",
+      "image": "decors/D143.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/antrasit-d143-ksdp-00278",
+      "order": 1350,
+      "pigmented": false
+    },
+    {
+      "code": "D160",
+      "name": "Aytaşı (Pigmentli)",
+      "brand": "Glossmax Pro",
+      "line": "D160 - Glossmax Pro",
+      "series": "Yalın",
+      "image": "decors/D160.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/aytasi-pigmentli-d160-ksdp-00288",
+      "order": 1361,
+      "pigmented": true
+    },
+    {
+      "code": "D161",
+      "name": "Dafne",
+      "brand": "Glossmax Pro",
+      "line": "D161 - Glossmax Pro",
+      "series": "Yalın",
+      "image": "decors/D161.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/dafne-d161-ksdp-00292",
+      "order": 1365,
+      "pigmented": false
+    },
+    {
+      "code": "D175",
+      "name": "Süper Beyaz (Pigmentli)",
+      "brand": "Glossmax Pro",
+      "line": "D175 - Glossmax Pro",
+      "series": "Yalın",
+      "image": "decors/D175.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/super-beyaz-pigmentli-d175-ksdp-00304",
+      "order": 1375,
+      "pigmented": true
+    },
+    {
+      "code": "D186",
+      "name": "Piyano Siyah (Pigmentli)",
+      "brand": "Glossmax Pro",
+      "line": "D186 - Glossmax Pro",
+      "series": "Yalın",
+      "image": "decors/D186.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/piyano-siyah-pigmentli-d186-ksdp-00307",
+      "order": 1378,
+      "pigmented": true
+    },
+    {
+      "code": "D214",
+      "name": "Porselen Beyaz (Pigmentli)",
+      "brand": "Glossmax Pro",
+      "line": "D214 - Glossmax Pro",
+      "series": "Yalın",
+      "image": "decors/D214.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/porselen-beyaz-pigmentli-d214-ksdp-00321",
+      "order": 1385,
+      "pigmented": true
+    },
+    {
+      "code": "D215",
+      "name": "Kutup Beyaz (Pigmentli)",
+      "brand": "Glossmax Pro",
+      "line": "D215 - Glossmax Pro",
+      "series": "Yalın",
+      "image": "decors/D215.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/kutup-beyaz-pigmentli-d215-ksdp-00323",
+      "order": 1387,
+      "pigmented": true
+    },
+    {
+      "code": "D217",
+      "name": "Buz Gri (Pigmentli)",
+      "brand": "Glossmax Pro",
+      "line": "D217 - Glossmax Pro",
+      "series": "Yalın",
+      "image": "decors/D217.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/buz-gri-pigmentli-d217-ksdp-00328",
+      "order": 1393,
+      "pigmented": true
+    },
+    {
+      "code": "D218",
+      "name": "Kaşmir (Pigmentli)",
+      "brand": "Glossmax Pro",
+      "line": "D218 - Glossmax Pro",
+      "series": "Yalın",
+      "image": "decors/D218.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/kasmir-pigmentli-d218-ksdp-00331",
+      "order": 1397,
+      "pigmented": true
+    },
+    {
+      "code": "F291",
+      "name": "Tunus Mermer",
+      "brand": "Glossmax Pro",
+      "line": "F291 - Glossmax Pro",
+      "series": "Doğal",
+      "image": "decors/F291.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/tunus-mermer-f291-ksdp-00397",
+      "order": 1479,
+      "pigmented": false
+    }
+  ]
+}

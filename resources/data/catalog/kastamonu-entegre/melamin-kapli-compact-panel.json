@@ -1,0 +1,180 @@
+{
+  "manufacturer": {
+    "slug": "kastamonu-entegre",
+    "name": "Kastamonu Entegre",
+    "short_name": "KEAS"
+  },
+  "category": {
+    "slug": "melamin-kapli-compact-panel",
+    "name": "Melamin Kaplı Compact Panel",
+    "description": "Yüksek yoğunluklu (≥1000 kg/m³) Compact Panel levhalar; okul, hastane, kubikal ve AVM gibi yoğun kullanım alanlarında dekoratif uygulamalar için uygundur. E0 emisyon standartlarında üretilir.",
+    "hero_image": "hero.webp",
+    "source_url": "https://www.kastamonuentegre.com/tr_tr/urunler/melamin-kapli-compact-panel"
+  },
+  "sibling_categories": [
+    {
+      "slug": "akrilik-kapli-panel",
+      "name": "Akrilik Kaplı Panel",
+      "is_new": false,
+      "available": false
+    },
+    {
+      "slug": "boyali-panel",
+      "name": "Boyalı Panel",
+      "is_new": false,
+      "available": true
+    },
+    {
+      "slug": "kenar-bandi",
+      "name": "Kenar Bandı",
+      "is_new": true,
+      "available": false
+    },
+    {
+      "slug": "lakli-panel",
+      "name": "Laklı Panel",
+      "is_new": false,
+      "available": true
+    },
+    {
+      "slug": "melamin-kapli-compact-panel",
+      "name": "Melamin Kaplı Compact Panel",
+      "is_new": false,
+      "available": true
+    },
+    {
+      "slug": "melamin-kapli-panel",
+      "name": "Melamin Kaplı Panel",
+      "is_new": false,
+      "available": true
+    },
+    {
+      "slug": "pvc-pet-kapli-panel",
+      "name": "PVC-PET Kaplı Panel",
+      "is_new": false,
+      "available": false
+    }
+  ],
+  "documents": [],
+  "features": [
+    {
+      "title": "Melamin Kaplı Compact Panel Nedir?",
+      "blocks": [
+        {
+          "heading": null,
+          "text": "Compact Panel, geleneksel MDF'den bir adım öteye taşıyan, ≥1000 kg/m³ yüksek yoğunluğa sahip kompakt levhalardır. Homojen siyah lif dağılımı sayesinde freze ve CNC işlemlerinde kolay uygulama sunar; fiziksel ve mekaniksel etkilere karşı yüksek direnç gösterir. E0 emisyon standartlarında ve sürdürülebilir orman kaynaklarıyla üretilir."
+        }
+      ]
+    },
+    {
+      "title": "Kullanım Alanları",
+      "blocks": [
+        {
+          "heading": null,
+          "text": "Okul, hastane, kubikal uygulamalar, AVM gibi yoğun ortak kullanım alanlarında dekoratif kullanımlara uygundur."
+        }
+      ]
+    }
+  ],
+  "products": [
+    {
+      "code": "A607",
+      "name": "Garden Meşe",
+      "brand": "Compact Panel Lam",
+      "line": "A607 - Compact Panel Lam",
+      "image": "decors/A607.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/garden-mese",
+      "order": 912
+    },
+    {
+      "code": "D107",
+      "name": "Siyah",
+      "brand": "Compact Panel Lam",
+      "line": "D107 - Compact Panel Lam",
+      "image": "decors/D107.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/siyah",
+      "order": 918
+    },
+    {
+      "code": "D123",
+      "name": "Açık Gri",
+      "brand": "Compact Panel Lam",
+      "line": "D123 - Compact Panel Lam",
+      "image": "decors/D123.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/acik-gri",
+      "order": 917
+    },
+    {
+      "code": "D129",
+      "name": "Lake Beyaz",
+      "brand": "Compact Panel Lam",
+      "line": "D129 - Compact Panel Lam",
+      "image": "decors/D129.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/lake-beyaz",
+      "order": 915
+    },
+    {
+      "code": "D133",
+      "name": "Koyu Sarı",
+      "brand": "Compact Panel Lam",
+      "line": "D133 - Compact Panel Lam",
+      "image": "decors/D133.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/koyu-sari",
+      "order": 914
+    },
+    {
+      "code": "D143",
+      "name": "Antrasit",
+      "brand": "Compact Panel Lam",
+      "line": "D143 - Compact Panel Lam",
+      "image": "decors/D143.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/antrasit",
+      "order": 913
+    },
+    {
+      "code": "D160",
+      "name": "Aytaşı",
+      "brand": "Compact Panel Lam",
+      "line": "D160 - Compact Panel Lam",
+      "image": "decors/D160.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/aytasi",
+      "order": 911
+    },
+    {
+      "code": "F304",
+      "name": "Calcutta",
+      "brand": "Compact Panel Lam",
+      "line": "F304 - Compact Panel Lam",
+      "image": "decors/F304.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/calcutta",
+      "order": 908
+    },
+    {
+      "code": "F323",
+      "name": "Luanda",
+      "brand": "Compact Panel Lam",
+      "line": "F323 - Compact Panel Lam",
+      "image": "decors/F323.jpg",
+      "image_interior": null,
+      "is_new": false,
+      "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/luanda",
+      "order": 909
+    }
+  ]
+}

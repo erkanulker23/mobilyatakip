@@ -76,6 +76,17 @@ Route::prefix('takip')->middleware('throttle:30,1')->group(function () {
         ->name('tracking.show');
 });
 
+Route::prefix('katalog')->middleware('throttle:60,1')->group(function () {
+    Route::get('/', [\App\Http\Controllers\PublicCatalogController::class, 'index'])->name('catalog.index');
+    Route::get('/{manufacturer}', [\App\Http\Controllers\PublicCatalogController::class, 'manufacturer'])
+        ->where('manufacturer', '[a-z0-9\\-]+')
+        ->name('catalog.manufacturer');
+    Route::get('/{manufacturer}/{category}', [\App\Http\Controllers\PublicCatalogController::class, 'category'])
+        ->where('manufacturer', '[a-z0-9\\-]+')
+        ->where('category', '[a-z0-9\\-]+')
+        ->name('catalog.category');
+});
+
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/bildirimler/temizle', [\App\Http\Controllers\NotificationController::class, 'dismiss'])->name('notifications.dismiss');
