@@ -665,8 +665,8 @@ async function createModuleMesh(mod) {
       slat.castShadow = true;
       group.add(slat);
     }
-    // Gap label between first two slats
-    if (count >= 2) {
+    // Gap label between first two slats (yalnızca ölçü modunda)
+    if (count >= 2 && state.showMeasure) {
       const el = document.createElement('div');
       el.textContent = gapCm.toFixed(1).replace(/\.0$/, '') + ' cm';
       el.style.cssText = 'color:#0058a3;background:rgba(255,255,255,.92);padding:2px 7px;border-radius:6px;font:700 11px Montserrat,sans-serif;white-space:nowrap;border:1px solid #bfdbfe;';
@@ -856,6 +856,7 @@ async function rebuildModules() {
     modulesGroup.add(await createModuleMesh(mod));
   }
   updateSelectionVisual();
+  if (state.showTv) buildTv();
 }
 
 function updateSelectionVisual() {
@@ -1401,10 +1402,6 @@ function startWallComposition(compId) {
     const bench = state.modules.find((m) => m.id === benchId);
     const bays = 3;
     for (let i = 0; i < bays; i++) {
-      const pose = attachToHost(bench, 'door', { doorStyle: 'drawer', drawerRow: 0, rows: 1, bayIndex: i, bays });
-      // drawer uses full width — for multi bay use push instead
-    }
-    for (let i = 0; i < bays; i++) {
       const pose = attachToHost(bench, 'door', { doorStyle: 'push', bayIndex: i, bays });
       pushMod({
         type: 'door', label: 'Bas-aç', parentId: benchId, ...pose,
@@ -1535,6 +1532,15 @@ function addModule(type, preset = null, pos = null) {
 
   const mat = defaultMaterial(type, doorStyle);
   const slot = pos || nextFreeSlot(p.w, p.d);
+  const floatY = p.floatY != null ? p.floatY : (type === 'wallPanel' ? 40 : 0);
+  let z = slot.z;
+  let y = slot.y != null ? slot.y : floatY;
+  if (type === 'wallPanel' || (type === 'slat' && p.h >= 150)) {
+    z = -(FLOOR_D / 2) + (p.d || 3) / 2 + 1.5;
+    if (!pos) y = floatY;
+  } else if (p.floatY != null) {
+    y = p.floatY;
+  }
 
   pushHistory();
   const mod = {
@@ -1545,8 +1551,11 @@ function addModule(type, preset = null, pos = null) {
     h: p.h,
     d: p.d,
     x: slot.x,
-    y: slot.y,
-    z: slot.z,
+    y,
+    z,
+    floatY: p.floatY,
+    led: !!p.led,
+    metalStrips: !!p.metalStrips,
     finish: mat.finish,
     color: mat.color,
     materialId: null,
@@ -1563,6 +1572,7 @@ function addModule(type, preset = null, pos = null) {
   state.modules.push(mod);
   state.selectedId = mod.id;
   rebuildModules().then(() => {
+    if (type === 'wallPanel') buildTv();
     state.view = 'customize';
     renderSidebar();
     showHint(mod.label + ' eklendi');
@@ -1720,11 +1730,22 @@ function onPointerMove(e) {
         doorStyle: mod.doorStyle,
         d: mod.d,
         h: mod.h,
+        bayIndex: mod.bayIndex,
+        bays: mod.bays,
+        drawerRow: mod.drawerRow,
+        rows: mod.rows,
+        yOffset: mod.yOffset,
         slatWidth: mod.slatWidth,
         slatGap: mod.slatGap,
       });
       if (pose) {
-        Object.assign(mod, pose, { parentId: host.id });
+        mod.w = pose.w; mod.h = pose.h; mod.d = pose.d;
+        mod.x = pose.x; mod.y = pose.y; mod.z = pose.z;
+        mod.parentId = host.id;
+        if (pose.bayIndex != null) mod.bayIndex = pose.bayIndex;
+        if (pose.yOffset != null) mod.yOffset = pose.yOffset;
+        if (pose.slatWidth != null) mod.slatWidth = pose.slatWidth;
+        if (pose.slatGap != null) mod.slatGap = pose.slatGap;
       }
     }
   } else if (isHost(mod)) {
@@ -1755,6 +1776,7 @@ function onPointerUp() {
     state.history.push(drag.snapshot);
     if (state.history.length > 40) state.history.shift();
     state.future = [];
+    if (state.showTv) buildTv();
   }
   drag = null;
   controls.enabled = true;
@@ -1762,12 +1784,13 @@ function onPointerUp() {
 
 function menuItems() {
   return [
+    { kind: 'wallPanel', label: 'Duvar paneli', icon: '▮', desc: 'TV arkası özellik paneli' },
     { kind: 'frame', label: 'İskeletler', icon: '□', desc: 'BESTÅ tarzı gövde — yan yana' },
-    { kind: 'plinth', label: 'Alt blok / Baza', icon: '▄', desc: 'Yükseltme bloğu' },
-    { kind: 'shelf', label: 'Raf üniteleri', icon: '☰', desc: 'Açık raf ünitesi' },
-    { kind: 'door', label: 'Kapaklar', icon: '▣', desc: 'Seçili iskelete yapışır' },
+    { kind: 'plinth', label: 'Alt blok / Banko', icon: '▄', desc: 'Yüzen veya yerde banko' },
+    { kind: 'shelf', label: 'Raf / Kule', icon: '☰', desc: 'Açık raf · yan kule' },
+    { kind: 'door', label: 'Kapaklar', icon: '▣', desc: 'Seçili bloğa yapışır' },
     { kind: 'back', label: 'Arka paneller', icon: '▦', desc: 'Bloğun arkasına' },
-    { kind: 'slat', label: 'Çıtalar', icon: '▥', desc: 'Ön çıta · boşluk cm' },
+    { kind: 'slat', label: 'Çıtalar', icon: '▥', desc: 'Duvar çıta · boşluk cm' },
     { kind: 'top', label: 'Üst paneller', icon: '▬', desc: 'Tezgah / üst' },
     { kind: 'leg', label: 'Ayaklar', icon: '⊓', desc: 'Metal / ahşap ayak' },
     { kind: 'tv', label: 'TV', icon: '▣', desc: 'İsteğe bağlı · inch' },
@@ -1779,6 +1802,7 @@ function typeTitle(type) {
   return ({
     frame: 'İskelet', door: 'Kapak', shelf: 'Raf', back: 'Arka panel',
     slat: 'Çıta', top: 'Üst panel', leg: 'Ayak', plinth: 'Alt blok',
+    wallPanel: 'Duvar paneli',
   })[type] || 'Parça';
 }
 
@@ -1861,6 +1885,20 @@ function presetThumbDataUrl(kind, preset) {
       ctx.lineTo(x + rw - m, y + rd / 2 + rh / 2);
       ctx.stroke();
     }
+  } else if (kind === 'wallPanel' || kind === 'back') {
+    ctx.fillStyle = '#f2ebe3';
+    ctx.fillRect(x, y, rw, rh);
+    ctx.strokeStyle = '#c9a66b';
+    ctx.lineWidth = 1;
+    for (let i = 1; i < 4; i++) {
+      const lx = x + (rw / 4) * i;
+      ctx.beginPath();
+      ctx.moveTo(lx, y);
+      ctx.lineTo(lx, y + rh);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = '#94a3b8';
+    ctx.strokeRect(x, y, rw, rh);
   } else if (kind === 'plinth') {
     ctx.fillStyle = '#1a1a1a';
     ctx.fillRect(x, y + rh * 0.55, rw + rd, rh * 0.45);
@@ -1920,7 +1958,21 @@ function renderSidebar() {
     sideTitle.textContent = 'Kendi TV ünitenizi oluşturun';
     sideBody.innerHTML = `
       <div class="panel-section">
-        <div class="section-title">Hızlı başlangıç · TV bankosu</div>
+        <div class="section-title">Hazır TV duvarı · tek tık</div>
+        <div class="product-grid">
+          ${WALL_COMPOSITIONS.map((p) => `
+            <button type="button" class="product-card" data-wall="${p.id}">
+              <div class="thumb"><img src="${presetThumbDataUrl('wallPanel', { w: 180, d: 3, h: 200 })}" alt=""></div>
+              <div class="meta">
+                <strong>${p.label}</strong>
+                <span>${p.desc}</span>
+              </div>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+      <div class="panel-section">
+        <div class="section-title">Basit TV bankosu</div>
         <div class="product-grid">
           ${TV_BENCH_PRESETS.map((p) => `
             <button type="button" class="product-card" data-bench="${p.id}">
@@ -1933,7 +1985,7 @@ function renderSidebar() {
           `).join('')}
         </div>
       </div>
-      <div class="info-box">BESTÅ mantığı: önce iskeletleri yan yana koyun, sonra her iskelete kapak/çekmece ve iç raf ekleyin.</div>
+      <div class="info-box">Referans görsellerdeki gibi: yüzen banko + duvar paneli + çıta + kule. Sonra ölçü, kaplama ve LED’i özelleştirin.</div>
     ` + menuItems().map((item) => `
       <button type="button" class="menu-item" data-kind="${item.kind}">
         <span class="ico">${item.icon}</span>
@@ -1943,6 +1995,9 @@ function renderSidebar() {
     `).join('') + `
       ${state.modules.length ? `<button type="button" class="danger" id="btn-clear-all">Tasarımı temizle</button>` : ''}
     `;
+    sideBody.querySelectorAll('[data-wall]').forEach((btn) => {
+      btn.addEventListener('click', () => startWallComposition(btn.dataset.wall));
+    });
     sideBody.querySelectorAll('[data-bench]').forEach((btn) => {
       btn.addEventListener('click', () => startTvBench(btn.dataset.bench));
     });
@@ -2157,18 +2212,35 @@ function renderSidebar() {
       </div>
     ` : '';
 
+    const ledUI = ['plinth', 'wallPanel', 'shelf', 'back', 'frame'].includes(mod.type) ? `
+      <div class="section-title">LED ışık</div>
+      <div class="chip-row">
+        <button type="button" class="chip ${mod.led ? 'active' : ''}" data-led="1">LED açık</button>
+        <button type="button" class="chip ${!mod.led ? 'active' : ''}" data-led="0">LED kapalı</button>
+      </div>
+    ` : '';
+
+    const floatUI = (mod.type === 'plinth' || mod.type === 'frame' || mod.type === 'wallPanel') && !mod.parentId ? `
+      <div class="section-title">Yerden yükseklik (yüzen)</div>
+      <div class="dim-row">
+        <div class="field"><label>Y (cm)</label><input type="number" id="dim-y" min="0" max="120" step="1" value="${mod.y || 0}"></div>
+      </div>
+    ` : '';
+
     sideBody.innerHTML = `
       <div class="panel-section">
         <div class="section-title">Ebat (cm)</div>
         <div class="dim-row">
           <div class="field"><label>En</label><input type="number" id="dim-w" min="10" max="300" step="1" value="${mod.w}"></div>
           <div class="field"><label>Boy</label><input type="number" id="dim-d" min="1" max="80" step="1" value="${mod.d}"></div>
-          <div class="field"><label>Yükseklik</label><input type="number" id="dim-h" min="1" max="250" step="1" value="${mod.h}"></div>
+          <div class="field"><label>Yükseklik</label><input type="number" id="dim-h" min="1" max="280" step="1" value="${mod.h}"></div>
         </div>
+        ${floatUI}
         ${hostAddUI}
         ${doorUI}
         ${glassUI}
         ${slatUI}
+        ${ledUI}
         <div class="section-title">Yüzey</div>
         <div class="chip-row" id="finish-chips">
           ${FINISHES.map((f) => `<button type="button" class="chip ${mod.finish === f.id ? 'active' : ''}" data-finish="${f.id}">${f.label}</button>`).join('')}
@@ -2181,12 +2253,12 @@ function renderSidebar() {
         <button type="button" class="btn" id="btn-pick-mat" style="width:100%;justify-content:center;border-radius:12px;box-shadow:none;border:1px solid #e5e7eb">Katalogdan malzeme seç</button>
         <div class="section-title" style="margin-top:14px">Hızlı renk</div>
         <div class="chip-row">
-          ${['#f7f7f7','#111111','#e8e4df','#c4a574','#6b7280','#1e3a5f'].map((c) => `
+          ${['#f7f7f7','#111111','#e8e4df','#c4a574','#6b7280','#f2ebe3','#1e3a5f'].map((c) => `
             <button type="button" class="mat-swatch ${mod.color === c && !mod.materialImage ? 'active' : ''}" data-color="${c}" style="background:${c}"></button>
           `).join('')}
         </div>
       </div>
-      <div class="info-box">${isHost(mod) ? 'Ön kapaklar iskeleti 60 cm bölmelere ayırır (BESTÅ). İç raf gövdenin içine oturur; arka panel arkaya, çıta öne yapışır.' : 'Sağ tık menü · sürükleyince yakındaki bloğa yapışır.'}</div>
+      <div class="info-box">${isHost(mod) ? 'Ön kapaklar 60 cm bölmelere ayrılır. LED, yüzen yükseklik ve duvar paneli ile referans TV duvarlarını kurabilirsiniz.' : 'Sağ tık menü · sürükleyince yakındaki bloğa yapışır.'}</div>
       <button type="button" class="btn" id="btn-dup" style="width:calc(100% - 32px);margin:8px 16px;justify-content:center;border-radius:12px;box-shadow:none;border:1px solid #e5e7eb">Çoğalt</button>
       <button type="button" class="danger" id="btn-del">Seçili parçayı sil</button>
     `;
@@ -2195,11 +2267,24 @@ function renderSidebar() {
       pushHistory();
       mod.w = clampNum($('#dim-w').value, 10, 300);
       mod.d = clampNum($('#dim-d').value, 1, 80);
-      mod.h = clampNum($('#dim-h').value, 1, 250);
+      mod.h = clampNum($('#dim-h').value, 1, 280);
+      if ($('#dim-y')) {
+        mod.y = clampNum($('#dim-y').value, 0, 120);
+        mod.floatY = mod.y;
+      }
       if (isHost(mod)) syncAttachedToHost(mod);
-      rebuildModules();
+      rebuildModules().then(() => buildTv());
     };
-    ['dim-w', 'dim-d', 'dim-h'].forEach((id) => $(`#${id}`)?.addEventListener('change', applyDims));
+    ['dim-w', 'dim-d', 'dim-h', 'dim-y'].forEach((id) => $(`#${id}`)?.addEventListener('change', applyDims));
+
+    sideBody.querySelectorAll('[data-led]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        pushHistory();
+        mod.led = btn.dataset.led === '1';
+        rebuildModules();
+        renderSidebar();
+      });
+    });
 
     sideBody.querySelectorAll('[data-front]').forEach((btn) => {
       btn.addEventListener('click', () => addFrontsToHost(mod, btn.dataset.front));
@@ -2243,8 +2328,20 @@ function renderSidebar() {
         if (mod.parentId) {
           const host = state.modules.find((m) => m.id === mod.parentId);
           if (host) {
-            const pose = attachToHost(host, 'door', { doorStyle: mod.doorStyle, h: mod.h, d: mod.d });
-            if (pose) Object.assign(mod, pose);
+            const pose = attachToHost(host, 'door', {
+              doorStyle: mod.doorStyle,
+              h: mod.h,
+              d: mod.d,
+              bayIndex: mod.bayIndex,
+              bays: mod.bays,
+              drawerRow: mod.drawerRow,
+              rows: mod.rows,
+            });
+            if (pose) {
+              mod.w = pose.w; mod.h = pose.h; mod.d = pose.d;
+              mod.x = pose.x; mod.y = pose.y; mod.z = pose.z;
+              if (pose.yOffset != null) mod.yOffset = pose.yOffset;
+            }
           }
         }
         rebuildModules().then(() => renderSidebar());
@@ -2392,10 +2489,7 @@ function loadDesign() {
     }
     const data = JSON.parse(raw);
     if (data.modules) {
-      state.modules = data.modules.map((m) => {
-        const { parentId, ...rest } = m;
-        return rest;
-      });
+      state.modules = data.modules.map((m) => ({ ...m }));
       if (data.room) state.room = data.room;
       if (typeof data.showTv === 'boolean') state.showTv = data.showTv;
       if (data.tvInch) state.tvInch = data.tvInch;
