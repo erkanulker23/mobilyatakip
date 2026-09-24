@@ -161,6 +161,8 @@ const state = {
   materials: { groups: [] },
   showTv: false,
   tvInch: 55,
+  /** TV konumu cm — manual=true ise otomatik hizalamaz */
+  tv: { x: 0, y: 110, z: null, manual: false },
   night: false,
   showGrid: false,
   showMeasure: false,
@@ -455,50 +457,84 @@ function tvSizeFromInch(inch) {
   return { w, h, d: 0.045 };
 }
 
+function defaultTvPose() {
+  const panel = state.modules.find((m) => m.type === 'wallPanel')
+    || state.modules.find((m) => m.type === 'back' && m.h >= 80)
+    || null;
+  const bench = state.modules.find((m) => m.type === 'plinth' || (m.type === 'frame' && !m.parentId && m.h <= 50));
+  if (panel) {
+    return {
+      x: panel.x,
+      y: panel.y + panel.h * 0.52,
+      z: panel.z + panel.d / 2 + 3,
+    };
+  }
+  if (bench) {
+    return {
+      x: bench.x,
+      y: (bench.y || 0) + bench.h + 55,
+      z: bench.z - bench.d / 2 - 2,
+    };
+  }
+  return { x: 0, y: 110, z: -(FLOOR_D / 2) + 8 };
+}
+
+function alignTvToWall() {
+  const pose = defaultTvPose();
+  state.tv.x = pose.x;
+  state.tv.y = pose.y;
+  state.tv.z = pose.z;
+  state.tv.manual = false;
+  buildTv();
+}
+
 function buildTv() {
   if (tvMesh) {
     scene.remove(tvMesh);
+    disposeObject(tvMesh);
     tvMesh = null;
   }
   if (!state.showTv) return;
 
   const { w, h, d } = tvSizeFromInch(state.tvInch);
+  if (!state.tv.manual || state.tv.z == null) {
+    const pose = defaultTvPose();
+    if (!state.tv.manual) {
+      state.tv.x = pose.x;
+      state.tv.y = pose.y;
+      state.tv.z = pose.z;
+    } else if (state.tv.z == null) {
+      state.tv.z = pose.z;
+    }
+  }
+
   const g = new THREE.Group();
   g.name = 'tv';
+  g.userData.isTv = true;
+  g.userData.moduleId = '__tv__';
 
-  // TV'yi duvar paneli / özellik paneli / banko üstüne ortala
-  const panel = state.modules.find((m) => m.type === 'wallPanel')
-    || state.modules.find((m) => m.type === 'back' && m.h >= 80)
-    || null;
-  const bench = state.modules.find((m) => m.type === 'plinth' || (m.type === 'frame' && !m.parentId && m.h <= 50));
-  let x = 0;
-  let yCm;
-  let zCm;
-  if (panel) {
-    x = panel.x;
-    yCm = panel.y + panel.h * 0.52;
-    zCm = panel.z + panel.d / 2 + 3;
-  } else if (bench) {
-    x = bench.x;
-    yCm = (bench.y || 0) + bench.h + 55;
-    zCm = bench.z - bench.d / 2 - 2;
-  } else {
-    yCm = 105;
-    zCm = -(FLOOR_D / 2) + 8;
-  }
-  const y = yCm * CM;
-  const z = zCm * CM;
+  const x = (state.tv.x || 0) * CM;
+  const y = (state.tv.y || 110) * CM;
+  const z = (state.tv.z != null ? state.tv.z : -(FLOOR_D / 2) + 8) * CM;
+
   const screen = new THREE.Mesh(
     new THREE.BoxGeometry(w, h, d),
     new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.35, metalness: 0.4 })
   );
-  screen.position.set(x * CM, y, z);
+  screen.castShadow = true;
   const glass = new THREE.Mesh(
     new THREE.PlaneGeometry(w * 0.94, h * 0.9),
     new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.2, metalness: 0.55 })
   );
-  glass.position.set(x * CM, y, z + d / 2 + 0.002);
+  glass.position.z = d / 2 + 0.002;
   g.add(screen, glass);
+
+  const helper = new THREE.BoxHelper(g, 0x0058a3);
+  helper.visible = state.selectedId === '__tv__';
+  helper.name = 'selection';
+  g.add(helper);
+
+  g.position.set(x, y, z);
   tvMesh = g;
   scene.add(tvMesh);
 }
@@ -906,9 +942,22 @@ function updateSelectionVisual() {
       helper.update();
     }
   });
+  if (tvMesh) {
+    const helper = tvMesh.children.find((c) => c.name === 'selection');
+    if (helper) {
+      const selected = state.selectedId === '__tv__';
+      const hovered = state.hoveredId === '__tv__' && !selected;
+      helper.visible = selected || hovered;
+      if (helper.visible) {
+        helper.material.color.setHex(selected ? 0x0058a3 : 0x38bdf8);
+        helper.update();
+      }
+    }
+  }
   const bar = $('#selection-bar');
   if (bar) bar.hidden = !state.selectedId;
-  renderer.domElement.style.cursor = state.hoveredId || state.selectedId ? 'pointer' : 'default';
+  const over = state.hoveredId || state.selectedId;
+  renderer.domElement.style.cursor = over ? 'pointer' : 'default';
 }
 
 /** Kapak/çekmece kabul eden gövdeler — duvar paneli hariç */
@@ -1588,6 +1637,7 @@ function clearDesign() {
   state.selectedId = null;
   state.hoveredId = null;
   state.showTv = false;
+  state.tv = { x: 0, y: 110, z: null, manual: false };
   localStorage.removeItem('tv-configurator-design');
   buildTv();
   rebuildModules();
@@ -1732,6 +1782,16 @@ function addModule(type, preset = null, pos = null) {
 }
 
 function deleteSelected() {
+  if (state.selectedId === '__tv__') {
+    state.showTv = false;
+    state.selectedId = null;
+    buildTv();
+    state.view = 'home';
+    renderSidebar();
+    $('#fab-tv')?.classList.remove('active');
+    hideCtx();
+    return;
+  }
   const mod = selected();
   if (!mod) return;
   pushHistory();
@@ -1810,10 +1870,13 @@ function ndcFromEvent(e) {
 function pickModule(e) {
   ndcFromEvent(e);
   raycaster.setFromCamera(pointer, camera);
-  const hits = raycaster.intersectObjects(modulesGroup.children, true);
+  const targets = [...modulesGroup.children];
+  if (tvMesh) targets.push(tvMesh);
+  const hits = raycaster.intersectObjects(targets, true);
   for (const hit of hits) {
     let o = hit.object;
-    while (o && !o.userData.moduleId) o = o.parent;
+    while (o && !o.userData.moduleId && !o.userData.isTv) o = o.parent;
+    if (o?.userData.isTv || o?.userData.moduleId === '__tv__') return '__tv__';
     if (o?.userData.moduleId) return o.userData.moduleId;
   }
   return null;
@@ -1830,10 +1893,19 @@ function onContextMenu(e) {
 }
 
 function onPointerDown(e) {
-  if (e.button === 2) return; // right-click handled by contextmenu
+  if (e.button === 2) return;
   if (e.button !== 0) return;
   hideCtx();
   const id = pickModule(e);
+  if (id === '__tv__') {
+    state.selectedId = '__tv__';
+    state.view = 'tv';
+    updateSelectionVisual();
+    renderSidebar();
+    controls.enabled = false;
+    drag = { kind: 'tv', moved: false };
+    return;
+  }
   if (id) {
     const changed = state.selectedId !== id;
     state.selectedId = id;
@@ -1844,12 +1916,12 @@ function onPointerDown(e) {
     const mod = selected();
     if (mod) {
       controls.enabled = false;
-      drag = { id: mod.id, moved: false, snapshot: JSON.stringify(state.modules) };
+      drag = { kind: 'mod', id: mod.id, moved: false, snapshot: JSON.stringify(state.modules) };
     }
   } else {
     state.selectedId = null;
     updateSelectionVisual();
-    if (state.view === 'customize' || state.view === 'materials') {
+    if (state.view === 'customize' || state.view === 'materials' || state.view === 'tv') {
       state.view = 'home';
       renderSidebar();
     }
@@ -1857,7 +1929,6 @@ function onPointerDown(e) {
 }
 
 function onPointerMove(e) {
-  // Hover highlight (sürükleme yokken)
   if (!drag) {
     const id = pickModule(e);
     if (id !== state.hoveredId) {
@@ -1866,8 +1937,28 @@ function onPointerMove(e) {
     }
     return;
   }
+
   ndcFromEvent(e);
   raycaster.setFromCamera(pointer, camera);
+
+  if (drag.kind === 'tv') {
+    const wallZ = (state.tv.z != null ? state.tv.z : -(FLOOR_D / 2) + 8) * CM;
+    const wallPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -wallZ);
+    const hit = new THREE.Vector3();
+    if (!raycaster.ray.intersectPlane(wallPlane, hit)) return;
+    state.tv.x = Math.round((hit.x / CM) / SNAP) * SNAP;
+    state.tv.y = Math.max(30, Math.min(WALL_H - 20, Math.round((hit.y / CM) / SNAP) * SNAP));
+    state.tv.manual = true;
+    if (tvMesh) {
+      tvMesh.position.x = state.tv.x * CM;
+      tvMesh.position.y = state.tv.y * CM;
+      const helper = tvMesh.children.find((c) => c.name === 'selection');
+      if (helper) helper.update();
+    }
+    drag.moved = true;
+    return;
+  }
+
   const floor = roomGroup.children.find((c) => c.name === 'floor');
   const hits = raycaster.intersectObject(floor);
   if (!hits.length) return;
@@ -1881,12 +1972,10 @@ function onPointerMove(e) {
   mod.x = Math.max(-WALL_W / 2 + mod.w / 2, Math.min(WALL_W / 2 - mod.w / 2, nx));
   mod.z = Math.max(minZ, Math.min(maxZ, nz));
 
-  // Duvar paneli duvara yakınsa otomatik yasla
   if (mod.type === 'wallPanel' || (mod.type === 'slat' && mod.h >= 120)) {
     if (mod.z < minZ + 8) sendPanelToWall(mod);
   }
 
-  // Snap attachable parts onto nearest host while dragging
   const attachable = ATTACH_FRONT.has(mod.type) || ATTACH_BACK.has(mod.type) || ATTACH_TOP.has(mod.type);
   if (attachable && mod.type !== 'wallPanel') {
     const host = findNearestHost(mod.x, mod.z, 40);
@@ -1937,11 +2026,14 @@ function onPointerMove(e) {
 }
 
 function onPointerUp() {
-  if (drag?.moved && drag.snapshot) {
+  if (drag?.kind === 'tv' && drag.moved) {
+    renderSidebar();
+    showHint('TV konumu güncellendi');
+  } else if (drag?.moved && drag.snapshot) {
     state.history.push(drag.snapshot);
     if (state.history.length > 40) state.history.shift();
     state.future = [];
-    if (state.showTv) buildTv();
+    if (state.showTv && !state.tv.manual) buildTv();
   }
   drag = null;
   controls.enabled = true;
@@ -2200,27 +2292,36 @@ function renderSidebar() {
 
   if (state.view === 'tv') {
     sideTitle.textContent = 'TV';
+    const tx = Math.round(state.tv.x || 0);
+    const ty = Math.round(state.tv.y || 110);
     sideBody.innerHTML = `
       <div class="panel-section">
-        <div class="field">
-          <label>TV göster</label>
-          <div class="chip-row">
-            <button type="button" class="chip ${state.showTv ? 'active' : ''}" data-tv="1">Açık</button>
-            <button type="button" class="chip ${!state.showTv ? 'active' : ''}" data-tv="0">Kapalı</button>
-          </div>
+        <div class="section-title">Göster</div>
+        <div class="chip-row">
+          <button type="button" class="chip ${state.showTv ? 'active' : ''}" data-tv="1">Açık</button>
+          <button type="button" class="chip ${!state.showTv ? 'active' : ''}" data-tv="0">Kapalı</button>
         </div>
-        <div class="section-title">Ekran boyutu (inch)</div>
+        <div class="section-title">Boyut (inch)</div>
         <div class="chip-row">
           ${TV_INCHES.map((n) => `<button type="button" class="chip ${state.tvInch === n ? 'active' : ''}" data-inch="${n}">${n}"</button>`).join('')}
         </div>
+        <div class="section-title">Konum (cm)</div>
+        <div class="dim-row">
+          <div class="field"><label>Yatay X</label><input type="number" id="tv-x" step="1" value="${tx}"></div>
+          <div class="field"><label>Yükseklik Y</label><input type="number" id="tv-y" min="30" max="280" step="1" value="${ty}"></div>
+        </div>
+        <div class="chip-row" style="margin-top:8px">
+          <button type="button" class="chip" id="btn-tv-align">Ortaya / panele hizala</button>
+        </div>
+        <p class="hint-inline">TV’yi sahnede sürükleyerek de taşıyabilirsiniz.</p>
       </div>
-      <div class="info-box">TV isteğe bağlıdır. Varsayılan kapalıdır; açıp inch seçebilirsiniz.</div>
     `;
     sideBody.querySelectorAll('[data-tv]').forEach((b) => {
       b.addEventListener('click', () => {
         state.showTv = b.dataset.tv === '1';
+        if (state.showTv) state.selectedId = '__tv__';
         buildTv();
-        $('#fab-tv').classList.toggle('active', state.showTv);
+        $('#fab-tv')?.classList.toggle('active', state.showTv);
         renderSidebar();
       });
     });
@@ -2228,11 +2329,29 @@ function renderSidebar() {
       b.addEventListener('click', () => {
         state.tvInch = Number(b.dataset.inch);
         if (!state.showTv) state.showTv = true;
+        state.selectedId = '__tv__';
         buildTv();
-        $('#fab-tv').classList.add('active');
+        $('#fab-tv')?.classList.add('active');
         renderSidebar();
-        showHint(`TV ${state.tvInch}" ayarlandı`);
+        showHint(`TV ${state.tvInch}"`);
       });
+    });
+    const applyTvPos = () => {
+      state.tv.x = clampNum($('#tv-x').value, -WALL_W / 2, WALL_W / 2);
+      state.tv.y = clampNum($('#tv-y').value, 30, WALL_H - 10);
+      state.tv.manual = true;
+      state.showTv = true;
+      buildTv();
+      updateSelectionVisual();
+    };
+    $('#tv-x')?.addEventListener('change', applyTvPos);
+    $('#tv-y')?.addEventListener('change', applyTvPos);
+    $('#btn-tv-align')?.addEventListener('click', () => {
+      alignTvToWall();
+      state.selectedId = '__tv__';
+      updateSelectionVisual();
+      renderSidebar();
+      showHint('TV hizalandı');
     });
     return;
   }
@@ -2438,38 +2557,55 @@ function renderSidebar() {
       </div>
     ` : '';
 
+    const hasGear = !!(wallPanelUI || plinthUI || hostAddUI || doorUI || glassUI || backUI || slatUI || shelfLedUI);
+
     sideBody.innerHTML = `
-      <div class="panel-section">
-        <div class="section-title">Ebat (cm)</div>
-        <div class="dim-row">
-          <div class="field"><label>En</label><input type="number" id="dim-w" min="10" max="500" step="1" value="${fmt(mod.w)}"></div>
-          <div class="field"><label>Derinlik</label><input type="number" id="dim-d" min="0.5" max="80" step="0.1" value="${fmt(mod.d)}"></div>
-          <div class="field"><label>Yükseklik</label><input type="number" id="dim-h" min="1" max="300" step="1" value="${fmt(mod.h)}"></div>
+      <details class="acc" open>
+        <summary>Ölçü</summary>
+        <div class="acc-body">
+          <div class="dim-row">
+            <div class="field"><label>En</label><input type="number" id="dim-w" min="10" max="500" step="1" value="${fmt(mod.w)}"></div>
+            <div class="field"><label>Derinlik</label><input type="number" id="dim-d" min="0.5" max="80" step="0.1" value="${fmt(mod.d)}"></div>
+            <div class="field"><label>Yükseklik</label><input type="number" id="dim-h" min="1" max="300" step="1" value="${fmt(mod.h)}"></div>
+          </div>
+          ${floatUI}
         </div>
-        ${floatUI}
-        ${wallPanelUI}
-        ${plinthUI}
-        ${hostAddUI}
-        ${doorUI}
-        ${glassUI}
-        ${backUI}
-        ${slatUI}
-        ${shelfLedUI}
-        <div class="section-title">Yüzey</div>
-        <div class="chip-row">
-          ${FINISHES.map((f) => `<button type="button" class="chip ${mod.finish === f.id ? 'active' : ''}" data-finish="${f.id}">${f.label}</button>`).join('')}
+      </details>
+      ${hasGear ? `
+      <details class="acc" open>
+        <summary>Donanım</summary>
+        <div class="acc-body">
+          ${wallPanelUI}
+          ${plinthUI}
+          ${hostAddUI}
+          ${doorUI}
+          ${glassUI}
+          ${backUI}
+          ${slatUI}
+          ${shelfLedUI}
         </div>
-        <div class="section-title">Kaplama</div>
-        <div style="font-size:13px;font-weight:600;margin-bottom:8px">${mod.materialName || 'Varsayılan'}${mod.materialCode ? ' · ' + mod.materialCode : ''}</div>
-        <button type="button" class="btn" id="btn-pick-mat" style="width:100%;justify-content:center;border-radius:12px;box-shadow:none;border:1px solid #e5e7eb">Katalogdan seç</button>
-        <div class="chip-row" style="margin-top:10px">
-          ${['#f7f7f7','#111111','#e8e4df','#c4a574','#6b7280','#f2ebe3'].map((c) => `
-            <button type="button" class="mat-swatch ${mod.color === c && !mod.materialImage ? 'active' : ''}" data-color="${c}" style="background:${c}"></button>
-          `).join('')}
+      </details>` : ''}
+      <details class="acc">
+        <summary>Kaplama</summary>
+        <div class="acc-body">
+          <div class="section-title">Yüzey</div>
+          <div class="chip-row">
+            ${FINISHES.map((f) => `<button type="button" class="chip ${mod.finish === f.id ? 'active' : ''}" data-finish="${f.id}">${f.label}</button>`).join('')}
+          </div>
+          <div class="section-title">Malzeme</div>
+          <div class="mat-name">${mod.materialName || 'Varsayılan'}${mod.materialCode ? ' · ' + mod.materialCode : ''}</div>
+          <button type="button" class="btn full-btn" id="btn-pick-mat">Katalogdan seç</button>
+          <div class="chip-row" style="margin-top:12px">
+            ${['#f7f7f7','#111111','#e8e4df','#c4a574','#6b7280','#f2ebe3'].map((c) => `
+              <button type="button" class="mat-swatch ${mod.color === c && !mod.materialImage ? 'active' : ''}" data-color="${c}" style="background:${c}"></button>
+            `).join('')}
+          </div>
         </div>
+      </details>
+      <div class="side-actions">
+        <button type="button" class="btn full-btn" id="btn-dup">Çoğalt</button>
+        <button type="button" class="danger" id="btn-del">Sil</button>
       </div>
-      <button type="button" class="btn" id="btn-dup" style="width:calc(100% - 32px);margin:8px 16px;justify-content:center;border-radius:12px;box-shadow:none;border:1px solid #e5e7eb">Çoğalt</button>
-      <button type="button" class="danger" id="btn-del">Sil</button>
     `;
 
     const applyDims = () => {
@@ -2717,12 +2853,13 @@ function openSummary() {
 
 function saveDesign() {
   localStorage.setItem('tv-configurator-design', JSON.stringify({
-    version: 2,
+    version: 3,
     brand: brandName,
     room: state.room,
     modules: state.modules,
     showTv: state.showTv,
     tvInch: state.tvInch,
+    tv: state.tv,
     savedAt: new Date().toISOString(),
   }));
   showHint('Tasarım kaydedildi');
@@ -2742,6 +2879,7 @@ function loadDesign(force = false) {
       if (data.room) state.room = data.room;
       if (typeof data.showTv === 'boolean') state.showTv = data.showTv;
       if (data.tvInch) state.tvInch = data.tvInch;
+      if (data.tv) state.tv = { ...state.tv, ...data.tv };
       buildRoom();
       buildTv();
       rebuildModules().then(() => {
@@ -2791,7 +2929,14 @@ function wireUi() {
     renderSidebar();
   });
   $('#fab-tv').addEventListener('click', () => {
+    if (!state.showTv) {
+      state.showTv = true;
+      alignTvToWall();
+      $('#fab-tv').classList.add('active');
+    }
+    state.selectedId = '__tv__';
     state.view = 'tv';
+    updateSelectionVisual();
     renderSidebar();
   });
   $('#fab-orbit').addEventListener('click', () => {

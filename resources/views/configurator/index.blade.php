@@ -187,6 +187,32 @@
         }
         .chip.active { border-color: var(--accent); color: var(--accent); background: #eff6ff; }
         .chip.danger-chip:hover { background: #fee2e2; }
+        .hint-inline {
+            margin: 10px 0 0; font-size: 12px; color: var(--muted); line-height: 1.4;
+        }
+        .acc {
+            margin: 0 12px 10px; border: 1px solid var(--line); border-radius: 14px;
+            background: #fff; overflow: hidden;
+        }
+        .acc > summary {
+            list-style: none; cursor: pointer; padding: 14px 16px;
+            font-size: 13px; font-weight: 700; display: flex; align-items: center;
+            justify-content: space-between; user-select: none;
+        }
+        .acc > summary::-webkit-details-marker { display: none; }
+        .acc > summary::after { content: '›'; color: #9ca3af; font-size: 18px; transform: rotate(90deg); transition: transform .15s; }
+        .acc[open] > summary::after { transform: rotate(-90deg); }
+        .acc[open] > summary { border-bottom: 1px solid #f3f4f6; }
+        .acc-body { padding: 14px 16px 16px; }
+        .acc-body .section-title { margin-top: 12px; }
+        .acc-body .section-title:first-child { margin-top: 0; }
+        .mat-name { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+        .full-btn {
+            width: 100%; justify-content: center; border-radius: 12px;
+            box-shadow: none; border: 1px solid var(--line);
+        }
+        .side-actions { padding: 4px 12px 20px; display: grid; gap: 8px; }
+        .side-actions .danger { width: 100%; margin: 0; }
         .mat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
         .mat-swatch {
             aspect-ratio: 1; border-radius: 10px; border: 2px solid transparent;
@@ -341,6 +367,6 @@
   }
 }
 </script>
-<script type="module" src="{{ asset('js/tv-configurator.js') }}?v=8"></script>
+<script type="module" src="{{ asset('js/tv-configurator.js') }}?v=9"></script>
 </body>
 </html>
