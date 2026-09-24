@@ -99,6 +99,14 @@ class PublicCatalogController extends Controller
             $products = $products->filter(fn (array $p) => CatalogAssets::productTone($p) === $tone);
         }
 
+        $interiorEligibleCount = $products
+            ->filter(fn (array $p) => CatalogAssets::hasInteriorImage($manufacturer, $category, $p))
+            ->count();
+
+        if ($viewMode === 'ic-mekan') {
+            $products = $products->filter(fn (array $p) => CatalogAssets::hasInteriorImage($manufacturer, $category, $p));
+        }
+
         $products = $products->map(function (array $p) use ($manufacturer, $category, $viewMode) {
             $p['image_url'] = CatalogAssets::productImageUrl($manufacturer, $category, $p, $viewMode);
             $p['tone_key'] = CatalogAssets::productTone($p);
@@ -118,6 +126,7 @@ class PublicCatalogController extends Controller
             'specs' => $catalog['specs'] ?? [],
             'totalCount' => count($catalog['products'] ?? []),
             'filteredCount' => count($products),
+            'interiorEligibleCount' => $interiorEligibleCount,
             'q' => $q,
             'selectedBrand' => $brand,
             'selectedSeries' => $series,

@@ -103,7 +103,7 @@
       "brand": "Vision",
       "line": "F324 - Vision",
       "image": "decors/F324.png",
-      "image_interior": null,
+      "image_interior": "interiors/F324.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/marmol-f324-ksdp-00425",
       "order": 1528
@@ -114,7 +114,7 @@
       "brand": "Vision",
       "line": "F323 - Vision",
       "image": "decors/F323.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/F323.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/luanda-f323-ksdp-00423",
       "order": 1527
@@ -125,7 +125,7 @@
       "brand": "Vision",
       "line": "F322 - Vision",
       "image": "decors/F322.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/F322.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/spring-f322-ksdp-00421",
       "order": 1513
@@ -136,7 +136,7 @@
       "brand": "Vision",
       "line": "F304 - Vision",
       "image": "decors/F304.png",
-      "image_interior": null,
+      "image_interior": "interiors/F304.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/calcutta-f304-ksdp-00406",
       "order": 1487
@@ -147,7 +147,7 @@
       "brand": "Vision",
       "line": "F301 - Vision",
       "image": "decors/F301.png",
-      "image_interior": null,
+      "image_interior": "interiors/F301.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/padova-f301-ksdp-00405",
       "order": 1486
@@ -158,7 +158,7 @@
       "brand": "Vision",
       "line": "F298 - Vision",
       "image": "decors/F298.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/F298.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/aris-antrasit-f298-ksdp-00403",
       "order": 1484
@@ -180,7 +180,7 @@
       "brand": "Vision",
       "line": "F293 - Vision",
       "image": "decors/F293.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/F293.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/belek-f293-ksdp-00399",
       "order": 1480
@@ -191,7 +191,7 @@
       "brand": "Vision",
       "line": "F291 - Vision",
       "image": "decors/F291.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/F291.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/tunus-mermer-f291-ksdp-00396",
       "order": 1478
@@ -202,7 +202,7 @@
       "brand": "Vision",
       "line": "F258 - Vision",
       "image": "decors/F258.png",
-      "image_interior": null,
+      "image_interior": "interiors/F258.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/cosmos-f258-ksdp-00386",
       "order": 1467
@@ -213,7 +213,7 @@
       "brand": "Vision",
       "line": "F257 - Vision",
       "image": "decors/F257.png",
-      "image_interior": null,
+      "image_interior": "interiors/F257.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/bermuda-f257-ksdp-00385",
       "order": 1466
@@ -224,7 +224,7 @@
       "brand": "Vision",
       "line": "F256 - Vision",
       "image": "decors/F256.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/F256.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/lotus-f256-ksdp-00383",
       "order": 1464
@@ -235,7 +235,7 @@
       "brand": "Vision",
       "line": "F254 - Vision",
       "image": "decors/F254.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/F254.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/kanvas-krem-f254-ksdp-00380",
       "order": 1463
@@ -246,7 +246,7 @@
       "brand": "Vision",
       "line": "F251 - Vision",
       "image": "decors/F251.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/F251.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/vegas-bej-f251-ksdp-00377",
       "order": 1460
@@ -257,7 +257,7 @@
       "brand": "Vision",
       "line": "F239 - Vision",
       "image": "decors/F239.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/F239.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/trend-bej-f239-ksdp-00374",
       "order": 1458
@@ -268,7 +268,7 @@
       "brand": "Vision",
       "line": "F238 - Vision",
       "image": "decors/F238.png",
-      "image_interior": null,
+      "image_interior": "interiors/F238.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/trend-gri-f238-ksdp-00372",
       "order": 1455
@@ -279,7 +279,7 @@
       "brand": "Vision",
       "line": "F237 - Vision",
       "image": "decors/F237.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/F237.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/koton-latte-f237-ksdp-00371",
       "order": 1454
@@ -301,7 +301,7 @@
       "brand": "Vision",
       "line": "F255 - Vision",
       "image": "decors/F255.png",
-      "image_interior": null,
+      "image_interior": "interiors/F255.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/carrara-f255-ksdp-00382",
       "order": 1440
@@ -312,7 +312,7 @@
       "brand": "Vision",
       "line": "D243 - Vision",
       "image": "decors/D243.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D243.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/costa-d243-ksdp-00353",
       "order": 1419
@@ -323,7 +323,7 @@
       "brand": "Vision",
       "line": "D230 - Vision",
       "image": "decors/D230.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D230.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/pasifik-mavi-d230-ksdp-00340",
       "order": 1406
@@ -334,7 +334,7 @@
       "brand": "Vision",
       "line": "D218 - Vision",
       "image": "decors/D218.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D218.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/kasmir-d218-ksdp-00330",
       "order": 1395
@@ -345,7 +345,7 @@
       "brand": "Vision",
       "line": "D217 - Vision",
       "image": "decors/D217.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D217.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/buz-gri-d217-ksdp-00327",
       "order": 1392
@@ -356,7 +356,7 @@
       "brand": "Vision",
       "line": "D216 - Vision",
       "image": "decors/D216.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D216.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/latte-d216-ksdp-00325",
       "order": 1389
@@ -367,7 +367,7 @@
       "brand": "Vision",
       "line": "D188 - Vision",
       "image": "decors/D188.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D188.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/deep-d188-ksdp-00309",
       "order": 1380
@@ -378,7 +378,7 @@
       "brand": "Vision",
       "line": "D163 - Vision",
       "image": "decors/D163.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D163.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/mercan-d163-ksdp-00295",
       "order": 1369
@@ -389,7 +389,7 @@
       "brand": "Vision",
       "line": "D164 - Vision",
       "image": "decors/D164.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D164.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/luna-d164-ksdp-00296",
       "order": 1368
@@ -400,7 +400,7 @@
       "brand": "Vision",
       "line": "D162 - Vision",
       "image": "decors/D162.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D162.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/sedef-d162-ksdp-00294",
       "order": 1367
@@ -411,7 +411,7 @@
       "brand": "Vision",
       "line": "D161 - Vision",
       "image": "decors/D161.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D161.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/dafne-d161-ksdp-00290",
       "order": 1363
@@ -422,7 +422,7 @@
       "brand": "Vision",
       "line": "D159 - Vision",
       "image": "decors/D159.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D159.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/karamel-galaxy-d159-ksdp-00285",
       "order": 1358
@@ -433,7 +433,7 @@
       "brand": "Vision",
       "line": "D152 - Vision",
       "image": "decors/D152.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D152.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/opak-beyaz-d152-ksdp-00282",
       "order": 1356
@@ -444,7 +444,7 @@
       "brand": "Vision",
       "line": "D145 - Vision",
       "image": "decors/D145.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D145.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/bronz-d145-ksdp-00280",
       "order": 1354
@@ -455,7 +455,7 @@
       "brand": "Vision",
       "line": "D166 - Vision",
       "image": "decors/D166.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D166.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/kuba-d166-ksdp-00299",
       "order": 1352
@@ -466,7 +466,7 @@
       "brand": "Vision",
       "line": "D142 - Vision",
       "image": "decors/D142.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D142.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/granit-d142-ksdp-00275",
       "order": 1347
@@ -477,7 +477,7 @@
       "brand": "Vision",
       "line": "D141 - Vision",
       "image": "decors/D141.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D141.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/kul-gri-d141-ksdp-00274",
       "order": 1344
@@ -488,7 +488,7 @@
       "brand": "Vision",
       "line": "D129 - Vision",
       "image": "decors/D129.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D129.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/lake-beyaz-d129-ksdp-00264",
       "order": 1338
@@ -499,7 +499,7 @@
       "brand": "Vision",
       "line": "D126 - Vision",
       "image": "decors/D126.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D126.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/cappucino-d126-ksdp-00263",
       "order": 1337
@@ -510,7 +510,7 @@
       "brand": "Vision",
       "line": "D123 - Vision",
       "image": "decors/D123.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D123.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/acik-gri-d123-ksdp-00261",
       "order": 1336
@@ -521,7 +521,7 @@
       "brand": "Vision",
       "line": "D158 - Vision",
       "image": "decors/D158.png",
-      "image_interior": null,
+      "image_interior": "interiors/D158.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/kahve-galaxy-d158-ksdp-00284",
       "order": 1335
@@ -532,7 +532,7 @@
       "brand": "Vision",
       "line": "D118 - Vision",
       "image": "decors/D118.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D118.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/elvira-d118-ksdp-00258",
       "order": 1334
@@ -543,7 +543,7 @@
       "brand": "Vision",
       "line": "D117 - Vision",
       "image": "decors/D117.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D117.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/kirmizi-d117-ksdp-00257",
       "order": 1333
@@ -554,7 +554,7 @@
       "brand": "Vision",
       "line": "D116 - Vision",
       "image": "decors/D116.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D116.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/metalik-gri-d116-ksdp-00256",
       "order": 1332
@@ -565,7 +565,7 @@
       "brand": "Vision",
       "line": "D109 - Vision",
       "image": "decors/D109.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D109.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/lacivert-d109-ksdp-00254",
       "order": 1330
@@ -576,7 +576,7 @@
       "brand": "Vision",
       "line": "D108 - Vision",
       "image": "decors/D108.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D108.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/mavi-d108-ksdp-00253",
       "order": 1329
@@ -587,7 +587,7 @@
       "brand": "Vision",
       "line": "D133 - Vision",
       "image": "decors/D133.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D133.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/koyu-sari-d133-ksdp-00267",
       "order": 1318
@@ -598,7 +598,7 @@
       "brand": "Vision",
       "line": "D106 - Vision",
       "image": "decors/D106.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D106.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/koyu-gri-d106-ksdp-00251",
       "order": 1312
@@ -609,7 +609,7 @@
       "brand": "Vision",
       "line": "D102 - Vision",
       "image": "decors/D102.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D102.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/bej-d102-ksdp-00249",
       "order": 1310
@@ -631,7 +631,7 @@
       "brand": "Vision",
       "line": "A847 - Vision",
       "image": "decors/A847.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A847.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/alaska-a847-ksdp-00203",
       "order": 1266
@@ -653,7 +653,7 @@
       "brand": "Vision",
       "line": "D125 - Vision",
       "image": "decors/D125.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D125.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/seker-pembe-d125-ksdp-00262",
       "order": 1245
@@ -664,7 +664,7 @@
       "brand": "Vision",
       "line": "A809 - Vision",
       "image": "decors/A809.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A809.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/akasya-a809-ksdp-00174",
       "order": 1242
@@ -675,7 +675,7 @@
       "brand": "Vision",
       "line": "A612 - Vision",
       "image": "decors/A612.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A612.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/alpine-a612-ksdp-00157",
       "order": 1234
@@ -686,7 +686,7 @@
       "brand": "Vision",
       "line": "A611 - Vision",
       "image": "decors/A611.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A611.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/argos-a611-ksdp-00156",
       "order": 1224
@@ -697,7 +697,7 @@
       "brand": "Vision",
       "line": "A610 - Vision",
       "image": "decors/A610.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A610.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/cabana-a610-ksdp-00155",
       "order": 1223
@@ -708,7 +708,7 @@
       "brand": "Vision",
       "line": "A609 - Vision",
       "image": "decors/A609.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A609.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/belmonte-a609-ksdp-00154",
       "order": 1222
@@ -719,7 +719,7 @@
       "brand": "Vision",
       "line": "A607 - Vision",
       "image": "decors/A607.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A607.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/garden-mese-a607-ksdp-00152",
       "order": 1221
@@ -730,7 +730,7 @@
       "brand": "Vision",
       "line": "A569 - Vision",
       "image": "decors/A569.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A569.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/bilbao-a569-ksdp-00129",
       "order": 1198
@@ -741,7 +741,7 @@
       "brand": "Vision",
       "line": "A541 - Vision",
       "image": "decors/A541.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A541.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/lugano-a541-ksdp-00103",
       "order": 1183
@@ -752,7 +752,7 @@
       "brand": "Vision",
       "line": "A551 - Vision",
       "image": "decors/A551.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A551.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/atlas-cam-a551-ksdp-00113",
       "order": 1182
@@ -763,7 +763,7 @@
       "brand": "Vision",
       "line": "A540 - Vision",
       "image": "decors/A540.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A540.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/sorrento-a540-ksdp-00102",
       "order": 1181
@@ -774,7 +774,7 @@
       "brand": "Vision",
       "line": "A542 - Vision",
       "image": "decors/A542.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A542.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/san-marino-a542-ksdp-00104",
       "order": 1176
@@ -785,7 +785,7 @@
       "brand": "Vision",
       "line": "A545 - Vision",
       "image": "decors/A545.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A545.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/cambridge-a545-ksdp-00107",
       "order": 1175
@@ -796,7 +796,7 @@
       "brand": "Vision",
       "line": "A538 - Vision",
       "image": "decors/A538.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A538.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/pesaro-a538-ksdp-00101",
       "order": 1173
@@ -807,7 +807,7 @@
       "brand": "Vision",
       "line": "A534 - Vision",
       "image": "decors/A534.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A534.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/nagano-mese-a534-ksdp-00097",
       "order": 1169
@@ -818,7 +818,7 @@
       "brand": "Vision",
       "line": "A532 - Vision",
       "image": "decors/A532.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A532.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/empoli-a532-ksdp-00096",
       "order": 1168
@@ -829,7 +829,7 @@
       "brand": "Vision",
       "line": "A531 - Vision",
       "image": "decors/A531.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A531.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/torino-a531-ksdp-00095",
       "order": 1167
@@ -840,7 +840,7 @@
       "brand": "Vision",
       "line": "A496 - Vision",
       "image": "decors/A496.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A496.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/lidya-a496-ksdp-00088",
       "order": 1165
@@ -862,7 +862,7 @@
       "brand": "Vision",
       "line": "A505 - Vision",
       "image": "decors/A505.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A505.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/acapulco-a505-ksdp-00091",
       "order": 1163
@@ -884,7 +884,7 @@
       "brand": "Vision",
       "line": "A500 - Vision",
       "image": "decors/A500.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A500.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/tortana-a500-ksdp-00089",
       "order": 1161
@@ -895,7 +895,7 @@
       "brand": "Vision",
       "line": "A495 - Vision",
       "image": "decors/A495.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A495.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/rivoli-a495-ksdp-00087",
       "order": 1160
@@ -906,7 +906,7 @@
       "brand": "Vision",
       "line": "A492 - Vision",
       "image": "decors/A492.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A492.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/armada-a492-ksdp-00086",
       "order": 1159
@@ -917,7 +917,7 @@
       "brand": "Vision",
       "line": "A491 - Vision",
       "image": "decors/A491.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A491.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/montreal-a491-ksdp-00085",
       "order": 1158
@@ -928,7 +928,7 @@
       "brand": "Vision",
       "line": "A488 - Vision",
       "image": "decors/A488.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A488.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/miranda-a488-ksdp-00084",
       "order": 1157
@@ -939,7 +939,7 @@
       "brand": "Vision",
       "line": "A485 - Vision",
       "image": "decors/A485.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A485.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/massa-a485-ksdp-00083",
       "order": 1156
@@ -950,7 +950,7 @@
       "brand": "Vision",
       "line": "A482 - Vision",
       "image": "decors/A482.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A482.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/paradise-a482-ksdp-00082",
       "order": 1155
@@ -961,7 +961,7 @@
       "brand": "Vision",
       "line": "A480 - Vision",
       "image": "decors/A480.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A480.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/capri-a480-ksdp-00081",
       "order": 1154
@@ -972,7 +972,7 @@
       "brand": "Vision",
       "line": "A479 - Vision",
       "image": "decors/A479.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A479.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/calipso-a479-ksdp-00080",
       "order": 1153
@@ -983,7 +983,7 @@
       "brand": "Vision",
       "line": "A476 - Vision",
       "image": "decors/A476.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A476.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/palmira-a476-ksdp-00079",
       "order": 1152
@@ -994,7 +994,7 @@
       "brand": "Vision",
       "line": "A475 - Vision",
       "image": "decors/A475.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A475.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/cadiz-a475-ksdp-00078",
       "order": 1151
@@ -1005,7 +1005,7 @@
       "brand": "Vision",
       "line": "A474 - Vision",
       "image": "decors/A474.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A474.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/soho-a474-ksdp-00077",
       "order": 1150
@@ -1016,7 +1016,7 @@
       "brand": "Vision",
       "line": "A466 - Vision",
       "image": "decors/A466.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A466.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/aral-a466-ksdp-00075",
       "order": 1149
@@ -1027,7 +1027,7 @@
       "brand": "Vision",
       "line": "A456 - Vision",
       "image": "decors/A456.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A456.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/urgup-a456-ksdp-00073",
       "order": 1147
@@ -1038,7 +1038,7 @@
       "brand": "Vision",
       "line": "A455 - Vision",
       "image": "decors/A455.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A455.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/garda-a455-ksdp-00072",
       "order": 1146
@@ -1049,7 +1049,7 @@
       "brand": "Vision",
       "line": "A454 - Vision",
       "image": "decors/A454.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A454.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/sogut-a454-ksdp-00071",
       "order": 1145
@@ -1060,7 +1060,7 @@
       "brand": "Vision",
       "line": "A450 - Vision",
       "image": "decors/A450.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A450.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/dakota-a450-ksdp-00068",
       "order": 1144
@@ -1071,7 +1071,7 @@
       "brand": "Vision",
       "line": "A447 - Vision",
       "image": "decors/A447.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A447.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/samara-a447-ksdp-00066",
       "order": 1143
@@ -1093,7 +1093,7 @@
       "brand": "Vision",
       "line": "A445 - Vision",
       "image": "decors/A445.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A445.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/merkur-a445-ksdp-00064",
       "order": 1141
@@ -1104,7 +1104,7 @@
       "brand": "Vision",
       "line": "A442 - Vision",
       "image": "decors/A442.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A442.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/malta-a442-ksdp-00063",
       "order": 1140
@@ -1115,7 +1115,7 @@
       "brand": "Vision",
       "line": "A441 - Vision",
       "image": "decors/A441.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A441.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/flora-a441-ksdp-00062",
       "order": 1139
@@ -1126,7 +1126,7 @@
       "brand": "Vision",
       "line": "A440 - Vision",
       "image": "decors/A440.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A440.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/pera-a440-ksdp-00061",
       "order": 1138
@@ -1137,7 +1137,7 @@
       "brand": "Vision",
       "line": "A439 - Vision",
       "image": "decors/A439.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A439.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/ibiza-a439-ksdp-00060",
       "order": 1137
@@ -1148,7 +1148,7 @@
       "brand": "Vision",
       "line": "A435 - Vision",
       "image": "decors/A435.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A435.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/florida-a435-ksdp-00059",
       "order": 1136
@@ -1159,7 +1159,7 @@
       "brand": "Vision",
       "line": "A429 - Vision",
       "image": "decors/A429.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A429.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/etna-a429-ksdp-00055",
       "order": 1134
@@ -1170,7 +1170,7 @@
       "brand": "Vision",
       "line": "A428 - Vision",
       "image": "decors/A428.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A428.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/antik-beyaz-a428-ksdp-00054",
       "order": 1133
@@ -1181,7 +1181,7 @@
       "brand": "Vision",
       "line": "A427 - Vision",
       "image": "decors/A427.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A427.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/barok-a427-ksdp-00053",
       "order": 1132
@@ -1203,7 +1203,7 @@
       "brand": "Vision",
       "line": "A423 - Vision",
       "image": "decors/A423.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A423.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/sanremo-a423-ksdp-00051",
       "order": 1130
@@ -1214,7 +1214,7 @@
       "brand": "Vision",
       "line": "A415 - Vision",
       "image": "decors/A415.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A415.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/bianco-a415-ksdp-00048",
       "order": 1129
@@ -1225,7 +1225,7 @@
       "brand": "Vision",
       "line": "A414 - Vision",
       "image": "decors/A414.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A414.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/antrasit-mese-a414-ksdp-00047",
       "order": 1128
@@ -1236,7 +1236,7 @@
       "brand": "Vision",
       "line": "A410 - Vision",
       "image": "decors/A410.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A410.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/venezia-a410-ksdp-00044",
       "order": 1126
@@ -1247,7 +1247,7 @@
       "brand": "Vision",
       "line": "A406 - Vision",
       "image": "decors/A406.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A406.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/milano-a406-ksdp-00043",
       "order": 1125
@@ -1258,7 +1258,7 @@
       "brand": "Vision",
       "line": "A405 - Vision",
       "image": "decors/A405.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A405.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/palisander-a405-ksdp-00042",
       "order": 1124
@@ -1269,7 +1269,7 @@
       "brand": "Vision",
       "line": "A411 - Vision",
       "image": "decors/A411.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A411.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/karya-a411-ksdp-00045",
       "order": 1123
@@ -1280,7 +1280,7 @@
       "brand": "Vision",
       "line": "A402 - Vision",
       "image": "decors/A402.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A402.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/naturel-mese-a402-ksdp-00041",
       "order": 1122
@@ -1291,7 +1291,7 @@
       "brand": "Vision",
       "line": "A401 - Vision",
       "image": "decors/A401.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A401.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/beyaz-alpi-a401-ksdp-00040",
       "order": 1120
@@ -1302,7 +1302,7 @@
       "brand": "Vision",
       "line": "A398 - Vision",
       "image": "decors/A398.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A398.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/italyan-ceviz-a398-ksdp-00039",
       "order": 1119
@@ -1313,7 +1313,7 @@
       "brand": "Vision",
       "line": "A396 - Vision",
       "image": "decors/A396.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A396.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/carmen-a396-ksdp-00038",
       "order": 1118
@@ -1324,7 +1324,7 @@
       "brand": "Vision",
       "line": "A395 - Vision",
       "image": "decors/A395.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A395.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/cordoba-a395-ksdp-00037",
       "order": 1117
@@ -1335,7 +1335,7 @@
       "brand": "Vision",
       "line": "A393 - Vision",
       "image": "decors/A393.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A393.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/dogal-hus-a393-ksdp-00036",
       "order": 1116
@@ -1346,7 +1346,7 @@
       "brand": "Vision",
       "line": "A387 - Vision",
       "image": "decors/A387.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A387.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/milas-a387-ksdp-00035",
       "order": 1115
@@ -1357,7 +1357,7 @@
       "brand": "Vision",
       "line": "A385 - Vision",
       "image": "decors/A385.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A385.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/beyaz-erik-a385-ksdp-00034",
       "order": 1114
@@ -1368,7 +1368,7 @@
       "brand": "Vision",
       "line": "A384 - Vision",
       "image": "decors/A384.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A384.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/metalik-ceviz-a384-ksdp-00033",
       "order": 1113
@@ -1379,7 +1379,7 @@
       "brand": "Vision",
       "line": "A379 - Vision",
       "image": "decors/A379.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A379.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/bambu-a379-ksdp-00032",
       "order": 1112
@@ -1390,7 +1390,7 @@
       "brand": "Vision",
       "line": "A378 - Vision",
       "image": "decors/A378.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A378.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/anadolu-ceviz-a378-ksdp-00031",
       "order": 1111
@@ -1401,7 +1401,7 @@
       "brand": "Vision",
       "line": "A373 - Vision",
       "image": "decors/A373.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A373.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/latin-ceviz-a373-ksdp-00029",
       "order": 1110
@@ -1412,7 +1412,7 @@
       "brand": "Vision",
       "line": "A369 - Vision",
       "image": "decors/A369.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A369.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/napolyon-kiraz-a369-ksdp-00028",
       "order": 1109
@@ -1423,7 +1423,7 @@
       "brand": "Vision",
       "line": "A364 - Vision",
       "image": "decors/A364.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A364.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/marbella-kiraz-a364-ksdp-00027",
       "order": 1108
@@ -1434,7 +1434,7 @@
       "brand": "Vision",
       "line": "A362 - Vision",
       "image": "decors/A362.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A362.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/afrika-ceviz-a362-ksdp-00026",
       "order": 1107
@@ -1445,7 +1445,7 @@
       "brand": "Vision",
       "line": "A354 - Vision",
       "image": "decors/A354.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A354.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/bosfor-a354-ksdp-00024",
       "order": 1105
@@ -1456,7 +1456,7 @@
       "brand": "Vision",
       "line": "A339 - Vision",
       "image": "decors/A339.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A339.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/yenice-mese-a339-ksdp-00022",
       "order": 1104
@@ -1467,7 +1467,7 @@
       "brand": "Vision",
       "line": "A319 - Vision",
       "image": "decors/A319.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A319.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/akcaagac-a319-ksdp-00018",
       "order": 1102
@@ -1478,7 +1478,7 @@
       "brand": "Vision",
       "line": "A316 - Vision",
       "image": "decors/A316.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A316.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/wenge-a316-ksdp-00017",
       "order": 1101
@@ -1489,7 +1489,7 @@
       "brand": "Vision",
       "line": "A308 - Vision",
       "image": "decors/A308.png",
-      "image_interior": null,
+      "image_interior": "interiors/A308.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/armut",
       "order": 1099
@@ -1500,7 +1500,7 @@
       "brand": "Vision",
       "line": "A448 - Vision",
       "image": "decors/A448.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A448.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/odesa",
       "order": 1076
@@ -1511,7 +1511,7 @@
       "brand": "Vision",
       "line": "F334 - Vision",
       "image": "decors/F334.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/F334.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/indus",
       "order": 1069
@@ -1522,7 +1522,7 @@
       "brand": "Vision",
       "line": "F332 - Vision",
       "image": "decors/F332.png",
-      "image_interior": null,
+      "image_interior": "interiors/F332.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/yenisey",
       "order": 1068
@@ -1533,7 +1533,7 @@
       "brand": "Vision",
       "line": "F310 - Vision",
       "image": "decors/F310.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/F310.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/calacatta",
       "order": 1067
@@ -1544,7 +1544,7 @@
       "brand": "Vision",
       "line": "A879 - Vision",
       "image": "decors/A879.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A879.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/rossini",
       "order": 1066
@@ -1555,7 +1555,7 @@
       "brand": "Vision",
       "line": "A625 - Vision",
       "image": "decors/A625.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A625.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/arkansas",
       "order": 1065
@@ -1566,7 +1566,7 @@
       "brand": "Vision",
       "line": "D248 - Vision",
       "image": "decors/D248.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D248.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/lena",
       "order": 1064
@@ -1577,7 +1577,7 @@
       "brand": "Vision",
       "line": "D249 - Vision",
       "image": "decors/D249.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D249.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/ren",
       "order": 1063
@@ -1588,7 +1588,7 @@
       "brand": "Vision",
       "line": "A628 - Vision",
       "image": "decors/A628.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A628.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/barok-f",
       "order": 1058
@@ -1599,7 +1599,7 @@
       "brand": "Vision",
       "line": "A629 - Vision",
       "image": "decors/A629.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A629.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/amalfi-f",
       "order": 1057
@@ -1610,7 +1610,7 @@
       "brand": "Vision",
       "line": "A303 - Vision",
       "image": "decors/A303.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A303.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/n-kayin-1",
       "order": 1030
@@ -1742,7 +1742,7 @@
       "brand": "Vision",
       "line": "A473 - Vision",
       "image": "decors/A473.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A473.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/amalfi-a473-ksdp-00076",
       "order": 916
@@ -1753,7 +1753,7 @@
       "brand": "Vision",
       "line": "A416 - Vision",
       "image": "decors/A416.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A416.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/nevada-a416-ksdp-00049",
       "order": 892
@@ -1764,7 +1764,7 @@
       "brand": "Vision",
       "line": "A353 - Vision",
       "image": "decors/A353.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A353.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/teak-a353-ksdp-00023",
       "order": 865
@@ -1775,7 +1775,7 @@
       "brand": "Vision",
       "line": "A333 - Vision",
       "image": "decors/A333.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A333.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/bergama-a333-ksdp-00020",
       "order": 863
@@ -1819,7 +1819,7 @@
       "brand": "Vision",
       "line": "A660 - Vision",
       "image": "decors/A660.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/A660.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/rubens",
       "order": 582
@@ -1918,7 +1918,7 @@
       "brand": "Vision",
       "line": "D306 - Vision",
       "image": "decors/D306.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D306.jpg",
       "is_new": true,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/mocha-mousse",
       "order": 442
@@ -2116,7 +2116,7 @@
       "brand": "Vision",
       "line": "D122 - Vision",
       "image": "decors/D122.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D122.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/vizonmink",
       "order": 169
@@ -2138,7 +2138,7 @@
       "brand": "Vision",
       "line": "D143 - Vision",
       "image": "decors/D143.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D143.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/antrasit-6",
       "order": 167
@@ -2182,7 +2182,7 @@
       "brand": "Vision",
       "line": "D155 - Vision",
       "image": "decors/D155.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D155.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/almond",
       "order": 115
@@ -2204,7 +2204,7 @@
       "brand": "Vision",
       "line": "D160 - Vision",
       "image": "decors/D160.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D160.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/aytasi-1",
       "order": 111
@@ -2215,7 +2215,7 @@
       "brand": "Vision",
       "line": "D140 - Vision",
       "image": "decors/D140.jpg",
-      "image_interior": null,
+      "image_interior": "interiors/D140.jpg",
       "is_new": false,
       "source_url": "https://www.kastamonuentegre.com/tr_tr/urun/kumtasi-3",
       "order": 57

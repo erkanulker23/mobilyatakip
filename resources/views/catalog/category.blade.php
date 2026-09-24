@@ -128,22 +128,34 @@
                 @endif
 
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
-                    <p class="text-sm text-neutral-600 dark:text-neutral-400">
-                        <span class="font-semibold text-neutral-900 dark:text-neutral-100">{{ $filteredCount }}</span> ürün listelendi
-                        @if($filteredCount !== $totalCount)
-                            <span class="text-neutral-400">({{ $totalCount }} toplam)</span>
+                    <div class="text-sm text-neutral-600 dark:text-neutral-400">
+                        <p>
+                            <span class="font-semibold text-neutral-900 dark:text-neutral-100">{{ $filteredCount }}</span> ürün listelendi
+                            @if($filteredCount !== $totalCount)
+                                <span class="text-neutral-400">({{ $totalCount }} dekor toplam)</span>
+                            @endif
+                        </p>
+                        @if($viewMode === 'ic-mekan')
+                            <p class="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                                İç mekan görseli olan renkler listelenir
+                                @if(($interiorEligibleCount ?? 0) < $totalCount)
+                                    · {{ $interiorEligibleCount ?? 0 }} / {{ $totalCount }} dekorun yaşam alanı fotoğrafı var
+                                @endif
+                            </p>
                         @endif
-                    </p>
-                    <div class="flex items-center gap-1 text-sm">
-                        <a href="{{ request()->fullUrlWithQuery(['gorunum' => 'dekor']) }}"
-                           class="px-3 py-1.5 rounded-lg {{ $viewMode === 'dekor' ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-medium' : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800' }}">
-                            Dekor Görünümü
-                        </a>
-                        <a href="{{ request()->fullUrlWithQuery(['gorunum' => 'ic-mekan']) }}"
-                           class="px-3 py-1.5 rounded-lg {{ $viewMode === 'ic-mekan' ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-medium' : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800' }}">
-                            İç Mekan Görünümü
-                        </a>
                     </div>
+                    @if(($interiorEligibleCount ?? 0) > 0)
+                        <div class="flex items-center gap-1 text-sm">
+                            <a href="{{ request()->fullUrlWithQuery(['gorunum' => 'dekor']) }}"
+                               class="px-3 py-1.5 rounded-lg {{ $viewMode === 'dekor' ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-medium' : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800' }}">
+                                Dekor Görünümü
+                            </a>
+                            <a href="{{ request()->fullUrlWithQuery(['gorunum' => 'ic-mekan']) }}"
+                               class="px-3 py-1.5 rounded-lg {{ $viewMode === 'ic-mekan' ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-medium' : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800' }}">
+                                İç Mekan Görünümü
+                            </a>
+                        </div>
+                    @endif
                 </div>
 
                 @if(count($products) === 0)

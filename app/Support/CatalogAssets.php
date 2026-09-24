@@ -9,16 +9,49 @@ class CatalogAssets
      */
     public static function productImageUrl(string $manufacturer, string $category, array $product, string $viewMode = 'dekor'): ?string
     {
-        $relative = null;
-        if ($viewMode === 'ic-mekan' && ! empty($product['image_interior'])) {
-            $relative = (string) $product['image_interior'];
-        } elseif (! empty($product['image'])) {
-            $relative = (string) $product['image'];
-        } elseif (! empty($product['image_interior'])) {
-            $relative = (string) $product['image_interior'];
+        if ($viewMode === 'ic-mekan') {
+            $relative = self::interiorRelativePath($product);
+
+            return $relative !== null
+                ? self::resolvePublicUrl($manufacturer, $category, $relative)
+                : null;
         }
 
+        $relative = ! empty($product['image'])
+            ? (string) $product['image']
+            : self::interiorRelativePath($product);
+
         return self::resolvePublicUrl($manufacturer, $category, $relative);
+    }
+
+    /**
+     * @param  array<string, mixed>  $product
+     */
+    public static function hasInteriorImage(string $manufacturer, string $category, array $product): bool
+    {
+        $relative = self::interiorRelativePath($product);
+        if ($relative === null) {
+            return false;
+        }
+
+        return self::resolvePublicUrl($manufacturer, $category, $relative) !== null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $product
+     */
+    private static function interiorRelativePath(array $product): ?string
+    {
+        if (! empty($product['image_interior'])) {
+            return (string) $product['image_interior'];
+        }
+
+        $code = trim((string) ($product['code'] ?? ''));
+        if ($code === '') {
+            return null;
+        }
+
+        return 'interiors/'.$code.'.jpg';
     }
 
     public static function resolvePublicUrl(string $manufacturer, string $category, ?string $relative): ?string
