@@ -108,6 +108,7 @@ class PublicCatalogController extends Controller
         }
 
         $products = $products->map(function (array $p) use ($manufacturer, $category, $viewMode) {
+            $p['decor_image_url'] = CatalogAssets::productImageUrl($manufacturer, $category, $p, 'dekor');
             $p['image_url'] = CatalogAssets::productImageUrl($manufacturer, $category, $p, $viewMode);
             $p['tone_key'] = CatalogAssets::productTone($p);
 

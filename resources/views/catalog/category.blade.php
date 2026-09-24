@@ -71,6 +71,38 @@
         .fade-up {
             animation: fadeUp 0.35s ease both;
         }
+        .swatch-media--interior {
+            aspect-ratio: 4 / 3;
+        }
+        .swatch-media--dekor {
+            aspect-ratio: 1 / 1;
+        }
+        .swatch-decor-pip {
+            position: absolute;
+            right: 0.5rem;
+            bottom: 0.5rem;
+            width: 3.25rem;
+            height: 3.25rem;
+            border-radius: 0.5rem;
+            border: 2px solid #fff;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.28);
+            object-fit: cover;
+            z-index: 5;
+        }
+        .swatch-interior-badge {
+            position: absolute;
+            left: 0.5rem;
+            top: 0.5rem;
+            z-index: 5;
+            font-size: 0.625rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            padding: 0.2rem 0.45rem;
+            border-radius: 0.35rem;
+            background: rgba(15, 23, 42, 0.72);
+            color: #f8fafc;
+        }
     </style>
 </head>
 <body class="font-sans antialiased min-h-screen bg-white dark:bg-neutral-950 text-neutral-800 dark:text-neutral-200 transition-colors">
@@ -136,10 +168,11 @@
                             @endif
                         </p>
                         @if($viewMode === 'ic-mekan')
-                            <p class="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                                İç mekan görseli olan renkler listelenir
+                            <p class="mt-1 text-xs text-neutral-500 dark:text-neutral-400 max-w-xl">
+                                Mobilya / oda örnek fotoğrafları (Kastamonu kataloğu). Rengi net görmek için kartın sağ altındaki
+                                <strong class="font-semibold text-neutral-600 dark:text-neutral-300">dekor örneğine</strong> bakın.
                                 @if(($interiorEligibleCount ?? 0) < $totalCount)
-                                    · {{ $interiorEligibleCount ?? 0 }} / {{ $totalCount }} dekorun yaşam alanı fotoğrafı var
+                                    · {{ $interiorEligibleCount ?? 0 }} / {{ $totalCount }} dekorun iç mekan görseli var.
                                 @endif
                             </p>
                         @endif
@@ -163,28 +196,47 @@
                         Aramanıza uygun ürün bulunamadı.
                     </div>
                 @else
-                    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                    <div @class([
+                        'grid gap-3 sm:gap-4',
+                        'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3' => $viewMode === 'ic-mekan',
+                        'grid-cols-2 md:grid-cols-3 xl:grid-cols-4' => $viewMode !== 'ic-mekan',
+                    ])>
                         @foreach($products as $i => $product)
-                            @php $img = $product['image_url'] ?? null; @endphp
+                            @php
+                                $img = $product['image_url'] ?? null;
+                                $decorImg = $product['decor_image_url'] ?? null;
+                            @endphp
                             <article class="swatch-card fade-up group rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden hover:shadow-lg hover:border-neutral-300 dark:hover:border-neutral-700 transition-all"
                                      style="animation-delay: {{ min($i * 20, 400) }}ms"
                                      data-code="{{ $product['code'] }}"
                                      data-name="{{ $product['name'] }}"
                                      data-brand="{{ $product['brand'] }}"
-                                     data-img="{{ $img ?? '' }}">
+                                     data-img="{{ $img ?? '' }}"
+                                     data-swatch="{{ ($viewMode === 'ic-mekan' && $decorImg) ? $decorImg : '' }}">
                                 <button type="button" class="block w-full text-left open-swatch" aria-label="{{ $product['name'] }} detay">
-                                    <div class="relative aspect-square bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+                                    <div @class([
+                                        'relative bg-neutral-100 dark:bg-neutral-800 overflow-hidden',
+                                        'swatch-media--interior' => $viewMode === 'ic-mekan',
+                                        'swatch-media--dekor' => $viewMode !== 'ic-mekan',
+                                    ])>
+                                        @if($viewMode === 'ic-mekan')
+                                            <span class="swatch-interior-badge">Oda örneği</span>
+                                        @endif
                                         @if(!empty($product['is_new']))
-                                            <span class="absolute top-2 left-2 z-10 text-[10px] font-bold uppercase tracking-wide bg-keas-800 text-white px-1.5 py-0.5">Yeni</span>
+                                            <span class="absolute top-2 right-2 z-10 text-[10px] font-bold uppercase tracking-wide bg-keas-800 text-white px-1.5 py-0.5">Yeni</span>
                                         @endif
                                         @if($img)
                                             <img src="{{ $img }}" alt="{{ $product['name'] }}" loading="lazy"
-                                                 class="swatch-img w-full h-full object-cover"
+                                                 class="swatch-img w-full h-full object-cover {{ $viewMode === 'ic-mekan' ? 'object-center' : '' }}"
                                                  onerror="this.classList.add('hidden'); this.nextElementSibling?.classList.remove('hidden');">
                                             <div class="hidden swatch-placeholder w-full h-full flex flex-col items-center justify-center text-neutral-500 dark:text-neutral-400 px-2 text-center">
                                                 <span class="text-[10px] uppercase tracking-wide">Görsel yüklenemedi</span>
                                                 <span class="text-xs font-medium mt-1">{{ $product['code'] }}</span>
                                             </div>
+                                            @if($viewMode === 'ic-mekan' && $decorImg)
+                                                <img src="{{ $decorImg }}" alt="{{ $product['name'] }} dekor" loading="lazy"
+                                                     class="swatch-decor-pip" title="Dekor rengi">
+                                            @endif
                                         @else
                                             <div class="swatch-placeholder w-full h-full flex flex-col items-center justify-center text-neutral-500 dark:text-neutral-400 px-2 text-center">
                                                 <span class="text-[10px] uppercase tracking-wide">Görsel yok</span>
@@ -218,12 +270,24 @@
 
     {{-- Lightbox --}}
     <div id="swatch-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="swatch-modal-title">
-        <div class="relative w-full max-w-lg bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl">
+        <div class="relative w-full max-w-2xl bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl">
             <button type="button" id="swatch-modal-close" class="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-black/50 text-white hover:bg-black/70 flex items-center justify-center" aria-label="Kapat">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
-            <div class="aspect-square bg-neutral-100 dark:bg-neutral-800">
-                <img id="swatch-modal-img" src="" alt="" class="w-full h-full object-cover">
+            <div id="swatch-modal-media" class="bg-neutral-100 dark:bg-neutral-800">
+                <div id="swatch-modal-single" class="aspect-square max-h-[70vh] mx-auto">
+                    <img id="swatch-modal-img" src="" alt="" class="w-full h-full object-cover">
+                </div>
+                <div id="swatch-modal-split" class="hidden grid sm:grid-cols-2">
+                    <div class="relative aspect-[4/3] sm:aspect-auto sm:min-h-[280px]">
+                        <img id="swatch-modal-interior" src="" alt="" class="w-full h-full object-cover">
+                        <span class="absolute left-3 top-3 text-[10px] font-bold uppercase tracking-wide bg-black/60 text-white px-2 py-1 rounded">Oda örneği</span>
+                    </div>
+                    <div class="relative aspect-square sm:aspect-auto sm:min-h-[280px] border-t sm:border-t-0 sm:border-l border-neutral-200 dark:border-neutral-700">
+                        <img id="swatch-modal-swatch" src="" alt="" class="w-full h-full object-cover">
+                        <span class="absolute left-3 top-3 text-[10px] font-bold uppercase tracking-wide bg-black/60 text-white px-2 py-1 rounded">Dekor</span>
+                    </div>
+                </div>
             </div>
             <div class="p-5">
                 <h3 id="swatch-modal-title" class="text-lg font-semibold text-neutral-900 dark:text-neutral-100"></h3>
@@ -242,6 +306,10 @@
         (function () {
             var modal = document.getElementById('swatch-modal');
             var img = document.getElementById('swatch-modal-img');
+            var singleWrap = document.getElementById('swatch-modal-single');
+            var splitWrap = document.getElementById('swatch-modal-split');
+            var interiorImg = document.getElementById('swatch-modal-interior');
+            var swatchImg = document.getElementById('swatch-modal-swatch');
             var title = document.getElementById('swatch-modal-title');
             var meta = document.getElementById('swatch-modal-meta');
             var copyBtn = document.getElementById('swatch-copy-code');
@@ -251,8 +319,24 @@
                 currentCode = card.getAttribute('data-code') || '';
                 title.textContent = card.getAttribute('data-name') || '';
                 meta.textContent = (card.getAttribute('data-code') || '') + ' · ' + (card.getAttribute('data-brand') || '');
-                img.src = card.getAttribute('data-img') || '';
-                img.alt = title.textContent;
+                var main = card.getAttribute('data-img') || '';
+                var swatch = card.getAttribute('data-swatch') || '';
+                if (swatch && main) {
+                    singleWrap.classList.add('hidden');
+                    splitWrap.classList.remove('hidden');
+                    interiorImg.src = main;
+                    interiorImg.alt = title.textContent + ' oda örneği';
+                    swatchImg.src = swatch;
+                    swatchImg.alt = title.textContent + ' dekor';
+                    img.src = '';
+                } else {
+                    splitWrap.classList.add('hidden');
+                    singleWrap.classList.remove('hidden');
+                    img.src = main;
+                    img.alt = title.textContent;
+                    interiorImg.src = '';
+                    swatchImg.src = '';
+                }
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
                 document.body.style.overflow = 'hidden';
@@ -263,6 +347,8 @@
                 modal.classList.remove('flex');
                 document.body.style.overflow = '';
                 img.src = '';
+                interiorImg.src = '';
+                swatchImg.src = '';
             }
 
             document.querySelectorAll('.open-swatch').forEach(function (btn) {
