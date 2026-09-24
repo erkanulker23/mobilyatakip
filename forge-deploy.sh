@@ -134,6 +134,7 @@ $FORGE_PHP artisan config:cache
 $FORGE_PHP artisan route:clear
 $FORGE_PHP artisan route:cache
 $FORGE_PHP artisan route:list --name=sales.delivered --quiet || { echo "HATA: sales.delivered route kaydı yok."; exit 1; }
+$FORGE_PHP artisan route:list --name=catalog.index --quiet || { echo "HATA: catalog.index (/katalog) route kaydı yok. route:clear && deploy tekrar."; exit 1; }
 $FORGE_PHP artisan view:cache
 
 # OPcache eski route/config dosyalarını tutmasın (eşzamanlı reload kilidi)

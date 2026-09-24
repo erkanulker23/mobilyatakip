@@ -32,7 +32,9 @@ if [ -f artisan ]; then
 
     $FORGE_PHP artisan optimize:clear
     $FORGE_PHP artisan config:cache
+    $FORGE_PHP artisan route:clear
     $FORGE_PHP artisan route:cache
+    $FORGE_PHP artisan route:list --name=catalog.index --quiet || { echo "HATA: /katalog route yok — git pull / son commit."; exit 1; }
     $FORGE_PHP artisan view:cache
     $FORGE_PHP artisan queue:restart || true
 fi
