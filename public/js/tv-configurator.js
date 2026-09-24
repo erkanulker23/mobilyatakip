@@ -476,18 +476,35 @@ async function createModuleMesh(mod) {
     group.add(mesh);
     group.userData.originAtBottom = true;
   } else if (mod.type === 'slat') {
-    const count = Math.max(4, Math.floor(mod.w / 5));
-    const gap = (mod.w * CM) / count;
+    const slatW = mod.slatWidth || 1.6; // cm
+    const gapCm = mod.slatGap != null ? mod.slatGap : 2.5; // cm between slats
+    const pitch = slatW + gapCm;
+    const count = Math.max(3, Math.floor((mod.w + gapCm) / pitch));
+    const used = count * slatW + (count - 1) * gapCm;
+    const startX = -used / 2;
     for (let i = 0; i < count; i++) {
       const slat = new THREE.Mesh(
-        new THREE.BoxGeometry(1.4 * CM, mod.h * CM, Math.max(1.5, mod.d) * CM),
+        new THREE.BoxGeometry(slatW * CM, mod.h * CM, Math.max(1.5, mod.d) * CM),
         mat.clone()
       );
-      slat.position.set(-mod.w * CM / 2 + gap / 2 + i * gap, mod.h * CM / 2, 0);
+      const x = (startX + slatW / 2 + i * pitch) * CM;
+      slat.position.set(x, mod.h * CM / 2, 0);
       slat.castShadow = true;
       group.add(slat);
     }
+    // Gap label between first two slats
+    if (count >= 2) {
+      const el = document.createElement('div');
+      el.textContent = gapCm.toFixed(1).replace(/\.0$/, '') + ' cm';
+      el.style.cssText = 'color:#0058a3;background:rgba(255,255,255,.92);padding:2px 7px;border-radius:6px;font:700 11px Montserrat,sans-serif;white-space:nowrap;border:1px solid #bfdbfe;';
+      const obj = new CSS2DObject(el);
+      const midX = (startX + slatW + gapCm / 2) * CM;
+      obj.position.set(midX, mod.h * CM * 0.55, mod.d * CM / 2 + 0.04);
+      obj.name = 'slat-gap';
+      group.add(obj);
+    }
     group.userData.originAtBottom = true;
+    group.userData.slatMeta = { count, slatW, gapCm };
   } else if (mod.type === 'top') {
     const mesh = new THREE.Mesh(
       new THREE.BoxGeometry(mod.w * CM, Math.max(1.8, mod.h) * CM, mod.d * CM),
@@ -680,7 +697,168 @@ function updateSelectionVisual() {
   if (bar) bar.hidden = !state.selectedId;
 }
 
-/** Place next independent module to the RIGHT of existing ones — never nested. */
+const HOST_TYPES = new Set(['frame', 'plinth', 'shelf']);
+const ATTACH_FRONT = new Set(['door', 'slat']);
+const ATTACH_BACK = new Set(['back']);
+const ATTACH_TOP = new Set(['top']);
+
+function isHost(m) {
+  return m && HOST_TYPES.has(m.type);
+}
+
+function childrenOf(hostId) {
+  return state.modules.filter((m) => m.parentId === hostId);
+}
+
+function findNearestHost(x, z, maxDist = 55) {
+  let best = null;
+  let bestD = maxDist;
+  for (const m of state.modules) {
+    if (!isHost(m)) continue;
+    const dx = Math.abs(x - m.x);
+    const dz = Math.abs(z - m.z);
+    // Prefer overlapping X range + nearby Z
+    const xOverlap = dx < (m.w / 2 + 25);
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    if (xOverlap && dist < bestD) {
+      bestD = dist;
+      best = m;
+    }
+  }
+  return best;
+}
+
+/** Pose a part flush to host: back / front / top */
+function attachToHost(host, type, extras = {}) {
+  const doorStyle = extras.doorStyle || 'push';
+  if (type === 'back') {
+    const d = 1;
+    return {
+      w: host.w,
+      h: host.h,
+      d,
+      x: host.x,
+      y: host.y,
+      z: host.z - host.d / 2 - d / 2 - 0.2,
+    };
+  }
+  if (type === 'slat') {
+    const d = extras.d || 3;
+    return {
+      w: host.w,
+      h: host.h,
+      d,
+      x: host.x,
+      y: host.y,
+      z: host.z + host.d / 2 + d / 2 + 0.3,
+      slatWidth: extras.slatWidth || 1.6,
+      slatGap: extras.slatGap || 2.5,
+    };
+  }
+  if (type === 'door') {
+    if (doorStyle === 'drawer') {
+      return {
+        w: Math.max(20, host.w - 2),
+        h: Math.min(extras.h || 20, host.h - 2),
+        d: Math.max(20, host.d - 4),
+        x: host.x,
+        y: host.y + 1,
+        z: host.z,
+      };
+    }
+    return {
+      w: Math.max(20, host.w - 2),
+      h: Math.max(16, host.h - 2),
+      d: 2,
+      x: host.x,
+      y: host.y + 1,
+      z: host.z + host.d / 2 + 1.1,
+    };
+  }
+  if (type === 'top') {
+    return {
+      w: host.w + 2,
+      h: 2.5,
+      d: host.d + 2,
+      x: host.x,
+      y: host.y + host.h,
+      z: host.z,
+    };
+  }
+  return null;
+}
+
+function syncAttachedToHost(host) {
+  childrenOf(host.id).forEach((child) => {
+    const pose = attachToHost(host, child.type, {
+      doorStyle: child.doorStyle,
+      d: child.d,
+      h: child.h,
+      slatWidth: child.slatWidth,
+      slatGap: child.slatGap,
+    });
+    if (!pose) return;
+    Object.assign(child, pose);
+  });
+}
+
+function defaultMaterial(type, doorStyle) {
+  if (type === 'door' && doorStyle === 'glass') {
+    return { finish: 'gloss', color: '#c5d5e8', materialName: 'Cam' };
+  }
+  if (type === 'door') {
+    return { finish: 'highgloss', color: '#111111', materialName: 'Siyah High Gloss' };
+  }
+  if (type === 'plinth' || type === 'slat') {
+    return { finish: 'matte', color: type === 'slat' ? '#c4a574' : '#1a1a1a', materialName: type === 'slat' ? 'Ahşap çıta' : 'Siyah' };
+  }
+  if (type === 'top') {
+    return { finish: 'ceramic', color: '#e8e4df', materialName: 'Seramik' };
+  }
+  return { finish: 'matte', color: '#f7f7f7', materialName: 'Beyaz' };
+}
+
+function addAttachedPart(type, opts = {}) {
+  const host = opts.host
+    || (selected() && isHost(selected()) ? selected() : null)
+    || state.modules.filter((m) => isHost(m)).at(-1);
+  if (!host) {
+    showHint('Önce iskelet, alt blok veya raf seçin');
+    return;
+  }
+  const doorStyle = opts.doorStyle || (type === 'door' ? 'push' : undefined);
+  const pose = attachToHost(host, type, { doorStyle, ...opts });
+  if (!pose) return;
+  const mat = defaultMaterial(type, doorStyle);
+  pushHistory();
+  const mod = {
+    id: uid(),
+    type,
+    label: opts.label || (type === 'door'
+      ? (DOOR_STYLES.find((d) => d.id === doorStyle)?.label || 'Kapak')
+      : typeTitle(type)),
+    parentId: host.id,
+    ...pose,
+    finish: mat.finish,
+    color: mat.color,
+    materialId: null,
+    materialImage: null,
+    materialName: mat.materialName,
+    materialCode: '',
+    doorStyle,
+    frameColor: doorStyle === 'glass' ? '#c0c4c8' : undefined,
+    glassColor: doorStyle === 'glass' ? '#c5d5e8' : undefined,
+  };
+  state.modules.push(mod);
+  state.selectedId = mod.id;
+  rebuildModules().then(() => {
+    state.view = 'customize';
+    renderSidebar();
+    showHint(`${mod.label} → ${typeTitle(host.type)} arkası/önü`);
+  });
+}
+
+/** Place next independent module to the RIGHT of existing ones. */
 function nextFreeSlot(w, d) {
   const wallZ = -(FLOOR_D / 2) + d / 2 + 2;
   if (!state.modules.length) {
@@ -704,6 +882,26 @@ function floorPointFromClient(clientX, clientY) {
 function placeFromDrop(data, clientX, clientY) {
   const preset = { ...data };
   const pt = floorPointFromClient(clientX, clientY);
+  const attachable = ATTACH_FRONT.has(preset.type) || ATTACH_BACK.has(preset.type) || ATTACH_TOP.has(preset.type);
+
+  // Prefer selected host, else nearest under drop
+  let host = selected() && isHost(selected()) ? selected() : null;
+  if (!host && pt) {
+    host = findNearestHost(pt.x / CM, pt.z / CM);
+  }
+  if (attachable && host) {
+    addAttachedPart(preset.type, {
+      host,
+      doorStyle: preset.doorStyle,
+      label: preset.label,
+      d: preset.d,
+      h: preset.h,
+      slatWidth: 1.6,
+      slatGap: 2.5,
+    });
+    return;
+  }
+
   let pos;
   if (pt) {
     pos = {
@@ -717,26 +915,27 @@ function placeFromDrop(data, clientX, clientY) {
   addModule(preset.type, preset, pos);
 }
 
-function defaultMaterial(type, doorStyle) {
-  if (type === 'door' && doorStyle === 'glass') {
-    return { finish: 'gloss', color: '#c5d5e8', materialName: 'Cam' };
-  }
-  if (type === 'door') {
-    return { finish: 'highgloss', color: '#111111', materialName: 'Siyah High Gloss' };
-  }
-  if (type === 'plinth' || type === 'slat') {
-    return { finish: 'matte', color: type === 'slat' ? '#c4a574' : '#1a1a1a', materialName: type === 'slat' ? 'Ahşap çıta' : 'Siyah' };
-  }
-  if (type === 'top') {
-    return { finish: 'ceramic', color: '#e8e4df', materialName: 'Seramik' };
-  }
-  return { finish: 'matte', color: '#f7f7f7', materialName: 'Beyaz' };
-}
-
 function addModule(type, preset = null, pos = null) {
   const list = CATALOG[type];
   const p = preset || (list && list[0]) || { w: 60, d: 40, h: 38, label: typeTitle(type) };
   const doorStyle = p.doorStyle || (type === 'door' ? 'hinge' : undefined);
+  const attachable = ATTACH_FRONT.has(type) || ATTACH_BACK.has(type) || ATTACH_TOP.has(type);
+  const host = selected() && isHost(selected()) ? selected() : null;
+
+  // Click-add attachable while host selected → attach
+  if (attachable && host && !pos) {
+    addAttachedPart(type, {
+      host,
+      doorStyle,
+      label: p.label,
+      d: p.d,
+      h: p.h,
+      slatWidth: 1.6,
+      slatGap: 2.5,
+    });
+    return;
+  }
+
   const mat = defaultMaterial(type, doorStyle);
   const slot = pos || nextFreeSlot(p.w, p.d);
 
@@ -761,13 +960,15 @@ function addModule(type, preset = null, pos = null) {
     priceHint: p.price,
     frameColor: doorStyle === 'glass' ? '#c0c4c8' : undefined,
     glassColor: doorStyle === 'glass' ? '#c5d5e8' : undefined,
+    slatWidth: type === 'slat' ? 1.6 : undefined,
+    slatGap: type === 'slat' ? 2.5 : undefined,
   };
   state.modules.push(mod);
   state.selectedId = mod.id;
   rebuildModules().then(() => {
     state.view = 'customize';
     renderSidebar();
-    showHint(mod.label + ' eklendi — sağ tık ile özelleştirin');
+    showHint(mod.label + ' eklendi');
   });
 }
 
@@ -775,7 +976,9 @@ function deleteSelected() {
   const mod = selected();
   if (!mod) return;
   pushHistory();
-  state.modules = state.modules.filter((m) => m.id !== mod.id);
+  const kill = new Set([mod.id]);
+  childrenOf(mod.id).forEach((c) => kill.add(c.id));
+  state.modules = state.modules.filter((m) => !kill.has(m.id));
   state.selectedId = null;
   state.view = 'home';
   rebuildModules();
