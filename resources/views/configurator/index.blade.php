@@ -186,6 +186,7 @@
             padding: 7px 11px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
         }
         .chip.active { border-color: var(--accent); color: var(--accent); background: #eff6ff; }
+        .chip.danger-chip:hover { background: #fee2e2; }
         .mat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
         .mat-swatch {
             aspect-ratio: 1; border-radius: 10px; border: 2px solid transparent;
@@ -340,6 +341,6 @@
   }
 }
 </script>
-<script type="module" src="{{ asset('js/tv-configurator.js') }}?v=7"></script>
+<script type="module" src="{{ asset('js/tv-configurator.js') }}?v=8"></script>
 </body>
 </html>
