@@ -367,6 +367,6 @@
   }
 }
 </script>
-<script type="module" src="{{ asset('js/tv-configurator.js') }}?v=9"></script>
+<script type="module" src="{{ asset('js/tv-configurator.js') }}?v=10"></script>
 </body>
 </html>
