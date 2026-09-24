@@ -102,6 +102,9 @@
 
             {{-- Product grid --}}
             <div class="lg:col-span-9">
+                @if(!empty($category['description']))
+                    <p class="mb-5 text-sm sm:text-base text-neutral-600 dark:text-neutral-400 leading-relaxed max-w-3xl">{{ $category['description'] }}</p>
+                @endif
                 @if(!empty($specs) || !empty($category['catalog_pdf']))
                     <div class="mb-5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/80 p-4 sm:p-5">
                         @if(!empty($specs))
@@ -191,17 +194,11 @@
                     </div>
                 @endif
 
-                @if(!empty($category['description']))
-                    <div class="mt-10 pt-8 border-t border-neutral-200 dark:border-neutral-800">
-                        <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">{{ $category['name'] }}</h2>
-                        <p class="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed max-w-3xl">{{ $category['description'] }}</p>
-                        @if(!empty($category['source_url']))
-                            <p class="mt-3 text-xs text-neutral-400">
-                                Kaynak:
-                                <a href="{{ $category['source_url'] }}" target="_blank" rel="noopener noreferrer" class="text-emerald-600 hover:underline">{{ $manufacturer['name'] }} ürün sayfası</a>
-                            </p>
-                        @endif
-                    </div>
+                @if(!empty($category['source_url']))
+                    <p class="mt-8 pt-6 border-t border-neutral-200 dark:border-neutral-800 text-xs text-neutral-400">
+                        Kaynak:
+                        <a href="{{ $category['source_url'] }}" target="_blank" rel="noopener noreferrer" class="text-emerald-600 hover:underline">{{ $manufacturer['name'] }} ürün sayfası</a>
+                    </p>
                 @endif
             </div>
         </div>

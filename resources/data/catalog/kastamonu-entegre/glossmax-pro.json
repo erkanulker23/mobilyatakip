@@ -27,12 +27,6 @@
       "available": true
     },
     {
-      "slug": "kenar-bandi",
-      "name": "Kenar Bandı",
-      "is_new": true,
-      "available": false
-    },
-    {
       "slug": "lakli-panel",
       "name": "Laklı Panel",
       "is_new": false,
@@ -49,12 +43,6 @@
       "name": "Melamin Kaplı Panel",
       "is_new": false,
       "available": true
-    },
-    {
-      "slug": "pvc-pet-kapli-panel",
-      "name": "PVC-PET Kaplı Panel",
-      "is_new": false,
-      "available": false
     }
   ],
   "documents": [

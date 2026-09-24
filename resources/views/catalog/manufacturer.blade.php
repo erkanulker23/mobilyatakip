@@ -105,6 +105,9 @@
                     </div>
                     <div class="p-5">
                         <h2 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">{{ $cat['name'] }}</h2>
+                        @if(!empty($cat['description']))
+                            <p class="mt-1.5 text-sm text-neutral-500 dark:text-neutral-400 leading-snug line-clamp-3">{{ $cat['description'] }}</p>
+                        @endif
                         <span class="mt-2 inline-flex items-center text-sm font-medium text-emerald-600 dark:text-emerald-400">
                             Renkleri gör
                             <svg class="ml-1 w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>

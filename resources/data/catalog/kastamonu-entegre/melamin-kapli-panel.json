@@ -7,7 +7,7 @@
   "category": {
     "slug": "melamin-kapli-panel",
     "name": "Melamin Kaplı Panel",
-    "description": "Medelam, Teknolam, Yongalam ve diğer melamin kaplı paneller; mobilya, raf, duvar ve dekoratif uygulamalar için geniş desen yelpazesi sunar.",
+    "description": "Melamin kaplı panel, MDF veya yonga levha üzerine dekor kağıdı preslenerek üretilir. Mobilya gövdesi, raf ve kapaklarda en yaygın kaplama türüdür.",
     "hero_image": "hero.webp",
     "source_url": "https://www.kastamonuentegre.com/tr_tr/urunler/melamin-kapli-panel"
   },
@@ -23,12 +23,6 @@
       "name": "Boyalı Panel",
       "is_new": false,
       "available": true
-    },
-    {
-      "slug": "kenar-bandi",
-      "name": "Kenar Bandı",
-      "is_new": true,
-      "available": false
     },
     {
       "slug": "lakli-panel",
@@ -47,12 +41,6 @@
       "name": "Melamin Kaplı Panel",
       "is_new": false,
       "available": true
-    },
-    {
-      "slug": "pvc-pet-kapli-panel",
-      "name": "PVC-PET Kaplı Panel",
-      "is_new": false,
-      "available": false
     }
   ],
   "documents": [],

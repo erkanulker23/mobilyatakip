@@ -202,6 +202,7 @@ class PublicCatalogController extends Controller
             $out[] = [
                 'slug' => $data['category']['slug'] ?? $file->getFilenameWithoutExtension(),
                 'name' => $data['category']['name'] ?? $file->getFilenameWithoutExtension(),
+                'description' => $data['category']['description'] ?? '',
             ];
         }
 
