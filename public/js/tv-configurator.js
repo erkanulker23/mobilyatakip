@@ -1114,19 +1114,43 @@ function onPointerMove(e) {
   mod.x = Math.max(-WALL_W / 2 + mod.w / 2, Math.min(WALL_W / 2 - mod.w / 2, nx));
   mod.z = Math.max(minZ, Math.min(maxZ, nz));
 
-  // Snap beside neighbors (independent modules)
-  for (const o of state.modules) {
-    if (o.id === mod.id) continue;
-    const gapL = Math.abs((mod.x - mod.w / 2) - (o.x + o.w / 2));
-    const gapR = Math.abs((mod.x + mod.w / 2) - (o.x - o.w / 2));
-    if (gapL < 4) mod.x = o.x + o.w / 2 + mod.w / 2;
-    if (gapR < 4) mod.x = o.x - o.w / 2 - mod.w / 2;
-    if (Math.abs(mod.z - o.z) < 3) mod.z = o.z;
+  // Snap attachable parts onto nearest host while dragging
+  const attachable = ATTACH_FRONT.has(mod.type) || ATTACH_BACK.has(mod.type) || ATTACH_TOP.has(mod.type);
+  if (attachable) {
+    const host = findNearestHost(mod.x, mod.z, 40);
+    if (host) {
+      const pose = attachToHost(host, mod.type, {
+        doorStyle: mod.doorStyle,
+        d: mod.d,
+        h: mod.h,
+        slatWidth: mod.slatWidth,
+        slatGap: mod.slatGap,
+      });
+      if (pose) {
+        Object.assign(mod, pose, { parentId: host.id });
+      }
+    }
+  } else if (isHost(mod)) {
+    // Snap hosts side-by-side
+    for (const o of state.modules) {
+      if (o.id === mod.id || !isHost(o)) continue;
+      const gapL = Math.abs((mod.x - mod.w / 2) - (o.x + o.w / 2));
+      const gapR = Math.abs((mod.x + mod.w / 2) - (o.x - o.w / 2));
+      if (gapL < 4) mod.x = o.x + o.w / 2 + mod.w / 2;
+      if (gapR < 4) mod.x = o.x - o.w / 2 - mod.w / 2;
+      if (Math.abs(mod.z - o.z) < 3) mod.z = o.z;
+    }
+    syncAttachedToHost(mod);
   }
 
   drag.moved = true;
-  const g = modulesGroup.children.find((c) => c.userData.moduleId === mod.id);
-  if (g) placeModule(g, mod);
+  // Live place host + children
+  const placeLive = (m) => {
+    const g = modulesGroup.children.find((c) => c.userData.moduleId === m.id);
+    if (g) placeModule(g, m);
+  };
+  placeLive(mod);
+  if (isHost(mod)) childrenOf(mod.id).forEach(placeLive);
 }
 
 function onPointerUp() {
@@ -1144,9 +1168,9 @@ function menuItems() {
     { kind: 'frame', label: 'İskeletler', icon: '□', desc: 'Bağımsız gövde blokları' },
     { kind: 'plinth', label: 'Alt blok / Baza', icon: '▄', desc: 'Ayrı yükseltme bloğu' },
     { kind: 'shelf', label: 'Raf üniteleri', icon: '☰', desc: 'Açık raf — ayrı ürün' },
-    { kind: 'door', label: 'Kapaklar', icon: '▣', desc: 'Çekmece · bas-aç · cam' },
-    { kind: 'back', label: 'Arka paneller', icon: '▦', desc: 'Bağımsız arka kaplama' },
-    { kind: 'slat', label: 'Çıtalar', icon: '▥', desc: 'Dekoratif çıta paneli' },
+    { kind: 'door', label: 'Kapaklar', icon: '▣', desc: 'Seçili bloğa yapışır' },
+    { kind: 'back', label: 'Arka paneller', icon: '▦', desc: 'Bloğun arkasına yapışır' },
+    { kind: 'slat', label: 'Çıtalar', icon: '▥', desc: 'Öne yapışır · boşluk cm' },
     { kind: 'top', label: 'Üst paneller', icon: '▬', desc: 'Tezgah / üst yüzey' },
     { kind: 'leg', label: 'Ayaklar', icon: '⊓', desc: 'Metal / ahşap ayak' },
     { kind: 'tv', label: 'TV', icon: '▣', desc: 'İsteğe bağlı · inch ayarı' },
@@ -1491,6 +1515,31 @@ function renderSidebar() {
       </div>
     ` : '';
 
+    const hostAddUI = isHost(mod) ? `
+      <div class="section-title">Kapak ekle</div>
+      <div class="chip-row">
+        <button type="button" class="chip" data-add-door="push">Bas-aç</button>
+        <button type="button" class="chip" data-add-door="drawer">Çekmece</button>
+        <button type="button" class="chip" data-add-door="hinge">Menteşeli</button>
+        <button type="button" class="chip" data-add-door="glass">Cam kapak</button>
+      </div>
+      <div class="section-title">Parça ekle</div>
+      <div class="chip-row">
+        <button type="button" class="chip" data-add-part="back">Arka panel</button>
+        <button type="button" class="chip" data-add-part="slat">Çıta</button>
+        <button type="button" class="chip" data-add-part="top">Üst panel</button>
+      </div>
+    ` : '';
+
+    const slatUI = mod.type === 'slat' ? `
+      <div class="section-title">Çıta boşluğu</div>
+      <div class="dim-row">
+        <div class="field"><label>Çıta eni (cm)</label><input type="number" id="slat-w" min="0.8" max="6" step="0.1" value="${mod.slatWidth || 1.6}"></div>
+        <div class="field"><label>Boşluk (cm)</label><input type="number" id="slat-gap" min="0.5" max="12" step="0.1" value="${mod.slatGap != null ? mod.slatGap : 2.5}"></div>
+        <div class="field"><label> </label><div style="font-size:12px;font-weight:600;padding-top:10px;color:#0058a3">${(mod.slatGap != null ? mod.slatGap : 2.5)} cm aralık</div></div>
+      </div>
+    ` : '';
+
     sideBody.innerHTML = `
       <div class="panel-section">
         <div class="section-title">Ebat (cm)</div>
@@ -1499,8 +1548,10 @@ function renderSidebar() {
           <div class="field"><label>Boy</label><input type="number" id="dim-d" min="1" max="80" step="1" value="${mod.d}"></div>
           <div class="field"><label>Yükseklik</label><input type="number" id="dim-h" min="1" max="250" step="1" value="${mod.h}"></div>
         </div>
+        ${hostAddUI}
         ${doorUI}
         ${glassUI}
+        ${slatUI}
         <div class="section-title">Yüzey</div>
         <div class="chip-row" id="finish-chips">
           ${FINISHES.map((f) => `<button type="button" class="chip ${mod.finish === f.id ? 'active' : ''}" data-finish="${f.id}">${f.label}</button>`).join('')}
@@ -1518,7 +1569,7 @@ function renderSidebar() {
           `).join('')}
         </div>
       </div>
-      <div class="info-box">Sağ tık ile de özelleştirme menüsünü açabilirsiniz.</div>
+      <div class="info-box">${isHost(mod) ? 'Kapak / arka panel / çıta bu bloğun önüne veya arkasına yapışır.' : 'Sağ tık ile menü · sürükleyince yakındaki bloğa yapışır.'}</div>
       <button type="button" class="btn" id="btn-dup" style="width:calc(100% - 32px);margin:8px 16px;justify-content:center;border-radius:12px;box-shadow:none;border:1px solid #e5e7eb">Çoğalt</button>
       <button type="button" class="danger" id="btn-del">Seçili parçayı sil</button>
     `;
@@ -1528,9 +1579,31 @@ function renderSidebar() {
       mod.w = clampNum($('#dim-w').value, 10, 300);
       mod.d = clampNum($('#dim-d').value, 1, 80);
       mod.h = clampNum($('#dim-h').value, 1, 250);
+      if (isHost(mod)) syncAttachedToHost(mod);
       rebuildModules();
     };
-    ['dim-w', 'dim-d', 'dim-h'].forEach((id) => $(`#${id}`).addEventListener('change', applyDims));
+    ['dim-w', 'dim-d', 'dim-h'].forEach((id) => $(`#${id}`)?.addEventListener('change', applyDims));
+
+    sideBody.querySelectorAll('[data-add-door]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        addAttachedPart('door', { host: mod, doorStyle: btn.dataset.addDoor });
+      });
+    });
+    sideBody.querySelectorAll('[data-add-part]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        addAttachedPart(btn.dataset.addPart, { host: mod, slatWidth: 1.6, slatGap: 2.5 });
+      });
+    });
+
+    const applySlat = () => {
+      if (mod.type !== 'slat') return;
+      pushHistory();
+      mod.slatWidth = clampNum($('#slat-w')?.value, 0.8, 6);
+      mod.slatGap = clampNum($('#slat-gap')?.value, 0.5, 12);
+      rebuildModules().then(() => renderSidebar());
+    };
+    $('#slat-w')?.addEventListener('change', applySlat);
+    $('#slat-gap')?.addEventListener('change', applySlat);
 
     sideBody.querySelectorAll('[data-finish]').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -1549,6 +1622,13 @@ function renderSidebar() {
         if (mod.doorStyle === 'glass') {
           mod.frameColor = mod.frameColor || '#c0c4c8';
           mod.glassColor = mod.glassColor || '#c5d5e8';
+        }
+        if (mod.parentId) {
+          const host = state.modules.find((m) => m.id === mod.parentId);
+          if (host) {
+            const pose = attachToHost(host, 'door', { doorStyle: mod.doorStyle, h: mod.h, d: mod.d });
+            if (pose) Object.assign(mod, pose);
+          }
         }
         rebuildModules().then(() => renderSidebar());
       });
