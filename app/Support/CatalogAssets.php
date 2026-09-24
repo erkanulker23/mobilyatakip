@@ -91,4 +91,59 @@ class CatalogAssets
 
         return 'notr';
     }
+
+    /**
+     * Aynı dekor kodu farklı panel ürün sayfalarından tekrar içe aktarılmış olabilir.
+     * Görsel katalogda (kod + marka) başına tek kart gösterilir.
+     *
+     * @param  list<array<string, mixed>>  $products
+     * @return list<array<string, mixed>>
+     */
+    public static function dedupeProducts(array $products): array
+    {
+        $best = [];
+
+        foreach ($products as $product) {
+            if (! is_array($product)) {
+                continue;
+            }
+
+            $code = trim((string) ($product['code'] ?? ''));
+            $brand = trim((string) ($product['brand'] ?? ''));
+            $key = $code !== ''
+                ? mb_strtolower($code).'|'.mb_strtolower($brand)
+                : 'row:'.sha1(json_encode($product, JSON_UNESCAPED_UNICODE));
+
+            if (! isset($best[$key])) {
+                $best[$key] = $product;
+
+                continue;
+            }
+
+            if (self::productDedupeScore($product) > self::productDedupeScore($best[$key])) {
+                $best[$key] = $product;
+            }
+        }
+
+        $out = array_values($best);
+        usort($out, fn (array $a, array $b) => (int) ($b['order'] ?? 0) <=> (int) ($a['order'] ?? 0));
+
+        return $out;
+    }
+
+    /**
+     * @param  array<string, mixed>  $product
+     */
+    private static function productDedupeScore(array $product): int
+    {
+        $score = (int) ($product['order'] ?? 0);
+        if (! empty($product['image_interior'])) {
+            $score += 1_000_000;
+        }
+        if (! empty($product['image'])) {
+            $score += 100_000;
+        }
+
+        return $score;
+    }
 }

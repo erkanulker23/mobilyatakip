@@ -222,7 +222,14 @@ class PublicCatalogController extends Controller
         }
 
         $data = json_decode(File::get($path), true);
+        if (! is_array($data)) {
+            return null;
+        }
 
-        return is_array($data) ? $data : null;
+        if (isset($data['products']) && is_array($data['products'])) {
+            $data['products'] = CatalogAssets::dedupeProducts($data['products']);
+        }
+
+        return $data;
     }
 }
