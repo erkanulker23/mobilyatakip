@@ -47,11 +47,13 @@
         <div class="flex flex-wrap items-center justify-between gap-3 mb-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
             <div class="min-w-0">
                 <p class="text-sm font-semibold text-slate-900">Yazdırma önizlemesi</p>
-                <p class="text-xs text-slate-500 mt-0.5">PDF için <strong>PDF olarak kaydet</strong> seçin. Kenar boşlukları: <strong>Varsayılan</strong>.</p>
+                <p class="text-xs text-slate-500 mt-0.5 hidden sm:block">Masaüstünde yazdırırken <strong>PDF olarak kaydet</strong> seçebilirsiniz.</p>
+                <p class="text-xs text-slate-500 mt-0.5 sm:hidden">Telefonda <strong>PDF İndir</strong> ile dosyayı kaydedin.</p>
             </div>
-            <div class="flex gap-2 shrink-0">
-                <button type="button" onclick="window.print()" class="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-semibold text-sm shadow-sm">Yazdır / PDF</button>
-                <button type="button" onclick="window.close()" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 font-semibold text-sm">Kapat</button>
+            <div class="flex flex-col sm:flex-row gap-2 shrink-0 w-full sm:w-auto">
+                @stack('print-actions')
+                <button type="button" onclick="window.print()" class="px-4 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-semibold text-sm shadow-sm w-full sm:w-auto">Yazdır</button>
+                <button type="button" onclick="window.close()" class="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 font-semibold text-sm w-full sm:w-auto">Kapat</button>
             </div>
         </div>
     </div>

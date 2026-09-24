@@ -14,6 +14,8 @@ use App\Services\AuditService;
 use App\Support\DrawingFiles;
 use App\Support\ItemDescription;
 use App\Support\QuoteCreator;
+use App\Support\QuoteDocument;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -194,6 +196,18 @@ class QuoteController extends Controller
         $quote->load(['customer', 'personnel', 'branch', 'createdByUser.personnel', 'items.product']);
 
         return view('quotes.print', compact('quote'));
+    }
+
+    public function pdf(Quote $quote)
+    {
+        $quote->load(['customer', 'personnel', 'branch', 'createdByUser.personnel', 'items.product']);
+
+        $pdf = Pdf::loadView('quotes.pdf', array_merge(
+            QuoteDocument::pdfParams($quote),
+            ['company' => \App\Models\Company::first()]
+        ))->setPaper('a4', 'portrait');
+
+        return $pdf->download(QuoteDocument::downloadFilename($quote));
     }
 
     public function email(Request $request, Quote $quote)

@@ -1,5 +1,11 @@
 @extends('layouts.print')
 @section('title', 'Teklif ' . $quote->quoteNumber . ' - Yazdır')
+@push('print-actions')
+    <a href="{{ route('quotes.pdf', $quote) }}"
+       class="px-4 py-2.5 bg-slate-800 text-white rounded-xl hover:bg-slate-900 font-semibold text-sm shadow-sm w-full sm:w-auto text-center order-first sm:order-none">
+        PDF İndir
+    </a>
+@endpush
 @section('content')
 @php
     $quoteIssuedAt = $quote->createdAt;

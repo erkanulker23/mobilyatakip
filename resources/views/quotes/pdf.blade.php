@@ -1,0 +1,149 @@
+@php
+    $company = $company ?? \App\Models\Company::first();
+@endphp
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ $documentNumber }} - Teklif</title>
+    <style>
+        @page { size: A4 portrait; margin: 12mm; }
+        * { box-sizing: border-box; }
+        body { font-family: DejaVu Sans, sans-serif; font-size: 11px; color: #000; margin: 0; padding: 0; line-height: 1.45; }
+        h1 { font-size: 16px; margin: 0 0 4px; color: #000; }
+        h2 { font-size: 12px; margin: 0; color: #000; font-weight: 700; }
+        .header { border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 14px; }
+        .header-table { width: 100%; border-collapse: collapse; }
+        .header-table td { vertical-align: top; padding: 0; color: #000; }
+        .doc-no { font-size: 20px; font-weight: bold; color: #000; line-height: 1.1; }
+        .party-row { width: 100%; margin-bottom: 14px; }
+        .party-box { width: 48%; display: inline-block; vertical-align: top; color: #000; }
+        .party-label { font-size: 9px; text-transform: uppercase; color: #000; font-weight: bold; margin-bottom: 5px; letter-spacing: 0.04em; }
+        .items { width: 100%; border-collapse: collapse; margin-top: 6px; }
+        .items th, .items td { border: 1px solid #000; padding: 7px 8px; font-size: 10px; line-height: 1.4; color: #000; }
+        .items th { background: #ececec; font-size: 9px; text-transform: uppercase; color: #000; font-weight: 700; }
+        .items td.right, .items th.right { text-align: right; }
+        .items td.center, .items th.center { text-align: center; }
+        .totals { width: 240px; margin-left: auto; margin-top: 12px; color: #000; }
+        .totals table { width: 100%; border-collapse: collapse; }
+        .totals td { padding: 4px 0; font-size: 10px; color: #000; }
+        .totals .grand { font-size: 13px; font-weight: bold; border-top: 2px solid #000; padding-top: 6px; color: #000; }
+        .notes, .terms { margin-top: 14px; padding-top: 8px; border-top: 1px solid #000; color: #000; }
+        .terms ol { margin: 6px 0 0; padding-left: 18px; }
+        .terms li { font-size: 9px; line-height: 1.35; margin: 3px 0; }
+        .muted { color: #000; font-size: 10px; margin: 2px 0; line-height: 1.4; }
+        .subtitle { font-size: 9px; margin-top: 4px; color: #333; }
+        .desc-list { margin: 4px 0 0; padding-left: 14px; list-style: disc; }
+        .desc-list li { color: #000; font-size: 9px; line-height: 1.35; margin: 1px 0; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <table class="header-table">
+        <tr>
+            <td>
+                <h1>{{ $company?->name ?? 'Firma Adı' }}</h1>
+                @if($company?->address)<p class="muted">{{ $company->address }}</p>@endif
+                @if($company?->phone)<p class="muted">{{ $company->phone }}</p>@endif
+                @if($company?->email)<p class="muted">{{ $company->email }}</p>@endif
+            </td>
+            <td style="text-align: right;">
+                <h2>{{ $documentTitle }}</h2>
+                <div class="doc-no">{{ $documentNumber }}</div>
+                @if(!empty($documentSubtitle))<p class="subtitle">{{ $documentSubtitle }}</p>@endif
+                @if(isset($documentDate) && $documentDate)
+                <p class="muted">{{ $documentDate->format('d.m.Y') }}</p>
+                @endif
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div class="party-row">
+    <div class="party-box">
+        <div class="party-label">{{ $partyLabel ?? 'Müşteri' }}</div>
+        <strong>{{ $partyName ?? '-' }}</strong>
+        @if(!empty($partyAddress))<p class="muted">{{ $partyAddress }}</p>@endif
+        @if(!empty($partyPhone))<p class="muted">{{ $partyPhone }}</p>@endif
+        @if(!empty($partyEmail))<p class="muted">{{ $partyEmail }}</p>@endif
+        @if(!empty($partyTax))<p class="muted">Vergi: {{ $partyTax }}</p>@endif
+    </div>
+    @if(!empty($extraInfo))
+    <div class="party-box" style="text-align: right;">
+        {!! $extraInfo !!}
+    </div>
+    @endif
+</div>
+
+<table class="items">
+    <thead>
+        <tr>
+            <th style="width:24px;">#</th>
+            <th>Ürün / Açıklama</th>
+            <th class="right" style="width:70px;">Birim</th>
+            <th class="center" style="width:36px;">Adet</th>
+            @if(!empty($showKdv) && empty($kdvIncluded))<th class="right" style="width:40px;">KDV</th>@endif
+            <th class="right" style="width:70px;">Toplam</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach($items as $i => $item)
+        <tr>
+            <td>{{ $i + 1 }}</td>
+            <td>
+                {{ $item['name'] ?? '-' }}
+                @if(!empty($item['description']))
+                <ul class="desc-list">
+                    @foreach(\App\Support\ItemDescription::lines($item['description']) as $line)
+                    <li>{{ $line }}</li>
+                    @endforeach
+                </ul>
+                @endif
+            </td>
+            <td class="right">{{ number_format($item['unitPrice'] ?? 0, 0, ',', '.') }} ₺</td>
+            <td class="center">{{ $item['quantity'] ?? 0 }}</td>
+            @if(!empty($showKdv) && empty($kdvIncluded))<td class="right">%{{ number_format($item['kdvRate'] ?? 0, 0) }}</td>@endif
+            <td class="right">{{ number_format($item['lineTotal'] ?? 0, 0, ',', '.') }} ₺</td>
+        </tr>
+        @endforeach
+    </tbody>
+</table>
+
+<div class="totals">
+    <table>
+        @if(empty($kdvIncluded) && isset($subtotal))
+        <tr><td class="muted">Ara Toplam:</td><td style="text-align:right;">{{ number_format($subtotal ?? 0, 0, ',', '.') }} ₺</td></tr>
+        @endif
+        @if(!empty($showKdv) && empty($kdvIncluded) && isset($kdvTotal))
+        <tr><td class="muted">KDV Toplam:</td><td style="text-align:right;">{{ number_format($kdvTotal ?? 0, 0, ',', '.') }} ₺</td></tr>
+        @endif
+        @if(isset($discount) && ($discount ?? 0) > 0)
+        <tr><td class="muted">İndirim:</td><td style="text-align:right;">-{{ number_format($discount ?? 0, 0, ',', '.') }} ₺</td></tr>
+        @endif
+        <tr class="grand"><td>Genel Toplam:</td><td style="text-align:right;">{{ number_format($grandTotal ?? 0, 0, ',', '.') }} ₺</td></tr>
+    </table>
+</div>
+
+@if(!empty($notes))
+<div class="notes">
+    <div class="party-label">Notlar</div>
+    <p style="margin:0;">{{ $notes }}</p>
+</div>
+@endif
+
+@if(!empty($terms))
+<div class="terms">
+    <div class="party-label">{{ $termsTitle ?? 'Koşullar' }}</div>
+    <ol>
+        @foreach($terms as $term)
+            <li>{{ $term }}</li>
+        @endforeach
+    </ol>
+</div>
+@endif
+
+@if(!empty($hasDrawingFiles))
+<p class="muted" style="margin-top:12px;">Ek çizim dosyaları için uygulamadaki teklif yazdırma sayfasına bakınız.</p>
+@endif
+</body>
+</html>
