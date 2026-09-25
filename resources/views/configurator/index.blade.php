@@ -478,6 +478,6 @@
   }
 }
 </script>
-<script type="module" src="{{ asset('js/tv-configurator.js') }}?v=49"></script>
+<script type="module" src="{{ asset('js/tv-configurator.js') }}?v=50"></script>
 </body>
 </html>
