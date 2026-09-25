@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 const CM = 0.01;
 const SNAP = 1;
-const WALL_W = 500; // cm — 420 cm ünitelere yer
-const WALL_H = 300;
-const FLOOR_D = 320;
+let WALL_W = 500;
+let WALL_H = 280;
+let FLOOR_D = 350;
 const GAP = 3; // cm between independent modules
 
 /** Arkalık / panel kalınlıkları (mm → cm) */
@@ -215,7 +215,7 @@ const state = {
   showGrid: false,
   showMeasure: false,
   autoRotate: false,
-  room: { wall: '#f2f2f2', floor: '#d8c3a5' },
+  room: { wall: '#f2f2f2', floor: '#d8c3a5', width: 500, depth: 350, height: 280 },
   history: [],
   future: [],
   textureCache: new Map(),
@@ -472,6 +472,27 @@ function initThree() {
   controls.maxDistance = 10;
   controls.enablePan = true;
   controls.autoRotateSpeed = 1.6;
+  controls.mouseButtons.LEFT = -1;
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  pmrem.dispose();
+
+  let spaceNav = false;
+  window.addEventListener('keydown', (e) => {
+    if (e.code !== 'Space' || e.repeat) return;
+    const tag = e.target?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    e.preventDefault();
+    spaceNav = true;
+    controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
+    showHint('Basılı tutun ve sürükleyin: odada gezin', 1200);
+  });
+  window.addEventListener('keyup', (e) => {
+    if (e.code !== 'Space') return;
+    spaceNav = false;
+    controls.mouseButtons.LEFT = -1;
+  });
+  state.spaceNav = () => spaceNav;
 
   // IKEA tarzı yumuşak stüdyo ışığı — önden-soldan, duvar + zemine gölge
   const hemi = new THREE.HemisphereLight(0xf5f7fa, 0xb8aea0, 0.62);
@@ -578,6 +599,7 @@ function initThree() {
 }
 
 function buildRoom() {
+  applyRoomSize();
   while (roomGroup.children.length) roomGroup.remove(roomGroup.children[0]);
 
   const floorMat = new THREE.MeshStandardMaterial({
@@ -627,6 +649,8 @@ function buildRoom() {
   sk.castShadow = true;
   sk.receiveShadow = true;
   roomGroup.add(sk);
+
+  addRoomMeasureLabels();
 }
 
 function tvSizeFromInch(inch) {
@@ -992,7 +1016,7 @@ async function createModuleMesh(mod) {
   } else if (mod.type === 'door') {
     await buildDoorMesh(group, mod, mat);
   } else if (mod.type === 'plinth') {
-    const bazaH = mod.baza ? Math.min(10, Math.max(6, (mod.bazaH || 8))) : 0;
+    const bazaH = (mod.baza || mod.gizliBaza) ? Math.min(12, Math.max(6, (mod.bazaH || 8))) : 0;
     const bodyH = Math.max(8, mod.h - bazaH);
     // Kapak / çekmece alabilen banko → içi boş gövde (masif blok değil)
     if (canTakeFronts(mod)) {
@@ -1024,20 +1048,25 @@ async function createModuleMesh(mod) {
       group.add(body);
     }
     if (bazaH > 0) {
+      const hidden = !!mod.gizliBaza;
       const bazaMat = new THREE.MeshStandardMaterial({
-        color: new THREE.Color(mod.bazaColor || '#2a2a2a'),
-        roughness: 0.7,
+        color: new THREE.Color(hidden ? '#1a1a1a' : (mod.bazaColor || '#2a2a2a')),
+        roughness: 0.85,
       });
       const baza = new THREE.Mesh(
-        new THREE.BoxGeometry((mod.w - 4) * CM, bazaH * CM, (mod.d - 2) * CM),
+        new THREE.BoxGeometry(
+          (mod.w - (hidden ? 8 : 4)) * CM,
+          bazaH * CM,
+          (mod.d - (hidden ? 14 : 2)) * CM
+        ),
         bazaMat
       );
-      baza.position.y = (bazaH / 2) * CM;
+      baza.position.set(0, (bazaH / 2) * CM, hidden ? -5 * CM : 0);
       baza.castShadow = true;
       group.add(baza);
     }
     group.userData.originAtBottom = true;
-    if (mod.led && !mod.baza) addLedStrip(group, mod, 'under');
+    if (mod.led && !mod.baza && !mod.gizliBaza) addLedStrip(group, mod, 'under');
   } else if (mod.type === 'glb' && mod.glbFile) {
     try {
       const gltf = await loadGlb(mod.glbFile);
@@ -1310,50 +1339,102 @@ async function buildDoorMesh(group, mod, mat) {
     panel.position.y = H / 2;
     panel.castShadow = true;
     group.add(panel);
-    if (style === 'push' && (mod.handleStyle === 'none' || !mod.handleStyle)) {
-      const tip = new THREE.Mesh(
-        new THREE.SphereGeometry(0.008, 10, 10),
-        new THREE.MeshStandardMaterial({ color: 0x666666, metalness: 0.5, roughness: 0.3 })
-      );
-      tip.position.set(0, H * 0.15, D / 2 + 0.008);
-      group.add(tip);
-    } else {
-      addHandle(group, mod, W, H, D / 2 + 0.012);
+    if (!(style === 'push' && (mod.handleStyle === 'none' || !mod.handleStyle))) {
+      addHandle(group, mod, W, H, D / 2 + 0.002);
     }
   }
+  poseOpenFront(group, mod, W);
   group.userData.originAtBottom = true;
+}
+
+function poseOpenFront(group, mod, W) {
+  const host = mod.parentId ? state.modules.find((m) => m.id === mod.parentId) : null;
+  const mode = host?.frontsOpen || 'shut';
+  if (mode === 'shut') return;
+  const style = mod.doorStyle || 'hinge';
+  const openDrawers = mode === 'drawers' || mode === 'all';
+  const openDoors = mode === 'doors' || mode === 'all';
+  if (style === 'drawer' && openDrawers) {
+    const pull = Math.max(mod.d || 28, 16) * CM * 0.7;
+    group.children.forEach((c) => { c.position.z += pull; });
+    return;
+  }
+  if ((style === 'push' || style === 'hinge' || style === 'glass') && openDoors) {
+    const hingeLeft = (mod.bayIndex || 0) % 2 === 0;
+    const hx = hingeLeft ? -W / 2 : W / 2;
+    const pivot = new THREE.Group();
+    group.children.slice().forEach((c) => {
+      group.remove(c);
+      c.position.x -= hx;
+      pivot.add(c);
+    });
+    pivot.position.x = hx;
+    pivot.rotation.y = hingeLeft ? -1.05 : 1.05;
+    group.add(pivot);
+  }
 }
 
 function addHandle(group, mod, W, H, zFront) {
   const style = mod.handleStyle || (mod.doorStyle === 'drawer' ? 'bar' : mod.doorStyle === 'hinge' ? 'bar' : 'none');
   if (style === 'none') return;
   const pos = mod.handlePos || (mod.doorStyle === 'drawer' ? 'top' : 'right');
-  const metal = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.85, roughness: 0.22 });
-  let hx = 0, hy = H / 2;
-  if (pos === 'left') hx = -W * 0.35;
-  if (pos === 'right') hx = W * 0.35;
-  if (pos === 'top') hy = H * 0.78;
-  if (pos === 'bottom') hy = H * 0.22;
-  if (pos === 'center') { hx = 0; hy = H / 2; }
+  const metal = new THREE.MeshStandardMaterial({
+    color: 0xd5d8dc,
+    metalness: 1,
+    roughness: 0.22,
+  });
+  let hx = 0;
+  let hy = H * 0.5;
+  if (pos === 'left') hx = -W * 0.32;
+  if (pos === 'right') hx = W * 0.32;
+  if (pos === 'top') hy = H * 0.72;
+  if (pos === 'bottom') hy = H * 0.28;
+  const horizontal = style === 'edge' || mod.doorStyle === 'drawer' || pos === 'top' || pos === 'bottom' || pos === 'center';
 
   if (style === 'knob') {
-    const knob = new THREE.Mesh(new THREE.SphereGeometry(0.012, 12, 12), metal);
-    knob.position.set(hx, hy, zFront);
-    group.add(knob);
-  } else if (style === 'edge') {
-    const edge = new THREE.Mesh(new THREE.BoxGeometry(W * 0.9, 0.006, 0.01), metal);
-    edge.position.set(0, pos === 'bottom' ? H * 0.08 : H * 0.92, zFront);
-    group.add(edge);
-  } else {
-    // bar
-    const len = Math.min(W, H) * 0.35;
-    const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, len, 12), metal);
-    if (pos === 'top' || pos === 'bottom' || pos === 'center') {
-      bar.rotation.z = Math.PI / 2;
-    }
-    bar.position.set(hx, hy, zFront);
-    group.add(bar);
+    const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.016, 0.012, 20), metal);
+    cup.rotation.x = Math.PI / 2;
+    cup.position.set(hx, hy, zFront + 0.008);
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.012, 12), metal);
+    neck.rotation.x = Math.PI / 2;
+    neck.position.set(hx, hy, zFront + 0.004);
+    group.add(cup, neck);
+    return;
   }
+
+  const len = style === 'edge'
+    ? (horizontal ? W * 0.72 : H * 0.55)
+    : Math.min(horizontal ? W * 0.62 : H * 0.42, 0.22);
+  const radius = style === 'edge' ? 0.004 : 0.0065;
+  const g = new THREE.Group();
+  const bar = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, Math.max(len, 0.04), 20), metal);
+  const endA = new THREE.Mesh(new THREE.SphereGeometry(radius, 14, 10), metal);
+  const endB = endA.clone();
+  if (horizontal) {
+    bar.rotation.z = Math.PI / 2;
+    endA.position.x = -len / 2;
+    endB.position.x = len / 2;
+  } else {
+    endA.position.y = -len / 2;
+    endB.position.y = len / 2;
+  }
+  const postLen = style === 'edge' ? 0.004 : 0.016;
+  const post = new THREE.CylinderGeometry(radius * 0.7, radius * 0.7, postLen, 10);
+  const p1 = new THREE.Mesh(post, metal);
+  const p2 = new THREE.Mesh(post, metal);
+  p1.rotation.x = Math.PI / 2;
+  p2.rotation.x = Math.PI / 2;
+  const inset = len * 0.28;
+  if (horizontal) {
+    p1.position.set(-inset, 0, -postLen / 2);
+    p2.position.set(inset, 0, -postLen / 2);
+  } else {
+    p1.position.set(0, -inset, -postLen / 2);
+    p2.position.set(0, inset, -postLen / 2);
+  }
+  g.add(bar, endA, endB, p1, p2);
+  g.position.set(hx, hy, zFront + postLen);
+  group.add(g);
 }
 
 function addMeasureLabels(group, mod) {
@@ -1421,6 +1502,7 @@ async function rebuildModules() {
   if (token !== rebuildToken) return;
   updateSelectionVisual();
   if (state.showTv) buildTv();
+  addRoomMeasureLabels();
   scheduleAutoSave();
 }
 
@@ -1470,9 +1552,67 @@ function canTakeFronts(m) {
   return m && FRONT_HOST_TYPES.has(m.type);
 }
 
+function applyRoomSize() {
+  const n = (v, min, max, fallback) => {
+    const x = Number(v);
+    if (Number.isNaN(x)) return fallback;
+    return Math.min(max, Math.max(min, Math.round(x)));
+  };
+  state.room.width = n(state.room.width, 250, 900, 500);
+  state.room.depth = n(state.room.depth, 250, 800, 350);
+  state.room.height = n(state.room.height, 240, 400, 280);
+  WALL_W = state.room.width;
+  FLOOR_D = state.room.depth;
+  WALL_H = state.room.height;
+}
+
+function fitFurnitureToRoom() {
+  applyRoomSize();
+  state.modules.forEach((m) => {
+    if (m.parentId) return;
+    const role = placementRole(m);
+    if (role === 'floor' || role === 'wall') m.z = wallFlushZ(m.d);
+    m.x = Math.max(-WALL_W / 2 + m.w / 2, Math.min(WALL_W / 2 - m.w / 2, m.x));
+    if ((m.y || 0) + m.h > WALL_H) m.y = Math.max(0, WALL_H - m.h);
+  });
+  state.modules.filter((m) => isHost(m)).forEach((h) => syncAttachedToHost(h));
+  const span = furnitureSpanCm();
+  buildRoom();
+  rebuildModules();
+  if (span > WALL_W) {
+    showHint(`Ünite ${span} cm, oda eni ${WALL_W} cm. Parçalar duvarın içine çekildi.`, 4000);
+  } else {
+    showHint(`Oda ${WALL_W}×${FLOOR_D} cm, tavan ${WALL_H} cm. Ünite arka duvarda, boşluk ${WALL_W - span} cm.`, 3600);
+  }
+  scheduleAutoSave();
+}
+
+function furnitureSpanCm() {
+  const roots = state.modules.filter((m) => !m.parentId && (placementRole(m) === 'floor' || placementRole(m) === 'wall'));
+  if (!roots.length) return 0;
+  const left = Math.min(...roots.map((m) => m.x - m.w / 2));
+  const right = Math.max(...roots.map((m) => m.x + m.w / 2));
+  return Math.round(right - left);
+}
+
+function addRoomMeasureLabels() {
+  roomGroup.children.filter((c) => c.name === 'room-dim').forEach((c) => roomGroup.remove(c));
+  const mk = (text, x, y, z) => {
+    const el = document.createElement('div');
+    el.textContent = text;
+    el.style.cssText = 'color:#1f2937;background:rgba(255,255,255,.92);padding:3px 8px;border-radius:8px;font:700 12px Montserrat,sans-serif;white-space:nowrap;border:1px solid #e5e7eb;';
+    const o = new CSS2DObject(el);
+    o.position.set(x, y, z);
+    o.name = 'room-dim';
+    roomGroup.add(o);
+  };
+  const z = -(FLOOR_D * CM) / 2;
+  mk(`${WALL_W} cm en`, 0, 0.06, z + 0.35);
+  mk(`${FLOOR_D} cm derinlik`, (WALL_W * CM) / 2 - 0.15, 0.06, 0);
+  mk(`${WALL_H} cm tavan`, -(WALL_W * CM) / 2 + 0.2, (WALL_H * CM) * 0.55, z + 0.08);
+}
+
 function wallFlushZ(depthCm) {
-  // Duvar görsel düzlemi ~ -FLOOR_D/2; parçanın ARKA yüzü odaya 0.8 cm içeride
-  // (ince paneller duvarın içine gömülmesin)
   const wallPlane = -FLOOR_D / 2 + 0.8;
   return wallPlane + (depthCm || 2) / 2;
 }
@@ -1892,19 +2032,34 @@ function attachToHost(host, type, extras = {}) {
     const bays = Math.max(1, extras.bays || bayCountForWidth(host.w));
     const bayIndex = extras.bayIndex != null ? extras.bayIndex : 0;
     if (doorStyle === 'drawer') {
-      // Her blok (bay) kendi çekmecesi — 4 blok = 4 sütun, tek geniş çekmece değil
       const usable = host.h - bazaH;
+      const baysW = extras.w || (host.w / bays - 1.2);
+      const left = host.x - host.w / 2;
+      const cx = extras.x != null
+        ? extras.x
+        : left + baysW / 2 + 0.6 + bayIndex * (baysW + 1.2);
+      if (extras.h) {
+        const yOff = extras.yOffset != null ? extras.yOffset : bazaH + 1.2;
+        return {
+          w: baysW,
+          h: extras.h,
+          d: Math.max(18, host.d - 4),
+          x: cx,
+          y: baseY + yOff,
+          z: host.z,
+          drawerRow: 0,
+          rows: 2,
+          bayIndex,
+          bays,
+          yOffset: yOff,
+        };
+      }
       const rows = extras.rows || (usable >= 50 ? 2 : 1);
       const row = extras.drawerRow != null ? extras.drawerRow : 0;
       const rowH = (usable - 3) / rows;
       const yOff = bazaH + 1.5 + row * rowH;
-      const drawerW = extras.w || (host.w / bays - 1.2);
-      const left = host.x - host.w / 2;
-      const cx = extras.x != null
-        ? extras.x
-        : left + drawerW / 2 + 0.6 + bayIndex * (drawerW + 1.2);
       return {
-        w: drawerW,
+        w: baysW,
         h: Math.max(12, rowH - 0.5),
         d: Math.max(18, host.d - 4),
         x: cx,
@@ -1922,16 +2077,18 @@ function attachToHost(host, type, extras = {}) {
     const cx = extras.x != null
       ? extras.x
       : left + doorW / 2 + 0.6 + bayIndex * (doorW + 1.2);
+    const yOff = extras.yOffset != null ? extras.yOffset : bazaH + 1;
     const frontD = doorStyle === 'open' ? Math.max(2, host.d - 4) : 2;
     return {
       w: doorW,
-      h: Math.max(12, extras.h || host.h - bazaH - 2),
+      h: Math.max(8, extras.h || host.h - yOff - 1),
       d: frontD,
       x: cx,
-      y: baseY + bazaH + 1,
+      y: baseY + yOff,
       z: doorStyle === 'open' ? host.z : host.z + host.d / 2 + 1.1,
       bayIndex,
       bays,
+      yOffset: yOff,
     };
   }
 
@@ -2236,11 +2393,15 @@ function applyHostLayout(host, layout) {
       }
     }
   } else if (layout === 'mix') {
-    // Her blokta alt çekmece, üst açık (IKEA)
     const bays = host.doorBays || bayCountForWidth(host.w);
     host.doorBays = bays;
+    const bazaH = (host.type === 'plinth' && host.baza) ? (host.bazaH || 8) : 0;
+    const usable = Math.max(16, host.h - bazaH);
+    const drawerH = Math.min(18, Math.max(11, usable * 0.42));
+    const doorH = Math.max(8, usable - drawerH - 1.6);
     for (let i = 0; i < bays; i++) {
-      pushDoorOnHost(host, 'drawer', { bayIndex: i, bays, drawerRow: 0, rows: 1 });
+      pushDoorOnHost(host, 'drawer', { bayIndex: i, bays, h: drawerH, yOffset: bazaH + 1 });
+      pushDoorOnHost(host, 'push', { bayIndex: i, bays, h: doorH, yOffset: bazaH + drawerH + 1.4 });
     }
   }
 
@@ -2470,14 +2631,14 @@ function startTvBench(presetId) {
       materialCode: '',
     });
   }
-  state.showTv = true;
+  state.showTv = false;
   state.tvInch = preset.inch;
   buildTv();
   state.selectedId = firstId;
   rebuildModules().then(() => {
     state.view = 'customize';
     renderSidebar();
-    $('#fab-tv')?.classList.add('active');
+    $('#fab-tv')?.classList.remove('active');
     showHint(`${preset.label} hazır — iskelete kapak / çekmece ekleyin`);
   });
 }
@@ -2713,13 +2874,13 @@ function startWallComposition(compId) {
   state.modules.filter((m) => m.type === 'wallPanel').forEach(sendPanelToWall);
   resolveAllSolids();
 
-  state.showTv = true;
+  state.showTv = false;
   state.tvInch = comp.inch;
   buildTv();
   rebuildModules().then(() => {
     state.view = 'home';
     renderSidebar();
-    $('#fab-tv')?.classList.add('active');
+    $('#fab-tv')?.classList.remove('active');
     // Kamerayı üniteye bakacak şekilde ayarla
     const span = Math.max(...state.modules.map((m) => m.w), 200);
     camera.position.set(span * CM * 0.55, 1.6, 4.2);
@@ -3209,6 +3370,7 @@ function updateHoverTag(e, id) {
 function onPointerDown(e) {
   if (e.button === 2) return;
   if (e.button !== 0) return;
+  if (state.spaceNav?.()) return;
   hideCtx();
   const id = pickModule(e);
   pendingDrag = null;
@@ -3829,28 +3991,47 @@ function renderSidebar() {
   }
 
   if (state.view === 'room') {
-    sideTitle.textContent = 'Odayı özelleştirin';
+    sideTitle.textContent = 'Oda ölçüsü';
+    const span = furnitureSpanCm();
     sideBody.innerHTML = `
-      <div class="panel-section">
-        <div class="field"><label>Duvar rengi</label><input type="color" id="wall-color" value="${state.room.wall}"></div>
-        <div class="field"><label>Zemin tonu</label><input type="color" id="floor-color" value="${state.room.floor}"></div>
-        <div class="chip-row" style="margin-top:8px">
-          <button type="button" class="chip" data-wall="#f2f2f2" data-floor="#d8c3a5">Açık</button>
-          <button type="button" class="chip" data-wall="#e8eef5" data-floor="#cbb89a">Soğuk</button>
-          <button type="button" class="chip" data-wall="#1f2937" data-floor="#6b4f3a">Koyu</button>
-        </div>
+      <p class="hint-inline" style="margin:0 0 12px">Ünite bu odanın arka duvarına yaslanır. En, duvar genişliği; derinlik, odanın içidir.</p>
+      <div class="dim-row">
+        <div class="field"><label>En (cm)</label><input type="number" id="room-w" min="250" max="900" step="10" value="${state.room.width || WALL_W}"></div>
+        <div class="field"><label>Derinlik</label><input type="number" id="room-d" min="250" max="800" step="10" value="${state.room.depth || FLOOR_D}"></div>
+        <div class="field"><label>Tavan</label><input type="number" id="room-h" min="240" max="400" step="5" value="${state.room.height || WALL_H}"></div>
       </div>
+      <div class="chip-row" style="margin-top:8px">
+        <button type="button" class="chip" data-room="350,300,260">Dar 350</button>
+        <button type="button" class="chip" data-room="500,350,280">Salon 500</button>
+        <button type="button" class="chip" data-room="600,400,280">Geniş 600</button>
+        <button type="button" class="chip" data-room="420,320,270">420 duvar</button>
+      </div>
+      <button type="button" class="btn full-btn" id="btn-room-apply" style="margin-top:12px">Odayı uygula</button>
+      <p class="hint-inline">Ünite şu an ${span} cm. ${span && span > (state.room.width || WALL_W) ? 'Duvara sığmıyor, uygulanınca içeri çekilir.' : 'Duvara sığıyor.'}</p>
+      <div class="section-title">Renk</div>
+      <div class="field"><label>Duvar</label><input type="color" id="wall-color" value="${state.room.wall}"></div>
+      <div class="field"><label>Zemin</label><input type="color" id="floor-color" value="${state.room.floor}"></div>
     `;
-    $('#wall-color').addEventListener('input', (e) => { state.room.wall = e.target.value; buildRoom(); });
-    $('#floor-color').addEventListener('input', (e) => { state.room.floor = e.target.value; buildRoom(); });
-    sideBody.querySelectorAll('.chip').forEach((c) => {
-      c.addEventListener('click', () => {
-        state.room.wall = c.dataset.wall;
-        state.room.floor = c.dataset.floor;
+    const readRoom = () => {
+      state.room.width = Number($('#room-w').value);
+      state.room.depth = Number($('#room-d').value);
+      state.room.height = Number($('#room-h').value);
+      fitFurnitureToRoom();
+      renderSidebar();
+    };
+    $('#btn-room-apply').addEventListener('click', readRoom);
+    sideBody.querySelectorAll('[data-room]').forEach((b) => {
+      b.addEventListener('click', () => {
+        const [w, d, h] = b.dataset.room.split(',').map(Number);
+        state.room.width = w;
+        state.room.depth = d;
+        state.room.height = h;
+        fitFurnitureToRoom();
         renderSidebar();
-        buildRoom();
       });
     });
+    $('#wall-color').addEventListener('input', (e) => { state.room.wall = e.target.value; buildRoom(); persistDesign(); });
+    $('#floor-color').addEventListener('input', (e) => { state.room.floor = e.target.value; buildRoom(); persistDesign(); });
     return;
   }
 
@@ -3914,10 +4095,12 @@ function renderSidebar() {
     const plinthUI = mod.type === 'plinth' ? `
       <div class="section-title">Baza</div>
       <div class="chip-row">
-        <button type="button" class="chip ${mod.baza ? 'active' : ''}" data-baza="1">Bazalı</button>
-        <button type="button" class="chip ${!mod.baza ? 'active' : ''}" data-baza="0">Bazasız (yüzen)</button>
+        <button type="button" class="chip ${mod.baza && !mod.gizliBaza ? 'active' : ''}" data-baza="1">Bazalı</button>
+        <button type="button" class="chip ${mod.gizliBaza ? 'active' : ''}" data-baza="2">Gizli baza</button>
+        <button type="button" class="chip ${!mod.baza && !mod.gizliBaza ? 'active' : ''}" data-baza="0">Yüzen</button>
       </div>
-      ${!mod.baza ? `
+      ${mod.gizliBaza ? `<p class="hint-inline">Baza önden görünmez, içeri kaçık durur.</p>` : ''}
+      ${!mod.baza && !mod.gizliBaza ? `
         <div class="dim-row">
           <div class="field"><label>Yerden (cm)</label><input type="number" id="dim-y" min="0" max="80" step="1" value="${fmt(mod.y || 0)}"></div>
         </div>
@@ -3984,10 +4167,17 @@ function renderSidebar() {
           <span class="layout-ico" aria-hidden="true">
             <svg viewBox="0 0 48 48"><rect x="6" y="6" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6 28h36M18 34h12M6 14h36" stroke="currentColor" stroke-width="2"/></svg>
           </span>
-          <span>Karışık</span>
+          <span>Çekmece+kapak</span>
         </button>
       </div>
       <p class="hint-inline">${bayN} bölme — açık raf, kapak, cam ve çekmece bu sayıya bölünür</p>
+      <div class="section-title">Aç / kapa</div>
+      <div class="chip-row">
+        <button type="button" class="chip ${(mod.frontsOpen || 'shut') === 'shut' ? 'active' : ''}" data-open="shut">Kapalı</button>
+        <button type="button" class="chip ${mod.frontsOpen === 'drawers' ? 'active' : ''}" data-open="drawers">Çekmeceleri aç</button>
+        <button type="button" class="chip ${mod.frontsOpen === 'doors' ? 'active' : ''}" data-open="doors">Kapakları aç</button>
+        <button type="button" class="chip ${mod.frontsOpen === 'all' ? 'active' : ''}" data-open="all">Dolabı aç</button>
+      </div>
       ${layoutCur === 'doors' ? `
       <div class="chip-row" style="margin-top:8px">
         <button type="button" class="chip ${!hasGlassFront && bayN === 1 ? 'active' : ''}" data-front-bays="1">1 kapak</button>
@@ -4037,34 +4227,33 @@ function renderSidebar() {
         `).join('')}
         <button type="button" class="chip" data-top-span="1" title="Yan yana bloklara yay">Yay</button>
       </div>
-      <div class="section-title">İç düzenleyiciler</div>
-      <div class="chip-row">
-        ${(CATALOG.interior || []).slice(0, 6).map((p) => `
-          <button type="button" class="mat-swatch" data-interior="${encodeURIComponent(JSON.stringify(p))}" title="${p.label}" style="background:${p.color}"></button>
+      <div class="section-title">İç düzenleyici</div>
+      <p class="hint-inline">Raf veya tepsi ekler. Aynı rengi birden çok kez basabilirsiniz.</p>
+      <div class="organizer-list">
+        ${(CATALOG.interior || []).map((p) => `
+          <button type="button" class="organizer-row" data-interior="${encodeURIComponent(JSON.stringify(p))}">
+            <span class="dot" style="background:${p.color}"></span>
+            <span>
+              <strong>${p.label}</strong>
+              <small>${p.glassShelf ? 'Cam' : p.organizer === 'tray' ? 'Çekme tepsi' : 'İç raf'}</small>
+            </span>
+          </button>
         `).join('')}
-        <button type="button" class="chip" data-add-part="shelf">+ Raf</button>
       </div>
       <div class="section-title">Arkalık</div>
-      <p class="hint-inline">Gövdenin arkasına plaka ekler — kablo gizleme ve sağlamlık için</p>
-      <button type="button" class="feature-btn ${hasHostBack ? 'active' : ''}" id="btn-toggle-back">
-        <span class="feature-ico" aria-hidden="true">
-          <svg viewBox="0 0 48 48" width="28" height="28"><rect x="8" y="6" width="6" height="36" fill="currentColor" opacity=".35"/><rect x="18" y="6" width="22" height="36" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M22 14h14M22 24h14M22 34h10" stroke="currentColor" stroke-width="2"/></svg>
-        </span>
-        <span class="feature-text">
-          <strong>${hasHostBack ? 'Arkalık var' : 'Arkalık ekle'}</strong>
-          <small>${hasHostBack ? `${backChild.thicknessMm || Math.round((backChild.d || 1.8) * 10)} mm · kaldırmak için tekrar tıkla` : '18 mm plaka ekle'}</small>
-        </span>
-      </button>
+      <div class="choice-pair">
+        <button type="button" class="choice ${!hasHostBack ? 'active' : ''}" data-back-set="0">Yok</button>
+        <button type="button" class="choice ${hasHostBack ? 'active' : ''}" data-back-set="1">Var</button>
+      </div>
+      <p class="hint-inline">${hasHostBack ? 'Gövdenin arkasında plaka var.' : 'Kablo ve duvar görünmesin diye arka plaka.'}</p>
       ${hasHostBack ? `
-      <div class="chip-row" style="margin-top:8px">
+      <div class="section-title">Kalınlık</div>
+      <div class="chip-row">
         ${BACK_THICKNESS_MM.map((mm) => `
           <button type="button" class="chip ${(backChild.thicknessMm || Math.round((backChild.d || 1.8) * 10)) === mm ? 'active' : ''}" data-host-back-thick="${mm}">${mm} mm</button>
         `).join('')}
       </div>` : ''}
-      <div class="chip-row" style="margin-top:10px">
-        ${mod.type === 'shelf' ? '<button type="button" class="chip" data-add-part="slat">Çıta arkalık</button>' : ''}
-        <button type="button" class="chip" data-add-part="leg">Ayak</button>
-      </div>
+      ${mod.type === 'shelf' ? '<div class="chip-row" style="margin-top:10px"><button type="button" class="chip" data-add-part="slat">Çıta arkalık</button></div>' : ''}
     ` : '';
 
     const backUI = mod.type === 'back' ? `
@@ -4195,11 +4384,11 @@ function renderSidebar() {
         mod.floatY = mod.y;
       }
       if ($('#baza-h')) mod.bazaH = clampNum($('#baza-h').value, 6, 12);
-      if (isSolidBody(mod)) {
-        resolveAllSolids();
-      }
       if (isHost(mod)) syncAttachedToHost(mod);
-      rebuildModules().then(() => buildTv());
+      rebuildModules().then(() => {
+        buildTv();
+        sideTitle.textContent = `${typeTitle(mod.type)} · ${Math.round(mod.w)}×${Math.round(mod.d)}×${Math.round(mod.h)}`;
+      });
     };
     ['dim-w', 'dim-d', 'dim-h', 'dim-y', 'baza-h'].forEach((id) => $(`#${id}`)?.addEventListener('change', applyDims));
 
@@ -4214,9 +4403,15 @@ function renderSidebar() {
     sideBody.querySelectorAll('[data-baza]').forEach((btn) => {
       btn.addEventListener('click', () => {
         pushHistory();
-        const on = btn.dataset.baza === '1';
-        mod.baza = on;
-        if (on) {
+        const mode = btn.dataset.baza;
+        mod.gizliBaza = mode === '2';
+        mod.baza = mode === '1' || mode === '2';
+        if (mode === '1') {
+          mod.y = 0;
+          mod.floatY = 0;
+          mod.led = false;
+          mod.bazaH = mod.bazaH || 8;
+        } else if (mode === '2') {
           mod.y = 0;
           mod.floatY = 0;
           mod.led = false;
@@ -4259,6 +4454,14 @@ function renderSidebar() {
 
     sideBody.querySelectorAll('[data-layout]').forEach((btn) => {
       btn.addEventListener('click', () => applyHostLayout(mod, btn.dataset.layout));
+    });
+    sideBody.querySelectorAll('[data-open]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        mod.frontsOpen = btn.dataset.open;
+        rebuildModules().then(() => renderSidebar());
+        const labels = { shut: 'Kapalı', drawers: 'Çekmeceler açık', doors: 'Kapaklar açık', all: 'Dolap açık' };
+        showHint(labels[mod.frontsOpen] || 'Güncellendi');
+      });
     });
     sideBody.querySelectorAll('[data-front]').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -4354,17 +4557,20 @@ function renderSidebar() {
         else addAttachedPart(t, { host: mod });
       });
     });
-    $('#btn-toggle-back')?.addEventListener('click', () => {
-      const existing = childrenOf(mod.id).filter((c) => c.type === 'back');
-      if (existing.length) {
-        pushHistory();
-        const kill = new Set(existing.map((b) => b.id));
-        state.modules = state.modules.filter((m) => !kill.has(m.id));
-        rebuildModules().then(() => renderSidebar());
-        showHint('Arkalık kaldırıldı');
-      } else {
-        addAttachedPart('back', { host: mod, thicknessMm: 18, label: 'Arkalık 18 mm' });
-      }
+    sideBody.querySelectorAll('[data-back-set]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const want = btn.dataset.backSet === '1';
+        const existing = childrenOf(mod.id).filter((c) => c.type === 'back');
+        if (want && !existing.length) {
+          addAttachedPart('back', { host: mod, thicknessMm: 18, label: 'Arkalık 18 mm' });
+        } else if (!want && existing.length) {
+          pushHistory();
+          const kill = new Set(existing.map((b) => b.id));
+          state.modules = state.modules.filter((m) => !kill.has(m.id));
+          rebuildModules().then(() => renderSidebar());
+          showHint('Arkalık kaldırıldı');
+        }
+      });
     });
     sideBody.querySelectorAll('[data-host-back-thick]').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -4720,7 +4926,8 @@ function loadDesign(force = false) {
     const data = JSON.parse(raw);
     if (data.modules) {
       state.modules = data.modules.map((m) => ({ ...m }));
-      if (data.room) state.room = data.room;
+      if (data.room) state.room = { wall: '#f2f2f2', floor: '#d8c3a5', width: 500, depth: 350, height: 280, ...data.room };
+      applyRoomSize();
       if (typeof data.showTv === 'boolean') state.showTv = data.showTv;
       if (data.tvInch) state.tvInch = data.tvInch;
       if (data.tv) state.tv = { ...state.tv, ...data.tv };

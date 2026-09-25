@@ -313,6 +313,22 @@
             border: 1px solid rgba(0,0,0,.14); box-shadow: inset 0 0 0 1px rgba(255,255,255,.4);
         }
         .color-pick.active { border-color: var(--accent); background: #eff6ff; color: var(--accent); }
+        .organizer-list { display: flex; flex-direction: column; gap: 6px; }
+        .organizer-row {
+            display: flex; align-items: center; gap: 10px; width: 100%;
+            padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 12px;
+            background: #fff; cursor: pointer; font: inherit; text-align: left;
+        }
+        .organizer-row:hover { border-color: #94a3b8; }
+        .organizer-row .dot { width: 28px; height: 28px; border-radius: 8px; border: 1px solid rgba(0,0,0,.12); flex: 0 0 auto; }
+        .organizer-row strong { display: block; font-size: 13px; }
+        .organizer-row small { display: block; margin-top: 2px; color: #8b93a1; font-size: 11px; }
+        .choice-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .choice {
+            border: 1.5px solid #e5e7eb; background: #fff; border-radius: 12px;
+            padding: 12px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+        }
+        .choice.active { border-color: var(--accent); color: var(--accent); background: #eff6ff; }
         .info-box {
             margin: 12px 16px; padding: 11px; border-radius: 12px; background: #f8fafc;
             border: 1px solid var(--line); font-size: 12px; color: #475569; line-height: 1.45;
@@ -462,6 +478,6 @@
   }
 }
 </script>
-<script type="module" src="{{ asset('js/tv-configurator.js') }}?v=42"></script>
+<script type="module" src="{{ asset('js/tv-configurator.js') }}?v=49"></script>
 </body>
 </html>
