@@ -74,4 +74,20 @@ class PublicConfiguratorController extends Controller
             'groups' => $groups,
         ]);
     }
+
+    public function model(string $file)
+    {
+        if (! preg_match('/^[a-z0-9\\-]+\\.glb$/', $file)) {
+            abort(404);
+        }
+        $path = storage_path('app/models/tv-stands/'.$file);
+        if (! is_file($path)) {
+            abort(404);
+        }
+
+        return response()->file($path, [
+            'Content-Type' => 'model/gltf-binary',
+            'Cache-Control' => 'public, max-age=86400',
+        ]);
+    }
 }

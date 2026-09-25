@@ -90,6 +90,9 @@ Route::prefix('katalog')->middleware('throttle:60,1')->group(function () {
 Route::prefix('tasarla')->middleware('throttle:60,1')->group(function () {
     Route::get('/', [\App\Http\Controllers\PublicConfiguratorController::class, 'index'])->name('configurator.index');
     Route::get('/malzemeler', [\App\Http\Controllers\PublicConfiguratorController::class, 'materials'])->name('configurator.materials');
+    Route::get('/model/{file}', [\App\Http\Controllers\PublicConfiguratorController::class, 'model'])
+        ->where('file', '[a-z0-9\\-]+\\.glb')
+        ->name('configurator.model');
 });
 
 Route::middleware(['auth'])->group(function () {

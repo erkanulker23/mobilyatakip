@@ -30,7 +30,57 @@
             background: var(--bg); color: var(--ink);
             -webkit-font-smoothing: antialiased;
         }
-        #app { display: grid; grid-template-columns: 1fr min(360px, 100%); height: 100%; }
+        #app { display: grid; grid-template-columns: 1fr min(420px, 100%); height: 100%; }
+        #sidebar {
+            background: #f4f5f7; border-left: 1px solid #e6e8ec;
+            display: flex; flex-direction: column; min-height: 0; z-index: 30;
+            overflow: hidden;
+        }
+        .side-head {
+            padding: 18px 18px 14px; background: #fff; border-bottom: 1px solid #eceef2;
+            display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+        }
+        .side-head h1 { margin: 0; font-size: 16px; font-weight: 700; line-height: 1.25; flex: 1; letter-spacing: -0.02em; }
+        .side-body { flex: 1; overflow: auto; padding: 14px 14px 8px; -webkit-overflow-scrolling: touch; }
+        .add-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .add-tile {
+            display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+            min-height: 78px; padding: 12px; border: 0; border-radius: 14px;
+            background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,.04);
+            cursor: pointer; font: inherit; text-align: left; color: var(--ink);
+        }
+        .add-tile:hover { background: #f8fbff; }
+        .add-tile strong { font-size: 13px; font-weight: 700; }
+        .add-tile span { font-size: 11px; color: #8b93a1; line-height: 1.35; }
+        .preset-list { display: flex; flex-direction: column; gap: 6px; }
+        .preset-row {
+            display: flex; flex-direction: column; gap: 2px; width: 100%;
+            padding: 12px 14px; border: 0; border-radius: 12px; background: #fff;
+            cursor: pointer; font: inherit; text-align: left;
+        }
+        .preset-row:hover { background: #f8fbff; }
+        .preset-row strong { font-size: 13px; }
+        .preset-row span { font-size: 11px; color: #8b93a1; }
+        .side-tabs {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+            padding: 4px; margin: 0 0 12px; background: #e8eaee; border-radius: 12px;
+            position: sticky; top: 0; z-index: 2;
+        }
+        .side-tab {
+            border: 0; background: transparent; border-radius: 9px;
+            padding: 9px 6px; font: inherit; font-size: 12px; font-weight: 700;
+            color: #5c6570; cursor: pointer;
+        }
+        .side-tab.active { background: #fff; color: #111; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+        .pane { display: none; }
+        .pane.active { display: block; }
+        .pane .acc { margin: 0 0 10px; border: 0; border-radius: 16px; box-shadow: 0 1px 0 rgba(0,0,0,.04); }
+        .side-dock {
+            position: sticky; bottom: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+            margin: 12px -14px 0; padding: 12px 14px 16px; background: #f4f5f7;
+            border-top: 1px solid #e6e8ec;
+        }
+        .side-dock .btn, .side-dock .danger { width: 100%; margin: 0; border-radius: 12px; justify-content: center; }
         @media (max-width: 900px) {
             #app { grid-template-columns: 1fr; grid-template-rows: 1fr min(46vh, 400px); }
         }
@@ -120,17 +170,6 @@
             font-weight: 700; font-size: 14px; box-shadow: var(--shadow);
         }
 
-        #sidebar {
-            background: var(--panel); border-left: 1px solid var(--line);
-            display: flex; flex-direction: column; min-height: 0; z-index: 30;
-            overflow: hidden;
-        }
-        .side-head {
-            padding: 16px 16px 12px; border-bottom: 1px solid var(--line);
-            display: flex; align-items: center; gap: 10px; flex-shrink: 0;
-        }
-        .side-head h1 { margin: 0; font-size: 15px; font-weight: 700; line-height: 1.3; flex: 1; }
-        .side-body { flex: 1; overflow: auto; padding: 0 0 28px; -webkit-overflow-scrolling: touch; }
         .menu-item {
             width: 100%; display: flex; align-items: center; gap: 12px;
             padding: 13px 16px; border: 0; background: transparent; cursor: pointer;
@@ -325,6 +364,7 @@
 @endphp
 <div id="app"
      data-materials-url="{{ $materialsUrl }}"
+     data-models-base="{{ url('/tasarla/model') }}"
      data-brand="{{ $brand }}"
      data-logo="{{ $logoUrl ?? '' }}"
      data-catalog-url="{{ url('/katalog') }}">
@@ -422,6 +462,6 @@
   }
 }
 </script>
-<script type="module" src="{{ asset('js/tv-configurator.js') }}?v=38"></script>
+<script type="module" src="{{ asset('js/tv-configurator.js') }}?v=42"></script>
 </body>
 </html>

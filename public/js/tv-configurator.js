@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const CM = 0.01;
 const SNAP = 1;
@@ -36,6 +36,16 @@ const CATALOG = {
     { id: 'pf4', label: '4 blok · yüzen', w: 240, d: 40, h: 35, floatY: 15, baza: false, led: true, bays: 4, price: 1900 },
     { id: 'pf5', label: '5 blok · yüzen', w: 300, d: 40, h: 35, floatY: 15, baza: false, led: true, bays: 5, price: 2300 },
     { id: 'pf6', label: '6 blok · yüzen', w: 360, d: 40, h: 35, floatY: 15, baza: false, led: true, bays: 6, price: 2700 },
+  ],
+  glb: [
+    { id: 'g-low', label: 'Alçak raflı konsol', glbFile: 'low-shelf.glb', w: 100, d: 25, h: 17, price: 0 },
+    { id: 'g-float', label: 'Yüzen ceviz konsol', glbFile: 'floating-walnut.glb', w: 140, d: 40, h: 35, price: 0 },
+    { id: 'g-four', label: 'Dört kapaklı konsol', glbFile: 'four-door.glb', w: 180, d: 40, h: 45, price: 0 },
+    { id: 'g-white', label: 'Beyaz panelli konsol', glbFile: 'white-panelled.glb', w: 160, d: 40, h: 45, price: 0 },
+    { id: 'g-draw', label: 'Çekmeceli açık banko', glbFile: 'white-open-drawers.glb', w: 160, d: 40, h: 45, price: 0 },
+    { id: 'g-open', label: 'Koyu açık raflı', glbFile: 'open-shelf-dark.glb', w: 140, d: 35, h: 50, price: 0 },
+    { id: 'g-wall', label: 'TV panelli duvar', glbFile: 'wall-tv-panel.glb', w: 180, d: 30, h: 160, price: 0 },
+    { id: 'g-light', label: 'Işıklı duvar ünitesi', glbFile: 'wall-lighting.glb', w: 200, d: 35, h: 180, price: 0 },
   ],
   wallPanel: [
     { id: 'wp120', label: 'Arka pano 120', w: 120, d: 1.8, h: 200, thicknessMm: 18, price: 1800 },
@@ -188,6 +198,7 @@ const BAY_W = 60; // BESTÅ standart iskelet eni cm
 
 const appEl = document.getElementById('app');
 const materialsUrl = appEl.dataset.materialsUrl;
+const modelsBase = appEl.dataset.modelsBase || '';
 const brandName = appEl.dataset.brand || 'Meemare';
 
 const state = {
@@ -331,6 +342,8 @@ async function loadTexture(url) {
       (t) => {
         t.colorSpace = THREE.SRGBColorSpace;
         t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        t.anisotropy = 8;
+        t.userData.pooled = true;
         resolve(t);
       },
       undefined,
@@ -347,12 +360,12 @@ function finishTexture(hex, finish) {
   const cached = finishTexCache.get(key);
   if (cached) return cached;
   const c = document.createElement('canvas');
-  c.width = 256;
-  c.height = 256;
+  c.width = 512;
+  c.height = 512;
   const ctx = c.getContext('2d');
   const base = hex || '#f4f1ec';
   ctx.fillStyle = base;
-  ctx.fillRect(0, 0, 256, 256);
+  ctx.fillRect(0, 0, 512, 512);
   let r = 200, g = 196, b = 188;
   const m = String(base).match(/^#([0-9a-f]{6})$/i);
   if (m) {
@@ -363,16 +376,16 @@ function finishTexture(hex, finish) {
   const warm = r > b + 12 && g > b + 4 && r < 230;
   if (warm && finish !== 'highgloss') {
     for (let i = 0; i < 48; i++) {
-      const y = (i / 48) * 256;
+      const y = (i / 48) * 512;
       ctx.strokeStyle = `rgba(${Math.max(0, r - 40)},${Math.max(0, g - 36)},${Math.max(0, b - 28)},${0.08 + (i % 5) * 0.02})`;
       ctx.lineWidth = i % 7 === 0 ? 2 : 1;
       ctx.beginPath();
       ctx.moveTo(0, y);
-      ctx.bezierCurveTo(70, y + 3, 150, y - 2, 256, y + 1);
+      ctx.bezierCurveTo(140, y + 6, 300, y - 4, 512, y + 2);
       ctx.stroke();
     }
   } else {
-    const img = ctx.getImageData(0, 0, 256, 256);
+    const img = ctx.getImageData(0, 0, 512, 512);
     const d = img.data;
     for (let i = 0; i < d.length; i += 4) {
       const n = ((i * 17) % 11) - 5;
@@ -385,7 +398,8 @@ function finishTexture(hex, finish) {
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.anisotropy = 4;
+  tex.anisotropy = 8;
+  tex.userData.pooled = true;
   finishTexCache.set(key, tex);
   return tex;
 }
@@ -427,13 +441,12 @@ function initThree() {
   const host = $('#canvas-host');
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xf3f1ee);
-  scene.fog = new THREE.Fog(0xf3f1ee, 14, 28);
-
-  camera = new THREE.PerspectiveCamera(42, 1, 0.05, 50);
+  scene.fog = new THREE.Fog(0xf3f1ee, 22, 48);
+  camera = new THREE.PerspectiveCamera(42, 1, 0.02, 80);
   camera.position.set(2.4, 1.5, 3.4);
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -455,7 +468,7 @@ function initThree() {
   controls.zoomSpeed = 0.8;
   controls.minPolarAngle = 0.08;
   controls.maxPolarAngle = Math.PI * 0.49;
-  controls.minDistance = 1;
+  controls.minDistance = 0.35;
   controls.maxDistance = 10;
   controls.enablePan = true;
   controls.autoRotateSpeed = 1.6;
@@ -469,7 +482,7 @@ function initThree() {
   key.target.position.set(0, 0.7, -(FLOOR_D * CM) / 2 + 0.35);
   scene.add(key.target);
   key.castShadow = true;
-  key.shadow.mapSize.set(1024, 1024);
+  key.shadow.mapSize.set(2048, 2048);
   key.shadow.bias = -0.0002;
   key.shadow.normalBias = 0.035;
   key.shadow.radius = 6;
@@ -880,6 +893,16 @@ function addLedStrip(group, mod, where) {
   }
 }
 
+const glbCache = new Map();
+const gltfLoader = new GLTFLoader();
+
+function loadGlb(file) {
+  if (glbCache.has(file)) return glbCache.get(file);
+  const job = gltfLoader.loadAsync(`${modelsBase}/${file}`);
+  glbCache.set(file, job);
+  return job;
+}
+
 async function createModuleMesh(mod) {
   const group = new THREE.Group();
   group.userData.moduleId = mod.id;
@@ -1015,6 +1038,35 @@ async function createModuleMesh(mod) {
     }
     group.userData.originAtBottom = true;
     if (mod.led && !mod.baza) addLedStrip(group, mod, 'under');
+  } else if (mod.type === 'glb' && mod.glbFile) {
+    try {
+      const gltf = await loadGlb(mod.glbFile);
+      const root = gltf.scene.clone(true);
+      root.traverse((o) => {
+        if (!o.isMesh) return;
+        o.castShadow = true;
+        o.receiveShadow = true;
+        o.userData.sharedAsset = true;
+      });
+      const box = new THREE.Box3().setFromObject(root);
+      const size = new THREE.Vector3();
+      const center = new THREE.Vector3();
+      box.getSize(size);
+      box.getCenter(center);
+      root.position.set(-center.x, -box.min.y, -center.z);
+      group.add(root);
+      if (size.x > 0.05) {
+        mod.w = Math.round(size.x / CM);
+        mod.h = Math.round(size.y / CM);
+        mod.d = Math.round(size.z / CM);
+      }
+    } catch (err) {
+      console.warn(err);
+      const fb = new THREE.Mesh(boxGeo(mod.w || 120, mod.h || 40, mod.d || 40), mat);
+      fb.position.y = ((mod.h || 40) * CM) / 2;
+      group.add(fb);
+    }
+    group.userData.originAtBottom = true;
   } else if (mod.type === 'wallPanel') {
     const thick = Math.max(1.5, mod.d) * CM;
     const mesh = new THREE.Mesh(
@@ -1330,10 +1382,13 @@ function disposeObject(obj) {
     if (o.isCSS2DObject && o.element?.parentNode) {
       o.element.parentNode.removeChild(o.element);
     }
-    if (o.geometry) o.geometry.dispose();
-    if (o.material) {
-      if (Array.isArray(o.material)) o.material.forEach((m) => m.dispose());
-      else o.material.dispose();
+    if (o.geometry && !o.userData.sharedAsset) o.geometry.dispose();
+    if (o.material && !o.userData.sharedAsset) {
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      mats.forEach((m) => {
+        if (m.map && !m.map.userData?.pooled) m.map.dispose();
+        m.dispose();
+      });
     }
   });
 }
@@ -1344,16 +1399,26 @@ function clearAllLabels() {
   }
 }
 
+let rebuildToken = 0;
 async function rebuildModules() {
+  const token = ++rebuildToken;
   clearAllLabels();
   while (modulesGroup.children.length) {
     const c = modulesGroup.children[0];
     modulesGroup.remove(c);
     disposeObject(c);
   }
-  for (const mod of state.modules) {
-    modulesGroup.add(await createModuleMesh(mod));
+  const snapshot = state.modules.slice();
+  for (const mod of snapshot) {
+    if (token !== rebuildToken) return;
+    const mesh = await createModuleMesh(mod);
+    if (token !== rebuildToken) {
+      disposeObject(mesh);
+      return;
+    }
+    modulesGroup.add(mesh);
   }
+  if (token !== rebuildToken) return;
   updateSelectionVisual();
   if (state.showTv) buildTv();
   scheduleAutoSave();
@@ -1417,7 +1482,7 @@ function placementRole(m) {
   if (!m || m.parentId) return 'attached';
   if (m.type === 'wallPanel' || m.type === 'slat') return 'wall';
   if (m.type === 'back' && !m.parentId) return 'wall';
-  if (m.type === 'plinth' || m.type === 'frame' || m.type === 'shelf') return 'floor';
+  if (m.type === 'plinth' || m.type === 'frame' || m.type === 'shelf' || m.type === 'glb') return 'floor';
   return 'free';
 }
 
@@ -1425,8 +1490,51 @@ function isFloatingBench(m) {
   return m && m.type === 'plinth' && (m.baza === false || m.floatY != null);
 }
 
-const WALL_MAGNET_CM = 22; // arka yüz → duvar manyetiği
-const EDGE_MAGNET_CM = 8;
+const WALL_MAGNET_CM = 10;
+/** Bırakınca bir kez oturt. Sürüklerken çağrılmaz — parça kaybolmaz, yana fırlamaz. */
+function settleDropped(mod) {
+  if (!mod || mod.parentId) return;
+  const role = placementRole(mod);
+  const clampX = () => {
+    mod.x = Math.max(-WALL_W / 2 + mod.w / 2, Math.min(WALL_W / 2 - mod.w / 2, mod.x));
+  };
+
+  if (role === 'wall') {
+    mod.z = wallFlushZ(mod.d);
+    mod.y = Math.max(0, Math.min(WALL_H - mod.h, mod.y || 0));
+    clampX();
+    return;
+  }
+
+  if (role !== 'floor') return;
+
+  const flush = wallFlushZ(mod.d);
+  const wallPlane = -FLOOR_D / 2 + 0.8;
+  if ((mod.z - mod.d / 2) - wallPlane < WALL_MAGNET_CM) mod.z = flush;
+  mod.z = Math.max(flush, Math.min(FLOOR_D / 2 - mod.d / 2 - 20, mod.z));
+  clampX();
+
+  const stacked = snapOntoSupports(mod);
+  if (!stacked) {
+    if (isFloatingBench(mod)) mod.y = mod.floatY != null ? mod.floatY : (mod.y || 15);
+    else mod.y = 0;
+  }
+
+  const a = solidAabb(mod);
+  for (const other of solidsExcept(mod.id)) {
+    if (isRestingOn(mod, other) || isRestingOn(other, mod)) continue;
+    if (Math.abs((mod.y || 0) - (other.y || 0)) > 6) continue;
+    const b = solidAabb(other);
+    if (!aabbOverlap(a, b, 0.4)) continue;
+    const overlap = Math.min(a.maxX, b.maxX) - Math.max(a.minX, b.minX);
+    if (overlap < 1) continue;
+    mod.x += mod.x >= other.x ? overlap + 0.4 : -(overlap + 0.4);
+    clampX();
+    break;
+  }
+
+  if (isHost(mod)) syncAttachedToHost(mod);
+}
 
 /**
  * Zemin mobilyası (alt blok / raf kule):
@@ -1494,7 +1602,7 @@ function isSolidBody(m) {
   if (m.type === 'wallPanel') return false; // duvar kaplaması — yer planı gövdesi değil
   if (m.type === 'slat') return false; // çıta serbest yerleştirilir
   if (m.type === 'shelf' && (m.interior || m.h <= 4)) return false;
-  return ['frame', 'plinth', 'shelf'].includes(m.type);
+  return ['frame', 'plinth', 'shelf', 'glb'].includes(m.type);
 }
 
 function isWallMounted(m) {
@@ -2786,6 +2894,7 @@ function addModule(type, preset = null, pos = null) {
     materialCode: '',
     doorStyle,
     priceHint: p.price,
+    glbFile: p.glbFile || undefined,
     frameColor: doorStyle === 'glass' ? '#c5c8cc' : undefined,
     glassColor: doorStyle === 'glass' ? '#c5d5e8' : undefined,
     slatWidth: type === 'slat' ? 1.6 : undefined,
@@ -2848,6 +2957,7 @@ function addModule(type, preset = null, pos = null) {
     }
   }
   state.selectedId = mod.id;
+  if (type === 'glb') showHint('Hazır model yükleniyor…');
   rebuildModules().then(() => {
     if (type === 'wallPanel') buildTv();
     state.view = 'customize';
@@ -3259,8 +3369,6 @@ function onPointerMove(e) {
     nx = p.x / CM;
     nz = p.z / CM;
   }
-  nx = Math.round(nx / SNAP) * SNAP;
-  nz = Math.round(nz / SNAP) * SNAP;
   const minZ = wallFlushZ(mod.d);
   const maxZ = FLOOR_D / 2 - mod.d / 2 - 20;
   mod.x = Math.max(-WALL_W / 2 + mod.w / 2, Math.min(WALL_W / 2 - mod.w / 2, nx));
@@ -3323,19 +3431,14 @@ function onPointerUp() {
     if (state.history.length > 40) state.history.shift();
     state.future = [];
     const mod = state.modules.find((m) => m.id === drag.id);
-    if (mod && !mod.parentId) {
-      applyPlacementRules(mod);
-    }
+    if (mod && !mod.parentId) settleDropped(mod);
+    const placeLive = (m) => {
+      const g = modulesGroup.children.find((c) => c.userData.moduleId === m.id);
+      if (g) placeModule(g, m);
+    };
     if (mod) {
-      const placeLive = (m) => {
-        const g = modulesGroup.children.find((c) => c.userData.moduleId === m.id);
-        if (g) placeModule(g, m);
-      };
       placeLive(mod);
       if (isHost(mod)) childrenOf(mod.id).forEach(placeLive);
-      state.modules
-        .filter((m) => m.type === 'top' && m.spanHosts?.includes(mod.id))
-        .forEach(placeLive);
     }
     if (state.showTv && !state.tv.manual) buildTv();
     scheduleAutoSave();
@@ -3353,6 +3456,7 @@ function menuItems() {
     { kind: 'shelf', label: 'Raf sistemi', icon: '☰', desc: 'Zemin veya banko üstü · duvar hizası' },
     { kind: 'slat', label: 'Çıtalama', icon: '▥', desc: 'Arka duvara dikey çıta' },
     { kind: 'wallPanel', label: 'Arka Pano', icon: '▮', desc: 'Karşı duvara TV paneli' },
+    { kind: 'glb', label: 'Hazır model', icon: '◈', desc: 'Fotoğraflı hazır TV ünitesi · taşınır' },
     { kind: 'tv', label: 'TV', icon: '▣', desc: 'Aç / kapat · inch · konum' },
   ];
 }
@@ -3361,7 +3465,7 @@ function typeTitle(type) {
   return ({
     frame: 'İskelet', door: 'Kapak', shelf: 'Raf sistemi', back: 'Arkalık',
     slat: 'Çıtalama', top: 'Üst panel', leg: 'Ayak', plinth: 'Alt Blok',
-    wallPanel: 'Arka Pano', interior: 'İç düzenleyici',
+    wallPanel: 'Arka Pano', interior: 'İç düzenleyici', glb: 'Hazır model',
   })[type] || 'Parça';
 }
 
@@ -3529,32 +3633,29 @@ function renderSidebar() {
     sideTitle.textContent = 'Kendi TV ünitenizi oluşturun';
     const hasSaved = !!localStorage.getItem('tv-configurator-design');
     sideBody.innerHTML = `
-      <div class="panel-section" style="display:flex;gap:8px;flex-wrap:wrap">
-        <button type="button" class="chip danger-chip" id="btn-clear-all" style="border-color:#fecaca;color:#b91c1c;background:#fef2f2">Temizle</button>
-        ${hasSaved ? `<button type="button" class="chip" id="btn-load-saved">Kayıtlıyı yükle</button>` : ''}
+      <div class="panel-section" style="display:flex;gap:8px;padding-top:0">
+        <button type="button" class="chip danger-chip" id="btn-clear-all">Temizle</button>
+        ${hasSaved ? `<button type="button" class="chip" id="btn-load-saved">Kayıtlı tasarım</button>` : ''}
       </div>
-      <div class="info-box">Dört parça ile kurun: Alt Blok · Raf · Çıtalama · Arka Pano. Kapak, üst panel, arkalık ve kaplama seçili parçanın Donanım / Kaplama bölümünden; malzemeyi sürükleyip parçaya da bırakabilirsiniz.</div>
-      <div class="panel-section">
-        <div class="section-title">Hazır TV duvarı</div>
-        <div class="product-grid">
-          ${WALL_COMPOSITIONS.map((p) => `
-            <button type="button" class="product-card" data-wall="${p.id}">
-              <div class="thumb"><img src="${presetThumbDataUrl('wallPanel', { w: 180, d: 3, h: 200 })}" alt=""></div>
-              <div class="meta">
-                <strong>${p.label}</strong>
-                <span>${p.desc}</span>
-              </div>
-            </button>
-          `).join('')}
-        </div>
+      <p class="section-title" style="padding:4px 2px 8px">Parça ekle</p>
+      <div class="add-grid">
+        ${menuItems().map((item) => `
+          <button type="button" class="add-tile" data-kind="${item.kind}">
+            <strong>${item.label}</strong>
+            <span>${item.desc}</span>
+          </button>
+        `).join('')}
       </div>
-    ` + menuItems().map((item) => `
-      <button type="button" class="menu-item" data-kind="${item.kind}">
-        <span class="ico">${item.icon}</span>
-        <span class="label">${item.label}<small>${item.desc}</small></span>
-        <span class="chev">›</span>
-      </button>
-    `).join('');
+      <p class="section-title" style="padding:16px 2px 8px">Hazır duvar</p>
+      <div class="preset-list">
+        ${WALL_COMPOSITIONS.map((p) => `
+          <button type="button" class="preset-row" data-wall="${p.id}">
+            <strong>${p.label}</strong>
+            <span>${p.desc}</span>
+          </button>
+        `).join('')}
+      </div>
+    `;
     sideBody.querySelectorAll('[data-wall]').forEach((btn) => {
       btn.addEventListener('click', () => startWallComposition(btn.dataset.wall));
     });
@@ -3760,9 +3861,7 @@ function renderSidebar() {
       renderSidebar();
       return;
     }
-    sideTitle.textContent = canTakeFronts(mod)
-      ? `${typeTitle(mod.type)} özelleştir`
-      : typeTitle(mod.type);
+    sideTitle.textContent = `${typeTitle(mod.type)} · ${Math.round(mod.w)}×${Math.round(mod.d)}×${Math.round(mod.h)}`;
     const fmt = (n) => (Math.round(Number(n) * 10) / 10);
 
     const doorUI = mod.type === 'door' ? `
@@ -4029,48 +4128,62 @@ function renderSidebar() {
     const openCoat = ['back', 'wallPanel', 'door', 'slat'].includes(mod.type);
 
     sideBody.innerHTML = `
-      <details class="acc" open>
-        <summary>Ölçü</summary>
-        <div class="acc-body">
-          <div class="dim-row">
-            <div class="field"><label>En</label><input type="number" id="dim-w" min="10" max="500" step="1" value="${fmt(mod.w)}"></div>
-            <div class="field"><label>Derinlik</label><input type="number" id="dim-d" min="0.5" max="80" step="0.1" value="${fmt(mod.d)}"></div>
-            <div class="field"><label>Yükseklik</label><input type="number" id="dim-h" min="1" max="300" step="1" value="${fmt(mod.h)}"></div>
+      <div class="side-tabs" role="tablist">
+        <button type="button" class="side-tab active" data-pane="front">Düzen</button>
+        <button type="button" class="side-tab" data-pane="size">Ölçü</button>
+        <button type="button" class="side-tab" data-pane="color">Renk</button>
+      </div>
+      <div class="pane active" data-pane="front">
+        <div class="acc" style="margin:0 0 10px">
+          <div class="acc-body">
+            ${hostAddUI || doorUI || glassUI || '<p class="hint-inline">Bu parçanın ön ayarı yok. Ölçü veya renk sekmesine geçin.</p>'}
           </div>
-          ${floatUI}
         </div>
-      </details>
-      ${hasGear ? `
-      <details class="acc" open>
-        <summary>Donanım</summary>
-        <div class="acc-body">
-          ${wallPanelUI}${plinthUI}${hostAddUI}${doorUI}${glassUI}${backUI}${slatUI}${shelfLedUI}${radiusUI}
-        </div>
-      </details>` : ''}
-      <details class="acc" id="acc-coat">
-        <summary>Kaplama / Renk</summary>
-        <div class="acc-body">
-          <div class="section-title">Yüzey</div>
-          <div class="chip-row">
-            ${FINISHES.map((f) => `<button type="button" class="chip ${mod.finish === f.id ? 'active' : ''}" data-finish="${f.id}">${f.label}</button>`).join('')}
+      </div>
+      <div class="pane" data-pane="size">
+        <div class="acc" style="margin:0">
+          <div class="acc-body">
+            <div class="dim-row">
+              <div class="field"><label>En</label><input type="number" id="dim-w" min="10" max="500" step="1" value="${fmt(mod.w)}"></div>
+              <div class="field"><label>Derinlik</label><input type="number" id="dim-d" min="0.5" max="80" step="0.1" value="${fmt(mod.d)}"></div>
+              <div class="field"><label>Yükseklik</label><input type="number" id="dim-h" min="1" max="300" step="1" value="${fmt(mod.h)}"></div>
+            </div>
+            ${floatUI}
+            ${wallPanelUI}${plinthUI}${slatUI}${shelfLedUI}${radiusUI}${backUI}
           </div>
-          <div class="section-title">Hızlı renk</div>
-          <div class="chip-row">
-            ${['#f7f7f7','#111111','#e8e4df','#c4a574','#d4b896','#6b7280','#f2ebe3','#1e3a5f'].map((c) => `
-              <button type="button" class="mat-swatch ${mod.color === c && !mod.materialImage ? 'active' : ''}" data-color="${c}" style="background:${c}"></button>
-            `).join('')}
-          </div>
-          <div class="section-title">Malzeme kataloğu</div>
-          <div class="mat-name">${mod.materialName || 'Varsayılan'}${mod.materialCode ? ' · ' + mod.materialCode : ''}</div>
-          <p class="hint-inline">Tıkla → seçili parçaya uygula · Sürükle → sahneye bırak</p>
-          <div id="mat-browser"></div>
         </div>
-      </details>
-      <div class="side-actions">
+      </div>
+      <div class="pane" data-pane="color">
+        <div class="acc" style="margin:0" id="acc-coat" open>
+          <div class="acc-body">
+            <div class="section-title">Yüzey</div>
+            <div class="chip-row">
+              ${FINISHES.map((f) => `<button type="button" class="chip ${mod.finish === f.id ? 'active' : ''}" data-finish="${f.id}">${f.label}</button>`).join('')}
+            </div>
+            <div class="section-title">Renk</div>
+            <div class="chip-row">
+              ${['#f7f7f7','#111111','#e8e4df','#c4a574','#d4b896','#6b7280','#f2ebe3','#1e3a5f'].map((c) => `
+                <button type="button" class="mat-swatch ${mod.color === c && !mod.materialImage ? 'active' : ''}" data-color="${c}" style="background:${c}"></button>
+              `).join('')}
+            </div>
+            <div class="mat-name">${mod.materialName || 'Varsayılan'}${mod.materialCode ? ' · ' + mod.materialCode : ''}</div>
+            <p class="hint-inline">Kataloğu açmak için aşağıya bakın. Bir parçanın üstüne de sürükleyebilirsiniz.</p>
+            <div id="mat-browser"></div>
+          </div>
+        </div>
+      </div>
+      <div class="side-dock">
         <button type="button" class="btn full-btn" id="btn-dup">Çoğalt</button>
         <button type="button" class="danger" id="btn-del">Sil</button>
       </div>
     `;
+    sideBody.querySelectorAll('.side-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        sideBody.querySelectorAll('.side-tab').forEach((t) => t.classList.toggle('active', t === tab));
+        sideBody.querySelectorAll('.pane').forEach((p) => p.classList.toggle('active', p.dataset.pane === tab.dataset.pane));
+        if (tab.dataset.pane === 'color') openMats();
+      });
+    });
 
     const applyDims = () => {
       pushHistory();
@@ -4391,15 +4504,12 @@ function renderSidebar() {
         rebuildModules().then(() => renderSidebar());
       });
     });
-    const coat = $('#acc-coat');
     const openMats = () => {
-      if (!coat?.open) return;
-      if (coat.dataset.ready === '1') return;
-      coat.dataset.ready = '1';
-      mountMaterialBrowser($('#mat-browser'), mod, { limit: 16 });
+      const host = $('#mat-browser');
+      if (!host || host.dataset.ready === '1') return;
+      host.dataset.ready = '1';
+      mountMaterialBrowser(host, mod, { limit: 16 });
     };
-    coat?.addEventListener('toggle', openMats);
-    if (coat?.open) openMats();
     $('#btn-del').addEventListener('click', deleteSelected);
     $('#btn-dup').addEventListener('click', duplicateSelected);
   }
