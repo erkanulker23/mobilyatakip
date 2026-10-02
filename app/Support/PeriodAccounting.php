@@ -6,6 +6,7 @@ use App\Models\CustomerPayment;
 use App\Models\Expense;
 use App\Models\PersonnelAdvance;
 use App\Models\Sale;
+use App\Models\SupplierPayment;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
@@ -33,6 +34,7 @@ final class PeriodAccounting
      *     cashUnallocated: float,
      *     expenses: float,
      *     personnelAdvances: float,
+     *     supplierPayments: float,
      *     cashNet: float,
      * }
      */
@@ -88,7 +90,12 @@ final class PeriodAccounting
                 ->sum('amount');
         }
 
-        $cashNet = round($cashCollections - $expenses - $personnelAdvances, 2);
+        $supplierPayments = (float) SupplierPayment::query()
+            ->whereDate('paymentDate', '>=', $fromDate)
+            ->whereDate('paymentDate', '<=', $toDate)
+            ->sum('amount');
+
+        $cashNet = round($cashCollections - $expenses - $personnelAdvances - $supplierPayments, 2);
 
         return [
             'saleCount' => (int) (clone $salesQuery)->count(),
@@ -101,6 +108,7 @@ final class PeriodAccounting
             'cashUnallocated' => round($cashUnallocated, 2),
             'expenses' => round($expenses, 2),
             'personnelAdvances' => round($personnelAdvances, 2),
+            'supplierPayments' => round($supplierPayments, 2),
             'cashNet' => $cashNet,
         ];
     }
