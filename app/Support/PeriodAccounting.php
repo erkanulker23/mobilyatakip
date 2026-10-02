@@ -3,9 +3,12 @@
 namespace App\Support;
 
 use App\Models\CustomerPayment;
+use App\Models\Expense;
+use App\Models\PersonnelAdvance;
 use App\Models\Sale;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Dönem muhasebesi: nakit (ödeme tarihi) ile sipariş (satış tarihi) metriklerini ayırır.
@@ -28,6 +31,9 @@ final class PeriodAccounting
      *     cashOnPeriodSales: float,
      *     cashOnPriorSales: float,
      *     cashUnallocated: float,
+     *     expenses: float,
+     *     personnelAdvances: float,
+     *     cashNet: float,
      * }
      */
     public static function forRange(Carbon $from, Carbon $to): array
@@ -69,6 +75,21 @@ final class PeriodAccounting
 
         $cashOnPriorSales = max(0, round($cashCollections - $cashOnPeriodSales - $cashUnallocated, 2));
 
+        $expenses = (float) Expense::query()
+            ->whereDate('expenseDate', '>=', $fromDate)
+            ->whereDate('expenseDate', '<=', $toDate)
+            ->sum('amount');
+
+        $personnelAdvances = 0.0;
+        if (Schema::hasTable('personnel_advances')) {
+            $personnelAdvances = (float) PersonnelAdvance::query()
+                ->whereDate('advanceDate', '>=', $fromDate)
+                ->whereDate('advanceDate', '<=', $toDate)
+                ->sum('amount');
+        }
+
+        $cashNet = round($cashCollections - $expenses - $personnelAdvances, 2);
+
         return [
             'saleCount' => (int) (clone $salesQuery)->count(),
             'revenue' => round($revenue, 2),
@@ -78,6 +99,9 @@ final class PeriodAccounting
             'cashOnPeriodSales' => round($cashOnPeriodSales, 2),
             'cashOnPriorSales' => $cashOnPriorSales,
             'cashUnallocated' => round($cashUnallocated, 2),
+            'expenses' => round($expenses, 2),
+            'personnelAdvances' => round($personnelAdvances, 2),
+            'cashNet' => $cashNet,
         ];
     }
 
