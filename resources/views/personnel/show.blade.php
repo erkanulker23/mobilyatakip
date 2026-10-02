@@ -64,6 +64,9 @@
         <div>
             <h2 class="text-lg font-semibold text-neutral-900 dark:text-white">Personel carisi · Avans</h2>
             <p class="text-sm text-neutral-500 mt-1">Verilen avans kasadan çıkar, bu hesaba borç yazılır.</p>
+        @if(!empty($advanceError))
+        <p class="text-sm text-red-600 mt-2">Avans tablosu henüz oluşmadı. Sunucuda veritabanı güncellemesi çalışmalı.</p>
+        @endif
         </div>
         <a href="{{ route('personnel-advances.create') }}" class="btn-primary">Avans ekle</a>
     </div>

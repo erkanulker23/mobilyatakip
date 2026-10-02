@@ -37,6 +37,11 @@ class PersonnelAdvanceController extends Controller
         ]);
 
         $validated['createdBy'] = auth()->id() ?: null;
+
+        if (! \Illuminate\Support\Facades\Schema::hasTable('personnel_advances')) {
+            return back()->withInput()->with('error', 'Avans tablosu yok. Sunucuda veritabanı güncellemesi çalıştırılmalı.');
+        }
+
         $advance = PersonnelAdvance::create($validated);
         $advance->load('personnel');
 

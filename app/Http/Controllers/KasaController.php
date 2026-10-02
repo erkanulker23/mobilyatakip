@@ -93,8 +93,15 @@ class KasaController extends Controller
         $customerPayments = CustomerPayment::with('customer')->whereIn('id', $customerPaymentIds)->get()->keyBy(fn ($p) => (string) $p->id);
         $supplierPayments = SupplierPayment::with('supplier')->whereIn('id', $supplierPaymentIds)->get()->keyBy(fn ($p) => (string) $p->id);
         $expenses = Expense::query()->whereIn('id', $expenseIds)->get()->keyBy(fn ($e) => (string) $e->id);
-        $advanceIds = $hareketler->where('refType', 'personnel_advance')->pluck('refId')->unique()->filter()->values()->all();
-        $personnelAdvances = PersonnelAdvance::query()->whereIn('id', $advanceIds)->get()->keyBy(fn ($a) => (string) $a->id);
+        $personnelAdvances = collect();
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('personnel_advances')) {
+                $advanceIds = $hareketler->where('refType', 'personnel_advance')->pluck('refId')->unique()->filter()->values()->all();
+                $personnelAdvances = PersonnelAdvance::query()->whereIn('id', $advanceIds)->get()->keyBy(fn ($a) => (string) $a->id);
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
         $shippingCompanyPayments = ShippingCompanyPayment::with('shippingCompany')->whereIn('id', $shippingPaymentIds)->get()->keyBy(fn ($p) => (string) $p->id);
 
         $otherKasalar = Kasa::query()

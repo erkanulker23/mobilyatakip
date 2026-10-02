@@ -245,15 +245,28 @@ class PersonnelController extends Controller
 
         $viewingOwnProfile = auth()->user()?->personnel?->id === $personnel->id;
 
-        $advances = $personnel->advances()->with('kasa')->orderByDesc('advanceDate')->orderByDesc('createdAt')->get();
-        $advanceBalance = (float) $advances->sum('amount');
-        $monthStart = now()->startOfMonth();
-        $monthEnd = now()->endOfMonth();
-        $advanceThisMonth = (float) $advances->filter(function ($a) use ($monthStart, $monthEnd) {
-            return $a->advanceDate && $a->advanceDate->between($monthStart, $monthEnd);
-        })->sum('amount');
+        $advances = collect();
+        $advanceBalance = 0.0;
+        $advanceThisMonth = 0.0;
+        $advanceError = false;
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('personnel_advances')) {
+                $advances = $personnel->advances()->with('kasa')->orderByDesc('advanceDate')->orderByDesc('createdAt')->get();
+                $advanceBalance = (float) $advances->sum('amount');
+                $monthStart = now()->startOfMonth();
+                $monthEnd = now()->endOfMonth();
+                $advanceThisMonth = (float) $advances->filter(function ($a) use ($monthStart, $monthEnd) {
+                    return $a->advanceDate && $a->advanceDate->between($monthStart, $monthEnd);
+                })->sum('amount');
+            } else {
+                $advanceError = true;
+            }
+        } catch (\Throwable $e) {
+            report($e);
+            $advanceError = true;
+        }
 
-        return view('personnel.show', compact('personnel', 'sales', 'quotes', 'salesStats', 'viewingOwnProfile', 'upcomingDueSales', 'monthlyPerformance', 'personnelTasks', 'taskCompleterFallback', 'advances', 'advanceBalance', 'advanceThisMonth'));
+        return view('personnel.show', compact('personnel', 'sales', 'quotes', 'salesStats', 'viewingOwnProfile', 'upcomingDueSales', 'monthlyPerformance', 'personnelTasks', 'taskCompleterFallback', 'advances', 'advanceBalance', 'advanceThisMonth', 'advanceError'));
     }
 
     public function activities(Request $request, Personnel $personnel)
