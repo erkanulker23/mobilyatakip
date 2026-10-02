@@ -225,6 +225,9 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/shipping-company-payments/{shippingCompanyPayment}', [\App\Http\Controllers\ShippingCompanyPaymentController::class, 'destroy'])->name('shipping-company-payments.destroy');
 
     Route::resource('expenses', \App\Http\Controllers\ExpenseController::class);
+    Route::get('/personel-avans', [\App\Http\Controllers\PersonnelAdvanceController::class, 'create'])->name('personnel-advances.create');
+    Route::post('/personel-avans', [\App\Http\Controllers\PersonnelAdvanceController::class, 'store'])->name('personnel-advances.store');
+    Route::delete('/personel-avans/{personnelAdvance}', [\App\Http\Controllers\PersonnelAdvanceController::class, 'destroy'])->name('personnel-advances.destroy');
     Route::get('/raporlar', [\App\Http\Controllers\ReportsController::class, 'index'])->name('reports.index');
     Route::get('/raporlar/termin-yaklasan', [\App\Http\Controllers\ReportsController::class, 'upcomingDue'])->name('reports.upcoming-due');
     Route::get('/raporlar/termin-yaklasan/yazdir', [\App\Http\Controllers\ReportsController::class, 'upcomingDuePrint'])->name('reports.upcoming-due.print');

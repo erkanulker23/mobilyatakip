@@ -6,7 +6,10 @@
         <h1 class="page-title">Giderler</h1>
         <p class="page-desc">Gider kayıtları ve filtreleme</p>
     </div>
-    <a href="{{ route('expenses.create') }}" class="btn-primary">Yeni Gider</a>
+    <div class="flex items-center gap-2">
+        <a href="{{ route('personnel-advances.create') }}" class="btn-secondary">Personel Avans</a>
+        <a href="{{ route('expenses.create') }}" class="btn-primary">Yeni Gider</a>
+    </div>
 </div>
 
 <div class="card overflow-hidden">

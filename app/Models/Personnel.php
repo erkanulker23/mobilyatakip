@@ -72,6 +72,11 @@ class Personnel extends BaseModel
         return $this->hasMany(UserTask::class, 'personnelId');
     }
 
+    public function advances(): HasMany
+    {
+        return $this->hasMany(PersonnelAdvance::class, 'personnelId');
+    }
+
     public function hasSystemAccess(): bool
     {
         if (! $this->userId) {

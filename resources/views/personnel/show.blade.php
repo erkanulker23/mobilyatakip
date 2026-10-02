@@ -58,6 +58,62 @@
     </div>
 </div>
 
+@if($isAdmin)
+<div class="card overflow-hidden mb-5">
+    <div class="px-5 sm:px-6 py-4 border-b border-neutral-200 dark:border-slate-700 flex items-center justify-between gap-3">
+        <div>
+            <h2 class="text-lg font-semibold text-neutral-900 dark:text-white">Personel carisi · Avans</h2>
+            <p class="text-sm text-neutral-500 mt-1">Verilen avans kasadan çıkar, bu hesaba borç yazılır.</p>
+        </div>
+        <a href="{{ route('personnel-advances.create') }}" class="btn-primary">Avans ekle</a>
+    </div>
+    <div class="px-5 sm:px-6 py-4 grid sm:grid-cols-2 gap-4 border-b border-neutral-100 dark:border-slate-700">
+        <div>
+            <p class="text-xs uppercase tracking-wide text-neutral-500">Toplam avans borcu</p>
+            <p class="text-xl font-semibold text-neutral-900 dark:text-white">{{ number_format($advanceBalance ?? 0, 0, ',', '.') }} ₺</p>
+        </div>
+        <div>
+            <p class="text-xs uppercase tracking-wide text-neutral-500">Bu ay</p>
+            <p class="text-xl font-semibold text-neutral-900 dark:text-white">{{ number_format($advanceThisMonth ?? 0, 0, ',', '.') }} ₺</p>
+        </div>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full">
+            <thead>
+                <tr class="border-b border-neutral-100 dark:border-slate-700">
+                    <th class="table-th">Tarih</th>
+                    <th class="table-th">Etki</th>
+                    <th class="table-th">Kasa</th>
+                    <th class="table-th">Not</th>
+                    <th class="table-th text-right">Tutar</th>
+                    <th class="table-th"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($advances ?? [] as $a)
+                <tr class="border-b border-neutral-100 dark:border-slate-700">
+                    <td class="table-td">{{ $a->advanceDate?->format('d.m.Y') }}</td>
+                    <td class="table-td">{{ $a->periodLabel() }}</td>
+                    <td class="table-td">{{ $a->kasa?->name ?? '—' }}</td>
+                    <td class="table-td">{{ $a->note ?: '—' }}</td>
+                    <td class="table-td text-right font-medium">{{ number_format($a->amount, 0, ',', '.') }} ₺</td>
+                    <td class="table-td text-right">
+                        <form method="POST" action="{{ route('personnel-advances.destroy', $a) }}" onsubmit="return confirm('Bu avans silinsin mi?')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="text-red-600 text-sm">Sil</button>
+                        </form>
+                    </td>
+                </tr>
+                @empty
+                <tr><td colspan="6" class="px-6 py-8 text-center text-neutral-500">Avans kaydı yok.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif
+
 {{-- Profil + bu ay özeti --}}
 <div class="card overflow-hidden mb-5">
     <div class="p-5 sm:p-6 flex flex-col lg:flex-row gap-6 lg:items-center">

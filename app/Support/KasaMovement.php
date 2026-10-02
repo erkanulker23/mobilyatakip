@@ -17,6 +17,7 @@ class KasaMovement
             'customer_payment' => ['label' => 'Tahsilat', 'tone' => 'emerald', 'icon' => '+'],
             'supplier_payment' => ['label' => 'Tedarikçi Ödemesi', 'tone' => 'amber', 'icon' => '−'],
             'expense' => ['label' => 'Gider', 'tone' => 'rose', 'icon' => '−'],
+            'personnel_advance' => ['label' => 'Personel Avansı', 'tone' => 'amber', 'icon' => '−'],
             default => match ($h->type) {
                 'giris' => ['label' => 'Giriş', 'tone' => 'emerald', 'icon' => '+'],
                 'cikis' => ['label' => 'Çıkış', 'tone' => 'rose', 'icon' => '−'],
@@ -58,6 +59,7 @@ class KasaMovement
      *     customerPayments?: \Illuminate\Support\Collection|array,
      *     supplierPayments?: \Illuminate\Support\Collection|array,
      *     expenses?: \Illuminate\Support\Collection|array,
+     *     personnelAdvances?: \Illuminate\Support\Collection|array,
      *     shippingCompanyPayments?: \Illuminate\Support\Collection|array,
      * }  $refs
      * @return array{url: string, label: string}|null
@@ -69,6 +71,7 @@ class KasaMovement
         $customerPayments = collect($refs['customerPayments'] ?? []);
         $supplierPayments = collect($refs['supplierPayments'] ?? []);
         $expenses = collect($refs['expenses'] ?? []);
+        $personnelAdvances = collect($refs['personnelAdvances'] ?? []);
         $shippingCompanyPayments = collect($refs['shippingCompanyPayments'] ?? []);
 
         return match ($h->refType) {
@@ -80,6 +83,9 @@ class KasaMovement
                 : null,
             'expense' => ($expense = $expenses->get($refId))
                 ? ['url' => route('expenses.show', $expense), 'label' => 'Gider detayı']
+                : null,
+            'personnel_advance' => ($advance = $personnelAdvances->get($refId))
+                ? ['url' => route('personnel.show', $advance->personnelId), 'label' => 'Personel carisi']
                 : null,
             'shipping_company_payment' => ($payment = $shippingCompanyPayments->get($refId))
                 ? ['url' => route('shipping-company-payments.show', $payment), 'label' => 'Nakliye ödemesi detayı']

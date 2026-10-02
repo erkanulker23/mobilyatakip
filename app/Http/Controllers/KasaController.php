@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CustomerPayment;
 use App\Models\Expense;
+use App\Models\PersonnelAdvance;
 use App\Models\Kasa;
 use App\Models\KasaHareket;
 use App\Models\ShippingCompanyPayment;
@@ -92,6 +93,8 @@ class KasaController extends Controller
         $customerPayments = CustomerPayment::with('customer')->whereIn('id', $customerPaymentIds)->get()->keyBy(fn ($p) => (string) $p->id);
         $supplierPayments = SupplierPayment::with('supplier')->whereIn('id', $supplierPaymentIds)->get()->keyBy(fn ($p) => (string) $p->id);
         $expenses = Expense::query()->whereIn('id', $expenseIds)->get()->keyBy(fn ($e) => (string) $e->id);
+        $advanceIds = $hareketler->where('refType', 'personnel_advance')->pluck('refId')->unique()->filter()->values()->all();
+        $personnelAdvances = PersonnelAdvance::query()->whereIn('id', $advanceIds)->get()->keyBy(fn ($a) => (string) $a->id);
         $shippingCompanyPayments = ShippingCompanyPayment::with('shippingCompany')->whereIn('id', $shippingPaymentIds)->get()->keyBy(fn ($p) => (string) $p->id);
 
         $otherKasalar = Kasa::query()
@@ -109,6 +112,7 @@ class KasaController extends Controller
             'customerPayments',
             'supplierPayments',
             'expenses',
+            'personnelAdvances',
             'shippingCompanyPayments',
             'otherKasalar',
         ) + [

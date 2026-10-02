@@ -208,6 +208,7 @@
                                     'customerPayments' => $customerPayments,
                                     'supplierPayments' => $supplierPayments,
                                     'expenses' => $expenses,
+                                    'personnelAdvances' => $personnelAdvances ?? collect(),
                                     'shippingCompanyPayments' => $shippingCompanyPayments,
                                 ]);
                             @endphp
