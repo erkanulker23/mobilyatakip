@@ -123,6 +123,9 @@
             @if(!($sale->isCancelled ?? false) && $sale->customerId)
             <button type="button" @click="showPaymentModal = true" class="btn-primary text-sm">Ödeme Al</button>
             @endif
+            @if(!($sale->isCancelled ?? false) && \Illuminate\Support\Facades\Schema::hasColumn('expenses', 'saleId'))
+            <a href="{{ route('expenses.create', ['saleId' => $sale->id]) }}" class="btn-secondary text-sm print:hidden">Gider bağla</a>
+            @endif
             @if(!($sale->isCancelled ?? false))
             <button type="button" @click="showCancelModal = true" class="inline-flex items-center gap-2 px-4 py-2.5 border border-red-300 text-red-700 rounded-[0.625rem] hover:bg-red-50 font-medium text-sm transition-colors dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/40">
                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -263,20 +266,19 @@
 ])
 @endif
 
-@if(($linkedExpenses ?? collect())->isNotEmpty() || \Illuminate\Support\Facades\Schema::hasColumn('expenses', 'saleId'))
-<div class="mt-8 card overflow-hidden">
+@if(($linkedExpenses ?? collect())->isNotEmpty())
+{{-- İç kullanım: yazdırma / fatura / PDF çıktılarında görünmez --}}
+<div class="mt-8 card overflow-hidden print:hidden" data-internal-only="expenses">
     <div class="card-header flex flex-wrap items-center justify-between gap-2">
-        <span>Bu siparişe bağlı giderler</span>
+        <div class="flex items-center gap-2">
+            <span>Bu siparişe bağlı giderler</span>
+            <span class="text-[10px] uppercase tracking-wide font-medium px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">İç kullanım</span>
+        </div>
         <div class="flex items-center gap-3">
-            @if(($linkedExpensesTotal ?? 0) > 0.005)
             <span class="text-sm font-semibold text-rose-600 tabular-nums">Toplam {{ number_format($linkedExpensesTotal, 0, ',', '.') }} ₺</span>
-            @endif
             <a href="{{ route('expenses.create', ['saleId' => $sale->id]) }}" class="text-sm text-emerald-600 hover:underline">+ Gider ekle</a>
         </div>
     </div>
-    @if(($linkedExpenses ?? collect())->isEmpty())
-    <p class="px-5 py-6 text-sm text-neutral-500">Bu sipariş için henüz gider bağlanmadı. Malzeme / işçilik / ekstra harcama eklerseniz burada görünür.</p>
-    @else
     <div class="overflow-x-auto">
         <table class="w-full">
             <thead class="bg-slate-50 dark:bg-slate-800/50 border-b border-neutral-200 dark:border-slate-700">
@@ -303,7 +305,6 @@
             </tbody>
         </table>
     </div>
-    @endif
 </div>
 @endif
 

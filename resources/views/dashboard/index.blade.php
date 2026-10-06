@@ -392,11 +392,14 @@
                 <div class="divide-y divide-neutral-100 dark:divide-neutral-800">
                     @foreach($recentSales as $s)
                     @php
+                        $paid = (float) ($s->paidAmount ?? 0);
+                        $total = (float) ($s->grandTotal ?? 0);
+                        $remaining = max(0, $total - $paid);
                         $status = 'Bekliyor';
                         $badgeClass = 'badge-blue';
                         if ($s->isCancelled) { $status = 'İptal'; $badgeClass = 'badge-red'; }
-                        elseif ((float)$s->paidAmount >= (float)$s->grandTotal) { $status = 'Ödendi'; $badgeClass = 'badge-green'; }
-                        elseif ((float)$s->paidAmount > 0) { $status = 'Kısmi'; $badgeClass = 'badge-amber'; }
+                        elseif ($paid >= $total && $total > 0) { $status = 'Ödendi'; $badgeClass = 'badge-green'; }
+                        elseif ($paid > 0) { $status = 'Kısmi'; $badgeClass = 'badge-amber'; }
                     @endphp
                     <a href="{{ route('sales.show', $s) }}" class="flex items-center gap-3 p-4 hover:bg-neutral-50 dark:hover:bg-neutral-900/40 transition-colors">
                         <div class="min-w-0 flex-1">
@@ -404,8 +407,13 @@
                             <p class="text-sm text-neutral-500 truncate">{{ $s->customer?->name ?? '—' }}</p>
                         </div>
                         <div class="text-right shrink-0">
-                            <p class="font-medium tabular-nums">₺{{ number_format($s->grandTotal, 0, ',', '.') }}</p>
+                            <p class="font-medium tabular-nums">₺{{ number_format($total, 0, ',', '.') }}</p>
                             <span class="badge {{ $badgeClass }} mt-1">{{ $status }}</span>
+                            @if($status === 'Kısmi' && $remaining > 0.005)
+                            <p class="text-xs text-amber-600 dark:text-amber-400 mt-1 tabular-nums">Kalan borç ₺{{ number_format($remaining, 0, ',', '.') }}</p>
+                            @elseif($status === 'Bekliyor' && $remaining > 0.005)
+                            <p class="text-xs text-neutral-500 mt-1 tabular-nums">Kalan borç ₺{{ number_format($remaining, 0, ',', '.') }}</p>
+                            @endif
                         </div>
                     </a>
                     @endforeach

@@ -1,7 +1,9 @@
 @extends('layouts.app')
 @section('title', 'Yeni Gider')
 @section('content')
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
 <div
+    id="expenseFormRoot"
     x-data="{
         amount: @js(old('amount') !== null && old('amount') !== '' ? money(money_parse(old('amount'))) : ''),
         expenseDate: @js(old('expenseDate', date('Y-m-d'))),
@@ -146,12 +148,13 @@
                     </div>
                     <div>
                         <label class="form-label" for="expenseSale">Satış faturası / sipariş fişi</label>
-                        <select name="saleId" id="expenseSale" x-model="saleId" class="form-select min-h-[44px]">
+                        <select name="saleId" id="expenseSale" class="form-select min-h-[44px]">
                             <option value="">Bağlama — genel gider</option>
                             @foreach($sales as $s)
-                            <option value="{{ $s->id }}">{{ $s->saleNumber }} — {{ $s->customer?->name ?? 'Müşteri' }} — {{ number_format((float) $s->grandTotal, 0, ',', '.') }} ₺</option>
+                            <option value="{{ $s->id }}" {{ (string) old('saleId', $preselectedSaleId ?? '') === (string) $s->id ? 'selected' : '' }}>{{ $s->saleNumber }} — {{ $s->customer?->name ?? 'Müşteri' }} — {{ number_format((float) $s->grandTotal, 0, ',', '.') }} ₺</option>
                             @endforeach
                         </select>
+                        <p class="mt-1.5 text-xs text-neutral-500 dark:text-slate-400">Sipariş no veya müşteri adı yazarak hızlı arayın.</p>
                         @error('saleId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                     </div>
                 </div>
@@ -291,4 +294,39 @@
         </div>
     </div>
 </div>
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    function initExpenseSaleSearch() {
+        var sel = document.getElementById('expenseSale');
+        if (!sel || typeof TomSelect === 'undefined') return;
+        if (sel.tomselect) return;
+        var ts = new TomSelect(sel, {
+            maxOptions: null,
+            allowEmptyOption: true,
+            placeholder: 'Sipariş no veya müşteri ara...',
+            searchField: ['text'],
+            sortField: { field: 'text', direction: 'asc' },
+            onChange: function (value) {
+                var root = document.getElementById('expenseFormRoot');
+                if (root && window.Alpine && typeof Alpine.$data === 'function') {
+                    Alpine.$data(root).saleId = value || '';
+                }
+            }
+        });
+        if (sel.value) {
+            ts.setValue(sel.value, true);
+        }
+    }
+    if (typeof TomSelect === 'undefined') {
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js';
+        s.onload = initExpenseSaleSearch;
+        document.head.appendChild(s);
+    } else {
+        initExpenseSaleSearch();
+    }
+});
+</script>
+@endpush
 @endsection

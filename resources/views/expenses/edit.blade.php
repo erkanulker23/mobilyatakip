@@ -1,6 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Gider Düzenle')
 @section('content')
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
 <div class="mb-6 flex items-center justify-between">
     <div>
         <h1 class="page-title">Gider Düzenle</h1>
@@ -66,7 +67,7 @@
         @if(($sales ?? collect())->isNotEmpty() || $expense->saleId)
         <div>
             <label class="form-label">Satış faturası / sipariş <span class="text-neutral-400 font-normal">(opsiyonel)</span></label>
-            <select name="saleId" class="form-select">
+            <select name="saleId" id="expenseSale" class="form-select">
                 <option value="">Bağlama — genel gider</option>
                 @foreach($sales as $s)
                 <option value="{{ $s->id }}" {{ (string) old('saleId', $expense->saleId) === (string) $s->id ? 'selected' : '' }}>
@@ -74,6 +75,7 @@
                 </option>
                 @endforeach
             </select>
+            <p class="mt-1.5 text-xs text-neutral-500">Sipariş no veya müşteri adı yazarak hızlı arayın.</p>
             @error('saleId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
         @endif
@@ -83,4 +85,29 @@
         </div>
     </form>
 </div>
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    function initExpenseSaleSearch() {
+        var sel = document.getElementById('expenseSale');
+        if (!sel || typeof TomSelect === 'undefined') return;
+        if (sel.tomselect) return;
+        new TomSelect(sel, {
+            maxOptions: null,
+            allowEmptyOption: true,
+            placeholder: 'Sipariş no veya müşteri ara...',
+            searchField: ['text'],
+        });
+    }
+    if (typeof TomSelect === 'undefined') {
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js';
+        s.onload = initExpenseSaleSearch;
+        document.head.appendChild(s);
+    } else {
+        initExpenseSaleSearch();
+    }
+});
+</script>
+@endpush
 @endsection
