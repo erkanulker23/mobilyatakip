@@ -60,24 +60,10 @@ final class SalesReportQuery
         ];
     }
 
-    /** Durum listeleri (üretimde, borçlu vb.) tarih filtresi olmadan tüm dönem. */
+    /** allTime=1 ile gelen operasyon listeleri (raporlar ana sayfa) tarih filtresi kullanmaz. */
     public static function isStatusOnlyList(Request $request): bool
     {
-        if ($request->boolean('allTime')) {
-            return true;
-        }
-
-        $deliveryStatus = SaleDelivery::isFilterValue($request->input('deliveryStatus'))
-            ? $request->input('deliveryStatus')
-            : null;
-        $odeme = $request->input('odeme');
-        $hasStatusFilter = $deliveryStatus !== null || in_array($odeme, ['borclu', 'borcsuz'], true);
-
-        if (! $hasStatusFilter) {
-            return false;
-        }
-
-        return ! self::hasExplicitPeriod($request);
+        return $request->boolean('allTime');
     }
 
     public static function hasExplicitPeriod(Request $request): bool

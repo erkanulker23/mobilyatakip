@@ -115,7 +115,7 @@
     <a href="{{ route('reports.income-expense') }}" class="card p-5 hover:shadow-md hover:border-neutral-300 dark:hover:border-slate-600 transition-all group">
         <p class="text-xs font-semibold uppercase tracking-wide text-neutral-500">Bu Ay Tahsilat</p>
         <p class="text-2xl font-semibold text-emerald-600 mt-1 tabular-nums">₺{{ number_format($incomeExpense['tahsilat'], 0, ',', '.') }}</p>
-        <p class="text-xs text-neutral-400 mt-1">Net nakit: <span class="{{ $monthlyNetCash >= 0 ? 'text-emerald-600' : 'text-red-500' }} font-medium">₺{{ number_format($monthlyNetCash, 0, ',', '.') }}</span></p>
+        <p class="text-xs text-neutral-400 mt-1">Net kasa: <span class="{{ $monthlyNetCash >= 0 ? 'text-emerald-600' : 'text-red-500' }} font-medium">₺{{ number_format($monthlyNetCash, 0, ',', '.') }}</span></p>
     </a>
     <a href="{{ route('reports.upcoming-due') }}" class="card p-5 hover:shadow-md hover:border-neutral-300 dark:hover:border-slate-600 transition-all group {{ $upcomingTotal > 0 ? 'ring-1 ring-amber-200 dark:ring-amber-800/50' : '' }}">
         <p class="text-xs font-semibold uppercase tracking-wide text-neutral-500">Yaklaşan Termin</p>

@@ -3,22 +3,23 @@
 namespace App\Support;
 
 use App\Models\CustomerPayment;
-use App\Models\Expense;
-use App\Models\PersonnelAdvance;
+use App\Models\KasaHareket;
 use App\Models\Sale;
-use App\Models\SupplierPayment;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 /**
- * Dönem muhasebesi: nakit (ödeme tarihi) ile sipariş (satış tarihi) metriklerini ayırır.
+ * Dönem muhasebesi: nakit (ödeme / hareket tarihi) ile sipariş (satış tarihi) metriklerini ayırır.
  *
- * Doğru denklem (sipariş bazlı):
- *   hasılat − siparişe işlenen tahsil = kalan alacak
+ * Satış denklemi:
+ *   hasılat − siparişe işlenen tahsil ≈ kalan alacak
  *
- * Nakit tahsilat (ödeme tarihi) eski siparişlere ait ödemeleri de içerir;
- * bu yüzden "hasılat − nakit tahsilat ≠ kalan alacak" olabilir — bu hata değildir.
+ * Kasa neti (gerçek kasa):
+ *   Σ KasaHareket.amount (virman hariç, ledger kapsamı)
+ *   = kasa tahsilatı − gider − personel avansı − tedarikçi − nakliye
+ *
+ * Kasaya girmeyen kayıtlar (ör. tedarikçiye_ode, kasasız gider) kasa netine dahil değildir.
  */
 final class PeriodAccounting
 {
@@ -35,6 +36,8 @@ final class PeriodAccounting
      *     expenses: float,
      *     personnelAdvances: float,
      *     supplierPayments: float,
+     *     shippingPayments: float,
+     *     cashOutflows: float,
      *     cashNet: float,
      * }
      */
@@ -56,46 +59,28 @@ final class PeriodAccounting
             ->selectRaw('COALESCE(SUM(GREATEST(grandTotal - COALESCE(paidAmount, 0), 0)), 0) as receivable')
             ->value('receivable');
 
-        $cashCollections = (float) CustomerPayment::query()
+        // Sadece kasaya giren tahsilatlar (tedarikçiye_ode ve kasasız kayıtlar hariç)
+        $kasaPaymentQuery = CustomerPayment::query()
             ->whereDate('paymentDate', '>=', $fromDate)
             ->whereDate('paymentDate', '<=', $toDate)
-            ->sum('amount');
+            ->whereNotNull('kasaId')
+            ->where(function ($q) {
+                $q->whereNull('paymentType')
+                    ->orWhere('paymentType', '!=', 'tedarikciye_ode');
+            });
+
+        $cashCollections = (float) (clone $kasaPaymentQuery)->sum('amount');
 
         $cashOnPeriodSales = $saleIds->isEmpty()
             ? 0.0
-            : (float) CustomerPayment::query()
-                ->whereDate('paymentDate', '>=', $fromDate)
-                ->whereDate('paymentDate', '<=', $toDate)
-                ->whereIn('saleId', $saleIds)
-                ->sum('amount');
+            : (float) (clone $kasaPaymentQuery)->whereIn('saleId', $saleIds)->sum('amount');
 
-        $cashUnallocated = (float) CustomerPayment::query()
-            ->whereDate('paymentDate', '>=', $fromDate)
-            ->whereDate('paymentDate', '<=', $toDate)
-            ->whereNull('saleId')
-            ->sum('amount');
+        $cashUnallocated = (float) (clone $kasaPaymentQuery)->whereNull('saleId')->sum('amount');
 
         $cashOnPriorSales = max(0, round($cashCollections - $cashOnPeriodSales - $cashUnallocated, 2));
 
-        $expenses = (float) Expense::query()
-            ->whereDate('expenseDate', '>=', $fromDate)
-            ->whereDate('expenseDate', '<=', $toDate)
-            ->sum('amount');
-
-        $personnelAdvances = 0.0;
-        if (Schema::hasTable('personnel_advances')) {
-            $personnelAdvances = (float) PersonnelAdvance::query()
-                ->whereDate('advanceDate', '>=', $fromDate)
-                ->whereDate('advanceDate', '<=', $toDate)
-                ->sum('amount');
-        }
-
-        $supplierPayments = (float) SupplierPayment::query()
-            ->whereDate('paymentDate', '>=', $fromDate)
-            ->whereDate('paymentDate', '<=', $toDate)
-            ->sum('amount');
-
-        $cashNet = round($cashCollections - $expenses - $personnelAdvances - $supplierPayments, 2);
+        $outflows = self::kasaOutflowsByType($fromDate, $toDate);
+        $cashNet = self::kasaNet($fromDate, $toDate);
 
         return [
             'saleCount' => (int) (clone $salesQuery)->count(),
@@ -106,9 +91,11 @@ final class PeriodAccounting
             'cashOnPeriodSales' => round($cashOnPeriodSales, 2),
             'cashOnPriorSales' => $cashOnPriorSales,
             'cashUnallocated' => round($cashUnallocated, 2),
-            'expenses' => round($expenses, 2),
-            'personnelAdvances' => round($personnelAdvances, 2),
-            'supplierPayments' => round($supplierPayments, 2),
+            'expenses' => $outflows['expenses'],
+            'personnelAdvances' => $outflows['personnelAdvances'],
+            'supplierPayments' => $outflows['supplierPayments'],
+            'shippingPayments' => $outflows['shippingPayments'],
+            'cashOutflows' => $outflows['total'],
             'cashNet' => $cashNet,
         ];
     }
@@ -130,12 +117,67 @@ final class PeriodAccounting
         ];
     }
 
+    /** Kasaya gerçekten giren tahsilat (ödeme tarihi). */
     public static function cashCollections(Carbon $from, Carbon $to): float
     {
         return (float) CustomerPayment::query()
             ->whereDate('paymentDate', '>=', $from->toDateString())
             ->whereDate('paymentDate', '<=', $to->toDateString())
+            ->whereNotNull('kasaId')
+            ->where(function ($q) {
+                $q->whereNull('paymentType')
+                    ->orWhere('paymentType', '!=', 'tedarikciye_ode');
+            })
             ->sum('amount');
+    }
+
+    /** Dönem kasa neti: virman hariç ledger hareketleri. */
+    public static function kasaNet(string $fromDate, string $toDate): float
+    {
+        return round((float) self::cashLedgerQuery($fromDate, $toDate)->sum('amount'), 2);
+    }
+
+    /**
+     * @return array{
+     *     expenses: float,
+     *     personnelAdvances: float,
+     *     supplierPayments: float,
+     *     shippingPayments: float,
+     *     total: float,
+     * }
+     */
+    public static function kasaOutflowsByType(string $fromDate, string $toDate): array
+    {
+        $rows = self::cashLedgerQuery($fromDate, $toDate)
+            ->where('amount', '<', 0)
+            ->select('refType', DB::raw('SUM(amount) as s'))
+            ->groupBy('refType')
+            ->pluck('s', 'refType');
+
+        $expenses = abs((float) ($rows['expense'] ?? 0));
+        $personnelAdvances = abs((float) ($rows['personnel_advance'] ?? 0));
+        $supplierPayments = abs((float) ($rows['supplier_payment'] ?? 0));
+        $shippingPayments = abs((float) ($rows['shipping_company_payment'] ?? 0));
+
+        return [
+            'expenses' => round($expenses, 2),
+            'personnelAdvances' => round($personnelAdvances, 2),
+            'supplierPayments' => round($supplierPayments, 2),
+            'shippingPayments' => round($shippingPayments, 2),
+            'total' => round($expenses + $personnelAdvances + $supplierPayments + $shippingPayments, 2),
+        ];
+    }
+
+    private static function cashLedgerQuery(string $fromDate, string $toDate)
+    {
+        return KasaHareket::query()
+            ->ledger()
+            ->whereDate('movementDate', '>=', $fromDate)
+            ->whereDate('movementDate', '<=', $toDate)
+            ->where(function ($q) {
+                $q->whereNull('refType')
+                    ->orWhere('refType', '!=', 'kasa_transfer');
+            });
     }
 
     public static function assertSalesIdentity(float $revenue, float $collected, float $receivable, float $tolerance = 0.02): bool

@@ -490,6 +490,8 @@ class CustomerPaymentController extends Controller
         DB::transaction(function () use ($customerPayment) {
             if ($customerPayment->saleId) {
                 Sale::where('id', $customerPayment->saleId)->decrement('paidAmount', (float) $customerPayment->amount);
+            } elseif ($customerPayment->paymentType !== 'tedarikciye_ode') {
+                $this->reverseUnlinkedPaymentFromSales($customerPayment->customerId, (float) $customerPayment->amount);
             }
 
             $hareket = KasaHareket::where('refType', 'customer_payment')->where('refId', $customerPayment->id)->first();
@@ -551,6 +553,36 @@ class CustomerPaymentController extends Controller
             $alloc = min($remaining, $saleRemaining);
             Sale::where('id', $sale->id)->increment('paidAmount', $alloc);
             $remaining -= $alloc;
+        }
+    }
+
+    /** Faturasız tahsilat silinince: en yeni ödenen satışlardan geri al (FIFO tahsisin tersi). */
+    private function reverseUnlinkedPaymentFromSales(string $customerId, float $amount): void
+    {
+        if ($amount <= 0.005) {
+            return;
+        }
+
+        $remaining = $amount;
+        $sales = Sale::where('customerId', $customerId)
+            ->where('isCancelled', false)
+            ->whereRaw('COALESCE(paidAmount, 0) > 0.005')
+            ->orderByDesc('saleDate')
+            ->orderByDesc('createdAt')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($sales as $sale) {
+            if ($remaining <= 0.005) {
+                break;
+            }
+            $paid = (float) ($sale->paidAmount ?? 0);
+            if ($paid <= 0.005) {
+                continue;
+            }
+            $take = min($remaining, $paid);
+            Sale::where('id', $sale->id)->decrement('paidAmount', $take);
+            $remaining -= $take;
         }
     }
 }

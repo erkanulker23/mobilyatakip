@@ -75,6 +75,7 @@ class PersonnelAdvanceController extends Controller
         ]);
         $personnelAdvance->delete();
 
-        return redirect()->route('personnel.show', $personnelId)->with('success', 'Personel avansı silindi.');
+        return redirect()->back(fallback: route('personnel.show', $personnelId))
+            ->with('success', 'Personel avansı silindi.');
     }
 }

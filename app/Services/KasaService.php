@@ -86,6 +86,7 @@ class KasaService
                 'supplier_payment' => $this->deleteSupplierPaymentMovement($hareket),
                 'shipping_company_payment' => $this->deleteShippingCompanyPaymentMovement($hareket),
                 'expense' => $this->deleteExpenseMovement($hareket),
+                'personnel_advance' => $this->deletePersonnelAdvanceMovement($hareket),
                 default => $hareket->delete(),
             };
         });
@@ -116,6 +117,8 @@ class KasaService
 
         if ($payment->saleId) {
             \App\Models\Sale::where('id', $payment->saleId)->decrement('paidAmount', (float) $payment->amount);
+        } elseif ($payment->paymentType !== 'tedarikciye_ode') {
+            $this->reverseUnlinkedCustomerPayment($payment);
         }
 
         KasaHareket::query()
@@ -124,6 +127,35 @@ class KasaService
             ->delete();
 
         $payment->delete();
+    }
+
+    private function reverseUnlinkedCustomerPayment(\App\Models\CustomerPayment $payment): void
+    {
+        $remaining = (float) $payment->amount;
+        if ($remaining <= 0.005) {
+            return;
+        }
+
+        $sales = \App\Models\Sale::where('customerId', $payment->customerId)
+            ->where('isCancelled', false)
+            ->whereRaw('COALESCE(paidAmount, 0) > 0.005')
+            ->orderByDesc('saleDate')
+            ->orderByDesc('createdAt')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($sales as $sale) {
+            if ($remaining <= 0.005) {
+                break;
+            }
+            $paid = (float) ($sale->paidAmount ?? 0);
+            if ($paid <= 0.005) {
+                continue;
+            }
+            $take = min($remaining, $paid);
+            \App\Models\Sale::where('id', $sale->id)->decrement('paidAmount', $take);
+            $remaining -= $take;
+        }
     }
 
     private function deleteSupplierPaymentMovement(KasaHareket $hareket): void
@@ -179,5 +211,28 @@ class KasaService
             ->delete();
 
         $expense->delete();
+    }
+
+    private function deletePersonnelAdvanceMovement(KasaHareket $hareket): void
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('personnel_advances')) {
+            $hareket->delete();
+
+            return;
+        }
+
+        $advance = \App\Models\PersonnelAdvance::find($hareket->refId);
+        if (! $advance) {
+            $hareket->delete();
+
+            return;
+        }
+
+        KasaHareket::query()
+            ->where('refType', 'personnel_advance')
+            ->where('refId', $advance->id)
+            ->delete();
+
+        $advance->delete();
     }
 }

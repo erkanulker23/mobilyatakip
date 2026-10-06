@@ -8,7 +8,11 @@
         description: @js(old('description', '')),
         category: @js(old('category', '')),
         kasaId: @js(old('kasaId', '')),
+        saleId: @js(old('saleId', $preselectedSaleId ?? '')),
         kasaNames: @js($kasalar->pluck('name', 'id')),
+        saleLabels: @js(($sales ?? collect())->mapWithKeys(fn ($s) => [
+            $s->id => $s->saleNumber.' — '.($s->customer?->name ?? 'Müşteri').' — '.number_format((float) $s->grandTotal, 0, ',', '.').' ₺',
+        ])),
         parseAmount(raw) {
             if (typeof window.parseMoney === 'function') {
                 const v = window.parseMoney(raw);
@@ -25,6 +29,10 @@
         get kasaLabel() {
             if (!this.kasaId) return 'Kasa seçilmedi';
             return this.kasaNames[this.kasaId] || 'Seçili kasa';
+        },
+        get saleLabel() {
+            if (!this.saleId) return 'Siparişe bağlanmadı';
+            return this.saleLabels[this.saleId] || 'Seçili sipariş';
         },
         get categoryLabel() {
             return this.category.trim() !== '' ? this.category : 'Kategori seçilmedi';
@@ -126,10 +134,33 @@
                     </div>
                 </div>
 
-                {{-- 3. Açıklama --}}
+                {{-- 3. Sipariş (opsiyonel) --}}
+                @if(($sales ?? collect())->isNotEmpty() || old('saleId') || !empty($preselectedSaleId))
                 <div class="card p-6">
                     <div class="flex items-start gap-3 mb-5">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300 text-sm font-bold">3</span>
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 text-sm font-bold">3</span>
+                        <div>
+                            <h2 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">Hangi sipariş için? <span class="text-neutral-400 font-normal text-sm">(opsiyonel)</span></h2>
+                            <p class="text-sm text-neutral-500 dark:text-slate-400 mt-0.5">Satış faturasına bağlarsanız sipariş kartında bu harcama görünür.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label" for="expenseSale">Satış faturası / sipariş fişi</label>
+                        <select name="saleId" id="expenseSale" x-model="saleId" class="form-select min-h-[44px]">
+                            <option value="">Bağlama — genel gider</option>
+                            @foreach($sales as $s)
+                            <option value="{{ $s->id }}">{{ $s->saleNumber }} — {{ $s->customer?->name ?? 'Müşteri' }} — {{ number_format((float) $s->grandTotal, 0, ',', '.') }} ₺</option>
+                            @endforeach
+                        </select>
+                        @error('saleId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+                @endif
+
+                {{-- 4. Açıklama --}}
+                <div class="card p-6">
+                    <div class="flex items-start gap-3 mb-5">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300 text-sm font-bold">{{ ($sales ?? collect())->isNotEmpty() ? '4' : '3' }}</span>
                         <div>
                             <h2 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">Ne için harcandı?</h2>
                             <p class="text-sm text-neutral-500 dark:text-slate-400 mt-0.5">Fatura, fiş veya kısa açıklama yazın — raporlarda bu metin görünür.</p>
@@ -150,10 +181,10 @@
                     </div>
                 </div>
 
-                {{-- 4. Kategori --}}
+                {{-- 5. Kategori --}}
                 <div class="card p-6">
                     <div class="flex items-start gap-3 mb-5">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300 text-sm font-bold">4</span>
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300 text-sm font-bold">{{ ($sales ?? collect())->isNotEmpty() ? '5' : '4' }}</span>
                         <div class="flex-1 min-w-0">
                             <h2 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">Kategori</h2>
                             <p class="text-sm text-neutral-500 dark:text-slate-400 mt-0.5">Hazır kategorilerden birini seçin veya kendi kategorinizi yazın. (Opsiyonel)</p>
@@ -226,6 +257,10 @@
                     <div class="flex justify-between gap-3 py-2 border-b border-neutral-100 dark:border-neutral-800">
                         <dt class="text-neutral-500 shrink-0">Kasa</dt>
                         <dd class="font-medium text-right" :class="kasaId ? 'text-emerald-700 dark:text-emerald-400' : 'text-neutral-400'" x-text="kasaLabel">—</dd>
+                    </div>
+                    <div class="flex justify-between gap-3 py-2 border-b border-neutral-100 dark:border-neutral-800">
+                        <dt class="text-neutral-500 shrink-0">Sipariş</dt>
+                        <dd class="font-medium text-right text-sm truncate max-w-[14rem]" :class="saleId ? 'text-emerald-700 dark:text-emerald-400' : 'text-neutral-400'" x-text="saleLabel">—</dd>
                     </div>
                     <div class="pt-1">
                         <dt class="text-neutral-500 mb-1">Açıklama</dt>

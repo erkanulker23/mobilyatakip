@@ -395,7 +395,7 @@ class DashboardController extends Controller
             ->values();
 
         return [
-            'total' => (float) $payments->sum('amount'),
+            'total' => $kasaTotal,
             'nakitTotal' => (float) ($byType['nakit'] ?? 0),
             'kasaTotal' => $kasaTotal,
             'supplierTotal' => $supplierTotal,

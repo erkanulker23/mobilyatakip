@@ -14,7 +14,7 @@
             @if(!$print)<td class="table-td text-right text-neutral-500 hidden md:table-cell">{{ $salesCount ?? 0 }}</td>@endif
         </tr>
         <tr>
-            <td class="table-td font-medium text-emerald-700 dark:text-emerald-400">Tahsilat (nakit giriş)</td>
+            <td class="table-td font-medium text-emerald-700 dark:text-emerald-400">Kasa tahsilatı (giriş)</td>
             <td class="table-td text-right font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">{{ number_format($tahsilat, 0, ',', '.') }} ₺</td>
             @if(!$print)<td class="table-td text-right text-neutral-500 hidden md:table-cell">{{ $payments->count() }}</td>@endif
         </tr>
@@ -24,22 +24,36 @@
             @if(!$print)<td class="table-td text-right text-neutral-500 hidden md:table-cell">{{ $alisCount ?? 0 }}</td>@endif
         </tr>
         <tr>
-            <td class="table-td">Gider</td>
+            <td class="table-td">Gider (kasadan)</td>
             <td class="table-td text-right text-red-600 dark:text-red-400 tabular-nums">− {{ number_format($gider, 0, ',', '.') }} ₺</td>
             @if(!$print)<td class="table-td text-right text-neutral-500 hidden md:table-cell">{{ $expenses->count() }}</td>@endif
         </tr>
         <tr>
-            <td class="table-td">Tedarikçi ödemesi</td>
+            <td class="table-td">Tedarikçi ödemesi (kasadan)</td>
             <td class="table-td text-right text-red-600 dark:text-red-400 tabular-nums">− {{ number_format($tedarikciOdeme, 0, ',', '.') }} ₺</td>
             @if(!$print)<td class="table-td text-right text-neutral-500 hidden md:table-cell">{{ $supplierPayments->count() }}</td>@endif
         </tr>
+        @if(($personelAvans ?? 0) > 0.005)
+        <tr>
+            <td class="table-td">Personel avansı</td>
+            <td class="table-td text-right text-red-600 dark:text-red-400 tabular-nums">− {{ number_format($personelAvans, 0, ',', '.') }} ₺</td>
+            @if(!$print)<td class="table-td text-right text-neutral-500 hidden md:table-cell"></td>@endif
+        </tr>
+        @endif
+        @if(($nakliyeOdeme ?? 0) > 0.005)
+        <tr>
+            <td class="table-td">Nakliye ödemesi</td>
+            <td class="table-td text-right text-red-600 dark:text-red-400 tabular-nums">− {{ number_format($nakliyeOdeme, 0, ',', '.') }} ₺</td>
+            @if(!$print)<td class="table-td text-right text-neutral-500 hidden md:table-cell"></td>@endif
+        </tr>
+        @endif
         <tr class="font-semibold {{ $print ? '' : 'bg-slate-50 dark:bg-slate-800/40' }}">
             <td class="table-td">Dönem operasyon sonucu (hasılat − alış − gider)</td>
             <td class="table-td text-right tabular-nums {{ ($donemKar ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400' }}">{{ number_format($donemKar ?? 0, 0, ',', '.') }} ₺</td>
             @if(!$print)<td class="table-td hidden md:table-cell"></td>@endif
         </tr>
         <tr class="font-semibold {{ $print ? '' : 'bg-indigo-50 dark:bg-indigo-900/20' }}">
-            <td class="table-td">Net nakit akışı (tahsilat − gider − tedarikçi)</td>
+            <td class="table-td">Net kasa akışı (giriş − tüm kasa çıkışları)</td>
             <td class="table-td text-right tabular-nums {{ ($netNakit ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400' }}">{{ number_format($netNakit ?? 0, 0, ',', '.') }} ₺</td>
             @if(!$print)<td class="table-td hidden md:table-cell"></td>@endif
         </tr>

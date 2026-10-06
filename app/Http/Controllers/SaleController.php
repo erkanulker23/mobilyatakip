@@ -658,6 +658,13 @@ class SaleController extends Controller
             ? CustomerLedger::detailData($sale->customer)
             : null;
 
+        $linkedExpenses = collect();
+        $linkedExpensesTotal = 0.0;
+        if (\Illuminate\Support\Facades\Schema::hasColumn('expenses', 'saleId')) {
+            $linkedExpenses = $sale->expenses()->with('kasa')->get();
+            $linkedExpensesTotal = (float) $linkedExpenses->sum('amount');
+        }
+
         return view('sales.show', compact(
             'sale',
             'unlinkedPayments',
@@ -669,6 +676,8 @@ class SaleController extends Controller
             'canAddProductionStage',
             'openDeficienciesCount',
             'customerLedger',
+            'linkedExpenses',
+            'linkedExpensesTotal',
         ));
     }
 

@@ -263,6 +263,50 @@
 ])
 @endif
 
+@if(($linkedExpenses ?? collect())->isNotEmpty() || \Illuminate\Support\Facades\Schema::hasColumn('expenses', 'saleId'))
+<div class="mt-8 card overflow-hidden">
+    <div class="card-header flex flex-wrap items-center justify-between gap-2">
+        <span>Bu siparişe bağlı giderler</span>
+        <div class="flex items-center gap-3">
+            @if(($linkedExpensesTotal ?? 0) > 0.005)
+            <span class="text-sm font-semibold text-rose-600 tabular-nums">Toplam {{ number_format($linkedExpensesTotal, 0, ',', '.') }} ₺</span>
+            @endif
+            <a href="{{ route('expenses.create', ['saleId' => $sale->id]) }}" class="text-sm text-emerald-600 hover:underline">+ Gider ekle</a>
+        </div>
+    </div>
+    @if(($linkedExpenses ?? collect())->isEmpty())
+    <p class="px-5 py-6 text-sm text-neutral-500">Bu sipariş için henüz gider bağlanmadı. Malzeme / işçilik / ekstra harcama eklerseniz burada görünür.</p>
+    @else
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-slate-50 dark:bg-slate-800/50 border-b border-neutral-200 dark:border-slate-700">
+                <tr>
+                    <th class="table-th">Tarih</th>
+                    <th class="table-th">Açıklama</th>
+                    <th class="table-th">Kategori</th>
+                    <th class="table-th">Kasa</th>
+                    <th class="table-th text-right">Tutar</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+                @foreach($linkedExpenses as $expense)
+                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                    <td class="table-td">{{ $expense->expenseDate?->format('d.m.Y') }}</td>
+                    <td class="table-td">
+                        <a href="{{ route('expenses.show', $expense) }}" class="text-emerald-600 hover:underline font-medium">{{ Str::limit($expense->description, 60) }}</a>
+                    </td>
+                    <td class="table-td text-neutral-500">{{ $expense->category ?: '—' }}</td>
+                    <td class="table-td text-neutral-500">{{ $expense->kasa?->name ?? '—' }}</td>
+                    <td class="table-td text-right font-medium text-rose-600 tabular-nums">{{ number_format($expense->amount, 0, ',', '.') }} ₺</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    @endif
+</div>
+@endif
+
 @php
     use App\Models\SaleActivity;
     use App\Support\SaleDelivery;

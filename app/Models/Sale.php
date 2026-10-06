@@ -105,6 +105,12 @@ class Sale extends BaseModel
         return $this->hasMany(CustomerPayment::class, 'saleId')->orderBy('paymentDate', 'desc');
     }
 
+    /** Bu satışa bağlanan giderler (opsiyonel sipariş maliyeti) */
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class, 'saleId')->orderByDesc('expenseDate');
+    }
+
     /** Satış kalemlerindeki ürünlerin tedarikçilerini (e-posta adresi olan) benzersiz döner */
     public function getSuppliersWithEmail(): Collection
     {

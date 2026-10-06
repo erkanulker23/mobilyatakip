@@ -66,7 +66,7 @@ class ReportsController extends Controller
             ->count();
 
         $incomeExpense = $this->incomeExpenseData($monthStart, $monthEnd);
-        $monthlyNetCash = $incomeExpense['tahsilat'] - $incomeExpense['gider'] - $incomeExpense['tedarikciOdeme'];
+        $monthlyNetCash = (float) ($incomeExpense['netNakit'] ?? 0);
 
         $customerReceivable = max(0, (float) Sale::where('isCancelled', false)->sum('grandTotal')
             - (float) CustomerPayment::sum('amount'));
@@ -422,15 +422,18 @@ class ReportsController extends Controller
         $gelir = (float) Sale::whereBetween('saleDate', [$from, $to])->where('isCancelled', false)->sum('grandTotal');
         $salesCount = (int) Sale::whereBetween('saleDate', [$from, $to])->where('isCancelled', false)->count();
 
-        $tahsilat = (float) CustomerPayment::whereBetween('paymentDate', [$from, $to])->sum('amount');
-        $gider = (float) Expense::whereBetween('expenseDate', [$from, $to])->sum('amount');
-        $tedarikciOdeme = (float) SupplierPayment::whereBetween('paymentDate', [$from, $to])->sum('amount');
+        $cash = PeriodAccounting::forRange($from, $to);
+        $tahsilat = (float) $cash['cashCollections'];
+        $gider = (float) $cash['expenses'];
+        $tedarikciOdeme = (float) $cash['supplierPayments'];
+        $personelAvans = (float) $cash['personnelAdvances'];
+        $nakliyeOdeme = (float) $cash['shippingPayments'];
 
         $alis = (float) Purchase::whereBetween('purchaseDate', [$from, $to])->where('isCancelled', false)->sum('grandTotal');
         $alisCount = (int) Purchase::whereBetween('purchaseDate', [$from, $to])->where('isCancelled', false)->count();
 
-        $toplamCikis = $gider + $tedarikciOdeme;
-        $netNakit = $tahsilat - $toplamCikis;
+        $toplamCikis = (float) $cash['cashOutflows'];
+        $netNakit = (float) $cash['cashNet'];
         $donemKar = $gelir - $alis - $gider;
         $tahsilatOrani = $gelir > 0.005 ? round($tahsilat / $gelir * 100, 1) : null;
 
@@ -489,6 +492,8 @@ class ReportsController extends Controller
             'tahsilat' => $tahsilat,
             'gider' => $gider,
             'tedarikciOdeme' => $tedarikciOdeme,
+            'personelAvans' => $personelAvans,
+            'nakliyeOdeme' => $nakliyeOdeme,
             'alis' => $alis,
             'alisCount' => $alisCount,
             'toplamCikis' => $toplamCikis,
@@ -567,7 +572,7 @@ class ReportsController extends Controller
         if ($odeme === 'borclu') {
             $labels[] = 'Borçlu';
         } elseif ($odeme === 'borcsuz') {
-            $labels[] = 'Borçsuzlar';
+            $labels[] = 'Kapalı';
         }
 
         if ($deliveryStatus) {

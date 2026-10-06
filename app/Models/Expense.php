@@ -17,6 +17,7 @@ class Expense extends BaseModel
         'description',
         'category',
         'kasaId',
+        'saleId',
         'createdBy',
     ];
 
@@ -31,6 +32,11 @@ class Expense extends BaseModel
     public function kasa(): BelongsTo
     {
         return $this->belongsTo(Kasa::class, 'kasaId');
+    }
+
+    public function sale(): BelongsTo
+    {
+        return $this->belongsTo(Sale::class, 'saleId');
     }
 
     public function createdByUser(): BelongsTo

@@ -26,6 +26,19 @@
         <div><dt class="text-sm text-neutral-500">Kategori</dt><dd class="font-medium">{{ $expense->category ?: '—' }}</dd></div>
         <div><dt class="text-sm text-neutral-500">Açıklama</dt><dd class="text-neutral-700 whitespace-pre-wrap">{{ $expense->description }}</dd></div>
         <div><dt class="text-sm text-neutral-500">Kasa</dt><dd class="font-medium">{{ $expense->kasa?->name ?? '—' }}</dd></div>
+        <div>
+            <dt class="text-sm text-neutral-500">Sipariş / fatura</dt>
+            <dd class="font-medium">
+                @if($expense->sale)
+                <a href="{{ route('sales.show', $expense->sale) }}" class="text-emerald-600 hover:underline">{{ $expense->sale->saleNumber }}</a>
+                @if($expense->sale->customer)
+                <span class="text-neutral-500">· {{ $expense->sale->customer->name }}</span>
+                @endif
+                @else
+                —
+                @endif
+            </dd>
+        </div>
         @if($expense->createdByUser)
         <div><dt class="text-sm text-neutral-500">Kaydeden</dt><dd class="font-medium">{{ $expense->createdByUser->name ?? $expense->createdByUser->email ?? '—' }}</dd></div>
         @endif

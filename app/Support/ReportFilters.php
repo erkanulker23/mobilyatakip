@@ -14,16 +14,30 @@ class ReportFilters
         $defaultTo ??= now()->endOfDay();
 
         $period = $request->input('period');
-        if ($period === 'this_month') {
-            return self::compactRange(now()->startOfMonth()->startOfDay(), now()->endOfDay());
-        }
-        if ($period === 'last_month') {
-            $anchor = now()->subMonth();
+        $hasCustomDates = $request->filled('from') || $request->filled('to');
 
-            return self::compactRange($anchor->copy()->startOfMonth()->startOfDay(), $anchor->copy()->endOfMonth()->endOfDay());
-        }
-        if ($period === 'this_year') {
-            return self::compactRange(now()->copy()->startOfYear()->startOfDay(), now()->endOfDay(), now()->year);
+        // Özel tarih aralığı period kısa yolundan önce gelsin
+        if (! $hasCustomDates) {
+            if ($period === 'this_month') {
+                return self::compactRange(now()->startOfMonth()->startOfDay(), now()->endOfDay());
+            }
+            if ($period === 'last_month') {
+                $anchor = now()->subMonth();
+
+                return self::compactRange($anchor->copy()->startOfMonth()->startOfDay(), $anchor->copy()->endOfMonth()->endOfDay());
+            }
+            if ($period === 'this_year') {
+                return self::compactRange(now()->copy()->startOfYear()->startOfDay(), now()->endOfDay(), now()->year);
+            }
+            if ($period === 'last_year') {
+                $year = (int) now()->subYear()->year;
+
+                return self::compactRange(
+                    Carbon::create($year, 1, 1)->startOfDay(),
+                    Carbon::create($year, 12, 31)->endOfDay(),
+                    $year,
+                );
+            }
         }
 
         $year = $request->filled('year') ? (int) $request->year : null;

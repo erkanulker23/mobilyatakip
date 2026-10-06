@@ -63,6 +63,20 @@
                 @endforeach
             </select>
         </div>
+        @if(($sales ?? collect())->isNotEmpty() || $expense->saleId)
+        <div>
+            <label class="form-label">Satış faturası / sipariş <span class="text-neutral-400 font-normal">(opsiyonel)</span></label>
+            <select name="saleId" class="form-select">
+                <option value="">Bağlama — genel gider</option>
+                @foreach($sales as $s)
+                <option value="{{ $s->id }}" {{ (string) old('saleId', $expense->saleId) === (string) $s->id ? 'selected' : '' }}>
+                    {{ $s->saleNumber }} — {{ $s->customer?->name ?? 'Müşteri' }} — {{ number_format((float) $s->grandTotal, 0, ',', '.') }} ₺
+                </option>
+                @endforeach
+            </select>
+            @error('saleId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+        </div>
+        @endif
         <div class="flex gap-3 pt-2">
             <button type="submit" class="btn-primary">Güncelle</button>
             <a href="{{ route('expenses.show', $expense) }}" class="btn-secondary">İptal</a>
