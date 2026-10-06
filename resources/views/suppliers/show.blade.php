@@ -7,6 +7,13 @@
     $balance = $totalPurchases - $totalPayments;
 @endphp
 
+<div
+    x-data="{
+        showGoodsModal: @json($errors->any() && old('_form') === 'goods_received'),
+        showPaymentModal: false
+    }"
+>
+
 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
     <div>
         <nav class="flex items-center gap-2 text-sm text-neutral-500 dark:text-slate-400 mb-1" aria-label="Breadcrumb">
@@ -19,12 +26,20 @@
     </div>
     <div class="flex flex-wrap items-center gap-2">
         @include('partials.action-buttons', ['edit' => route('suppliers.edit', $supplier), 'print' => route('suppliers.print', $supplier)])
+        <button type="button" @click="showGoodsModal = true" class="btn-secondary">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+            Mal Alındı
+        </button>
         <a href="{{ route('supplier-payments.create', ['supplierId' => $supplier->id]) }}" class="btn-primary">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
             Tedarikçi Ödeme Yap
         </a>
     </div>
 </div>
+
+@if(session('success'))
+<div class="mb-4 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 text-sm">{{ session('success') }}</div>
+@endif
 
 {{-- Özet kartları --}}
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
@@ -56,7 +71,7 @@
                 <p class="text-xs font-medium text-neutral-500 dark:text-slate-400 uppercase tracking-wider">Bakiye</p>
                 <p class="text-xl font-semibold mt-1 tracking-tight {{ ($balance ?? 0) > 0 ? 'text-red-600 dark:text-red-400' : (($balance ?? 0) < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white') }}">{{ number_format($balance ?? 0, 0, ',', '.') }} ₺</p>
                 @if(($balance ?? 0) != 0)<p class="text-xs text-neutral-500 dark:text-slate-400 mt-0.5">{{ ($balance ?? 0) > 0 ? 'Tedarikçiye borç' : 'Tedarikçiden alacak' }}</p>@endif
-                <p class="text-xs text-slate-400 dark:text-neutral-500 mt-1">Bakiye = Toplam Alış − Toplam Ödenen. Ödeme yaptıysanız «Tedarikçi Ödeme Yap» ile ekleyin.</p>
+                <p class="text-xs text-slate-400 dark:text-neutral-500 mt-1">Mal alındı → borç artar · Ödeme yap → borç düşer.</p>
             </div>
             <div class="p-3 rounded-xl {{ ($balance ?? 0) > 0 ? 'bg-red-50 dark:bg-red-900/20' : (($balance ?? 0) < 0 ? 'bg-emerald-50 dark:bg-emerald-900/30' : 'bg-slate-100 dark:bg-slate-700') }}">
                 <svg class="w-6 h-6 {{ ($balance ?? 0) > 0 ? 'text-red-600 dark:text-red-400' : (($balance ?? 0) < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-500 dark:text-slate-400') }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75m15.75 0h.75.75v-.75c0-.414-.336-.75-.75-.75h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"></path></svg>
@@ -104,22 +119,23 @@
         </div>
         <div class="card overflow-hidden">
             <div class="card-header flex items-center justify-between">
-                <span>Alışlar</span>
-                <span class="text-xs font-normal text-neutral-500 dark:text-slate-400">{{ $supplier->purchases->count() }} alış</span>
+                <span>Alışlar / Mal alımları</span>
+                <span class="text-xs font-normal text-neutral-500 dark:text-slate-400">{{ $supplier->purchases->where('isCancelled', false)->count() }} kayıt</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full">
-                    <thead><tr class="border-b border-neutral-100 dark:border-slate-700"><th class="table-th">No</th><th class="table-th">Tarih</th><th class="table-th text-right">Tutar</th><th class="table-th text-right">İşlem</th></tr></thead>
+                    <thead><tr class="border-b border-neutral-100 dark:border-slate-700"><th class="table-th">No</th><th class="table-th">Tarih</th><th class="table-th">Açıklama</th><th class="table-th text-right">Tutar</th><th class="table-th text-right">İşlem</th></tr></thead>
                     <tbody>
-                        @forelse($supplier->purchases->where('isCancelled', false)->take(10) as $p)
+                        @forelse($supplier->purchases->where('isCancelled', false)->sortByDesc('purchaseDate')->take(15) as $p)
                         <tr class="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
                             <td class="table-td"><a href="{{ route('purchases.show', $p) }}" class="font-medium text-emerald-600 dark:text-emerald-400 hover:underline">{{ $p->purchaseNumber }}</a></td>
                             <td class="table-td">{{ $p->purchaseDate?->format('d.m.Y') }}</td>
-                            <td class="table-td text-right font-medium">{{ number_format($p->grandTotal, 0, ',', '.') }} ₺</td>
+                            <td class="table-td text-sm text-neutral-600 dark:text-slate-300">{{ $p->notes ? \Illuminate\Support\Str::limit($p->notes, 50) : '—' }}</td>
+                            <td class="table-td text-right font-medium text-rose-600 dark:text-rose-400">{{ number_format($p->grandTotal, 0, ',', '.') }} ₺</td>
                             <td class="table-td text-right">@include('partials.action-buttons', ['show' => route('purchases.show', $p), 'edit' => route('purchases.edit', $p), 'print' => route('purchases.print', $p)])</td>
                         </tr>
                         @empty
-                        <tr><td colspan="4" class="table-td text-center text-neutral-500 dark:text-slate-400 py-8">Henüz alış yok.</td></tr>
+                        <tr><td colspan="5" class="table-td text-center text-neutral-500 dark:text-slate-400 py-8">Henüz alış yok. «Mal Alındı» ile borç kaydı ekleyebilirsiniz.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -150,5 +166,56 @@
                 </table>
             </div>
         </div>
+</div>
+
+{{-- Mal alındı modal --}}
+<div x-show="showGoodsModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="goods-received-title">
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showGoodsModal = false"></div>
+    <div class="relative w-full max-w-lg rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-neutral-200 dark:border-slate-700 overflow-hidden max-h-[90vh] overflow-y-auto">
+        <div class="px-5 pt-5 pb-1">
+            <h2 id="goods-received-title" class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Tedarikçiden mal alındı</h2>
+            <p class="mt-1 text-sm text-neutral-500 dark:text-slate-400">{{ $supplier->name }} — tutar borç olarak işlenir</p>
+        </div>
+        <form method="POST" action="{{ route('suppliers.goods-received', $supplier) }}" class="p-5 space-y-4">
+            @csrf
+            <input type="hidden" name="_form" value="goods_received">
+
+            <div class="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-sm text-amber-900 dark:text-amber-200">
+                Mal alındığında tedarikçiye borç yazılır. Ödeme yaptığınızda «Tedarikçi Ödeme Yap» ile borç düşer.
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="form-label" for="goodsAmount">Tutar (₺) *</label>
+                    <input type="text" inputmode="decimal" name="amount" id="goodsAmount" required
+                        value="{{ old('_form') === 'goods_received' ? old('amount') : '' }}"
+                        class="form-input money-input min-h-[44px]" placeholder="0" autocomplete="off">
+                    @error('amount')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="form-label" for="goodsDate">Tarih *</label>
+                    <input type="date" name="purchaseDate" id="goodsDate" required
+                        value="{{ old('_form') === 'goods_received' ? old('purchaseDate', date('Y-m-d')) : date('Y-m-d') }}"
+                        class="form-input min-h-[44px]" max="{{ date('Y-m-d') }}">
+                    @error('purchaseDate')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+            </div>
+
+            <div>
+                <label class="form-label" for="goodsNotes">Ne alındı / neden *</label>
+                <textarea name="notes" id="goodsNotes" rows="3" required maxlength="1000"
+                    class="form-textarea"
+                    placeholder="Örn: Kapı menteşesi ve vida seti, 12 adet panel...">{{ old('_form') === 'goods_received' ? old('notes') : '' }}</textarea>
+                @error('notes')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+            </div>
+
+            <div class="flex gap-3 justify-end pt-2">
+                <button type="button" @click="showGoodsModal = false" class="btn-secondary min-h-[44px]">İptal</button>
+                <button type="submit" class="btn-primary min-h-[44px]">Borç olarak kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 </div>
 @endsection

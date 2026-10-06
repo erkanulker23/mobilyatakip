@@ -104,6 +104,57 @@ class SupplierController extends Controller
         return view('suppliers.show', compact('supplier'));
     }
 
+    /** Tedarikçiden mal alındı — borç artırır (alış kaydı, stoksuz hızlı kayıt). */
+    public function storeGoodsReceived(Request $request, Supplier $supplier)
+    {
+        if ($request->filled('amount')) {
+            $request->merge(['amount' => money_parse($request->input('amount'))]);
+        }
+
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'purchaseDate' => 'required|date',
+            'notes' => 'required|string|max:1000',
+        ], [
+            'notes.required' => 'Ne alındığını / nedenini yazın.',
+        ]);
+
+        $amount = (float) $validated['amount'];
+
+        $purchase = DB::transaction(function () use ($validated, $supplier, $amount) {
+            $last = Purchase::whereYear('createdAt', date('Y'))
+                ->orderBy('purchaseNumber', 'desc')
+                ->lockForUpdate()
+                ->first();
+            $next = $last ? (int) preg_replace('/^ALS-\d+-/', '', (string) $last->purchaseNumber) + 1 : 1;
+            $purchaseNumber = 'ALS-' . date('Y') . '-' . str_pad((string) $next, 5, '0', STR_PAD_LEFT);
+
+            return Purchase::create([
+                'purchaseNumber' => $purchaseNumber,
+                'supplierId' => $supplier->id,
+                'purchaseDate' => $validated['purchaseDate'],
+                'kdvIncluded' => true,
+                'subtotal' => $amount,
+                'kdvTotal' => 0,
+                'grandTotal' => $amount,
+                'paidAmount' => 0,
+                'notes' => $validated['notes'],
+                'isCancelled' => false,
+            ]);
+        });
+
+        $this->auditService->logCreate('purchase', $purchase->id, [
+            'purchaseNumber' => $purchase->purchaseNumber,
+            'grandTotal' => $purchase->grandTotal,
+            'supplierId' => $supplier->id,
+            'quickGoodsReceived' => true,
+        ]);
+
+        return redirect()
+            ->route('suppliers.show', $supplier)
+            ->with('success', 'Mal alımı kaydedildi. Tedarikçiye ' . number_format($amount, 0, ',', '.') . ' ₺ borç eklendi.');
+    }
+
     public function print(Supplier $supplier)
     {
         $supplier->load([

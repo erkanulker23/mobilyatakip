@@ -138,6 +138,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/customers/excel/import', [CustomerController::class, 'importExcel'])->name('customers.excel.import');
     Route::resource('customers', CustomerController::class);
     Route::get('/suppliers/{supplier}/print', [SupplierController::class, 'print'])->name('suppliers.print');
+    Route::post('/suppliers/{supplier}/mal-alindi', [SupplierController::class, 'storeGoodsReceived'])->name('suppliers.goods-received');
     Route::get('/suppliers/excel/export', [SupplierController::class, 'exportExcel'])->name('suppliers.excel.export');
     Route::post('/suppliers/excel/import', [SupplierController::class, 'importExcel'])->name('suppliers.excel.import');
     Route::post('/suppliers/actions/bulk-destroy', [SupplierController::class, 'bulkDestroy'])->name('suppliers.bulk-destroy');

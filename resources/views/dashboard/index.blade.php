@@ -515,14 +515,4 @@
 </div>
 @endif
 
-@if(!($showPersonalTasks ?? false))
-<details class="mt-8 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/50 dark:bg-amber-950/20">
-    <summary class="cursor-pointer px-4 py-3 text-sm font-medium text-amber-900 dark:text-amber-200 select-none">
-        Proje başlangıç tarihi hakkında bilgi (02.08.2026)
-    </summary>
-    <p class="px-4 pb-4 text-sm text-amber-800/90 dark:text-amber-300/90 leading-relaxed">
-        Bu proje 02.08.2026 tarihinde işleme alınmıştır. Bu tarihten önceki siparişlerde dikkatli olun; satış fişlerinde gerekli düzenlemeleri yapın. Kasa defterleri bu dönem için doğru olmayabilir.
-    </p>
-</details>
-@endif
 @endsection
