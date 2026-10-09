@@ -6,16 +6,21 @@ use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\CustomerPayment;
 use App\Models\Expense;
+use App\Models\Kasa;
+use App\Models\KasaHareket;
 use App\Models\Personnel;
+use App\Models\PersonnelAdvance;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\ServiceTicket;
+use App\Models\ShippingCompanyPayment;
 use App\Models\Supplier;
 use App\Models\SupplierPayment;
 use App\Support\CustomerBalance;
 use App\Support\CustomerLedger;
+use App\Support\KasaMovement;
 use App\Support\PeriodAccounting;
 use App\Support\ReportFilters;
 use App\Support\SaleDelivery;
@@ -23,6 +28,7 @@ use App\Support\SalesReportQuery;
 use App\Support\ServiceTicketStatus;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class ReportsController extends Controller
@@ -249,6 +255,26 @@ class ReportsController extends Controller
         ));
     }
 
+    public function payments(Request $request)
+    {
+        ['from' => $from, 'to' => $to, 'year' => $year, 'month' => $month] = ReportFilters::range($request);
+
+        return view('reports.payments', array_merge(
+            compact('from', 'to', 'year', 'month'),
+            $this->paymentsData($from, $to, $request),
+        ));
+    }
+
+    public function paymentsPrint(Request $request): View
+    {
+        ['from' => $from, 'to' => $to, 'year' => $year, 'month' => $month] = ReportFilters::range($request);
+
+        return view('reports.print.payments', array_merge(
+            compact('from', 'to', 'year', 'month'),
+            $this->paymentsData($from, $to, $request),
+        ));
+    }
+
     public function sales(Request $request)
     {
         ['from' => $from, 'to' => $to, 'year' => $year, 'month' => $month] = ReportFilters::range($request);
@@ -414,6 +440,133 @@ class ReportsController extends Controller
             compact('from', 'to', 'year'),
             $this->kdvData($from, $to),
         ));
+    }
+
+    /** @return array<string, mixed> */
+    private function paymentsData(Carbon $from, Carbon $to, Request $request): array
+    {
+        $fromDate = $from->toDateString();
+        $toDate = $to->toDateString();
+        $type = $request->input('type');
+        $allowedTypes = ['expense', 'supplier_payment', 'personnel_advance', 'shipping_company_payment', 'other'];
+
+        $query = KasaHareket::query()
+            ->ledger()
+            ->with(['kasa'])
+            ->where('amount', '<', 0)
+            ->where(function ($q) {
+                $q->whereNull('refType')->orWhere('refType', '!=', 'kasa_transfer');
+            })
+            ->whereNotIn('type', ['virman_cikis', 'virman_giris'])
+            ->whereDate('movementDate', '>=', $fromDate)
+            ->whereDate('movementDate', '<=', $toDate);
+
+        if ($request->filled('kasaId')) {
+            $query->where('kasaId', $request->kasaId);
+        }
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where('description', 'like', "%{$s}%");
+        }
+
+        if (in_array($type, $allowedTypes, true)) {
+            if ($type === 'other') {
+                $query->where(function ($q) {
+                    $q->whereNull('refType')
+                        ->orWhereNotIn('refType', [
+                            'expense',
+                            'supplier_payment',
+                            'personnel_advance',
+                            'shipping_company_payment',
+                            'kasa_transfer',
+                        ]);
+                });
+            } else {
+                $query->where('refType', $type);
+            }
+        }
+
+        $movements = (clone $query)
+            ->orderByDesc('movementDate')
+            ->orderByDesc('createdAt')
+            ->get();
+
+        $total = abs((float) (clone $query)->sum('amount'));
+        $count = $movements->count();
+
+        $byType = [
+            'expense' => 0.0,
+            'supplier_payment' => 0.0,
+            'personnel_advance' => 0.0,
+            'shipping_company_payment' => 0.0,
+            'other' => 0.0,
+        ];
+        foreach ($movements as $m) {
+            $key = match ($m->refType) {
+                'expense', 'supplier_payment', 'personnel_advance', 'shipping_company_payment' => $m->refType,
+                default => 'other',
+            };
+            $byType[$key] += abs((float) $m->amount);
+        }
+
+        $expenseIds = $movements->where('refType', 'expense')->pluck('refId')->unique()->filter()->values()->all();
+        $supplierPaymentIds = $movements->where('refType', 'supplier_payment')->pluck('refId')->unique()->filter()->values()->all();
+        $shippingPaymentIds = $movements->where('refType', 'shipping_company_payment')->pluck('refId')->unique()->filter()->values()->all();
+        $advanceIds = $movements->where('refType', 'personnel_advance')->pluck('refId')->unique()->filter()->values()->all();
+
+        $expenses = $expenseIds
+            ? Expense::whereIn('id', $expenseIds)->get()->keyBy(fn ($e) => (string) $e->id)
+            : collect();
+        $supplierPayments = $supplierPaymentIds
+            ? SupplierPayment::with('supplier')->whereIn('id', $supplierPaymentIds)->get()->keyBy(fn ($p) => (string) $p->id)
+            : collect();
+        $shippingPayments = $shippingPaymentIds && class_exists(ShippingCompanyPayment::class)
+            ? ShippingCompanyPayment::with('shippingCompany')->whereIn('id', $shippingPaymentIds)->get()->keyBy(fn ($p) => (string) $p->id)
+            : collect();
+        $personnelAdvances = collect();
+        if ($advanceIds && Schema::hasTable('personnel_advances')) {
+            $personnelAdvances = PersonnelAdvance::with('personnel')->whereIn('id', $advanceIds)->get()->keyBy(fn ($a) => (string) $a->id);
+        }
+
+        $refs = [
+            'expenses' => $expenses,
+            'supplierPayments' => $supplierPayments,
+            'shippingCompanyPayments' => $shippingPayments,
+            'personnelAdvances' => $personnelAdvances,
+        ];
+
+        $rows = $movements->map(function (KasaHareket $h) use ($refs) {
+            $badge = KasaMovement::typeBadge($h);
+            $detail = KasaMovement::operationDetail($h, (string) $h->kasaId, $refs);
+
+            return (object) [
+                'movement' => $h,
+                'badge' => $badge,
+                'detail' => $detail,
+                'amount' => abs((float) $h->amount),
+            ];
+        });
+
+        $kasalar = Kasa::orderBy('name')->get();
+        $typeOptions = [
+            '' => 'Tüm ödemeler',
+            'expense' => 'Gider',
+            'supplier_payment' => 'Tedarikçi ödemesi',
+            'personnel_advance' => 'Personel avansı',
+            'shipping_company_payment' => 'Nakliye ödemesi',
+            'other' => 'Diğer çıkış',
+        ];
+
+        return compact(
+            'rows',
+            'total',
+            'count',
+            'byType',
+            'kasalar',
+            'typeOptions',
+            'type',
+        );
     }
 
     /** @return array<string, mixed> */

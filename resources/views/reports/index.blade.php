@@ -50,6 +50,17 @@
         ],
         [
             'category' => 'finans',
+            'title' => 'Ödemeler Raporu',
+            'desc' => 'Kasadan çıkan tüm ödemeler: gider, tedarikçi, avans, nakliye. Dönem ve türe göre filtre.',
+            'route' => 'reports.payments',
+            'icon' => 'document',
+            'tone' => 'rose',
+            'stat' => 'Kasa çıkışı',
+            'statHint' => 'Yaptığımız ödemeler',
+            'keywords' => 'ödeme kasa çıkış gider tedarikçi avans nakliye',
+        ],
+        [
+            'category' => 'finans',
             'title' => 'KDV Raporu',
             'desc' => 'Satış, alış ve gider kalemlerine göre KDV özeti ve oran dağılımı.',
             'route' => 'reports.kdv',
@@ -87,7 +98,7 @@
     $categories = [
         'operasyon' => ['label' => 'Operasyon', 'desc' => 'Teslimat ve termin takibi'],
         'satis' => ['label' => 'Satış', 'desc' => 'Ciro ve sipariş analizi'],
-        'finans' => ['label' => 'Finans', 'desc' => 'Gelir, gider ve vergi'],
+        'finans' => ['label' => 'Finans', 'desc' => 'Gelir, gider, ödemeler ve vergi'],
         'cari' => ['label' => 'Cari Hesaplar', 'desc' => 'Müşteri ve tedarikçi bakiyeleri'],
     ];
 @endphp
@@ -172,6 +183,7 @@
                             'sky' => 'bg-sky-50 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400',
                             'orange' => 'bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400',
                             'teal' => 'bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400',
+                            'rose' => 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400',
                             default => 'bg-neutral-100 text-neutral-600',
                         };
                     @endphp

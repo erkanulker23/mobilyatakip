@@ -18,6 +18,7 @@ class KasaMovement
             'supplier_payment' => ['label' => 'Tedarikçi Ödemesi', 'tone' => 'amber', 'icon' => '−'],
             'expense' => ['label' => 'Gider', 'tone' => 'rose', 'icon' => '−'],
             'personnel_advance' => ['label' => 'Personel Avansı', 'tone' => 'amber', 'icon' => '−'],
+            'shipping_company_payment' => ['label' => 'Nakliye Ödemesi', 'tone' => 'orange', 'icon' => '−'],
             default => match ($h->type) {
                 'giris' => ['label' => 'Giriş', 'tone' => 'emerald', 'icon' => '+'],
                 'cikis' => ['label' => 'Çıkış', 'tone' => 'rose', 'icon' => '−'],
@@ -32,6 +33,7 @@ class KasaMovement
             'emerald' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
             'amber' => 'bg-amber-50 text-amber-800 border-amber-200',
             'rose' => 'bg-rose-50 text-rose-800 border-rose-200',
+            'orange' => 'bg-orange-50 text-orange-800 border-orange-200',
             'indigo' => 'bg-indigo-50 text-indigo-800 border-indigo-200',
             default => 'bg-neutral-50 text-neutral-700 border-neutral-200',
         };
