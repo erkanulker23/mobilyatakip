@@ -26,36 +26,47 @@ class KasaService
     public function summary(Kasa $kasa): array
     {
         $opening = (float) ($kasa->openingBalance ?? 0);
-        $rows = $kasa->hareketler()
-            ->ledger()
-            ->get(['amount', 'refType', 'type']);
+        $ledger = fn () => $kasa->hareketler()->ledger();
 
-        $operationalIn = 0.0;
-        $operationalOut = 0.0;
-        $transferIn = 0.0;
-        $transferOut = 0.0;
+        $transferIn = (float) $ledger()
+            ->where(function ($q) {
+                $q->where('refType', 'kasa_transfer')
+                    ->orWhereIn('type', ['virman_cikis', 'virman_giris']);
+            })
+            ->where('amount', '>', 0)
+            ->sum('amount');
 
-        foreach ($rows as $h) {
-            $amount = (float) ($h->amount ?? 0);
-            $isTransfer = $h->refType === 'kasa_transfer'
-                || in_array($h->type, ['virman_cikis', 'virman_giris'], true);
+        $transferOut = abs((float) $ledger()
+            ->where(function ($q) {
+                $q->where('refType', 'kasa_transfer')
+                    ->orWhereIn('type', ['virman_cikis', 'virman_giris']);
+            })
+            ->where('amount', '<', 0)
+            ->sum('amount'));
 
-            if ($isTransfer) {
-                if ($amount >= 0) {
-                    $transferIn += $amount;
-                } else {
-                    $transferOut += abs($amount);
-                }
-            } elseif ($amount >= 0) {
-                $operationalIn += $amount;
-            } else {
-                $operationalOut += abs($amount);
-            }
-        }
+        $operationalIn = (float) $ledger()
+            ->where(function ($q) {
+                $q->whereNull('refType')->orWhere('refType', '!=', 'kasa_transfer');
+            })
+            ->where(function ($q) {
+                $q->whereNull('type')->orWhereNotIn('type', ['virman_cikis', 'virman_giris']);
+            })
+            ->where('amount', '>', 0)
+            ->sum('amount');
+
+        $operationalOut = abs((float) $ledger()
+            ->where(function ($q) {
+                $q->whereNull('refType')->orWhere('refType', '!=', 'kasa_transfer');
+            })
+            ->where(function ($q) {
+                $q->whereNull('type')->orWhereNotIn('type', ['virman_cikis', 'virman_giris']);
+            })
+            ->where('amount', '<', 0)
+            ->sum('amount'));
 
         $totalIn = $operationalIn + $transferIn;
         $totalOut = $operationalOut + $transferOut;
-        $netMovements = $totalIn - $totalOut;
+        $netMovements = (float) $ledger()->sum('amount');
 
         return [
             'opening' => round($opening, 2),
@@ -67,7 +78,7 @@ class KasaService
             'transferOut' => round($transferOut, 2),
             'netMovements' => round($netMovements, 2),
             'current' => round($opening + $netMovements, 2),
-            'count' => $rows->count(),
+            'count' => (int) $ledger()->count(),
         ];
     }
 

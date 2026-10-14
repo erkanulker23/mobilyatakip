@@ -2,8 +2,21 @@
 @include('partials.page-seo', \App\Support\PageSeo::kasa($kasa))
 @section('content')
 @php
-    use App\Support\KasaMovement;
     $summary = $summary ?? ['opening' => 0, 'totalIn' => 0, 'totalOut' => 0, 'current' => 0, 'count' => 0];
+    $errorsBag = $errors ?? new \Illuminate\Support\ViewErrorBag(new \Illuminate\Support\MessageBag);
+    $virmanError = $errorsBag->has('toKasaId') || old('_form') === 'virman';
+    $depositEditError = old('_form') === 'deposit_edit';
+    $depositError = old('_form') === 'deposit';
+    $editDepositUpdateUrl = (old('hareketId') && \Illuminate\Support\Facades\Route::has('kasa.deposit.update'))
+        ? route('kasa.deposit.update', [$kasa, old('hareketId')])
+        : '';
+    $editDepositOld = [
+        'id' => (string) old('hareketId', ''),
+        'amount' => old('_form') === 'deposit_edit' ? (string) old('amount', '') : '',
+        'movementDate' => old('_form') === 'deposit_edit' ? (string) old('movementDate', now()->format('Y-m-d')) : now()->format('Y-m-d'),
+        'description' => old('_form') === 'deposit_edit' ? (string) old('description', '') : '',
+        'updateUrl' => $editDepositUpdateUrl,
+    ];
 @endphp
 
 @if(session('success'))
@@ -13,19 +26,6 @@
 <div class="mb-4 p-4 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm">{{ session('error') }}</div>
 @endif
 
-@php
-    use App\Services\KasaService;
-    $virmanError = $errors->has('toKasaId') || old('_form') === 'virman';
-    $depositEditError = old('_form') === 'deposit_edit';
-    $depositError = old('_form') === 'deposit';
-    $editDepositOld = [
-        'id' => (string) old('hareketId', ''),
-        'amount' => old('_form') === 'deposit_edit' ? (string) old('amount', '') : '',
-        'movementDate' => old('_form') === 'deposit_edit' ? (string) old('movementDate', now()->format('Y-m-d')) : now()->format('Y-m-d'),
-        'description' => old('_form') === 'deposit_edit' ? (string) old('description', '') : '',
-        'updateUrl' => old('hareketId') ? route('kasa.deposit.update', [$kasa, old('hareketId')]) : '',
-    ];
-@endphp
 <div
     class="mb-6"
     x-data="kasaShowPage({
@@ -234,8 +234,8 @@
                         <tbody class="divide-y divide-neutral-100">
                             @forelse($hareketler as $h)
                             @php
-                                $badge = KasaMovement::typeBadge($h);
-                                $transferDetail = KasaMovement::transferDetail($h, $kasa->id);
+                                $badge = \App\Support\KasaMovement::typeBadge($h);
+                                $transferDetail = \App\Support\KasaMovement::transferDetail($h, $kasa->id);
                                 $cariName = null;
                                 $cariUrl = null;
                                 $paymentTypeLabel = null;
@@ -263,7 +263,7 @@
                                 }
 
                                 $tutar = (float) ($h->amount ?? 0);
-                                $operationDetail = KasaMovement::operationDetail($h, $kasa->id, [
+                                $operationDetail = \App\Support\KasaMovement::operationDetail($h, $kasa->id, [
                                     'customerPayments' => $customerPayments,
                                     'supplierPayments' => $supplierPayments,
                                     'expenses' => $expenses,
@@ -275,12 +275,12 @@
                                 <td class="table-td whitespace-nowrap text-neutral-600">{{ $h->movementDate?->format('d.m.Y') }}</td>
                                 <td class="table-td">
                                     @if($operationDetail)
-                                    <a href="{{ $operationDetail['url'] }}" class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border hover:opacity-90 transition-opacity {{ KasaMovement::toneClasses($badge['tone']) }}" title="{{ $operationDetail['label'] }}">
+                                    <a href="{{ $operationDetail['url'] }}" class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border hover:opacity-90 transition-opacity {{ \App\Support\KasaMovement::toneClasses($badge['tone']) }}" title="{{ $operationDetail['label'] }}">
                                         <span aria-hidden="true">{{ $badge['icon'] }}</span>
                                         {{ $badge['label'] }}
                                     </a>
                                     @else
-                                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border {{ KasaMovement::toneClasses($badge['tone']) }}">
+                                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border {{ \App\Support\KasaMovement::toneClasses($badge['tone']) }}">
                                         <span aria-hidden="true">{{ $badge['icon'] }}</span>
                                         {{ $badge['label'] }}
                                     </span>
@@ -327,8 +327,8 @@
                                                 id: @js((string) $h->id),
                                                 amount: @js((string) abs((float) $h->amount)),
                                                 movementDate: @js($h->movementDate?->format('Y-m-d') ?? now()->format('Y-m-d')),
-                                                description: @js(KasaService::depositNote($h->description)),
-                                                updateUrl: @js(route('kasa.deposit.update', [$kasa, $h])),
+                                                description: @js(\App\Services\KasaService::depositNote($h->description)),
+                                                updateUrl: @js(\Illuminate\Support\Facades\Route::has('kasa.deposit.update') ? route('kasa.deposit.update', [$kasa, $h]) : ''),
                                             })"
                                         >
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
