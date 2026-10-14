@@ -65,6 +65,7 @@ class KasaController extends Controller
         if ($request->filled('movement')) {
             match ($request->movement) {
                 'tahsilat' => $q->where('refType', 'customer_payment'),
+                'para_ekleme' => $q->where('refType', 'kasa_deposit'),
                 'odeme' => $q->where('refType', 'supplier_payment'),
                 'gider' => $q->where('refType', 'expense'),
                 'virman' => $q->where('refType', 'kasa_transfer'),
@@ -125,6 +126,41 @@ class KasaController extends Controller
         ) + [
             'paymentTypes' => PaymentType::labels(),
         ]);
+    }
+
+    public function deposit(Request $request, Kasa $kasa)
+    {
+        if ($request->filled('amount')) {
+            $request->merge(['amount' => money_parse($request->input('amount'))]);
+        }
+
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'movementDate' => 'required|date',
+            'description' => 'nullable|string|max:500',
+        ]);
+
+        try {
+            $hareket = $this->kasaService->deposit(
+                $kasa,
+                (float) $validated['amount'],
+                $validated['movementDate'],
+                $validated['description'] ?? null,
+                auth()->id() ?: null,
+            );
+        } catch (\InvalidArgumentException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
+        $this->auditService->logAction('kasa', $kasa->id, 'deposit', [
+            'amount' => (float) $validated['amount'],
+            'hareketId' => $hareket->id,
+            'description' => $validated['description'] ?? null,
+        ]);
+
+        return redirect()
+            ->route('kasa.show', $kasa)
+            ->with('success', number_format((float) $validated['amount'], 0, ',', '.') . ' ₺ kasaya eklendi.');
     }
 
     public function transfer(Request $request, Kasa $kasa)

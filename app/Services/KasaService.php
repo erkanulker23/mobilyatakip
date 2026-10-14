@@ -28,6 +28,34 @@ class KasaService
         ];
     }
 
+    public function deposit(Kasa $kasa, float $amount, string $movementDate, ?string $description, ?string $createdBy): KasaHareket
+    {
+        if (! ($kasa->isActive ?? true)) {
+            throw new \InvalidArgumentException('Pasif kasaya para eklenemez.');
+        }
+
+        $amount = abs($amount);
+        if ($amount < 0.01) {
+            throw new \InvalidArgumentException('Tutar 0,01 ₺ veya üzeri olmalı.');
+        }
+
+        $desc = 'Dışarıdan para girişi';
+        if ($description) {
+            $desc .= ' — ' . $description;
+        }
+
+        return KasaHareket::create([
+            'kasaId' => $kasa->id,
+            'type' => 'giris',
+            'amount' => $amount,
+            'movementDate' => $movementDate,
+            'description' => $desc,
+            'createdBy' => $createdBy,
+            'refType' => 'kasa_deposit',
+            'refId' => (string) Str::uuid(),
+        ]);
+    }
+
     public function transfer(Kasa $from, Kasa $to, float $amount, string $movementDate, ?string $description, ?string $createdBy): string
     {
         if ($from->id === $to->id) {
@@ -82,6 +110,7 @@ class KasaService
         DB::transaction(function () use ($hareket) {
             match ($hareket->refType) {
                 'kasa_transfer' => $this->deleteTransferMovement($hareket),
+                'kasa_deposit' => $hareket->delete(),
                 'customer_payment' => $this->deleteCustomerPaymentMovement($hareket),
                 'supplier_payment' => $this->deleteSupplierPaymentMovement($hareket),
                 'shipping_company_payment' => $this->deleteShippingCompanyPaymentMovement($hareket),

@@ -15,6 +15,7 @@ class KasaMovement
 
         return match ($h->refType) {
             'customer_payment' => ['label' => 'Tahsilat', 'tone' => 'emerald', 'icon' => '+'],
+            'kasa_deposit' => ['label' => 'Para Ekleme', 'tone' => 'emerald', 'icon' => '+'],
             'supplier_payment' => ['label' => 'Tedarikçi Ödemesi', 'tone' => 'amber', 'icon' => '−'],
             'expense' => ['label' => 'Gider', 'tone' => 'rose', 'icon' => '−'],
             'personnel_advance' => ['label' => 'Personel Avansı', 'tone' => 'amber', 'icon' => '−'],

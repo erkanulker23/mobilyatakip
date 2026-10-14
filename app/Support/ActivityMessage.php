@@ -41,6 +41,7 @@ class ActivityMessage
         'sync' => 'senkronize etti',
         'status' => 'durumu güncelledi',
         'transfer' => 'virman yaptı',
+        'deposit' => 'kasaya para ekledi',
         'complete' => 'tamamladı',
     ];
 
@@ -151,6 +152,12 @@ class ActivityMessage
             return trim("{$target} için virman yaptı{$amount}");
         }
 
+        if ($action === 'deposit' && ! empty($data['amount'])) {
+            $target = trim("{$entityLabel} {$detail}");
+
+            return trim("{$target} kasasına " . Money::format($data['amount']) . ' ₺ ekledi');
+        }
+
         if ($action === 'sync') {
             $target = trim("{$entityLabel} {$detail}");
             $extra = $data['summary'] ?? null;
@@ -222,7 +229,7 @@ class ActivityMessage
     private static function tone(string $action): string
     {
         return match ($action) {
-            'create', 'convert', 'convert_to_quote', 'sync', 'transfer', 'complete' => 'success',
+            'create', 'convert', 'convert_to_quote', 'sync', 'transfer', 'deposit', 'complete' => 'success',
             'delete', 'cancel' => 'danger',
             'email' => 'info',
             'status' => 'warning',

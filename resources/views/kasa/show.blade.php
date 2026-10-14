@@ -13,7 +13,12 @@
 <div class="mb-4 p-4 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm">{{ session('error') }}</div>
 @endif
 
-<div class="mb-6" x-data="{ showVirman: @json($errors->has('toKasaId') || $errors->has('amount') || $errors->has('movementDate') || $errors->has('description')) }">
+@php
+    $virmanError = $errors->has('toKasaId');
+    $depositError = old('_form') === 'deposit' || ($errors->any() && ! $virmanError && (old('amount') || old('movementDate') || old('description')) && ! old('toKasaId'));
+    $virmanOpen = $virmanError || (old('_form') === 'virman');
+@endphp
+<div class="mb-6" x-data="{ showVirman: @json($virmanOpen), showDeposit: @json($depositError && ! $virmanOpen) }">
     <div class="flex items-start justify-between flex-wrap gap-4 mb-6">
         <div>
             <div class="flex items-center gap-2 text-neutral-500 text-sm mb-1">
@@ -35,8 +40,14 @@
             @endif
         </div>
         <div class="flex flex-wrap items-center gap-2">
+            @if($kasa->isActive ?? true)
+            <button type="button" @click="showDeposit = true" class="btn-primary">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+                Para Ekle
+            </button>
+            @endif
             @if(($otherKasalar ?? collect())->isNotEmpty())
-            <button type="button" @click="showVirman = true" class="btn-primary">
+            <button type="button" @click="showVirman = true" class="btn-secondary">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
                 Virman Yap
             </button>
@@ -124,7 +135,7 @@
                 <div class="px-5 py-4 border-b border-neutral-200 flex flex-wrap items-center justify-between gap-2">
                     <div>
                         <h2 class="text-base font-semibold text-neutral-900">Hareketler</h2>
-                        <p class="text-sm text-neutral-500 mt-0.5">Tahsilat, ödeme, gider ve virman kayıtları</p>
+                        <p class="text-sm text-neutral-500 mt-0.5">Tahsilat, para ekleme, ödeme, gider ve virman kayıtları</p>
                     </div>
                     <span class="text-sm text-neutral-500">{{ $hareketler->total() }} kayıt</span>
                 </div>
@@ -136,6 +147,7 @@
                             <select id="kasa-filter-movement" name="movement" class="form-select text-sm">
                                 <option value="">Tümü</option>
                                 <option value="tahsilat" {{ request('movement') === 'tahsilat' ? 'selected' : '' }}>Tahsilat</option>
+                                <option value="para_ekleme" {{ request('movement') === 'para_ekleme' ? 'selected' : '' }}>Para ekleme</option>
                                 <option value="odeme" {{ request('movement') === 'odeme' ? 'selected' : '' }}>Tedarikçi ödemesi</option>
                                 <option value="gider" {{ request('movement') === 'gider' ? 'selected' : '' }}>Gider</option>
                                 <option value="virman" {{ request('movement') === 'virman' ? 'selected' : '' }}>Virman</option>
@@ -251,9 +263,11 @@
                                 </td>
                                 <td class="table-td text-right">
                                     @php
-                                        $deleteConfirm = $h->refType === 'kasa_transfer'
-                                            ? 'Bu virman kaydının her iki tarafı da silinecek. Devam edilsin mi?'
-                                            : 'Bu hareketi silmek istediğinize emin misiniz? Bağlı tahsilat/ödeme/gider kaydı da kaldırılır.';
+                                        $deleteConfirm = match ($h->refType) {
+                                            'kasa_transfer' => 'Bu virman kaydının her iki tarafı da silinecek. Devam edilsin mi?',
+                                            'kasa_deposit' => 'Bu para ekleme kaydı silinecek. Devam edilsin mi?',
+                                            default => 'Bu hareketi silmek istediğinize emin misiniz? Bağlı tahsilat/ödeme/gider kaydı da kaldırılır.',
+                                        };
                                     @endphp
                                     <form method="POST" action="{{ route('kasa.hareketler.destroy', [$kasa, $h]) }}" class="inline" onsubmit="return confirm({{ \Illuminate\Support\Js::from($deleteConfirm) }})">
                                         @csrf
@@ -268,7 +282,7 @@
                             <tr>
                                 <td colspan="6" class="px-6 py-12 text-center text-neutral-500">
                                     <p class="font-medium">Henüz hareket yok</p>
-                                    <p class="text-sm mt-1">Tahsilat, ödeme veya virman yapıldığında burada görünür.</p>
+                                    <p class="text-sm mt-1">Para ekleme, tahsilat, ödeme veya virman yapıldığında burada görünür.</p>
                                 </td>
                             </tr>
                             @endforelse
@@ -282,6 +296,63 @@
             </div>
         </div>
     </div>
+
+    {{-- Para ekle modal --}}
+    @if($kasa->isActive ?? true)
+    <div x-show="showDeposit" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="deposit-title">
+        <div class="absolute inset-0 bg-neutral-900/50" @click="showDeposit = false"></div>
+        <div class="relative w-full max-w-md card p-6 shadow-xl" @click.stop>
+            <div class="flex items-start justify-between gap-4 mb-5">
+                <div>
+                    <h2 id="deposit-title" class="text-lg font-semibold text-neutral-900">Kasaya para ekle</h2>
+                    <p class="text-sm text-neutral-500 mt-1">
+                        Dışarıdan <span class="font-medium text-neutral-700">{{ $kasa->name }}</span> kasasına giriş kaydı
+                    </p>
+                </div>
+                <button type="button" @click="showDeposit = false" class="text-neutral-400 hover:text-neutral-600" aria-label="Kapat">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <form method="POST" action="{{ route('kasa.deposit', $kasa) }}" class="space-y-4">
+                @csrf
+                <input type="hidden" name="_form" value="deposit">
+                <div>
+                    <label for="deposit-amount" class="form-label">Tutar (₺) <span class="text-red-500">*</span></label>
+                    <input id="deposit-amount" type="number" name="amount" step="0.01" min="0.01" required value="{{ old('_form') === 'deposit' ? old('amount') : '' }}" class="form-input @error('amount') border-red-500 @enderror" placeholder="0" autofocus>
+                    @error('amount')
+                        @if(old('_form') === 'deposit' || ! old('toKasaId'))
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                        @endif
+                    @enderror
+                    <p class="text-xs text-neutral-500 mt-1">Güncel bakiye: {{ number_format($summary['current'], 0, ',', '.') }} ₺</p>
+                </div>
+                <div>
+                    <label for="deposit-movementDate" class="form-label">Tarih <span class="text-red-500">*</span></label>
+                    <input id="deposit-movementDate" type="date" name="movementDate" required value="{{ old('_form') === 'deposit' ? old('movementDate', now()->format('Y-m-d')) : now()->format('Y-m-d') }}" class="form-input @error('movementDate') border-red-500 @enderror">
+                    @error('movementDate')
+                        @if(old('_form') === 'deposit' || ! old('toKasaId'))
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                        @endif
+                    @enderror
+                </div>
+                <div>
+                    <label for="deposit-description" class="form-label">Açıklama</label>
+                    <input id="deposit-description" type="text" name="description" value="{{ old('_form') === 'deposit' ? old('description') : '' }}" maxlength="500" class="form-input" placeholder="Örn: Ortak sermaye, nakit yatırımı…">
+                    @error('description')
+                        @if(old('_form') === 'deposit' || ! old('toKasaId'))
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                        @endif
+                    @enderror
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" @click="showDeposit = false" class="btn-secondary flex-1">İptal</button>
+                    <button type="submit" class="btn-primary flex-1">Para ekle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
 
     {{-- Virman modal --}}
     @if(($otherKasalar ?? collect())->isNotEmpty())
@@ -302,6 +373,7 @@
 
             <form method="POST" action="{{ route('kasa.transfer', $kasa) }}" class="space-y-4">
                 @csrf
+                <input type="hidden" name="_form" value="virman">
                 <div>
                     <label for="virman-toKasaId" class="form-label">Hedef kasa <span class="text-red-500">*</span></label>
                     <select id="virman-toKasaId" name="toKasaId" required class="form-select @error('toKasaId') border-red-500 @enderror">
@@ -316,19 +388,31 @@
                 </div>
                 <div>
                     <label for="virman-amount" class="form-label">Tutar (₺) <span class="text-red-500">*</span></label>
-                    <input id="virman-amount" type="number" name="amount" step="0.01" min="0.01" required value="{{ old('amount') }}" class="form-input @error('amount') border-red-500 @enderror" placeholder="0">
-                    @error('amount')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+                    <input id="virman-amount" type="number" name="amount" step="0.01" min="0.01" required value="{{ old('_form') === 'virman' ? old('amount') : '' }}" class="form-input @error('amount') border-red-500 @enderror" placeholder="0">
+                    @error('amount')
+                        @if(old('_form') === 'virman' || old('toKasaId'))
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                        @endif
+                    @enderror
                     <p class="text-xs text-neutral-500 mt-1">Güncel bakiye: {{ number_format($summary['current'], 0, ',', '.') }} ₺</p>
                 </div>
                 <div>
                     <label for="virman-movementDate" class="form-label">Tarih <span class="text-red-500">*</span></label>
-                    <input id="virman-movementDate" type="date" name="movementDate" required value="{{ old('movementDate', now()->format('Y-m-d')) }}" class="form-input @error('movementDate') border-red-500 @enderror">
-                    @error('movementDate')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+                    <input id="virman-movementDate" type="date" name="movementDate" required value="{{ old('_form') === 'virman' ? old('movementDate', now()->format('Y-m-d')) : now()->format('Y-m-d') }}" class="form-input @error('movementDate') border-red-500 @enderror">
+                    @error('movementDate')
+                        @if(old('_form') === 'virman' || old('toKasaId'))
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                        @endif
+                    @enderror
                 </div>
                 <div>
                     <label for="virman-description" class="form-label">Açıklama</label>
-                    <input id="virman-description" type="text" name="description" value="{{ old('description') }}" maxlength="500" class="form-input" placeholder="Opsiyonel not">
-                    @error('description')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+                    <input id="virman-description" type="text" name="description" value="{{ old('_form') === 'virman' ? old('description') : '' }}" maxlength="500" class="form-input" placeholder="Opsiyonel not">
+                    @error('description')
+                        @if(old('_form') === 'virman' || old('toKasaId'))
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                        @endif
+                    @enderror
                 </div>
                 <div class="flex gap-3 pt-2">
                     <button type="button" @click="showVirman = false" class="btn-secondary flex-1">İptal</button>
