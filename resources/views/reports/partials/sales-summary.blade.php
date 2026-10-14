@@ -34,6 +34,9 @@
             @if($cashDeposits > 0.005)· para ekleme {{ number_format($cashDeposits, 0, ',', '.') }}@endif
             @if($cashInflowsOther > 0.005)· diğer {{ number_format($cashInflowsOther, 0, ',', '.') }}@endif
         </p>
+        @if(! empty($filters['label'] ?? null))
+        <p class="text-[11px] text-amber-700 dark:text-amber-300 mt-1">Tüm firma · satış filtresi yok</p>
+        @endif
     </div>
     @endif
 </div>
@@ -41,6 +44,11 @@
 @if($cash && ! $print)
 {{-- Kasa girişi / çıkışı / net — ledger ile birebir --}}
 <div class="card p-5 mb-6">
+    @if(! empty($filters['label'] ?? null))
+    <p class="mb-3 text-xs text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
+        Kasa özeti tüm firmayı kapsar; üstteki satış filtresi ({{ $filters['label'] }}) yalnızca satış listesine uygulanır.
+    </p>
+    @endif
     <div class="flex flex-wrap items-end justify-between gap-3 mb-4">
         <div>
             <p class="text-xs font-semibold uppercase tracking-wide text-neutral-400">Toplam ödenenler (kasa çıkışı)</p>

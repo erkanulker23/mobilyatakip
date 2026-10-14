@@ -130,14 +130,15 @@ class ExpenseController extends Controller
 
     public function create(Request $request)
     {
-        $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
+        $kasalar = Kasa::activeForSelect()->get();
         $categories = $this->categoriesForForm();
         $sales = $this->expensesHaveSaleLink()
             ? $this->saleOptions($request->input('saleId'))
             : collect();
         $preselectedSaleId = $request->input('saleId');
+        $defaultKasaId = Kasa::defaultId();
 
-        return view('expenses.create', compact('kasalar', 'categories', 'sales', 'preselectedSaleId'));
+        return view('expenses.create', compact('kasalar', 'categories', 'sales', 'preselectedSaleId', 'defaultKasaId'));
     }
 
     public function store(Request $request)
@@ -151,13 +152,15 @@ class ExpenseController extends Controller
             'expenseDate' => 'required|date',
             'description' => 'required|string|max:500',
             'category' => 'nullable|string|max:100',
-            'kasaId' => 'nullable|exists:kasa,id',
+            'kasaId' => 'required|exists:kasa,id',
         ];
         if ($this->expensesHaveSaleLink()) {
             $rules['saleId'] = 'nullable|exists:sales,id';
         }
 
-        $validated = $request->validate($rules);
+        $validated = $request->validate($rules, [
+            'kasaId.required' => 'Kasa seçilmeden gider eklenemez.',
+        ]);
         if (! $this->expensesHaveSaleLink()) {
             unset($validated['saleId']);
         } else {
@@ -192,7 +195,7 @@ class ExpenseController extends Controller
 
     public function edit(Expense $expense)
     {
-        $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
+        $kasalar = Kasa::activeForSelect()->get();
         $categories = $this->categoriesForForm();
         $sales = $this->expensesHaveSaleLink()
             ? $this->saleOptions($expense->saleId)
@@ -212,13 +215,15 @@ class ExpenseController extends Controller
             'expenseDate' => 'required|date',
             'description' => 'required|string|max:500',
             'category' => 'nullable|string|max:100',
-            'kasaId' => 'nullable|exists:kasa,id',
+            'kasaId' => 'required|exists:kasa,id',
         ];
         if ($this->expensesHaveSaleLink()) {
             $rules['saleId'] = 'nullable|exists:sales,id';
         }
 
-        $validated = $request->validate($rules);
+        $validated = $request->validate($rules, [
+            'kasaId.required' => 'Kasa seçilmeden gider eklenemez.',
+        ]);
         if (! $this->expensesHaveSaleLink()) {
             unset($validated['saleId']);
         } else {

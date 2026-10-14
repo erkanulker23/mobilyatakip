@@ -163,6 +163,18 @@
         if (selected && kasaEl.value === '') {
             kasaEl.value = '';
         }
+        // Görünür seçenekler arasında varsayılanı (veya ilkini) seç
+        if (!kasaEl.value && showField && visibleCount > 0) {
+            var defaultOpt = null;
+            var firstOpt = null;
+            Array.prototype.forEach.call(kasaEl.options, function (opt, idx) {
+                if (idx === 0 || opt.disabled || opt.hidden || !opt.value) return;
+                if (!firstOpt) firstOpt = opt;
+                if (!defaultOpt && opt.getAttribute('data-is-default') === '1') defaultOpt = opt;
+            });
+            var pick = defaultOpt || firstOpt;
+            if (pick) kasaEl.value = pick.value;
+        }
 
         if (hintEl) {
             hintEl.style.display = needsKasa ? 'inline' : 'none';

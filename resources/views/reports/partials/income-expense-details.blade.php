@@ -67,8 +67,8 @@
 <div class="space-y-6">
     <div class="card overflow-hidden">
         <div class="card-header flex flex-wrap items-center justify-between gap-2">
-            <span>Tahsilat hareketleri</span>
-            <span class="text-xs font-normal text-neutral-500">{{ $payments->count() }} kayıt · {{ number_format($tahsilat, 0, ',', '.') }} ₺</span>
+            <span>Tahsilat hareketleri <span class="font-normal text-neutral-400">(kasalı)</span></span>
+            <span class="text-xs font-normal text-neutral-500">{{ $payments->count() }} kayıt · {{ number_format($payments->sum('amount'), 0, ',', '.') }} ₺</span>
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full">
@@ -108,8 +108,8 @@
 
     <div class="card overflow-hidden">
         <div class="card-header flex flex-wrap items-center justify-between gap-2">
-            <span>Gider hareketleri</span>
-            <span class="text-xs font-normal text-neutral-500">{{ $expenses->count() }} kayıt · {{ number_format($gider, 0, ',', '.') }} ₺</span>
+            <span>Gider hareketleri <span class="font-normal text-neutral-400">(kasalı)</span></span>
+            <span class="text-xs font-normal text-neutral-500">{{ $expenses->count() }} kayıt · {{ number_format($expenses->sum('amount'), 0, ',', '.') }} ₺</span>
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full">
@@ -147,8 +147,8 @@
 
     <div class="card overflow-hidden">
         <div class="card-header flex flex-wrap items-center justify-between gap-2">
-            <span>Tedarikçi ödemeleri</span>
-            <span class="text-xs font-normal text-neutral-500">{{ $supplierPayments->count() }} kayıt · {{ number_format($tedarikciOdeme, 0, ',', '.') }} ₺</span>
+            <span>Tedarikçi ödemeleri <span class="font-normal text-neutral-400">(kasalı)</span></span>
+            <span class="text-xs font-normal text-neutral-500">{{ $supplierPayments->count() }} kayıt · {{ number_format($supplierPayments->sum('amount'), 0, ',', '.') }} ₺</span>
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full">

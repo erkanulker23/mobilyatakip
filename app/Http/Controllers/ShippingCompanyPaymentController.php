@@ -37,7 +37,7 @@ class ShippingCompanyPaymentController extends Controller
     public function edit(ShippingCompanyPayment $shippingCompanyPayment)
     {
         $shippingCompanyPayment->load(['shippingCompany', 'purchase', 'sales', 'serviceTickets']);
-        $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
+        $kasalar = Kasa::activeForSelect()->get();
         $purchasesWithShipping = Purchase::with('supplier')
             ->where('shippingCompanyId', $shippingCompanyPayment->shippingCompanyId)
             ->where('isCancelled', false)
@@ -60,7 +60,7 @@ class ShippingCompanyPaymentController extends Controller
     public function create(Request $request)
     {
         $shippingCompanies = ShippingCompany::where('isActive', true)->orderBy('name')->get();
-        $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
+        $kasalar = Kasa::activeForSelect()->get();
         $shippingCompanyId = $request->get('shippingCompanyId');
 
         $purchasesWithShipping = Purchase::with('supplier')
@@ -280,6 +280,20 @@ class ShippingCompanyPaymentController extends Controller
 
         $validated = $request->validate($rules);
         $validated['paymentType'] = $validated['paymentType'] ?? 'nakit';
+        if (! empty($validated['kasaId'])) {
+            $kasa = Kasa::find($validated['kasaId']);
+            if ($kasa) {
+                $validated['paymentType'] = PaymentType::syncPaymentTypeWithKasa($validated['paymentType'], $kasa);
+            }
+        }
+        $kasaError = PaymentType::validateKasaSelection(
+            $validated['kasaId'] ?? null,
+            $validated['paymentType'],
+            PaymentType::requiresKasa($validated['paymentType'])
+        );
+        if ($kasaError) {
+            throw ValidationException::withMessages(['kasaId' => $kasaError]);
+        }
 
         $linkType = $validated['linkType'] ?? '';
         $validated['purchaseId'] = null;

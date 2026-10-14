@@ -9,7 +9,7 @@
         expenseDate: @js(old('expenseDate', date('Y-m-d'))),
         description: @js(old('description', '')),
         category: @js(old('category', '')),
-        kasaId: @js(old('kasaId', '')),
+        kasaId: @js(old('kasaId', $defaultKasaId ?? '')),
         saleId: @js(old('saleId', $preselectedSaleId ?? '')),
         kasaNames: @js($kasalar->pluck('name', 'id')),
         saleLabels: @js(($sales ?? collect())->mapWithKeys(fn ($s) => [
@@ -29,7 +29,7 @@
             return (typeof window.fmtMoney === 'function' ? window.fmtMoney(this.amountNumber) : this.amountNumber.toLocaleString('tr-TR')) + ' ₺';
         },
         get kasaLabel() {
-            if (!this.kasaId) return 'Kasa seçilmedi';
+            if (!this.kasaId) return 'Seçilmedi';
             return this.kasaNames[this.kasaId] || 'Seçili kasa';
         },
         get saleLabel() {
@@ -67,7 +67,7 @@
         <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
             <div>
                 <h1 class="page-title">Yeni Gider Kaydı</h1>
-                <p class="page-desc max-w-2xl">Şirket harcamasını kaydedin. Kasa seçerseniz otomatik çıkış hareketi oluşur; seçmezseniz yalnızca gider defterine yazılır.</p>
+                <p class="page-desc max-w-2xl">Şirket harcamasını kaydedin. Kasa seçimi zorunludur; kayıt sonrası seçilen kasadan çıkış hareketi oluşur.</p>
             </div>
             <a href="{{ route('expenses.index') }}" class="btn-secondary shrink-0">← Gider listesi</a>
         </div>
@@ -114,7 +114,7 @@
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 text-sm font-bold">2</span>
                         <div>
                             <h2 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">Ne zaman ve hangi kasadan?</h2>
-                            <p class="text-sm text-neutral-500 dark:text-slate-400 mt-0.5">Gider tarihi zorunlu. Kasa opsiyonel — seçilirse kasadan düşülür.</p>
+                            <p class="text-sm text-neutral-500 dark:text-slate-400 mt-0.5">Gider tarihi ve kasa zorunludur; tutar seçilen kasadan düşülür.</p>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -124,14 +124,15 @@
                             @error('expenseDate')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                         </div>
                         <div>
-                            <label class="form-label" for="expenseKasa">Ödeme yapılan kasa</label>
-                            <select name="kasaId" id="expenseKasa" x-model="kasaId" class="form-select min-h-[44px]">
-                                <option value="">Kasa kullanılmadı</option>
+                            <label class="form-label" for="expenseKasa">Ödeme yapılan kasa *</label>
+                            <select name="kasaId" id="expenseKasa" x-model="kasaId" required class="form-select min-h-[44px] @error('kasaId') border-red-500 @enderror">
+                                <option value="">Kasa seçin</option>
                                 @foreach($kasalar as $k)
-                                <option value="{{ $k->id }}" {{ old('kasaId') == $k->id ? 'selected' : '' }}>{{ $k->name }}</option>
+                                <option value="{{ $k->id }}" {{ (string) old('kasaId', $defaultKasaId ?? '') === (string) $k->id ? 'selected' : '' }}>{{ $k->name }}@if($k->isDefault) (varsayılan)@endif</option>
                                 @endforeach
                             </select>
-                            <p class="mt-1.5 text-xs text-neutral-500 dark:text-slate-400">Nakit/banka ödemesi yaptıysanız ilgili kasayı seçin.</p>
+                            @error('kasaId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                            <p class="mt-1.5 text-xs text-neutral-500 dark:text-slate-400">Ödemenin yapıldığı nakit veya banka kasasını seçin.</p>
                         </div>
                     </div>
                 </div>
@@ -276,7 +277,7 @@
                         <p><strong class="text-neutral-800 dark:text-neutral-200">Kasa seçildi:</strong> Kayıt sonrası seçilen kasadan <span x-text="amountFormatted"></span> çıkış hareketi oluşturulur.</p>
                     </template>
                     <template x-if="!kasaId">
-                        <p><strong class="text-neutral-800 dark:text-neutral-200">Kasa seçilmedi:</strong> Gider yalnızca gider listesine eklenir; kasa bakiyesi değişmez.</p>
+                        <p><strong class="text-red-600 dark:text-red-400">Kasa zorunlu:</strong> Kasa seçilmeden gider eklenemez.</p>
                     </template>
                 </div>
 

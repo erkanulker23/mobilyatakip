@@ -26,6 +26,7 @@ class KasaController extends Controller
     {
         $q = Kasa::query()
             ->withSum(['hareketler as ledger_sum_amount' => fn ($h) => $h->ledger()], 'amount')
+            ->orderByDesc('isDefault')
             ->orderBy('name');
         if ($request->filled('search')) {
             $s = $request->search;
@@ -68,6 +69,8 @@ class KasaController extends Controller
                 'para_ekleme' => $q->where('refType', 'kasa_deposit'),
                 'odeme' => $q->where('refType', 'supplier_payment'),
                 'gider' => $q->where('refType', 'expense'),
+                'avans' => $q->where('refType', 'personnel_advance'),
+                'nakliye' => $q->where('refType', 'shipping_company_payment'),
                 'virman' => $q->where('refType', 'kasa_transfer'),
                 default => null,
             };
@@ -207,6 +210,10 @@ class KasaController extends Controller
             $request->merge(['amount' => money_parse($request->input('amount'))]);
         }
 
+        if (! ($kasa->isActive ?? true)) {
+            return back()->withInput()->with('error', 'Pasif kasadan virman yapılamaz.');
+        }
+
         $validated = $request->validate([
             'toKasaId' => 'required|exists:kasa,id|different:' . $kasa->id,
             'amount' => 'required|numeric|min:0.01',
@@ -266,10 +273,27 @@ class KasaController extends Controller
         $validated = $this->normalizeKasaTypeFields($validated);
         $validated['openingBalance'] = (float) ($validated['openingBalance'] ?? 0);
         $validated['currency'] = $validated['currency'] ?? 'TRY';
+        $validated['isDefault'] = $request->boolean('isDefault');
+        if ($validated['isDefault']) {
+            Kasa::clearDefaultExcept();
+        }
         $kasa = Kasa::create($validated);
         $this->auditService->logCreate('kasa', $kasa->id, ['name' => $kasa->name]);
 
         return redirect()->route('kasa.index')->with('success', 'Kasa kaydedildi.');
+    }
+
+    public function setDefault(Kasa $kasa)
+    {
+        if (! ($kasa->isActive ?? true)) {
+            return back()->with('error', 'Pasif kasa varsayılan yapılamaz. Önce aktif edin.');
+        }
+
+        Kasa::clearDefaultExcept($kasa->id);
+        $kasa->update(['isDefault' => true]);
+        $this->auditService->logUpdate('kasa', $kasa->id, ['isDefault' => false], ['isDefault' => true]);
+
+        return back()->with('success', $kasa->name . ' varsayılan kasa olarak ayarlandı.');
     }
 
     public function edit(Kasa $kasa)
@@ -290,11 +314,19 @@ class KasaController extends Controller
             'openingBalance' => 'nullable|numeric',
             'currency' => 'nullable|string|max:10',
             'isActive' => 'nullable|boolean',
+            'isDefault' => 'nullable|boolean',
         ]);
         $validated['type'] = $validated['type'] ?? KasaType::KASA;
         $validated = $this->normalizeKasaTypeFields($validated);
         $validated['openingBalance'] = (float) ($validated['openingBalance'] ?? 0);
         $validated['isActive'] = $request->boolean('isActive');
+        $validated['isDefault'] = $request->boolean('isDefault');
+        if ($validated['isDefault'] && ! $validated['isActive']) {
+            return back()->withInput()->with('error', 'Pasif kasa varsayılan olamaz.');
+        }
+        if ($validated['isDefault']) {
+            Kasa::clearDefaultExcept($kasa->id);
+        }
         $oldData = ['name' => $kasa->name, 'openingBalance' => (float) ($kasa->openingBalance ?? 0)];
         $kasa->update($validated);
         $this->auditService->logUpdate('kasa', $kasa->id, $oldData, [

@@ -43,6 +43,15 @@ class ReportFilters
         $year = $request->filled('year') ? (int) $request->year : null;
         $month = $request->filled('month') ? max(1, min(12, (int) $request->month)) : null;
 
+        // Başlangıç + bitiş birlikte geldiyse ay dropdown'undan önce uygula
+        // (ödemeler formunda ay alanı tarih aralığını sessizce ezmesin)
+        if ($request->filled('from') && $request->filled('to')) {
+            $from = Carbon::parse($request->from)->startOfDay();
+            $to = Carbon::parse($request->to)->endOfDay();
+
+            return self::compactRange($from, $to);
+        }
+
         if ($month) {
             $year ??= (int) now()->year;
             $anchor = Carbon::create($year, $month, 1);

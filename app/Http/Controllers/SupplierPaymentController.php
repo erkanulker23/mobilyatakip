@@ -31,7 +31,7 @@ class SupplierPaymentController extends Controller
     public function edit(SupplierPayment $supplierPayment)
     {
         $supplierPayment->load(['supplier', 'purchase']);
-        $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
+        $kasalar = Kasa::activeForSelect()->get();
         $openPurchases = Purchase::with('supplier')
             ->where('supplierId', $supplierPayment->supplierId)
             ->where('isCancelled', false)
@@ -47,7 +47,7 @@ class SupplierPaymentController extends Controller
     public function create(Request $request)
     {
         $suppliers = Supplier::where('isActive', true)->orderBy('name')->get();
-        $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
+        $kasalar = Kasa::activeForSelect()->get();
         $supplierId = $request->get('supplierId');
         $openPurchases = Purchase::with('supplier')
             ->when($supplierId, fn ($q) => $q->where('supplierId', $supplierId))
@@ -90,6 +90,20 @@ class SupplierPaymentController extends Controller
             'notes' => 'nullable|string',
         ]);
         $validated['paymentType'] = $validated['paymentType'] ?? 'nakit';
+        if (! empty($validated['kasaId'])) {
+            $kasa = Kasa::find($validated['kasaId']);
+            if ($kasa) {
+                $validated['paymentType'] = PaymentType::syncPaymentTypeWithKasa($validated['paymentType'], $kasa);
+            }
+        }
+        $kasaError = PaymentType::validateKasaSelection(
+            $validated['kasaId'] ?? null,
+            $validated['paymentType'],
+            PaymentType::requiresKasa($validated['paymentType'])
+        );
+        if ($kasaError) {
+            return back()->withInput()->withErrors(['kasaId' => $kasaError]);
+        }
 
         if (!empty($validated['purchaseId'])) {
             $purchase = Purchase::findOrFail($validated['purchaseId']);
@@ -154,6 +168,20 @@ class SupplierPaymentController extends Controller
             'notes' => 'nullable|string',
         ]);
         $validated['paymentType'] = $validated['paymentType'] ?? 'nakit';
+        if (! empty($validated['kasaId'])) {
+            $kasa = Kasa::find($validated['kasaId']);
+            if ($kasa) {
+                $validated['paymentType'] = PaymentType::syncPaymentTypeWithKasa($validated['paymentType'], $kasa);
+            }
+        }
+        $kasaError = PaymentType::validateKasaSelection(
+            $validated['kasaId'] ?? null,
+            $validated['paymentType'],
+            PaymentType::requiresKasa($validated['paymentType'])
+        );
+        if ($kasaError) {
+            return back()->withInput()->withErrors(['kasaId' => $kasaError]);
+        }
 
         if (!empty($validated['purchaseId'])) {
             $purchase = Purchase::findOrFail($validated['purchaseId']);

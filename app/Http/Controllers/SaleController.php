@@ -45,7 +45,7 @@ class SaleController extends Controller
         $customers = Customer::with(['city', 'district'])->where('isActive', true)->orderBy('name')->get();
         $personnel = Personnel::where('isActive', true)->orderBy('name')->get();
         $branches = Branch::forSelect();
-        $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
+        $kasalar = Kasa::activeForSelect()->get();
         $initialProducts = collect();
         return view('sales.create', compact('customers', 'initialProducts', 'personnel', 'branches', 'kasalar'));
     }
@@ -633,7 +633,7 @@ class SaleController extends Controller
                 ->get();
         }
         $saleRemaining = \App\Support\CustomerBalance::saleRemaining($sale);
-        $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
+        $kasalar = Kasa::activeForSelect()->get();
         $suppliers = Supplier::where('isActive', true)->orderBy('name')->get();
 
         $productionStagesReady = \App\Support\SaleProductionStageSchema::isReady();

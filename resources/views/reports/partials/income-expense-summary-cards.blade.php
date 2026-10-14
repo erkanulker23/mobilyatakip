@@ -48,6 +48,6 @@
     <div class="card p-5">
         <p class="text-xs font-medium text-neutral-500 dark:text-slate-400 uppercase tracking-wider">Dönem Operasyon Sonucu</p>
         <p class="text-2xl font-semibold {{ $karClass }} mt-1 tabular-nums">{{ number_format($donemKar ?? 0, 0, ',', '.') }} ₺</p>
-        <p class="text-xs text-neutral-500 dark:text-slate-400 mt-1">Hasılat − alış − gider (tahakkuk bazlı)</p>
+        <p class="text-xs text-neutral-500 dark:text-slate-400 mt-1">Hasılat − alış − kasalı gider (avans/nakliye hariç)</p>
     </div>
 </div>

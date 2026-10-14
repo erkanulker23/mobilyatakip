@@ -17,12 +17,40 @@ class Kasa extends BaseModel
         'openingBalance',
         'currency',
         'isActive',
+        'isDefault',
     ];
 
     protected $casts = [
         'openingBalance' => 'decimal:2',
         'isActive' => 'boolean',
+        'isDefault' => 'boolean',
     ];
+
+    /** Aktif kasalar: varsayılan önce, sonra ada göre. */
+    public function scopeActiveForSelect($query)
+    {
+        return $query->where('isActive', true)
+            ->orderByDesc('isDefault')
+            ->orderBy('name');
+    }
+
+    public static function defaultId(): ?string
+    {
+        return static::query()
+            ->where('isActive', true)
+            ->where('isDefault', true)
+            ->value('id');
+    }
+
+    /** Tek varsayılan kalsın diye diğerlerinin bayrağını temizler. */
+    public static function clearDefaultExcept(?string $exceptId = null): void
+    {
+        $q = static::query()->where('isDefault', true);
+        if ($exceptId) {
+            $q->where('id', '!=', $exceptId);
+        }
+        $q->update(['isDefault' => false]);
+    }
 
     public function customerPayments(): HasMany
     {

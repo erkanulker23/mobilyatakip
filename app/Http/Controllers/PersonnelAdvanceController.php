@@ -16,7 +16,7 @@ class PersonnelAdvanceController extends Controller
     public function create()
     {
         $personnel = Personnel::query()->where('isActive', true)->orderBy('name')->get();
-        $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
+        $kasalar = Kasa::activeForSelect()->get();
 
         return view('personnel-advances.create', compact('personnel', 'kasalar'));
     }

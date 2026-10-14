@@ -58,6 +58,13 @@
             <input type="checkbox" name="isActive" value="1" {{ old('isActive', $kasa->isActive ?? true) ? 'checked' : '' }} class="rounded border-slate-300 text-green-600 focus:ring-green-500">
             <label class="form-label mb-0">Aktif</label>
         </div>
+        <div class="flex items-start gap-2">
+            <input type="checkbox" name="isDefault" value="1" id="isDefault" {{ old('isDefault', $kasa->isDefault) ? 'checked' : '' }} class="mt-1 rounded border-slate-300 text-amber-600 focus:ring-amber-500">
+            <label for="isDefault" class="form-label mb-0">
+                Varsayılan kasa
+                <span class="block text-xs font-normal text-neutral-500 mt-0.5">Gider, tahsilat ve ödeme formlarında önce bu kasa seçilir.</span>
+            </label>
+        </div>
         <div class="flex gap-3 pt-2">
             <button type="submit" class="btn-primary">Güncelle</button>
             <a href="{{ route('kasa.show', $kasa) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-200 text-neutral-700 rounded-lg hover:bg-slate-300 font-medium">İptal</a>

@@ -158,6 +158,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/kasa/{kasa}/para-ekle', [KasaController::class, 'deposit'])->name('kasa.deposit');
     Route::put('/kasa/{kasa}/para-ekle/{hareket}', [KasaController::class, 'updateDeposit'])->name('kasa.deposit.update');
     Route::post('/kasa/{kasa}/acilis-sifirla', [KasaController::class, 'resetOpeningBalance'])->name('kasa.reset-opening');
+    Route::post('/kasa/{kasa}/varsayilan', [KasaController::class, 'setDefault'])->name('kasa.set-default');
     Route::delete('/kasa/{kasa}/hareketler/{hareket}', [KasaController::class, 'destroyMovement'])->name('kasa.hareketler.destroy');
     Route::resource('kasa', KasaController::class)->parameters(['kasa' => 'kasa']);
 

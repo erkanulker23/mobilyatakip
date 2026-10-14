@@ -52,6 +52,13 @@
             <p class="mt-1 text-xs text-neutral-500">İsteğe bağlı. Boş bırakılırsa 0 ₺.</p>
             @error('openingBalance')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
+        <div class="flex items-start gap-2">
+            <input type="checkbox" name="isDefault" value="1" id="isDefault" {{ old('isDefault') ? 'checked' : '' }} class="mt-1 rounded border-slate-300 text-amber-600 focus:ring-amber-500">
+            <label for="isDefault" class="form-label mb-0">
+                Varsayılan kasa
+                <span class="block text-xs font-normal text-neutral-500 mt-0.5">Gider, tahsilat ve ödeme formlarında önce bu kasa seçilir.</span>
+            </label>
+        </div>
         <div class="flex gap-3 pt-2">
             <button type="submit" class="btn-primary">Kaydet</button>
             <a href="{{ route('kasa.index') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-200 text-neutral-700 rounded-lg hover:bg-slate-300 font-medium">İptal</a>

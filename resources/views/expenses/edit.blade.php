@@ -56,13 +56,14 @@
             });
         </script>
         <div>
-            <label class="form-label">Kasa</label>
-            <select name="kasaId" class="form-select">
+            <label class="form-label">Kasa <span class="text-red-500">*</span></label>
+            <select name="kasaId" required class="form-select @error('kasaId') border-red-500 @enderror">
                 <option value="">Seçiniz</option>
                 @foreach($kasalar as $k)
                 <option value="{{ $k->id }}" {{ old('kasaId', $expense->kasaId) == $k->id ? 'selected' : '' }}>{{ $k->name }}</option>
                 @endforeach
             </select>
+            @error('kasaId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
         @if(($sales ?? collect())->isNotEmpty() || $expense->saleId)
         <div>

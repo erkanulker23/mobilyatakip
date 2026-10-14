@@ -7,6 +7,9 @@
     $helpId = $helpId ?? ($fieldId . 'Help');
     $bankInfoId = $bankInfoId ?? ($fieldId . 'BankInfo');
     $selectedValue = $selected ?? old($fieldName);
+    if ($selectedValue === null || $selectedValue === '') {
+        $selectedValue = \App\Models\Kasa::defaultId();
+    }
     $wrapperClass = $wrapperClass ?? '';
     $selectClass = $selectClass ?? 'form-select min-h-[44px]';
     $errorName = $errorName ?? $fieldName;
@@ -28,11 +31,12 @@
         @foreach($kasalar as $k)
         <option value="{{ $k->id }}"
             data-kasa-type="{{ $k->type }}"
+            data-is-default="{{ $k->isDefault ? '1' : '0' }}"
             data-bank-name="{{ $k->bankName ?? '' }}"
             data-iban="{{ $k->iban ?? '' }}"
             data-account-number="{{ $k->accountNumber ?? '' }}"
             {{ (string) $selectedValue === (string) $k->id ? 'selected' : '' }}>
-            {{ $k->name }}@if($k->bankName) — {{ $k->bankName }}@endif ({{ \App\Support\PaymentType::kasaTypeLabel($k) }})
+            {{ $k->name }}@if($k->bankName) — {{ $k->bankName }}@endif ({{ \App\Support\PaymentType::kasaTypeLabel($k) }})@if($k->isDefault) · varsayılan@endif
         </option>
         @endforeach
     </select>

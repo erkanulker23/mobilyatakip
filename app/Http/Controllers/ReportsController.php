@@ -594,20 +594,28 @@ class ReportsController extends Controller
         $donemKar = $gelir - $alis - $gider;
         $tahsilatOrani = $gelir > 0.005 ? round($tahsilat / $gelir * 100, 1) : null;
 
+        // Detay listeleri özet kartlarla aynı: yalnızca kasaya işlenen kayıtlar
         $payments = CustomerPayment::with(['customer', 'sale', 'kasa'])
             ->whereBetween('paymentDate', [$from, $to])
+            ->whereNotNull('kasaId')
+            ->where(function ($q) {
+                $q->whereNull('paymentType')
+                    ->orWhere('paymentType', '!=', 'tedarikciye_ode');
+            })
             ->orderByDesc('paymentDate')
             ->orderByDesc('createdAt')
             ->get();
 
         $expenses = Expense::with(['kasa'])
             ->whereBetween('expenseDate', [$from, $to])
+            ->whereNotNull('kasaId')
             ->orderByDesc('expenseDate')
             ->orderByDesc('createdAt')
             ->get();
 
         $supplierPayments = SupplierPayment::with(['supplier', 'purchase', 'kasa'])
             ->whereBetween('paymentDate', [$from, $to])
+            ->whereNotNull('kasaId')
             ->orderByDesc('paymentDate')
             ->orderByDesc('createdAt')
             ->get();

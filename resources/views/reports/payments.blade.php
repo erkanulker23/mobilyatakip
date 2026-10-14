@@ -158,4 +158,38 @@
         </table>
     </div>
 </div>
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-report-year-select]').forEach(function (select) {
+        select.addEventListener('change', function () {
+            var year = select.value;
+            if (!year || !select.form) return;
+            var fromInput = select.form.querySelector('[data-report-from]');
+            var toInput = select.form.querySelector('[data-report-to]');
+            var monthSelect = select.form.querySelector('[data-report-month-select]');
+            if (monthSelect) monthSelect.value = '';
+            if (fromInput) fromInput.value = year + '-01-01';
+            if (toInput) toInput.value = year + '-12-31';
+        });
+    });
+    document.querySelectorAll('[data-report-month-select]').forEach(function (select) {
+        select.addEventListener('change', function () {
+            var month = select.value;
+            var form = select.form;
+            if (!form || !month) return;
+            var yearSelect = form.querySelector('[data-report-year-select]');
+            var year = yearSelect && yearSelect.value ? yearSelect.value : String(new Date().getFullYear());
+            var padded = String(month).padStart(2, '0');
+            var lastDay = new Date(Number(year), Number(month), 0).getDate();
+            var fromInput = form.querySelector('[data-report-from]');
+            var toInput = form.querySelector('[data-report-to]');
+            if (fromInput) fromInput.value = year + '-' + padded + '-01';
+            if (toInput) toInput.value = year + '-' + padded + '-' + String(lastDay).padStart(2, '0');
+            if (yearSelect && !yearSelect.value) yearSelect.value = year;
+        });
+    });
+});
+</script>
+@endpush
 @endsection

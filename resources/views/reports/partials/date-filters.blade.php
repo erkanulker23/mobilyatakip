@@ -4,7 +4,8 @@
     $showMonth = $showMonth ?? false;
     $embedded = $embedded ?? false;
     $showSubmit = $showSubmit ?? ! $embedded;
-    $selectedMonth = $month ?? request('month') ?? ($from ?? null)?->month;
+    {{-- Yalnızca istekte month varsa seçili göster; $from'dan türetme (özel tarihi ezmesin) --}}
+    $selectedMonth = request()->filled('month') ? (int) request('month') : ($month ?? null);
 @endphp
 @if(! $embedded)
 <form method="get" class="flex flex-wrap gap-4 items-end">

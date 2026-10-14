@@ -25,7 +25,7 @@ class CustomerPaymentController extends Controller
         }
 
         $customers = Customer::where('isActive', true)->orderBy('name')->get();
-        $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
+        $kasalar = Kasa::activeForSelect()->get();
         $suppliers = Supplier::where('isActive', true)->orderBy('name')->get();
         $customerId = request('customerId', old('customerId'));
         $openSales = collect();
@@ -119,7 +119,7 @@ class CustomerPaymentController extends Controller
             ->sum('amount');
 
         $customers = Customer::where('isActive', true)->orderBy('name')->get();
-        $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
+        $kasalar = Kasa::activeForSelect()->get();
 
         return view('customer-payments.index', compact(
             'payments',
@@ -295,7 +295,7 @@ class CustomerPaymentController extends Controller
     public function edit(CustomerPayment $customerPayment)
     {
         $customerPayment->load(['customer', 'sale', 'supplier']);
-        $kasalar = Kasa::where('isActive', true)->orderBy('name')->get();
+        $kasalar = Kasa::activeForSelect()->get();
         $suppliers = Supplier::where('isActive', true)->orderBy('name')->get();
         $openSales = Sale::with('customer')
             ->where('customerId', $customerPayment->customerId)

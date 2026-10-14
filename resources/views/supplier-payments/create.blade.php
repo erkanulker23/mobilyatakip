@@ -82,13 +82,14 @@
                 </select>
             </div>
             <div>
-                <label class="form-label">Kasa</label>
-                <select name="kasaId" class="form-select">
+                <label class="form-label">Kasa <span class="text-neutral-400 font-normal text-xs">(nakit/havale/KK zorunlu)</span></label>
+                <select name="kasaId" class="form-select @error('kasaId') border-red-500 @enderror">
                     <option value="">Seçiniz</option>
                     @foreach($kasalar as $k)
-                    <option value="{{ $k->id }}" {{ old('kasaId') == $k->id ? 'selected' : '' }}>{{ $k->name }}</option>
+                    <option value="{{ $k->id }}" {{ (string) old('kasaId', \App\Models\Kasa::defaultId()) === (string) $k->id ? 'selected' : '' }}>{{ $k->name }}@if($k->isDefault) (varsayılan)@endif</option>
                     @endforeach
                 </select>
+                @error('kasaId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
         </div>
         <div>

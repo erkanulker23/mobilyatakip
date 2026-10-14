@@ -62,7 +62,7 @@
                 Para Ekle
             </button>
             @endif
-            @if(($otherKasalar ?? collect())->isNotEmpty())
+            @if(($kasa->isActive ?? true) && ($otherKasalar ?? collect())->isNotEmpty())
             <button type="button" @click="showVirman = true" class="btn-secondary">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
                 Virman Yap
@@ -93,6 +93,11 @@
             <button type="submit" class="btn-secondary text-sm whitespace-nowrap">Açılış bakiyesini sıfırla</button>
         </form>
     </div>
+    @endif
+    @if(request()->hasAny(['movement', 'cari', 'date_from', 'date_to']))
+    <p class="mb-3 text-xs text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
+        Üstteki özet kartlar tüm dönem bakiyesini gösterir; filtre yalnızca aşağıdaki hareket listesine uygulanır.
+    </p>
     @endif
     <div class="grid grid-cols-1 sm:grid-cols-2 {{ $hasOpening ? 'xl:grid-cols-4' : 'xl:grid-cols-3' }} gap-4 mb-4">
         @if($hasOpening)
@@ -197,6 +202,8 @@
                                 <option value="para_ekleme" {{ request('movement') === 'para_ekleme' ? 'selected' : '' }}>Para ekleme</option>
                                 <option value="odeme" {{ request('movement') === 'odeme' ? 'selected' : '' }}>Tedarikçi ödemesi</option>
                                 <option value="gider" {{ request('movement') === 'gider' ? 'selected' : '' }}>Gider</option>
+                                <option value="avans" {{ request('movement') === 'avans' ? 'selected' : '' }}>Personel avansı</option>
+                                <option value="nakliye" {{ request('movement') === 'nakliye' ? 'selected' : '' }}>Nakliye ödemesi</option>
                                 <option value="virman" {{ request('movement') === 'virman' ? 'selected' : '' }}>Virman</option>
                             </select>
                         </div>

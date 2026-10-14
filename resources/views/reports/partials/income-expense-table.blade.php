@@ -69,7 +69,7 @@
         </tr>
         @endif
         <tr class="font-semibold {{ $print ? '' : 'bg-slate-50 dark:bg-slate-800/40' }}">
-            <td class="table-td">Dönem operasyon sonucu (hasılat − alış − gider)</td>
+            <td class="table-td">Dönem operasyon sonucu (hasılat − alış − kasalı gider)</td>
             <td class="table-td text-right tabular-nums {{ ($donemKar ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400' }}">{{ number_format($donemKar ?? 0, 0, ',', '.') }} ₺</td>
             @if(!$print)<td class="table-td hidden md:table-cell"></td>@endif
         </tr>

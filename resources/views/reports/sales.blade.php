@@ -123,7 +123,7 @@
 </div>
 
 @if($sales->isNotEmpty() || ! empty($applyDateFilter))
-@include('reports.partials.sales-summary', compact('periodLabel'))
+@include('reports.partials.sales-summary', compact('periodLabel', 'filters'))
 @endif
 
 <div class="card overflow-hidden">

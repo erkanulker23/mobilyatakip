@@ -55,7 +55,7 @@ class DashboardController extends Controller
         $weekStart = $monthRange['start'];
         $weekEnd = $monthRange['end'];
         $weekQueryEnd = $today->copy();
-        $weekRangeLabel = $monthRange['label'];
+        $weekRangeLabel = $weekStart->format('d') . '–' . $weekQueryEnd->format('d M');
         $currentMonthSalesQuery = SalesMonthStats::currentMonthQuery($today);
 
         if ($showDashboardMetrics) {
@@ -144,7 +144,7 @@ class DashboardController extends Controller
             $monthCashOnPeriodSales = 0;
             $monthCashOnPriorSales = 0;
             $monthCashUnallocated = 0;
-            $weekRangeLabel = SalesMonthStats::currentMonthRange($today)['label'];
+            $weekRangeLabel = $weekStart->format('d') . '–' . $today->format('d M');
             $monthlySales = 0;
             $monthlyCollected = 0;
             $monthlyReceivable = 0;

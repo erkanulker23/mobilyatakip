@@ -32,7 +32,7 @@
         <select name="kasaId" class="form-select" required>
             <option value="">Seçin</option>
             @foreach($kasalar as $k)
-            <option value="{{ $k->id }}" {{ old('kasaId') == $k->id ? 'selected' : '' }}>{{ $k->name }}</option>
+            <option value="{{ $k->id }}" {{ (string) old('kasaId', \App\Models\Kasa::defaultId()) === (string) $k->id ? 'selected' : '' }}>{{ $k->name }}@if($k->isDefault) (varsayılan)@endif</option>
             @endforeach
         </select>
     </div>
