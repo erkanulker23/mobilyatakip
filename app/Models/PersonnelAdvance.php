@@ -35,16 +35,14 @@ class PersonnelAdvance extends BaseModel
 
     public function periodLabel(): string
     {
-        return $this->period === 'aylik' ? 'Aylık' : 'Günlük';
+        return 'Avans';
     }
 
     public function cariLabel(): string
     {
         $name = $this->personnel?->name ?? 'Personel';
-        $when = $this->period === 'aylik'
-            ? $this->advanceDate?->format('m.Y')
-            : $this->advanceDate?->format('d.m.Y');
+        $when = $this->advanceDate?->format('d.m.Y');
 
-        return 'Personel avansı · '.$name.' · '.$this->periodLabel().($when ? ' · '.$when : '');
+        return 'Personel avansı · '.$name.($when ? ' · '.$when : '');
     }
 }

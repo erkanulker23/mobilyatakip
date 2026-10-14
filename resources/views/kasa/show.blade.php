@@ -14,11 +14,27 @@
 @endif
 
 @php
-    $virmanError = $errors->has('toKasaId');
-    $depositError = old('_form') === 'deposit' || ($errors->any() && ! $virmanError && (old('amount') || old('movementDate') || old('description')) && ! old('toKasaId'));
-    $virmanOpen = $virmanError || (old('_form') === 'virman');
+    use App\Services\KasaService;
+    $virmanError = $errors->has('toKasaId') || old('_form') === 'virman';
+    $depositEditError = old('_form') === 'deposit_edit';
+    $depositError = old('_form') === 'deposit';
+    $editDepositOld = [
+        'id' => (string) old('hareketId', ''),
+        'amount' => old('_form') === 'deposit_edit' ? (string) old('amount', '') : '',
+        'movementDate' => old('_form') === 'deposit_edit' ? (string) old('movementDate', now()->format('Y-m-d')) : now()->format('Y-m-d'),
+        'description' => old('_form') === 'deposit_edit' ? (string) old('description', '') : '',
+        'updateUrl' => old('hareketId') ? route('kasa.deposit.update', [$kasa, old('hareketId')]) : '',
+    ];
 @endphp
-<div class="mb-6" x-data="{ showVirman: @json($virmanOpen), showDeposit: @json($depositError && ! $virmanOpen) }">
+<div
+    class="mb-6"
+    x-data="kasaShowPage({
+        showVirman: @js($virmanError),
+        showDeposit: @js($depositError),
+        showEditDeposit: @js($depositEditError),
+        editDeposit: @js($editDepositOld)
+    })"
+>
     <div class="flex items-start justify-between flex-wrap gap-4 mb-6">
         <div>
             <div class="flex items-center gap-2 text-neutral-500 text-sm mb-1">
@@ -60,7 +76,15 @@
     </div>
 
     {{-- Özet kartları --}}
-    @php $hasOpening = abs($summary['opening'] ?? 0) >= 0.005; @endphp
+    @php
+        $hasOpening = abs($summary['opening'] ?? 0) >= 0.005;
+        $currentBalance = (float) ($summary['current'] ?? 0);
+        $opIn = (float) ($summary['operationalIn'] ?? 0);
+        $opOut = (float) ($summary['operationalOut'] ?? 0);
+        $trIn = (float) ($summary['transferIn'] ?? 0);
+        $trOut = (float) ($summary['transferOut'] ?? 0);
+        $hasTransfer = ($trIn + $trOut) >= 0.005;
+    @endphp
     @if($hasOpening && ($summary['count'] ?? 0) === 0)
     <div class="mb-4 p-4 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 text-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <p>Güncel bakiye yalnızca <strong>açılış bakiyesi</strong> alanından geliyor; hareket kaydı yok. Başlangıç tutarı tanımlamadıysanız sıfırlayabilirsiniz.</p>
@@ -70,33 +94,56 @@
         </form>
     </div>
     @endif
-    <div class="grid grid-cols-2 {{ $hasOpening ? 'lg:grid-cols-4' : 'lg:grid-cols-3' }} gap-4 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 {{ $hasOpening ? 'xl:grid-cols-4' : 'xl:grid-cols-3' }} gap-4 mb-4">
         @if($hasOpening)
         <div class="card p-4">
             <div class="flex items-start justify-between gap-2">
                 <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Açılış bakiyesi</p>
                 <a href="{{ route('kasa.edit', $kasa) }}" class="text-xs text-sky-600 hover:underline shrink-0">Düzenle</a>
             </div>
-            <p class="mt-1 text-xl font-bold tabular-nums {{ $summary['opening'] >= 0 ? 'text-neutral-900' : 'text-red-600' }}">
+            <p class="mt-1 text-xl font-bold tabular-nums {{ $summary['opening'] >= 0 ? 'text-neutral-900 dark:text-white' : 'text-rose-600' }}">
                 {{ number_format($summary['opening'], 0, ',', '.') }} ₺
             </p>
-            <p class="mt-1 text-xs text-neutral-500">Kasa oluşturulurken girilen başlangıç tutarı</p>
+            <p class="mt-1 text-xs text-neutral-500">Başlangıç tutarı</p>
         </div>
         @endif
-        <div class="card p-4 border-emerald-100 bg-emerald-50/40">
-            <p class="text-xs font-medium text-emerald-700 uppercase tracking-wide">Toplam giriş</p>
-            <p class="mt-1 text-xl font-bold tabular-nums text-emerald-700">+{{ number_format($summary['totalIn'], 0, ',', '.') }} ₺</p>
+        <div class="card p-4 border-emerald-100 bg-emerald-50/40 dark:bg-emerald-950/20 dark:border-emerald-900/40">
+            <p class="text-xs font-medium text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">Toplam giriş</p>
+            <p class="mt-1 text-xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">+{{ number_format($summary['totalIn'], 0, ',', '.') }} ₺</p>
+            <p class="mt-1 text-xs text-neutral-500 tabular-nums">
+                İşlem +{{ number_format($opIn, 0, ',', '.') }}
+                @if($trIn >= 0.005)· virman +{{ number_format($trIn, 0, ',', '.') }}@endif
+            </p>
         </div>
-        <div class="card p-4 border-rose-100 bg-rose-50/40">
-            <p class="text-xs font-medium text-rose-700 uppercase tracking-wide">Toplam çıkış</p>
-            <p class="mt-1 text-xl font-bold tabular-nums text-rose-700">−{{ number_format($summary['totalOut'], 0, ',', '.') }} ₺</p>
+        <div class="card p-4 border-rose-100 bg-rose-50/40 dark:bg-rose-950/20 dark:border-rose-900/40">
+            <p class="text-xs font-medium text-rose-700 dark:text-rose-400 uppercase tracking-wide">Toplam çıkış</p>
+            <p class="mt-1 text-xl font-bold tabular-nums text-rose-700 dark:text-rose-400">−{{ number_format($summary['totalOut'], 0, ',', '.') }} ₺</p>
+            <p class="mt-1 text-xs text-neutral-500 tabular-nums">
+                İşlem −{{ number_format($opOut, 0, ',', '.') }}
+                @if($trOut >= 0.005)· virman −{{ number_format($trOut, 0, ',', '.') }}@endif
+            </p>
         </div>
-        <div class="card p-4 border-neutral-200 bg-neutral-900 text-white">
-            <p class="text-xs font-medium text-neutral-300 uppercase tracking-wide">Güncel bakiye</p>
-            <p class="mt-1 text-2xl font-bold tabular-nums">{{ number_format($summary['current'], 0, ',', '.') }} ₺</p>
-            <p class="text-xs text-neutral-400 mt-1">{{ $summary['count'] }} hareket</p>
+        <div class="card p-4 border-2 {{ $currentBalance < 0 ? 'border-rose-300 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800' : 'border-emerald-300 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800' }}">
+            <p class="text-xs font-medium uppercase tracking-wide {{ $currentBalance < 0 ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-800 dark:text-emerald-300' }}">Güncel bakiye</p>
+            <p class="mt-1 text-2xl font-bold tabular-nums {{ $currentBalance < 0 ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-800 dark:text-emerald-300' }}">
+                {{ number_format($currentBalance, 0, ',', '.') }} ₺
+            </p>
+            <p class="text-xs mt-1 tabular-nums {{ $currentBalance < 0 ? 'text-rose-600/80' : 'text-emerald-700/80' }}">
+                @if($hasOpening){{ number_format($summary['opening'], 0, ',', '.') }} + @endif{{ number_format($summary['totalIn'], 0, ',', '.') }} − {{ number_format($summary['totalOut'], 0, ',', '.') }}
+                · {{ $summary['count'] }} hareket
+            </p>
         </div>
     </div>
+    @if($hasTransfer)
+    <p class="text-xs text-neutral-500 mb-6 -mt-1">
+        Virman başka kasaya taşınan / gelen tutardır; bu kasanın bakiyesini değiştirir ama gider değildir.
+        Bu kasada virman: @if($trIn >= 0.005)+{{ number_format($trIn, 0, ',', '.') }} ₺ giriş @endif
+        @if($trIn >= 0.005 && $trOut >= 0.005)· @endif
+        @if($trOut >= 0.005)−{{ number_format($trOut, 0, ',', '.') }} ₺ çıkış @endif
+    </p>
+    @else
+    <div class="mb-6"></div>
+    @endif
 
     <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
         {{-- Hesap bilgileri --}}
@@ -181,7 +228,7 @@
                                 <th class="table-th">Detay</th>
                                 <th class="table-th">Açıklama</th>
                                 <th class="table-th text-right">Tutar</th>
-                                <th class="table-th text-right w-16">Sil</th>
+                                <th class="table-th text-right w-24">İşlem</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-neutral-100">
@@ -269,13 +316,32 @@
                                             default => 'Bu hareketi silmek istediğinize emin misiniz? Bağlı tahsilat/ödeme/gider kaydı da kaldırılır.',
                                         };
                                     @endphp
-                                    <form method="POST" action="{{ route('kasa.hareketler.destroy', [$kasa, $h]) }}" class="inline" onsubmit="return confirm({{ \Illuminate\Support\Js::from($deleteConfirm) }})">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="action-btn-delete p-2 rounded-xl transition-colors" title="Sil" aria-label="Hareketi sil">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    <div class="inline-flex items-center justify-end gap-0.5">
+                                        @if($h->refType === 'kasa_deposit')
+                                        <button
+                                            type="button"
+                                            class="action-btn-edit p-2 rounded-xl transition-colors"
+                                            title="Düzenle"
+                                            aria-label="Para eklemeyi düzenle"
+                                            @click="openEditDeposit({
+                                                id: @js((string) $h->id),
+                                                amount: @js((string) abs((float) $h->amount)),
+                                                movementDate: @js($h->movementDate?->format('Y-m-d') ?? now()->format('Y-m-d')),
+                                                description: @js(KasaService::depositNote($h->description)),
+                                                updateUrl: @js(route('kasa.deposit.update', [$kasa, $h])),
+                                            })"
+                                        >
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                         </button>
-                                    </form>
+                                        @endif
+                                        <form method="POST" action="{{ route('kasa.hareketler.destroy', [$kasa, $h]) }}" class="inline" onsubmit="return confirm({{ \Illuminate\Support\Js::from($deleteConfirm) }})">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="action-btn-delete p-2 rounded-xl transition-colors" title="Sil" aria-label="Hareketi sil">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                             @empty
@@ -319,9 +385,9 @@
                 <input type="hidden" name="_form" value="deposit">
                 <div>
                     <label for="deposit-amount" class="form-label">Tutar (₺) <span class="text-red-500">*</span></label>
-                    <input id="deposit-amount" type="number" name="amount" step="0.01" min="0.01" required value="{{ old('_form') === 'deposit' ? old('amount') : '' }}" class="form-input @error('amount') border-red-500 @enderror" placeholder="0" autofocus>
+                    <input id="deposit-amount" type="number" name="amount" step="0.01" min="0.01" required value="{{ old('_form') === 'deposit' ? old('amount') : '' }}" class="form-input @error('amount') border-red-500 @enderror" placeholder="0">
                     @error('amount')
-                        @if(old('_form') === 'deposit' || ! old('toKasaId'))
+                        @if(old('_form') === 'deposit')
                         <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
                         @endif
                     @enderror
@@ -331,7 +397,7 @@
                     <label for="deposit-movementDate" class="form-label">Tarih <span class="text-red-500">*</span></label>
                     <input id="deposit-movementDate" type="date" name="movementDate" required value="{{ old('_form') === 'deposit' ? old('movementDate', now()->format('Y-m-d')) : now()->format('Y-m-d') }}" class="form-input @error('movementDate') border-red-500 @enderror">
                     @error('movementDate')
-                        @if(old('_form') === 'deposit' || ! old('toKasaId'))
+                        @if(old('_form') === 'deposit')
                         <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
                         @endif
                     @enderror
@@ -340,7 +406,7 @@
                     <label for="deposit-description" class="form-label">Açıklama</label>
                     <input id="deposit-description" type="text" name="description" value="{{ old('_form') === 'deposit' ? old('description') : '' }}" maxlength="500" class="form-input" placeholder="Örn: Ortak sermaye, nakit yatırımı…">
                     @error('description')
-                        @if(old('_form') === 'deposit' || ! old('toKasaId'))
+                        @if(old('_form') === 'deposit')
                         <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
                         @endif
                     @enderror
@@ -353,6 +419,62 @@
         </div>
     </div>
     @endif
+
+    {{-- Para ekleme düzenle modal --}}
+    <div x-show="showEditDeposit" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="deposit-edit-title">
+        <div class="absolute inset-0 bg-neutral-900/50" @click="showEditDeposit = false"></div>
+        <div class="relative w-full max-w-md card p-6 shadow-xl" @click.stop>
+            <div class="flex items-start justify-between gap-4 mb-5">
+                <div>
+                    <h2 id="deposit-edit-title" class="text-lg font-semibold text-neutral-900">Para eklemeyi düzenle</h2>
+                    <p class="text-sm text-neutral-500 mt-1">
+                        <span class="font-medium text-neutral-700">{{ $kasa->name }}</span> kasasındaki giriş kaydı
+                    </p>
+                </div>
+                <button type="button" @click="showEditDeposit = false" class="text-neutral-400 hover:text-neutral-600" aria-label="Kapat">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <form method="POST" :action="editDeposit.updateUrl" class="space-y-4">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="_form" value="deposit_edit">
+                <input type="hidden" name="hareketId" :value="editDeposit.id">
+                <div>
+                    <label for="deposit-edit-amount" class="form-label">Tutar (₺) <span class="text-red-500">*</span></label>
+                    <input id="deposit-edit-amount" type="number" name="amount" step="0.01" min="0.01" required x-model="editDeposit.amount" class="form-input @error('amount') border-red-500 @enderror" placeholder="0">
+                    @error('amount')
+                        @if(old('_form') === 'deposit_edit')
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                        @endif
+                    @enderror
+                </div>
+                <div>
+                    <label for="deposit-edit-movementDate" class="form-label">Tarih <span class="text-red-500">*</span></label>
+                    <input id="deposit-edit-movementDate" type="date" name="movementDate" required x-model="editDeposit.movementDate" class="form-input @error('movementDate') border-red-500 @enderror">
+                    @error('movementDate')
+                        @if(old('_form') === 'deposit_edit')
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                        @endif
+                    @enderror
+                </div>
+                <div>
+                    <label for="deposit-edit-description" class="form-label">Açıklama</label>
+                    <input id="deposit-edit-description" type="text" name="description" x-model="editDeposit.description" maxlength="500" class="form-input" placeholder="Örn: Ortak sermaye, nakit yatırımı…">
+                    @error('description')
+                        @if(old('_form') === 'deposit_edit')
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                        @endif
+                    @enderror
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" @click="showEditDeposit = false" class="btn-secondary flex-1">İptal</button>
+                    <button type="submit" class="btn-primary flex-1">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     {{-- Virman modal --}}
     @if(($otherKasalar ?? collect())->isNotEmpty())
@@ -423,4 +545,20 @@
     </div>
     @endif
 </div>
+<script>
+window.kasaShowPage = function (initial) {
+    return {
+        showVirman: !!initial.showVirman,
+        showDeposit: !!initial.showDeposit,
+        showEditDeposit: !!initial.showEditDeposit,
+        editDeposit: initial.editDeposit || { id: '', amount: '', movementDate: '', description: '', updateUrl: '' },
+        openEditDeposit(payload) {
+            this.editDeposit = payload;
+            this.showEditDeposit = true;
+            this.showDeposit = false;
+            this.showVirman = false;
+        },
+    };
+};
+</script>
 @endsection

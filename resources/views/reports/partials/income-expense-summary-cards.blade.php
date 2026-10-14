@@ -13,10 +13,12 @@
         <p class="text-xs text-neutral-500 dark:text-slate-400 mt-1">{{ $salesCount ?? 0 }} sipariş · tahakkuk</p>
     </div>
     <div class="card p-5">
-        <p class="text-xs font-medium text-neutral-500 dark:text-slate-400 uppercase tracking-wider">Kasa tahsilatı</p>
-        <p class="text-2xl font-semibold text-emerald-600 dark:text-emerald-400 mt-1 tabular-nums">{{ number_format($tahsilat ?? 0, 0, ',', '.') }} ₺</p>
-        <p class="text-xs text-neutral-500 dark:text-slate-400 mt-1">
-            Kasaya giren · tedarikçiye öde hariç
+        <p class="text-xs font-medium text-neutral-500 dark:text-slate-400 uppercase tracking-wider">Toplam kasa girişi</p>
+        <p class="text-2xl font-semibold text-emerald-600 dark:text-emerald-400 mt-1 tabular-nums">{{ number_format($toplamGiris ?? $tahsilat ?? 0, 0, ',', '.') }} ₺</p>
+        <p class="text-xs text-neutral-500 dark:text-slate-400 mt-1 tabular-nums">
+            Tahsil {{ number_format($tahsilat ?? 0, 0, ',', '.') }}
+            @if(($paraEkleme ?? 0) > 0.005)· para ekleme {{ number_format($paraEkleme, 0, ',', '.') }}@endif
+            @if(($digerGiris ?? 0) > 0.005)· diğer {{ number_format($digerGiris, 0, ',', '.') }}@endif
             @if($tahsilatOrani !== null)· satışın %{{ number_format($tahsilatOrani, 1, ',', '.') }}'i @endif
         </p>
     </div>
@@ -28,12 +30,15 @@
             · tedarikçi {{ number_format($tedarikciOdeme ?? 0, 0, ',', '.') }}
             @if(($personelAvans ?? 0) > 0.005)· avans {{ number_format($personelAvans, 0, ',', '.') }}@endif
             @if(($nakliyeOdeme ?? 0) > 0.005)· nakliye {{ number_format($nakliyeOdeme, 0, ',', '.') }}@endif
+            @if(($digerCikis ?? 0) > 0.005)· diğer {{ number_format($digerCikis, 0, ',', '.') }}@endif
         </p>
     </div>
     <div class="card p-5">
         <p class="text-xs font-medium text-neutral-500 dark:text-slate-400 uppercase tracking-wider">Net kasa akışı</p>
         <p class="text-2xl font-semibold {{ $netClass }} mt-1 tabular-nums">{{ number_format($netNakit ?? 0, 0, ',', '.') }} ₺</p>
-        <p class="text-xs text-neutral-500 dark:text-slate-400 mt-1">Kasa hareketleri · virman hariç</p>
+        <p class="text-xs text-neutral-500 dark:text-slate-400 mt-1 tabular-nums">
+            {{ number_format($toplamGiris ?? $tahsilat ?? 0, 0, ',', '.') }} − {{ number_format($toplamCikis ?? 0, 0, ',', '.') }} · virman hariç
+        </p>
     </div>
     <div class="card p-5">
         <p class="text-xs font-medium text-neutral-500 dark:text-slate-400 uppercase tracking-wider">Alış Tutarı</p>

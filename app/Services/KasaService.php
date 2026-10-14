@@ -9,22 +9,65 @@ use Illuminate\Support\Str;
 
 class KasaService
 {
-    /** @return array{opening: float, totalIn: float, totalOut: float, netMovements: float, current: float, count: int} */
+    /**
+     * @return array{
+     *     opening: float,
+     *     totalIn: float,
+     *     totalOut: float,
+     *     operationalIn: float,
+     *     operationalOut: float,
+     *     transferIn: float,
+     *     transferOut: float,
+     *     netMovements: float,
+     *     current: float,
+     *     count: int,
+     * }
+     */
     public function summary(Kasa $kasa): array
     {
         $opening = (float) ($kasa->openingBalance ?? 0);
-        $ledger = $kasa->hareketler()->ledger();
-        $netMovements = (float) (clone $ledger)->sum('amount');
-        $totalIn = (float) (clone $ledger)->where('amount', '>', 0)->sum('amount');
-        $totalOut = abs((float) (clone $ledger)->where('amount', '<', 0)->sum('amount'));
+        $rows = $kasa->hareketler()
+            ->ledger()
+            ->get(['amount', 'refType', 'type']);
+
+        $operationalIn = 0.0;
+        $operationalOut = 0.0;
+        $transferIn = 0.0;
+        $transferOut = 0.0;
+
+        foreach ($rows as $h) {
+            $amount = (float) ($h->amount ?? 0);
+            $isTransfer = $h->refType === 'kasa_transfer'
+                || in_array($h->type, ['virman_cikis', 'virman_giris'], true);
+
+            if ($isTransfer) {
+                if ($amount >= 0) {
+                    $transferIn += $amount;
+                } else {
+                    $transferOut += abs($amount);
+                }
+            } elseif ($amount >= 0) {
+                $operationalIn += $amount;
+            } else {
+                $operationalOut += abs($amount);
+            }
+        }
+
+        $totalIn = $operationalIn + $transferIn;
+        $totalOut = $operationalOut + $transferOut;
+        $netMovements = $totalIn - $totalOut;
 
         return [
-            'opening' => $opening,
-            'totalIn' => $totalIn,
-            'totalOut' => $totalOut,
-            'netMovements' => $netMovements,
-            'current' => $opening + $netMovements,
-            'count' => (int) (clone $ledger)->count(),
+            'opening' => round($opening, 2),
+            'totalIn' => round($totalIn, 2),
+            'totalOut' => round($totalOut, 2),
+            'operationalIn' => round($operationalIn, 2),
+            'operationalOut' => round($operationalOut, 2),
+            'transferIn' => round($transferIn, 2),
+            'transferOut' => round($transferOut, 2),
+            'netMovements' => round($netMovements, 2),
+            'current' => round($opening + $netMovements, 2),
+            'count' => $rows->count(),
         ];
     }
 
@@ -39,21 +82,64 @@ class KasaService
             throw new \InvalidArgumentException('Tutar 0,01 ₺ veya üzeri olmalı.');
         }
 
-        $desc = 'Dışarıdan para girişi';
-        if ($description) {
-            $desc .= ' — ' . $description;
-        }
-
         return KasaHareket::create([
             'kasaId' => $kasa->id,
             'type' => 'giris',
             'amount' => $amount,
             'movementDate' => $movementDate,
-            'description' => $desc,
+            'description' => self::formatDepositDescription($description),
             'createdBy' => $createdBy,
             'refType' => 'kasa_deposit',
             'refId' => (string) Str::uuid(),
         ]);
+    }
+
+    public function updateDeposit(Kasa $kasa, KasaHareket $hareket, float $amount, string $movementDate, ?string $description): KasaHareket
+    {
+        if ($hareket->kasaId !== $kasa->id) {
+            throw new \InvalidArgumentException('Hareket bu kasaya ait değil.');
+        }
+        if ($hareket->refType !== 'kasa_deposit') {
+            throw new \InvalidArgumentException('Yalnızca para ekleme kayıtları düzenlenebilir.');
+        }
+
+        $amount = abs($amount);
+        if ($amount < 0.01) {
+            throw new \InvalidArgumentException('Tutar 0,01 ₺ veya üzeri olmalı.');
+        }
+
+        $hareket->update([
+            'amount' => $amount,
+            'movementDate' => $movementDate,
+            'description' => self::formatDepositDescription($description),
+        ]);
+
+        return $hareket->fresh();
+    }
+
+    public static function formatDepositDescription(?string $note): string
+    {
+        $desc = 'Dışarıdan para girişi';
+        $note = trim((string) $note);
+
+        return $note !== '' ? $desc . ' — ' . $note : $desc;
+    }
+
+    public static function depositNote(?string $description): string
+    {
+        $description = trim((string) $description);
+        $prefix = 'Dışarıdan para girişi';
+
+        if ($description === $prefix || $description === '') {
+            return '';
+        }
+
+        $withSep = $prefix . ' — ';
+        if (str_starts_with($description, $withSep)) {
+            return trim(substr($description, strlen($withSep)));
+        }
+
+        return $description;
     }
 
     public function transfer(Kasa $from, Kasa $to, float $amount, string $movementDate, ?string $description, ?string $createdBy): string

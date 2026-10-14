@@ -31,11 +31,11 @@ class PersonnelAdvanceController extends Controller
             'personnelId' => 'required|exists:personnel,id',
             'amount' => 'required|numeric|min:0.01',
             'advanceDate' => 'required|date',
-            'period' => 'required|in:gunluk,aylik',
             'kasaId' => 'required|exists:kasa,id',
             'note' => 'nullable|string|max:500',
         ]);
 
+        $validated['period'] = 'gunluk';
         $validated['createdBy'] = auth()->id() ?: null;
 
         if (! \Illuminate\Support\Facades\Schema::hasTable('personnel_advances')) {
@@ -59,7 +59,7 @@ class PersonnelAdvanceController extends Controller
         $this->auditService->logCreate('personnel_advance', $advance->id, [
             'personnelId' => $advance->personnelId,
             'amount' => (float) $advance->amount,
-            'period' => $advance->period,
+            'advanceDate' => $advance->advanceDate?->toDateString(),
         ]);
 
         return redirect()->route('personnel.show', $advance->personnelId)

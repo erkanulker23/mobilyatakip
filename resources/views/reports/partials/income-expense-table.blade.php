@@ -18,6 +18,20 @@
             <td class="table-td text-right font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">{{ number_format($tahsilat, 0, ',', '.') }} ₺</td>
             @if(!$print)<td class="table-td text-right text-neutral-500 hidden md:table-cell">{{ $payments->count() }}</td>@endif
         </tr>
+        @if(($paraEkleme ?? 0) > 0.005)
+        <tr>
+            <td class="table-td font-medium text-emerald-700 dark:text-emerald-400">Para ekleme (giriş)</td>
+            <td class="table-td text-right font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">{{ number_format($paraEkleme, 0, ',', '.') }} ₺</td>
+            @if(!$print)<td class="table-td text-right text-neutral-500 hidden md:table-cell"></td>@endif
+        </tr>
+        @endif
+        @if(($digerGiris ?? 0) > 0.005)
+        <tr>
+            <td class="table-td font-medium text-emerald-700 dark:text-emerald-400">Diğer kasa girişi</td>
+            <td class="table-td text-right font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">{{ number_format($digerGiris, 0, ',', '.') }} ₺</td>
+            @if(!$print)<td class="table-td text-right text-neutral-500 hidden md:table-cell"></td>@endif
+        </tr>
+        @endif
         <tr>
             <td class="table-td">Alış tutarı (maliyet)</td>
             <td class="table-td text-right tabular-nums">{{ number_format($alis ?? 0, 0, ',', '.') }} ₺</td>
@@ -44,6 +58,13 @@
         <tr>
             <td class="table-td">Nakliye ödemesi</td>
             <td class="table-td text-right text-red-600 dark:text-red-400 tabular-nums">− {{ number_format($nakliyeOdeme, 0, ',', '.') }} ₺</td>
+            @if(!$print)<td class="table-td text-right text-neutral-500 hidden md:table-cell"></td>@endif
+        </tr>
+        @endif
+        @if(($digerCikis ?? 0) > 0.005)
+        <tr>
+            <td class="table-td">Diğer kasa çıkışı</td>
+            <td class="table-td text-right text-red-600 dark:text-red-400 tabular-nums">− {{ number_format($digerCikis, 0, ',', '.') }} ₺</td>
             @if(!$print)<td class="table-td text-right text-neutral-500 hidden md:table-cell"></td>@endif
         </tr>
         @endif

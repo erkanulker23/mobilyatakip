@@ -11,7 +11,11 @@
         <h1 class="page-title">Gider Detay</h1>
         <p class="page-desc">{{ number_format($expense->amount, 0, ',', '.') }} ₺</p>
     </div>
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2">
+        <a href="{{ route('expenses.create') }}" class="btn-primary">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+            Yeni Gider
+        </a>
         @include('partials.action-buttons', [
             'edit' => route('expenses.edit', $expense),
             'destroy' => route('expenses.destroy', $expense),

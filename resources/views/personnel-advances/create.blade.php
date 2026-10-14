@@ -25,20 +25,7 @@
     <div>
         <label class="form-label">Tarih</label>
         <input type="date" name="advanceDate" value="{{ old('advanceDate', date('Y-m-d')) }}" class="form-input" required>
-    </div>
-    <div>
-        <label class="form-label">Cari etkisi</label>
-        <div class="flex gap-4 text-sm">
-            <label class="inline-flex items-center gap-2">
-                <input type="radio" name="period" value="gunluk" {{ old('period', 'gunluk') === 'gunluk' ? 'checked' : '' }}>
-                Günlük
-            </label>
-            <label class="inline-flex items-center gap-2">
-                <input type="radio" name="period" value="aylik" {{ old('period') === 'aylik' ? 'checked' : '' }}>
-                Aylık
-            </label>
-        </div>
-        <p class="text-xs text-neutral-500 mt-1">Günlük, o tarihte görünür. Aylık, ait olduğu ayın cari bakiyesine yazılır.</p>
+        <p class="text-xs text-neutral-500 mt-1">Avans bu tarihte kasadan çıkar ve personel carisine yazılır.</p>
     </div>
     <div>
         <label class="form-label">Kasa</label>

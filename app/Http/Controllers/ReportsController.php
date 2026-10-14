@@ -577,10 +577,14 @@ class ReportsController extends Controller
 
         $cash = PeriodAccounting::forRange($from, $to);
         $tahsilat = (float) $cash['cashCollections'];
+        $paraEkleme = (float) $cash['cashDeposits'];
+        $digerGiris = (float) $cash['cashInflowsOther'];
+        $toplamGiris = (float) $cash['cashInflows'];
         $gider = (float) $cash['expenses'];
         $tedarikciOdeme = (float) $cash['supplierPayments'];
         $personelAvans = (float) $cash['personnelAdvances'];
         $nakliyeOdeme = (float) $cash['shippingPayments'];
+        $digerCikis = (float) $cash['cashOutflowsOther'];
 
         $alis = (float) Purchase::whereBetween('purchaseDate', [$from, $to])->where('isCancelled', false)->sum('grandTotal');
         $alisCount = (int) Purchase::whereBetween('purchaseDate', [$from, $to])->where('isCancelled', false)->count();
@@ -643,10 +647,14 @@ class ReportsController extends Controller
             'gelir' => $gelir,
             'salesCount' => $salesCount,
             'tahsilat' => $tahsilat,
+            'paraEkleme' => $paraEkleme,
+            'digerGiris' => $digerGiris,
+            'toplamGiris' => $toplamGiris,
             'gider' => $gider,
             'tedarikciOdeme' => $tedarikciOdeme,
             'personelAvans' => $personelAvans,
             'nakliyeOdeme' => $nakliyeOdeme,
+            'digerCikis' => $digerCikis,
             'alis' => $alis,
             'alisCount' => $alisCount,
             'toplamCikis' => $toplamCikis,

@@ -156,6 +156,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('personnel', \App\Http\Controllers\PersonnelController::class);
     Route::post('/kasa/{kasa}/virman', [KasaController::class, 'transfer'])->name('kasa.transfer');
     Route::post('/kasa/{kasa}/para-ekle', [KasaController::class, 'deposit'])->name('kasa.deposit');
+    Route::put('/kasa/{kasa}/para-ekle/{hareket}', [KasaController::class, 'updateDeposit'])->name('kasa.deposit.update');
     Route::post('/kasa/{kasa}/acilis-sifirla', [KasaController::class, 'resetOpeningBalance'])->name('kasa.reset-opening');
     Route::delete('/kasa/{kasa}/hareketler/{hareket}', [KasaController::class, 'destroyMovement'])->name('kasa.hareketler.destroy');
     Route::resource('kasa', KasaController::class)->parameters(['kasa' => 'kasa']);

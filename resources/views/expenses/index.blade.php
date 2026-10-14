@@ -81,7 +81,7 @@
                         @endif
                     </td>
                     <td class="table-td">
-                        <span class="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">Personel Avansı · {{ $a->periodLabel() }}</span>
+                        <span class="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">Personel Avansı</span>
                     </td>
                     <td class="table-td text-slate-600 dark:text-slate-400">{{ $a->kasa?->name ?? '—' }}</td>
                     <td class="table-td text-right font-medium text-amber-700 dark:text-amber-400">{{ number_format($a->amount, 0, ',', '.') }} ₺</td>

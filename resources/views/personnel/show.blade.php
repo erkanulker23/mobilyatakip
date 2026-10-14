@@ -85,7 +85,6 @@
             <thead>
                 <tr class="border-b border-neutral-100 dark:border-slate-700">
                     <th class="table-th">Tarih</th>
-                    <th class="table-th">Etki</th>
                     <th class="table-th">Kasa</th>
                     <th class="table-th">Not</th>
                     <th class="table-th text-right">Tutar</th>
@@ -96,7 +95,6 @@
                 @forelse($advances ?? [] as $a)
                 <tr class="border-b border-neutral-100 dark:border-slate-700">
                     <td class="table-td">{{ $a->advanceDate?->format('d.m.Y') }}</td>
-                    <td class="table-td">{{ $a->periodLabel() }}</td>
                     <td class="table-td">{{ $a->kasa?->name ?? '—' }}</td>
                     <td class="table-td">{{ $a->note ?: '—' }}</td>
                     <td class="table-td text-right font-medium">{{ number_format($a->amount, 0, ',', '.') }} ₺</td>
@@ -109,7 +107,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="6" class="px-6 py-8 text-center text-neutral-500">Avans kaydı yok.</td></tr>
+                <tr><td colspan="5" class="px-6 py-8 text-center text-neutral-500">Avans kaydı yok.</td></tr>
                 @endforelse
             </tbody>
         </table>

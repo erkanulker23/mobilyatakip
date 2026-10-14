@@ -2,6 +2,10 @@
     $print = $print ?? false;
     $periodLabel = $periodLabel ?? \App\Support\ReportFilters::periodLabel($from, $to, $year ?? null, $month ?? null);
     $cash = $cashAccounting ?? null;
+    $cashInflows = (float) ($cash['cashInflows'] ?? 0);
+    $cashDeposits = (float) ($cash['cashDeposits'] ?? 0);
+    $cashInflowsOther = (float) ($cash['cashInflowsOther'] ?? 0);
+    $cashOutflowsOther = (float) ($cash['cashOutflowsOther'] ?? 0);
 @endphp
 @if(! empty($applyDateFilter))
 {{-- Satış özeti --}}
@@ -23,15 +27,19 @@
     </div>
     @if($cash && ! $print)
     <div class="card p-4">
-        <p class="text-xs font-medium text-indigo-800 dark:text-indigo-300 uppercase tracking-wide">Kasa tahsilatı</p>
-        <p class="text-2xl font-semibold text-indigo-700 dark:text-indigo-400 mt-1 tabular-nums">{{ number_format($cash['cashCollections'], 0, ',', '.') }} ₺</p>
-        <p class="text-xs text-neutral-400 mt-1">Kasaya giren · ödeme tarihi</p>
+        <p class="text-xs font-medium text-indigo-800 dark:text-indigo-300 uppercase tracking-wide">Toplam kasa girişi</p>
+        <p class="text-2xl font-semibold text-indigo-700 dark:text-indigo-400 mt-1 tabular-nums">{{ number_format($cashInflows, 0, ',', '.') }} ₺</p>
+        <p class="text-xs text-neutral-400 mt-1 tabular-nums">
+            Tahsil {{ number_format($cash['cashCollections'], 0, ',', '.') }}
+            @if($cashDeposits > 0.005)· para ekleme {{ number_format($cashDeposits, 0, ',', '.') }}@endif
+            @if($cashInflowsOther > 0.005)· diğer {{ number_format($cashInflowsOther, 0, ',', '.') }}@endif
+        </p>
     </div>
     @endif
 </div>
 
 @if($cash && ! $print)
-{{-- Kasadan ödenenler — tür ayrımı --}}
+{{-- Kasa girişi / çıkışı / net — ledger ile birebir --}}
 <div class="card p-5 mb-6">
     <div class="flex flex-wrap items-end justify-between gap-3 mb-4">
         <div>
@@ -41,10 +49,33 @@
         <div class="text-right">
             <p class="text-xs font-medium text-indigo-800 dark:text-indigo-300 uppercase tracking-wide">Dönem kasa neti</p>
             <p class="text-xl font-semibold {{ ($cash['cashNet'] ?? 0) < 0 ? 'text-rose-600' : 'text-indigo-700 dark:text-indigo-400' }} mt-1 tabular-nums">{{ number_format($cash['cashNet'], 0, ',', '.') }} ₺</p>
-            <p class="text-xs text-neutral-500 mt-0.5 tabular-nums">{{ number_format($cash['cashCollections'], 0, ',', '.') }} − {{ number_format($cash['cashOutflows'], 0, ',', '.') }}</p>
+            <p class="text-xs text-neutral-500 mt-0.5 tabular-nums">
+                {{ number_format($cashInflows, 0, ',', '.') }} − {{ number_format($cash['cashOutflows'], 0, ',', '.') }}
+            </p>
         </div>
     </div>
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+
+    <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
+        <div class="rounded-lg border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/40 dark:bg-emerald-950/20 p-3">
+            <p class="text-xs text-emerald-700 dark:text-emerald-400">Müşteri tahsilatı</p>
+            <p class="text-lg font-semibold text-emerald-700 dark:text-emerald-400 mt-1 tabular-nums">+{{ number_format($cash['cashCollections'], 0, ',', '.') }} ₺</p>
+            <p class="text-xs text-neutral-400 mt-1">Kasaya giren · ödeme tarihi</p>
+        </div>
+        <div class="rounded-lg border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/40 dark:bg-emerald-950/20 p-3">
+            <p class="text-xs text-emerald-700 dark:text-emerald-400">Para ekleme</p>
+            <p class="text-lg font-semibold text-emerald-700 dark:text-emerald-400 mt-1 tabular-nums">+{{ number_format($cashDeposits, 0, ',', '.') }} ₺</p>
+            <p class="text-xs text-neutral-400 mt-1">Dışarıdan kasaya giriş</p>
+        </div>
+        @if($cashInflowsOther > 0.005)
+        <div class="rounded-lg border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/40 dark:bg-emerald-950/20 p-3">
+            <p class="text-xs text-emerald-700 dark:text-emerald-400">Diğer giriş</p>
+            <p class="text-lg font-semibold text-emerald-700 dark:text-emerald-400 mt-1 tabular-nums">+{{ number_format($cashInflowsOther, 0, ',', '.') }} ₺</p>
+            <p class="text-xs text-neutral-400 mt-1">Diğer kasa girişleri</p>
+        </div>
+        @endif
+    </div>
+
+    <div class="grid grid-cols-2 {{ $cashOutflowsOther > 0.005 ? 'lg:grid-cols-5' : 'lg:grid-cols-4' }} gap-3">
         <div class="rounded-lg border border-neutral-200 dark:border-slate-700 p-3">
             <p class="text-xs text-neutral-500">Gider</p>
             <p class="text-lg font-semibold text-rose-600 mt-1 tabular-nums">{{ number_format($cash['expenses'], 0, ',', '.') }} ₺</p>
@@ -65,6 +96,13 @@
             <p class="text-lg font-semibold text-orange-600 dark:text-orange-400 mt-1 tabular-nums">{{ number_format($cash['shippingPayments'], 0, ',', '.') }} ₺</p>
             <p class="text-xs text-neutral-400 mt-1">Nakliye firmasına</p>
         </div>
+        @if($cashOutflowsOther > 0.005)
+        <div class="rounded-lg border border-neutral-200 dark:border-slate-700 p-3">
+            <p class="text-xs text-neutral-500">Diğer çıkış</p>
+            <p class="text-lg font-semibold text-rose-600 mt-1 tabular-nums">{{ number_format($cashOutflowsOther, 0, ',', '.') }} ₺</p>
+            <p class="text-xs text-neutral-400 mt-1">Sınıflandırılmamış</p>
+        </div>
+        @endif
     </div>
 </div>
 @endif
@@ -72,7 +110,7 @@
 @if(! $print)
 <p class="text-xs text-neutral-500 mb-6 -mt-2">
     Satış: <span class="font-medium text-neutral-700 dark:text-neutral-300">hasılat − siparişe işlenen tahsil ≈ kalan alacak</span>.
-    Ödenenler yalnızca kasadan çıkan hareketlerdir (gider, avans, tedarikçi, nakliye).
+    Kasa neti: <span class="font-medium text-neutral-700 dark:text-neutral-300">tüm kasa girişleri − tüm kasa çıkışları</span> (virman hariç; para ekleme dahil).
 </p>
 @endif
 @endif

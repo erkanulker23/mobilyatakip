@@ -163,6 +163,44 @@ class KasaController extends Controller
             ->with('success', number_format((float) $validated['amount'], 0, ',', '.') . ' ₺ kasaya eklendi.');
     }
 
+    public function updateDeposit(Request $request, Kasa $kasa, KasaHareket $hareket)
+    {
+        if ($request->filled('amount')) {
+            $request->merge(['amount' => money_parse($request->input('amount'))]);
+        }
+
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'movementDate' => 'required|date',
+            'description' => 'nullable|string|max:500',
+        ]);
+
+        try {
+            $this->kasaService->updateDeposit(
+                $kasa,
+                $hareket,
+                (float) $validated['amount'],
+                $validated['movementDate'],
+                $validated['description'] ?? null,
+            );
+        } catch (\InvalidArgumentException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
+        $this->auditService->logUpdate('kasa_hareket', $hareket->id, [
+            'kasaId' => $kasa->id,
+            'refType' => 'kasa_deposit',
+        ], [
+            'amount' => (float) $validated['amount'],
+            'movementDate' => $validated['movementDate'],
+            'description' => $validated['description'] ?? null,
+        ]);
+
+        return redirect()
+            ->route('kasa.show', $kasa)
+            ->with('success', 'Para ekleme kaydı güncellendi.');
+    }
+
     public function transfer(Request $request, Kasa $kasa)
     {
         if ($request->filled('amount')) {
