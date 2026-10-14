@@ -71,7 +71,9 @@
             @if($customerPayment->kasa)
             <div>
                 <dt class="form-label">Kasa</dt>
-                <dd class="font-medium text-slate-800 dark:text-slate-200">{{ $customerPayment->kasa->name ?? '—' }}</dd>
+                <dd class="font-medium">
+                    <a href="{{ route('kasa.show', $customerPayment->kasa) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline">{{ $customerPayment->kasa->name }}</a>
+                </dd>
             </div>
             @endif
             @if($customerPayment->paymentType === 'tedarikciye_ode' && $customerPayment->supplier)

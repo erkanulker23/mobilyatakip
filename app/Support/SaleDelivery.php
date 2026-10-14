@@ -17,6 +17,8 @@ class SaleDelivery
 
     public const IN_PRODUCTION = 'in_production';
 
+    public const IN_CILA_WORKSHOP = 'cila_atolyesinde';
+
     public const IN_DISCUSSION = 'in_discussion';
 
     public const PARTIALLY_DELIVERED = 'partially_delivered';
@@ -30,10 +32,25 @@ class SaleDelivery
             self::PENDING,
             self::IN_DISCUSSION,
             self::IN_PRODUCTION,
+            self::IN_CILA_WORKSHOP,
             self::PARTIALLY_DELIVERED,
             self::DELIVERED,
             self::SSH,
         ];
+    }
+
+    /** Atölye ekranlarında birlikte listelenen durumlar. */
+    public static function workshopStatuses(): array
+    {
+        return [
+            self::IN_PRODUCTION,
+            self::IN_CILA_WORKSHOP,
+        ];
+    }
+
+    public static function isInWorkshop(?string $status = null): bool
+    {
+        return in_array($status, self::workshopStatuses(), true);
     }
 
     /** @return array<string, string> */
@@ -43,6 +60,7 @@ class SaleDelivery
             self::PENDING => 'Teslim bekliyor',
             self::IN_DISCUSSION => 'Halen görüşülüyor',
             self::IN_PRODUCTION => 'Üretimde',
+            self::IN_CILA_WORKSHOP => 'Cila Atölyesinde',
             self::PARTIALLY_DELIVERED => 'Eksik teslim edildi',
             self::DELIVERED => 'Teslim edildi',
             self::SSH => 'SSH var',
@@ -57,6 +75,7 @@ class SaleDelivery
             self::FINAL_MEASUREMENT => 'Ölçü bekliyor',
             self::IN_DISCUSSION => 'Halen görüşülüyor',
             self::IN_PRODUCTION => 'Üretimde',
+            self::IN_CILA_WORKSHOP => 'Cila Atölyesinde',
             self::PARTIALLY_DELIVERED => 'Eksik teslim edildi',
             self::DELIVERED => 'Teslim edildi',
             self::SSH => 'SSH var',
@@ -222,6 +241,7 @@ class SaleDelivery
             self::DELIVERED => 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
             self::SSH => 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
             self::IN_PRODUCTION => 'bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300',
+            self::IN_CILA_WORKSHOP => 'bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900/30 dark:text-fuchsia-300',
             self::IN_DISCUSSION => 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300',
             self::PARTIALLY_DELIVERED => 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
             default => 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
@@ -249,6 +269,7 @@ class SaleDelivery
             self::DELIVERED => 'text-indigo-600 dark:text-indigo-400',
             self::SSH => 'text-orange-600 dark:text-orange-400',
             self::IN_PRODUCTION => 'text-violet-600 dark:text-violet-400',
+            self::IN_CILA_WORKSHOP => 'text-fuchsia-600 dark:text-fuchsia-400',
             self::IN_DISCUSSION => 'text-sky-600 dark:text-sky-400',
             self::PARTIALLY_DELIVERED => 'text-rose-600 dark:text-rose-400',
             self::PENDING => 'text-teal-700 dark:text-teal-400',

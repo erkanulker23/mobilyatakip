@@ -73,7 +73,9 @@ class DashboardController extends Controller
             $weekSalesTotal = SalesMonthStats::turnover($currentMonthSalesQuery);
 
             $monthAccounting = PeriodAccounting::forRange($weekStart, $weekQueryEnd);
-            $weekKasaInflow = $monthAccounting['cashCollections'];
+            $weekKasaInflow = $monthAccounting['cashNet'];
+            $monthCashInflows = $monthAccounting['cashInflows'];
+            $monthCashOutflows = $monthAccounting['cashOutflows'];
             $monthlySalesCollected = $monthAccounting['collectedOnSales'];
             $monthCashOnPeriodSales = $monthAccounting['cashOnPeriodSales'];
             $monthCashOnPriorSales = $monthAccounting['cashOnPriorSales'];
@@ -136,6 +138,8 @@ class DashboardController extends Controller
             $weekSalesCount = 0;
             $weekSalesTotal = 0;
             $weekKasaInflow = 0;
+            $monthCashInflows = 0;
+            $monthCashOutflows = 0;
             $monthlySalesCollected = 0;
             $monthCashOnPeriodSales = 0;
             $monthCashOnPriorSales = 0;
@@ -268,6 +272,8 @@ class DashboardController extends Controller
             'weekSalesCount',
             'weekSalesTotal',
             'weekKasaInflow',
+            'monthCashInflows',
+            'monthCashOutflows',
             'monthlySalesCollected',
             'monthCashOnPeriodSales',
             'monthCashOnPriorSales',

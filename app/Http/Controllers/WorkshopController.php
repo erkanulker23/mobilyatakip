@@ -49,21 +49,23 @@ class WorkshopController extends Controller
             SaleProductionStageSchema::applyCounts($q, detailed: true);
         }
 
+        $workshopStatuses = SaleDelivery::workshopStatuses();
+
         match ($scope) {
             'tamamlanan' => $q->whereNotNull('workshopCompletedAt')
                 ->orderByDesc('workshopCompletedAt'),
-            'tumu' => $q->where(function ($w) {
-                $w->where('orderStatus', SaleDelivery::IN_PRODUCTION)
+            'tumu' => $q->where(function ($w) use ($workshopStatuses) {
+                $w->whereIn('orderStatus', $workshopStatuses)
                     ->orWhereNotNull('workshopCompletedAt');
                 if (SaleProductionStageSchema::isReady()) {
                     $w->orWhereHas('productionStages');
                 }
             })
-                ->orderByRaw('CASE WHEN orderStatus = ? AND deliveredAt IS NULL THEN 0 ELSE 1 END', [SaleDelivery::IN_PRODUCTION])
+                ->orderByRaw('CASE WHEN orderStatus IN (?, ?) AND deliveredAt IS NULL THEN 0 ELSE 1 END', $workshopStatuses)
                 ->orderByDesc('workshopCompletedAt')
                 ->orderByRaw('CASE WHEN dueDate IS NULL THEN 1 ELSE 0 END')
                 ->orderBy('dueDate'),
-            default => $q->where('orderStatus', SaleDelivery::IN_PRODUCTION)
+            default => $q->whereIn('orderStatus', $workshopStatuses)
                 ->whereNull('deliveredAt')
                 ->orderByRaw('CASE WHEN dueDate IS NULL THEN 1 ELSE 0 END')
                 ->orderBy('dueDate')
@@ -135,7 +137,7 @@ class WorkshopController extends Controller
         $productionStagesReady = SaleProductionStageSchema::isReady();
         $orderStatus = SaleDelivery::currentStatus($sale);
         $canAddProductionStage = ! $sale->isCancelled;
-        $canEditProduction = $orderStatus === SaleDelivery::IN_PRODUCTION
+        $canEditProduction = SaleDelivery::isInWorkshop($orderStatus)
             && (auth()->user()?->isAdmin() || auth()->user()?->isWorkshop());
 
         $openDeficienciesCount = $productionStagesReady
@@ -308,8 +310,8 @@ class WorkshopController extends Controller
             return;
         }
 
-        if ($status !== SaleDelivery::IN_PRODUCTION) {
-            abort(403, 'Bu sipariş üretimde değil.');
+        if (! SaleDelivery::isInWorkshop($status)) {
+            abort(403, 'Bu sipariş atölyede değil.');
         }
     }
 }

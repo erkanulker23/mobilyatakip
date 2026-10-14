@@ -4,7 +4,7 @@
     $termin = SaleDelivery::terminListMeta($sale);
     $orderStatus = SaleDelivery::currentStatus($sale);
     $canOpen = ! SaleDelivery::isDelivered($sale) || auth()->user()?->isAdmin();
-    $inProduction = $orderStatus === SaleDelivery::IN_PRODUCTION;
+    $inProduction = SaleDelivery::isInWorkshop($orderStatus);
     $stages = ! empty($productionStagesReady) ? $sale->productionStages : collect();
 @endphp
 <article class="border-b border-neutral-100 dark:border-neutral-800 last:border-b-0">

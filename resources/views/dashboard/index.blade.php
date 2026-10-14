@@ -75,21 +75,14 @@
             <p class="text-xs text-neutral-500 mt-1">{{ $weekRangeLabel }}</p>
         @endif
     </a>
-    <a href="{{ route('customer-payments.create', ['list' => 1, 'from' => $weekStartStr, 'to' => $weekEndStr]) }}" class="card p-4 border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/40 dark:bg-indigo-950/20 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors">
-        <p class="text-xs font-medium text-indigo-800 dark:text-indigo-300 uppercase tracking-wide">Bu ay kasa tahsilatı</p>
-        <p class="text-2xl sm:text-3xl font-semibold text-indigo-700 dark:text-indigo-400 mt-1 tabular-nums">₺{{ number_format($weekKasaInflow, 0, ',', '.') }}</p>
-        @if(($monthCashOnPriorSales ?? 0) > 0.005 || ($monthCashUnallocated ?? 0) > 0.005)
-            <p class="text-xs text-indigo-700/80 dark:text-indigo-300/80 mt-1 tabular-nums">
-                Bu ayki satışlara ₺{{ number_format($monthCashOnPeriodSales ?? 0, 0, ',', '.') }}
-                @if(($monthCashOnPriorSales ?? 0) > 0.005)
-                · eski satışlara ₺{{ number_format($monthCashOnPriorSales, 0, ',', '.') }}
-                @endif
-                @if(($monthCashUnallocated ?? 0) > 0.005)
-                · atanmamış ₺{{ number_format($monthCashUnallocated, 0, ',', '.') }}
-                @endif
-            </p>
-        @endif
-        <p class="text-xs text-neutral-500 mt-1">Kasaya giren · {{ $weekRangeLabel ?? '' }}</p>
+    <a href="{{ route('reports.sales', ['period' => 'this_month']) }}" class="card p-4 border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/40 dark:bg-indigo-950/20 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors">
+        <p class="text-xs font-medium text-indigo-800 dark:text-indigo-300 uppercase tracking-wide">Bu ay kasa neti</p>
+        <p class="text-2xl sm:text-3xl font-semibold mt-1 tabular-nums {{ ($weekKasaInflow ?? 0) < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-indigo-700 dark:text-indigo-400' }}">₺{{ number_format($weekKasaInflow, 0, ',', '.') }}</p>
+        <p class="text-xs text-indigo-700/80 dark:text-indigo-300/80 mt-1 tabular-nums">
+            Giriş ₺{{ number_format($monthCashInflows ?? 0, 0, ',', '.') }}
+            − çıkış ₺{{ number_format($monthCashOutflows ?? 0, 0, ',', '.') }}
+        </p>
+        <p class="text-xs text-neutral-500 mt-1">Virman hariç · {{ $weekRangeLabel ?? '' }}</p>
     </a>
 </div>
 

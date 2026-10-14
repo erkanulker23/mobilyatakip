@@ -302,6 +302,7 @@ class PublicTrackingService
             SaleDelivery::PENDING,
             SaleDelivery::IN_DISCUSSION,
             SaleDelivery::IN_PRODUCTION,
+            SaleDelivery::IN_CILA_WORKSHOP,
             SaleDelivery::PARTIALLY_DELIVERED,
             SaleDelivery::DELIVERED,
         ];
@@ -347,7 +348,7 @@ class PublicTrackingService
             if ($key === SaleDelivery::DELIVERED && $sale->deliveredAt) {
                 $at = $sale->deliveredAt->format('d.m.Y');
                 $done = true;
-            } elseif ($key === SaleDelivery::IN_PRODUCTION && $sale->workshopCompletedAt) {
+            } elseif (in_array($key, SaleDelivery::workshopStatuses(), true) && $sale->workshopCompletedAt) {
                 $at = $sale->workshopCompletedAt->format('d.m.Y');
             } elseif (isset($activityDates[$key])) {
                 $at = $activityDates[$key];

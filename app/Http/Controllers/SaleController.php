@@ -61,7 +61,7 @@ class SaleController extends Controller
             'branchId' => 'nullable|exists:branches,id',
             'personnelId' => 'nullable|exists:personnel,id',
             'saleDate' => 'required|date',
-            'dueDate' => 'nullable|date',
+            'dueDate' => 'required|date',
             'needsFinalMeasurement' => 'nullable|boolean',
             'kdvIncluded' => 'nullable|boolean',
             'notes' => 'nullable|string',
@@ -513,7 +513,7 @@ class SaleController extends Controller
             'branchId' => 'nullable|exists:branches,id',
             'personnelId' => 'nullable|exists:personnel,id',
             'saleDate' => 'required|date',
-            'dueDate' => 'nullable|date',
+            'dueDate' => 'required|date',
             'needsFinalMeasurement' => 'nullable|boolean',
             'kdvIncluded' => 'nullable|boolean',
             'notes' => 'nullable|string',
@@ -768,6 +768,14 @@ class SaleController extends Controller
             ]);
             SaleActivity::logStatusChange($sale->fresh(), $fromStatus, \App\Support\SaleDelivery::IN_PRODUCTION);
             $message = 'Sipariş üretimde olarak işaretlendi.';
+        } elseif ($status === \App\Support\SaleDelivery::IN_CILA_WORKSHOP) {
+            $sale->update([
+                'orderStatus' => \App\Support\SaleDelivery::IN_CILA_WORKSHOP,
+                'deliveredAt' => null,
+                'workshopCompletedAt' => null,
+            ]);
+            SaleActivity::logStatusChange($sale->fresh(), $fromStatus, \App\Support\SaleDelivery::IN_CILA_WORKSHOP);
+            $message = 'Sipariş cila atölyesinde olarak işaretlendi.';
         } elseif ($status === \App\Support\SaleDelivery::IN_DISCUSSION) {
             $sale->update([
                 'orderStatus' => \App\Support\SaleDelivery::IN_DISCUSSION,

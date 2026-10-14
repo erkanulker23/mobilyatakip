@@ -204,7 +204,7 @@
         @php
             $daysLeft = $sale->dueDate ? (int) now()->startOfDay()->diffInDays($sale->dueDate, false) : null;
             $orderStatus = SaleDelivery::currentStatus($sale);
-            $inProduction = $orderStatus === SaleDelivery::IN_PRODUCTION;
+            $inProduction = SaleDelivery::isInWorkshop($orderStatus);
             if ($daysLeft === null) {
                 $daysLabel = '—';
                 $daysClass = 'text-neutral-600 bg-neutral-100 dark:bg-neutral-800';

@@ -20,7 +20,7 @@ final class WorkshopDashboard
         $productionSalesQuery = Sale::query()
             ->with(['customer', 'personnel', 'branch'])
             ->where('isCancelled', false)
-            ->where('orderStatus', SaleDelivery::IN_PRODUCTION)
+            ->whereIn('orderStatus', SaleDelivery::workshopStatuses())
             ->whereNull('deliveredAt')
             ->orderByRaw('CASE WHEN dueDate IS NULL THEN 1 ELSE 0 END')
             ->orderBy('dueDate');
@@ -50,7 +50,7 @@ final class WorkshopDashboard
         })->count();
 
         $upcomingInProductionCount = $upcomingDueSales
-            ->filter(fn (Sale $s) => SaleDelivery::currentStatus($s) === SaleDelivery::IN_PRODUCTION)
+            ->filter(fn (Sale $s) => SaleDelivery::isInWorkshop(SaleDelivery::currentStatus($s)))
             ->count();
 
         $openServiceTickets = ServiceTicket::query()

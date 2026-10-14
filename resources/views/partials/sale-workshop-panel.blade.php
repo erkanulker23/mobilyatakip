@@ -15,7 +15,7 @@
             <h2 class="text-lg font-semibold text-neutral-900 dark:text-white">Aşamalar</h2>
             <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Siparişe aşama ekleyebilirsiniz</p>
         </div>
-        @if(SaleDelivery::currentStatus($sale) === SaleDelivery::IN_PRODUCTION && auth()->user()?->isWorkshop())
+        @if(SaleDelivery::isInWorkshop(SaleDelivery::currentStatus($sale)) && auth()->user()?->isWorkshop())
         <a href="{{ route('workshop.show', $sale) }}" class="btn-secondary text-sm">Atölye Detayı</a>
         @endif
     </div>

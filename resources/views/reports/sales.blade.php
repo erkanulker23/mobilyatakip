@@ -6,16 +6,27 @@
         ? \App\Support\ReportFilters::periodLabel($from, $to, $year ?? null, $month ?? null)
         : 'Tüm dönem';
     $filterDesc = $filters['label'] ?? null;
-    $queryKeys = ['from', 'to', 'year', 'month', 'period', 'personnelId', 'branchId', 'odeme'];
+    $queryKeys = ['from', 'to', 'period', 'personnelId', 'branchId', 'odeme'];
+    $hasPresetPeriod = in_array(request('period'), ['this_month', 'last_month', 'this_year', 'last_year'], true);
+    $isDefaultPeriod = ! request()->hasAny(['period', 'from', 'to', 'year', 'month']);
+    $isCustomPeriod = ! $hasPresetPeriod && ! $isDefaultPeriod;
+    $baseFilterParams = array_filter([
+        'personnelId' => request('personnelId'),
+        'branchId' => request('branchId'),
+        'odeme' => request('odeme'),
+    ], fn ($v) => $v !== null && $v !== '');
+    $periodParams = $isCustomPeriod
+        ? ['from' => $from?->format('Y-m-d'), 'to' => $to?->format('Y-m-d')]
+        : ['period' => request('period', 'this_month')];
     $reportChip = fn (array $params) => route('reports.sales', array_filter(array_merge(
-        request()->only($queryKeys),
+        $baseFilterParams,
         $params
     ), fn ($v) => $v !== null && $v !== ''));
     $periodPresets = [
-        ['label' => 'Bu ay', 'params' => ['period' => 'this_month', 'from' => null, 'to' => null, 'year' => null, 'month' => null], 'active' => request('period') === 'this_month' || (! request()->hasAny(['period', 'from', 'to', 'year', 'month']))],
-        ['label' => 'Geçen ay', 'params' => ['period' => 'last_month', 'from' => null, 'to' => null, 'year' => null, 'month' => null], 'active' => request('period') === 'last_month'],
-        ['label' => 'Bu yıl', 'params' => ['period' => 'this_year', 'from' => null, 'to' => null, 'year' => null, 'month' => null], 'active' => request('period') === 'this_year'],
-        ['label' => 'Geçen yıl', 'params' => ['period' => 'last_year', 'from' => null, 'to' => null, 'year' => null, 'month' => null], 'active' => request('period') === 'last_year'],
+        ['label' => 'Bu ay', 'params' => ['period' => 'this_month'], 'active' => ! $isCustomPeriod && (request('period') === 'this_month' || $isDefaultPeriod)],
+        ['label' => 'Geçen ay', 'params' => ['period' => 'last_month'], 'active' => request('period') === 'last_month'],
+        ['label' => 'Bu yıl', 'params' => ['period' => 'this_year'], 'active' => request('period') === 'this_year'],
+        ['label' => 'Geçen yıl', 'params' => ['period' => 'last_year'], 'active' => request('period') === 'last_year'],
     ];
     $odemePresets = [
         ['label' => 'Tümü', 'value' => null],
@@ -39,49 +50,75 @@
     ])
 </div>
 
-<div class="card p-5 mb-6">
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <p class="text-xs font-semibold uppercase tracking-wide text-neutral-400">Filtreleme</p>
-        <a href="{{ route('reports.sales', ['period' => 'this_year']) }}" class="text-xs text-neutral-500 hover:text-emerald-600">Filtreleri sıfırla</a>
-    </div>
-
-    <div class="flex flex-wrap items-center gap-2 mb-4">
-        <span class="text-xs text-neutral-400 mr-1">Dönem</span>
+<div class="card p-5 mb-6 space-y-5" x-data="{ custom: @js($isCustomPeriod) }">
+    <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs text-neutral-400 mr-1 shrink-0">Dönem</span>
         @foreach($periodPresets as $preset)
         <a href="{{ $reportChip($preset['params']) }}"
            class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors {{ $preset['active'] ? 'bg-emerald-600 text-white' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">
             {{ $preset['label'] }}
         </a>
         @endforeach
+        <button type="button"
+                @click="custom = true"
+                class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                :class="custom ? 'bg-emerald-600 text-white' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'">
+            Özel tarih
+        </button>
+        @if(! $isDefaultPeriod)
+        <a href="{{ route('reports.sales', ['period' => 'this_month']) }}" class="ml-auto text-xs text-neutral-500 hover:text-emerald-600">Sıfırla</a>
+        @endif
     </div>
 
-    <div class="flex flex-wrap items-center gap-2 mb-5">
-        <span class="text-xs text-neutral-400 mr-1">Ödeme</span>
+    <form method="get" action="{{ route('reports.sales') }}" class="space-y-4" x-show="custom" x-cloak>
+        <div class="flex flex-wrap gap-4 items-end">
+            <div class="min-w-[150px]">
+                <label class="form-label">Başlangıç</label>
+                <input type="date" name="from" value="{{ $from?->format('Y-m-d') }}" class="form-input" required>
+            </div>
+            <div class="min-w-[150px]">
+                <label class="form-label">Bitiş</label>
+                <input type="date" name="to" value="{{ $to?->format('Y-m-d') }}" class="form-input" required>
+            </div>
+            @if(request('odeme'))
+            <input type="hidden" name="odeme" value="{{ request('odeme') }}">
+            @endif
+            @if(request('personnelId'))
+            <input type="hidden" name="personnelId" value="{{ request('personnelId') }}">
+            @endif
+            @if(request('branchId'))
+            <input type="hidden" name="branchId" value="{{ request('branchId') }}">
+            @endif
+            <button type="submit" class="btn-primary">Uygula</button>
+        </div>
+    </form>
+
+    <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs text-neutral-400 mr-1 shrink-0">Ödeme</span>
         @foreach($odemePresets as $preset)
         @php $isActive = ($preset['value'] === null && ! request('odeme')) || request('odeme') === $preset['value']; @endphp
-        <a href="{{ $reportChip(['odeme' => $preset['value']]) }}"
+        <a href="{{ $reportChip(array_merge($periodParams, ['odeme' => $preset['value']])) }}"
            class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors {{ $isActive ? 'bg-neutral-900 text-white dark:bg-emerald-600' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700' }}">
             {{ $preset['label'] }}
         </a>
         @endforeach
     </div>
 
-    <form method="get" action="{{ route('reports.sales') }}" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-4 items-end">
-        <input type="hidden" name="period" value="{{ request('period') }}">
-        @include('reports.partials.date-filters', [
-            'embedded' => true,
-            'showMonth' => true,
-            'dateFrom' => $from,
-            'dateTo' => $to,
-        ])
+    <form method="get" action="{{ route('reports.sales') }}" class="flex flex-wrap gap-4 items-end">
+        @if($isCustomPeriod)
+            <input type="hidden" name="from" value="{{ $from?->format('Y-m-d') }}">
+            <input type="hidden" name="to" value="{{ $to?->format('Y-m-d') }}">
+        @else
+            <input type="hidden" name="period" value="{{ request('period', 'this_month') }}">
+        @endif
+        @if(request('odeme'))
+        <input type="hidden" name="odeme" value="{{ request('odeme') }}">
+        @endif
         @include('reports.partials.sales-filters', [
             'showOdemeFilter' => false,
             'showDeliveryFilter' => false,
         ])
-        <div class="flex gap-2 xl:col-span-2">
-            <button type="submit" class="btn-primary">Filtrele</button>
-            <a href="{{ route('reports.sales', ['period' => 'this_year']) }}" class="btn-secondary">Temizle</a>
-        </div>
+        <button type="submit" class="btn-primary">Uygula</button>
     </form>
 </div>
 
@@ -98,64 +135,4 @@
     </div>
     @include('reports.partials.sales-table')
 </div>
-
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('[data-report-year-select]').forEach(function (select) {
-        select.addEventListener('change', function () {
-            var year = select.value;
-            if (!year || !select.form) {
-                return;
-            }
-            var fromInput = select.form.querySelector('[data-report-from]');
-            var toInput = select.form.querySelector('[data-report-to]');
-            var monthSelect = select.form.querySelector('[data-report-month-select]');
-            if (monthSelect) {
-                monthSelect.value = '';
-            }
-            var periodInput = select.form.querySelector('input[name="period"]');
-            if (periodInput) {
-                periodInput.value = '';
-            }
-            if (fromInput) {
-                fromInput.value = year + '-01-01';
-            }
-            if (toInput) {
-                toInput.value = year + '-12-31';
-            }
-        });
-    });
-
-    document.querySelectorAll('[data-report-month-select]').forEach(function (select) {
-        select.addEventListener('change', function () {
-            var month = select.value;
-            var form = select.form;
-            if (!form) {
-                return;
-            }
-            var yearSelect = form.querySelector('[data-report-year-select]');
-            var year = yearSelect && yearSelect.value ? yearSelect.value : String(new Date().getFullYear());
-            if (!month) {
-                return;
-            }
-            var periodInput = form.querySelector('input[name="period"]');
-            if (periodInput) {
-                periodInput.value = '';
-            }
-            var padded = String(month).padStart(2, '0');
-            var lastDay = new Date(Number(year), Number(month), 0).getDate();
-            var fromInput = form.querySelector('[data-report-from]');
-            var toInput = form.querySelector('[data-report-to]');
-            if (fromInput) {
-                fromInput.value = year + '-' + padded + '-01';
-            }
-            if (toInput) {
-                toInput.value = year + '-' + padded + '-' + String(lastDay).padStart(2, '0');
-            }
-        });
-    });
-});
-</script>
-@endpush
 @endsection

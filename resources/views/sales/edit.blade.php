@@ -125,8 +125,8 @@
                                 @error('saleDate')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                             </div>
                             <div>
-                                <label class="form-label">Tahmini Teslim Tarihi</label>
-                                <input type="date" name="dueDate" value="{{ old('dueDate', $sale->dueDate?->format('Y-m-d')) }}" class="form-input min-h-[44px]">
+                                <label class="form-label">Tahmini Teslim Tarihi <span class="text-red-500">*</span></label>
+                                <input type="date" name="dueDate" required value="{{ old('dueDate', $sale->dueDate?->format('Y-m-d')) }}" class="form-input min-h-[44px]">
                                 @error('dueDate')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                             </div>
                             <div>

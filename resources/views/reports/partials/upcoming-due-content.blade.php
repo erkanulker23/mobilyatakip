@@ -58,7 +58,7 @@
                     $rowClass = $daysLeft !== null && $daysLeft < 0 ? 'text-red-600' : ($daysLeft !== null && $daysLeft <= 3 ? 'text-amber-700' : 'text-slate-600');
                     $remaining = \App\Support\CustomerBalance::saleRemaining($s);
                     $orderStatus = \App\Support\SaleDelivery::currentStatus($s);
-                    $inProduction = $orderStatus === \App\Support\SaleDelivery::IN_PRODUCTION;
+                    $inProduction = \App\Support\SaleDelivery::isInWorkshop($orderStatus);
                 @endphp
                 <tr>
                     <td class="table-td font-medium text-neutral-900">{{ $s->saleNumber }}</td>

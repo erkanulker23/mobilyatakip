@@ -7,7 +7,7 @@
     $orderStatus = $orderStatus ?? SaleDelivery::currentStatus($sale);
     $status = $orderStatus;
     $canAddProductionStage = $canAddProductionStage ?? ! ($sale->isCancelled ?? false);
-    $canEditProduction = $canEditProduction ?? ($status === SaleDelivery::IN_PRODUCTION);
+    $canEditProduction = $canEditProduction ?? SaleDelivery::isInWorkshop($status);
     $termin = SaleDelivery::terminListMeta($sale);
     $backUrl = $backUrl ?? route('workshop.index');
 @endphp
