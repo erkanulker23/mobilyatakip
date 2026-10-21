@@ -29,6 +29,16 @@
     <select name="{{ $fieldName }}" id="{{ $fieldId }}" class="{{ $selectClass }}" @if(!empty($disabled)) disabled data-keep-disabled="1" @endif>
         <option value="">Seçiniz</option>
         @foreach($kasalar as $k)
+        @php
+            $kasaOptionLabel = $k->name;
+            if ($k->bankName) {
+                $kasaOptionLabel .= ' — '.$k->bankName;
+            }
+            $kasaOptionLabel .= ' ('.\App\Support\PaymentType::kasaTypeLabel($k).')';
+            if ($k->isDefault) {
+                $kasaOptionLabel .= ' · varsayılan';
+            }
+        @endphp
         <option value="{{ $k->id }}"
             data-kasa-type="{{ $k->type }}"
             data-is-default="{{ $k->isDefault ? '1' : '0' }}"
@@ -36,7 +46,7 @@
             data-iban="{{ $k->iban ?? '' }}"
             data-account-number="{{ $k->accountNumber ?? '' }}"
             {{ (string) $selectedValue === (string) $k->id ? 'selected' : '' }}>
-            {{ $k->name }}@if($k->bankName) — {{ $k->bankName }}@endif ({{ \App\Support\PaymentType::kasaTypeLabel($k) }})@if($k->isDefault) · varsayılan@endif
+            {{ $kasaOptionLabel }}
         </option>
         @endforeach
     </select>

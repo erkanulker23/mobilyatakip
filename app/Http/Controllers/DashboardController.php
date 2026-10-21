@@ -76,6 +76,13 @@ class DashboardController extends Controller
             $weekKasaInflow = $monthAccounting['cashNet'];
             $monthCashInflows = $monthAccounting['cashInflows'];
             $monthCashOutflows = $monthAccounting['cashOutflows'];
+
+            $calendarWeekStart = $today->copy()->startOfWeek(Carbon::MONDAY);
+            $todayCashOutflows = PeriodAccounting::ledgerBreakdown($today->toDateString(), $today->toDateString())['cashOutflows'];
+            $weekCashOutflows = PeriodAccounting::ledgerBreakdown($calendarWeekStart->toDateString(), $today->toDateString())['cashOutflows'];
+            $calendarWeekOutflowLabel = $calendarWeekStart->isSameDay($today)
+                ? $today->copy()->locale('tr')->isoFormat('D MMM')
+                : $calendarWeekStart->copy()->locale('tr')->isoFormat('D') . '–' . $today->copy()->locale('tr')->isoFormat('D MMM');
             $monthlySalesCollected = $monthAccounting['collectedOnSales'];
             $monthCashOnPeriodSales = $monthAccounting['cashOnPeriodSales'];
             $monthCashOnPriorSales = $monthAccounting['cashOnPriorSales'];
@@ -140,6 +147,12 @@ class DashboardController extends Controller
             $weekKasaInflow = 0;
             $monthCashInflows = 0;
             $monthCashOutflows = 0;
+            $todayCashOutflows = 0;
+            $weekCashOutflows = 0;
+            $calendarWeekStart = $today->copy()->startOfWeek(Carbon::MONDAY);
+            $calendarWeekOutflowLabel = $calendarWeekStart->isSameDay($today)
+                ? $today->copy()->locale('tr')->isoFormat('D MMM')
+                : $calendarWeekStart->copy()->locale('tr')->isoFormat('D') . '–' . $today->copy()->locale('tr')->isoFormat('D MMM');
             $monthlySalesCollected = 0;
             $monthCashOnPeriodSales = 0;
             $monthCashOnPriorSales = 0;
@@ -274,6 +287,10 @@ class DashboardController extends Controller
             'weekKasaInflow',
             'monthCashInflows',
             'monthCashOutflows',
+            'todayCashOutflows',
+            'weekCashOutflows',
+            'calendarWeekStart',
+            'calendarWeekOutflowLabel',
             'monthlySalesCollected',
             'monthCashOnPeriodSales',
             'monthCashOnPriorSales',
