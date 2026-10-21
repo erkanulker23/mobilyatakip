@@ -4,7 +4,7 @@
     $showMonth = $showMonth ?? false;
     $embedded = $embedded ?? false;
     $showSubmit = $showSubmit ?? ! $embedded;
-    {{-- Yalnızca istekte month varsa seçili göster; $from'dan türetme (özel tarihi ezmesin) --}}
+    // Yalnızca istekte month varsa seçili göster; özel tarihi ezmesin
     $selectedMonth = request()->filled('month') ? (int) request('month') : ($month ?? null);
 @endphp
 @if(! $embedded)

@@ -69,6 +69,11 @@ class DashboardController extends Controller
             $todayKasaBreakdown = $this->buildTodayKasaBreakdown($today);
             $todayKasaInflow = $todayKasaBreakdown['total'];
 
+            $calendarWeekStart = $today->copy()->startOfWeek(Carbon::MONDAY);
+            $todayCashOutflows = PeriodAccounting::forRange($today, $today)['cashOutflows'];
+            $weekCashOutflows = PeriodAccounting::forRange($calendarWeekStart, $today)['cashOutflows'];
+            $calendarWeekLabel = $calendarWeekStart->locale('tr')->isoFormat('D MMM') . ' – ' . $today->locale('tr')->isoFormat('D MMM');
+
             $weekSalesCount = SalesMonthStats::count($currentMonthSalesQuery);
             $weekSalesTotal = SalesMonthStats::turnover($currentMonthSalesQuery);
 
@@ -135,6 +140,10 @@ class DashboardController extends Controller
             $todaySalesTotal = 0;
             $todayKasaInflow = 0;
             $todayKasaBreakdown = ['total' => 0, 'nakitTotal' => 0, 'kasaTotal' => 0, 'supplierTotal' => 0, 'byType' => collect(), 'byKasa' => collect()];
+            $calendarWeekStart = $today->copy()->startOfWeek(Carbon::MONDAY);
+            $todayCashOutflows = 0;
+            $weekCashOutflows = 0;
+            $calendarWeekLabel = $calendarWeekStart->locale('tr')->isoFormat('D MMM') . ' – ' . $today->locale('tr')->isoFormat('D MMM');
             $weekSalesCount = 0;
             $weekSalesTotal = 0;
             $weekKasaInflow = 0;
@@ -269,6 +278,10 @@ class DashboardController extends Controller
             'todaySalesTotal',
             'todayKasaInflow',
             'todayKasaBreakdown',
+            'todayCashOutflows',
+            'weekCashOutflows',
+            'calendarWeekStart',
+            'calendarWeekLabel',
             'weekSalesCount',
             'weekSalesTotal',
             'weekKasaInflow',

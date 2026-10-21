@@ -44,8 +44,9 @@
     $todayStr = now()->format('Y-m-d');
     $weekStartStr = $monthFilterFrom ?? ($weekStart ?? now()->startOfMonth())->format('Y-m-d');
     $weekEndStr = $monthFilterTo ?? ($weekEnd ?? now()->endOfMonth())->format('Y-m-d');
+    $calendarWeekFrom = ($calendarWeekStart ?? now()->startOfWeek(\Carbon\Carbon::MONDAY))->format('Y-m-d');
 @endphp
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+<div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mb-3">
     <a href="{{ route('sales.index', ['from' => $todayStr, 'to' => $todayStr]) }}" class="card p-4 border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/20 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors">
         <p class="text-xs font-medium text-emerald-800 dark:text-emerald-300 uppercase tracking-wide">Bugün satış</p>
         <p class="text-2xl sm:text-3xl font-semibold text-emerald-700 dark:text-emerald-400 mt-1 tabular-nums">{{ $todaySalesCount }}</p>
@@ -65,6 +66,16 @@
             <p class="text-xs text-sky-700/90 dark:text-sky-300/90 mt-1 tabular-nums">Tedarikçiye: ₺{{ number_format($todayKasaBreakdown['supplierTotal'], 0, ',', '.') }}</p>
         @endif
         <p class="text-xs text-neutral-500 mt-1">Ödeme tarihine göre</p>
+    </a>
+    <a href="{{ route('reports.payments', ['from' => $todayStr, 'to' => $todayStr]) }}" class="card p-4 border-rose-200 dark:border-rose-800/60 bg-rose-50/40 dark:bg-rose-950/20 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors">
+        <p class="text-xs font-medium text-rose-800 dark:text-rose-300 uppercase tracking-wide">Bugün kasa çıkışı</p>
+        <p class="text-2xl sm:text-3xl font-semibold text-rose-700 dark:text-rose-400 mt-1 tabular-nums">₺{{ number_format($todayCashOutflows ?? 0, 0, ',', '.') }}</p>
+        <p class="text-xs text-neutral-500 mt-1">Gider, ödeme, avans · virman hariç</p>
+    </a>
+    <a href="{{ route('reports.payments', ['from' => $calendarWeekFrom, 'to' => $todayStr]) }}" class="card p-4 border-rose-200 dark:border-rose-800/60 bg-rose-50/30 dark:bg-rose-950/15 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors">
+        <p class="text-xs font-medium text-rose-800 dark:text-rose-300 uppercase tracking-wide">Bu hafta kasa çıkışı</p>
+        <p class="text-2xl sm:text-3xl font-semibold text-rose-700 dark:text-rose-400 mt-1 tabular-nums">₺{{ number_format($weekCashOutflows ?? 0, 0, ',', '.') }}</p>
+        <p class="text-xs text-neutral-500 mt-1">{{ $calendarWeekLabel ?? '' }} · virman hariç</p>
     </a>
     <a href="{{ route('sales.index', ['from' => $weekStartStr, 'to' => $weekEndStr]) }}" class="card p-4 border-violet-200 dark:border-violet-800/60 bg-violet-50/40 dark:bg-violet-950/20 hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-colors">
         <p class="text-xs font-medium text-violet-800 dark:text-violet-300 uppercase tracking-wide">Bu ay satış</p>
