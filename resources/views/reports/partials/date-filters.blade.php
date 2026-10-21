@@ -1,33 +1,24 @@
-@php
-    $years = $years ?? \App\Support\ReportFilters::yearOptions();
-    $showYear = $showYear ?? true;
-    $showMonth = $showMonth ?? false;
-    $embedded = $embedded ?? false;
-    $showSubmit = $showSubmit ?? ! $embedded;
-    // Yalnızca istekte month varsa seçili göster; özel tarihi ezmesin
-    $selectedMonth = request()->filled('month') ? (int) request('month') : ($month ?? null);
-@endphp
-@if(! $embedded)
+@if(! ($embedded ?? false))
 <form method="get" class="flex flex-wrap gap-4 items-end">
 @endif
-    @if($showYear)
+    @if($showYear ?? true)
     <div class="min-w-[120px]">
         <label class="form-label">Yıl</label>
         <select name="year" class="form-select" data-report-year-select>
             <option value="">Seçin</option>
-            @foreach($years as $y)
-            <option value="{{ $y }}" {{ (string) ($year ?? '') === (string) $y ? 'selected' : '' }}>{{ $y }}</option>
+            @foreach(($years ?? \App\Support\ReportFilters::yearOptions()) as $y)
+            <option value="{{ $y }}" @selected((string) ($year ?? '') === (string) $y)>{{ $y }}</option>
             @endforeach
         </select>
     </div>
     @endif
-    @if($showMonth)
+    @if($showMonth ?? false)
     <div class="min-w-[140px]">
         <label class="form-label">Ay</label>
         <select name="month" class="form-select" data-report-month-select>
             <option value="">Özel aralık</option>
             @foreach(\App\Support\ReportFilters::monthOptions() as $m)
-            <option value="{{ $m }}" {{ (string) ($selectedMonth ?? '') === (string) $m ? 'selected' : '' }}>{{ \App\Support\ReportFilters::monthLabel($m) }}</option>
+            <option value="{{ $m }}" @selected(request()->filled('month') && (int) request('month') === (int) $m)>{{ \App\Support\ReportFilters::monthLabel($m) }}</option>
             @endforeach
         </select>
     </div>
@@ -46,9 +37,9 @@
         {!! $filter['html'] !!}
     </div>
     @endforeach
-    @if($showSubmit)
+    @if($showSubmit ?? ! ($embedded ?? false))
     <button type="submit" class="btn-primary">{{ $submitLabel ?? 'Filtrele' }}</button>
     @endif
-@if(! $embedded)
+@if(! ($embedded ?? false))
 </form>
 @endif
