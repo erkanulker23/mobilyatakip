@@ -48,14 +48,33 @@
     </div>
 
     <form method="get" action="{{ route('reports.payments') }}" class="flex flex-wrap gap-4 items-end">
-        <input type="hidden" name="period" value="{{ request('period') }}">
         <input type="hidden" name="type" value="{{ $type ?? '' }}">
-        @include('reports.partials.date-filters', [
-            'embedded' => true,
-            'showMonth' => true,
-            'dateFrom' => $from,
-            'dateTo' => $to,
-        ])
+        <div class="min-w-[120px]">
+            <label class="form-label">Yıl</label>
+            <select name="year" class="form-select" data-report-year-select>
+                <option value="">Seçin</option>
+                @foreach(\App\Support\ReportFilters::yearOptions() as $y)
+                <option value="{{ $y }}" {{ (string) ($year ?? '') === (string) $y ? 'selected' : '' }}>{{ $y }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="min-w-[140px]">
+            <label class="form-label">Ay</label>
+            <select name="month" class="form-select" data-report-month-select>
+                <option value="">Özel aralık</option>
+                @foreach(\App\Support\ReportFilters::monthOptions() as $m)
+                <option value="{{ $m }}" {{ request()->filled('month') && (int) request('month') === $m ? 'selected' : '' }}>{{ \App\Support\ReportFilters::monthLabel($m) }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="min-w-[140px]">
+            <label class="form-label">Başlangıç</label>
+            <input type="date" name="from" value="{{ $from?->format('Y-m-d') }}" class="form-input" data-report-from>
+        </div>
+        <div class="min-w-[140px]">
+            <label class="form-label">Bitiş</label>
+            <input type="date" name="to" value="{{ $to?->format('Y-m-d') }}" class="form-input" data-report-to>
+        </div>
         <div class="min-w-[180px]">
             <label class="form-label">Kasa</label>
             <select name="kasaId" class="form-select">
