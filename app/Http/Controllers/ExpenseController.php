@@ -20,9 +20,13 @@ class ExpenseController extends Controller
         $with = ['kasa', 'createdByUser'];
         if ($this->expensesHaveSaleLink()) {
             $with[] = 'sale.customer';
+            $with[] = 'sale.items.product';
         }
 
-        $query = Expense::with($with)->orderBy('expenseDate', 'desc');
+        $query = Expense::with($with)
+            ->orderByDesc('expenseDate')
+            ->orderByDesc('createdAt')
+            ->orderByDesc('id');
         if ($request->filled('from')) {
             $query->where('expenseDate', '>=', $request->from);
         }
@@ -33,13 +37,21 @@ class ExpenseController extends Controller
             $query->where('category', 'like', '%' . $request->category . '%');
         }
         if ($request->filled('search')) {
-            $s = $request->search;
-            $query->where(function ($q) use ($s) {
-                $q->where('description', 'like', "%{$s}%");
+            $like = '%'.trim((string) $request->search).'%';
+            $query->where(function ($q) use ($like) {
+                $q->where('description', 'like', $like)
+                    ->orWhere('category', 'like', $like)
+                    ->orWhereHas('kasa', fn ($k) => $k->where('name', 'like', $like));
                 if ($this->expensesHaveSaleLink()) {
-                    $q->orWhereHas('sale', function ($sale) use ($s) {
-                        $sale->where('saleNumber', 'like', "%{$s}%")
-                            ->orWhereHas('customer', fn ($c) => $c->where('name', 'like', "%{$s}%"));
+                    $q->orWhereHas('sale', function ($sale) use ($like) {
+                        $sale->where('saleNumber', 'like', $like)
+                            ->orWhere('notes', 'like', $like)
+                            ->orWhereHas('customer', fn ($c) => $c->where('name', 'like', $like))
+                            ->orWhereHas('items', function ($item) use ($like) {
+                                $item->where('productName', 'like', $like)
+                                    ->orWhere('description', 'like', $like)
+                                    ->orWhereHas('product', fn ($p) => $p->where('name', 'like', $like));
+                            });
                     });
                 }
             });
@@ -47,11 +59,19 @@ class ExpenseController extends Controller
         if ($request->filled('kasaId')) {
             $query->where('kasaId', $request->kasaId);
         }
+        $amountMin = $this->amountFilter($request, 'amountMin');
+        $amountMax = $this->amountFilter($request, 'amountMax');
+        if ($amountMin !== null) {
+            $query->where('amount', '>=', $amountMin);
+        }
+        if ($amountMax !== null) {
+            $query->where('amount', '<=', $amountMax);
+        }
         if ($request->filled('saleId') && $this->expensesHaveSaleLink()) {
             $query->where('saleId', $request->saleId);
         }
         $total = (clone $query)->sum('amount');
-        $expenses = $query->paginate(20)->withQueryString();
+        $expenses = $query->paginate(100)->withQueryString();
         $kasalar = Kasa::orderBy('name')->get();
 
         $advances = collect();
@@ -72,11 +92,19 @@ class ExpenseController extends Controller
             if ($request->filled('kasaId')) {
                 $advanceQuery->where('kasaId', $request->kasaId);
             }
+            if ($amountMin !== null) {
+                $advanceQuery->where('amount', '>=', $amountMin);
+            }
+            if ($amountMax !== null) {
+                $advanceQuery->where('amount', '<=', $amountMax);
+            }
             if ($request->filled('search')) {
                 $s = $request->search;
-                $advanceQuery->where(function ($q) use ($s) {
-                    $q->where('note', 'like', "%{$s}%")
-                        ->orWhereHas('personnel', fn ($p) => $p->where('name', 'like', "%{$s}%"));
+                $like = '%'.trim((string) $s).'%';
+                $advanceQuery->where(function ($q) use ($like) {
+                    $q->where('note', 'like', $like)
+                        ->orWhereHas('personnel', fn ($p) => $p->where('name', 'like', $like))
+                        ->orWhereHas('kasa', fn ($k) => $k->where('name', 'like', $like));
                 });
             }
             $advances = $advanceQuery->get();
@@ -121,6 +149,15 @@ class ExpenseController extends Controller
         }
 
         return $sales;
+    }
+
+    private function amountFilter(Request $request, string $key): ?float
+    {
+        if (! $request->filled($key)) {
+            return null;
+        }
+
+        return money_parse((string) $request->input($key));
     }
 
     private function expensesHaveSaleLink(): bool

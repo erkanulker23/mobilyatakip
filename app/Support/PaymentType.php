@@ -187,15 +187,6 @@ class PaymentType
             return 'Seçilen kasa/hesap bulunamadı veya pasif durumda.';
         }
 
-        if (!self::kasaMatchesPaymentType($paymentType, $kasa)) {
-            return match ($paymentType) {
-                'nakit' => 'Nakit elden ödemeler için «Nakit Kasa» tipinde hesap seçin (banka hesabı kullanılamaz).',
-                'havale' => 'Havale için geçerli bir hesap seçin.',
-                'kredi_karti' => 'Kredi kartı tahsilatı için «Kredi Kartı» veya «Banka» tipinde hesap seçin.',
-                default => 'Seçilen hesap bu ödeme tipi için uygun değil.',
-            };
-        }
-
         return null;
     }
 }

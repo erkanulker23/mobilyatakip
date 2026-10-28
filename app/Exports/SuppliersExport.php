@@ -3,12 +3,13 @@
 namespace App\Exports;
 
 use App\Models\Supplier;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
 class SuppliersExport implements FromCollection, WithHeadings
 {
-    public function collection()
+    public function collection(): Collection
     {
         return Supplier::query()->orderBy('name')->get()->map(function ($row) {
             return [

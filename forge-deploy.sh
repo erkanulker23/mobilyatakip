@@ -37,6 +37,9 @@ $FORGE_PHP artisan db:seed --class=Database\\Seeders\\SuperAdminSeeder --force
 # 3c. İl/ilçe — tablo boşsa bir kez doldur (mevcut kayıtları ezmez)
 $FORGE_PHP artisan turkey-locations:sync --if-empty || echo "Turkiye konum senkronu atlandı."
 
+# 3d. Kasa defteri — tahsilat/gider/ödeme başına tek hareket (veri silmez, alış faturasına dokunmaz)
+$FORGE_PHP artisan kasa:sync-ledger || echo "Kasa defter senkronu atlandı."
+
 # 4. Frontend — repoda public/build varsa sunucuda npm çalıştırmayız (Forge npm hatalarını önler)
 # CSS değiştirdiyseniz: yerelde npm run build + public/build ve .frontend-build-hash commit edin.
 # Sunucuda zorunlu npm: FORCE_NPM_BUILD=1 bash forge-deploy.sh

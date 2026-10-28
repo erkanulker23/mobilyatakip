@@ -62,7 +62,15 @@
     <a href="{{ route('reports.payments', ['from' => $todayStr, 'to' => $todayStr]) }}" class="card p-4 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
         <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Kasa çıkışı</p>
         <p class="text-2xl font-semibold text-rose-600 mt-1 tabular-nums">₺{{ number_format($todayCashOutflows ?? 0, 0, ',', '.') }}</p>
-        <p class="text-xs text-neutral-400 mt-1">Gider, ödeme, avans</p>
+        <ul class="mt-2 space-y-0.5 text-xs text-neutral-500">
+            <li class="flex justify-between gap-3"><span>Gider</span><span class="tabular-nums">₺{{ number_format($todayCashBreakdown['expenses'] ?? 0, 0, ',', '.') }}</span></li>
+            <li class="flex justify-between gap-3"><span>Tedarikçi</span><span class="tabular-nums">₺{{ number_format($todayCashBreakdown['supplierPayments'] ?? 0, 0, ',', '.') }}</span></li>
+            <li class="flex justify-between gap-3"><span>Nakliye</span><span class="tabular-nums">₺{{ number_format($todayCashBreakdown['shippingPayments'] ?? 0, 0, ',', '.') }}</span></li>
+            <li class="flex justify-between gap-3"><span>Avans</span><span class="tabular-nums">₺{{ number_format($todayCashBreakdown['personnelAdvances'] ?? 0, 0, ',', '.') }}</span></li>
+            @if(($todayCashBreakdown['other'] ?? 0) > 0.005)
+            <li class="flex justify-between gap-3"><span>Diğer</span><span class="tabular-nums">₺{{ number_format($todayCashBreakdown['other'], 0, ',', '.') }}</span></li>
+            @endif
+        </ul>
     </a>
 </div>
 

@@ -4,7 +4,7 @@ Laravel + Blade tabanlı mobilya takip uygulaması. Stok, teklif, satış, alı�
 
 ## Gereksinimler
 
-- PHP 8.2+
+- PHP 8.3+ (8.5 desteklenir)
 - Composer
 - Node.js 18+ (Vite build için)
 - MySQL 8+

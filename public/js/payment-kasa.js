@@ -1,22 +1,22 @@
 (function () {
     var CONFIG = {
         nakit: {
-            label: 'Nakit Kasası',
-            types: ['kasa'],
-            help: 'Nakit elden tahsilat hangi kasaya girecek?',
-            empty: 'Aktif nakit kasası yok. Kasa menüsünden «Nakit Kasa» ekleyin.',
+            label: 'Kasa',
+            types: [],
+            help: 'Para seçtiğiniz kasaya girer. Gider, nakliye ve tedarikçi ödemesini de aynı kasadan yapın.',
+            empty: 'Aktif kasa yok. Kasa menüsünden hesap ekleyin.',
         },
         havale: {
-            label: 'Banka Hesabı',
-            types: ['banka'],
-            help: 'Havale hangi banka hesabına yapıldı? Seçince IBAN bilgisi görünür.',
-            empty: 'Havale için banka hesabı tanımlı değil. Kasa menüsünden banka hesabı ve IBAN ekleyin.',
+            label: 'Kasa',
+            types: [],
+            help: 'Para seçtiğiniz kasaya girer. Gider, nakliye ve tedarikçi ödemesini de aynı kasadan yapın.',
+            empty: 'Aktif kasa yok. Kasa menüsünden hesap ekleyin.',
         },
         kredi_karti: {
-            label: 'Kredi Kartı Hesabı',
-            types: ['kredi_karti', 'banka'],
-            help: 'Kredi kartı tahsilatı hangi hesaba yansıyacak?',
-            empty: 'Kredi kartı veya banka hesabı tanımlı değil. Kasa menüsünden hesap ekleyin.',
+            label: 'Kasa',
+            types: [],
+            help: 'Para seçtiğiniz kasaya girer. Gider, nakliye ve tedarikçi ödemesini de aynı kasadan yapın.',
+            empty: 'Aktif kasa yok. Kasa menüsünden hesap ekleyin.',
         },
         diger: {
             label: 'Kasa',

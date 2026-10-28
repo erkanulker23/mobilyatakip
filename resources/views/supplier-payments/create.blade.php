@@ -50,6 +50,7 @@
         @endif
         <div>
             <label class="form-label">Alış faturası (opsiyonel)</label>
+            <p class="text-xs text-neutral-500 mb-1">Fatura seçilmezse mal alımı açılmaz. Tutar yine seçilen kasadan bir kez düşer. Alış faturası kasaya ayrıca yazılmaz; yalnız tedarikçi borç hesabına bakar.</p>
             <select name="purchaseId" class="form-select">
                 <option value="">— Genel ödeme —</option>
                 @foreach($openPurchases as $p)

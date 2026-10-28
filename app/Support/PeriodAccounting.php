@@ -3,11 +3,15 @@
 namespace App\Support;
 
 use App\Models\CustomerPayment;
+use App\Models\Expense;
 use App\Models\KasaHareket;
+use App\Models\PersonnelAdvance;
 use App\Models\Sale;
+use App\Models\ShippingCompanyPayment;
+use App\Models\SupplierPayment;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Dönem muhasebesi: nakit (ödeme / hareket tarihi) ile sipariş (satış tarihi) metriklerini ayırır.
@@ -181,45 +185,33 @@ final class PeriodAccounting
      */
     public static function ledgerBreakdown(string $fromDate, string $toDate): array
     {
-        $rows = self::cashLedgerQuery($fromDate, $toDate)
-            ->select('refType', DB::raw('SUM(amount) as s'))
-            ->groupBy('refType')
-            ->pluck('s', 'refType');
+        // Tür bazında netleme yapma: aynı günde hem eksi hem artı satır varsa
+        // çıkan para, netin içinde kayboluyordu. Her eksi satır çıkıştır.
+        $row = self::cashLedgerQuery($fromDate, $toDate)
+            ->selectRaw("
+                SUM(CASE WHEN refType = 'customer_payment' AND amount > 0 THEN amount ELSE 0 END) as cashCollections,
+                SUM(CASE WHEN refType = 'kasa_deposit' AND amount > 0 THEN amount ELSE 0 END) as cashDeposits,
+                SUM(CASE WHEN amount > 0 AND (refType IS NULL OR refType NOT IN ('customer_payment', 'kasa_deposit')) THEN amount ELSE 0 END) as cashInflowsOther,
+                SUM(CASE WHEN refType = 'expense' AND amount < 0 THEN -amount ELSE 0 END) as expenses,
+                SUM(CASE WHEN refType = 'personnel_advance' AND amount < 0 THEN -amount ELSE 0 END) as personnelAdvances,
+                SUM(CASE WHEN refType = 'supplier_payment' AND amount < 0 THEN -amount ELSE 0 END) as supplierPayments,
+                SUM(CASE WHEN refType = 'shipping_company_payment' AND amount < 0 THEN -amount ELSE 0 END) as shippingPayments,
+                SUM(CASE WHEN amount < 0 AND (refType IS NULL OR refType NOT IN ('expense', 'personnel_advance', 'supplier_payment', 'shipping_company_payment')) THEN -amount ELSE 0 END) as cashOutflowsOther,
+                SUM(amount) as ledgerSum
+            ")
+            ->first();
 
-        $byRef = [];
-        foreach ($rows as $refType => $sum) {
-            $key = $refType === null || $refType === '' ? '__null__' : (string) $refType;
-            $byRef[$key] = (float) $sum;
-        }
-
-        $sumRef = static function (string $ref) use ($byRef): float {
-            return (float) ($byRef[$ref] ?? 0);
-        };
-
-        $cashCollections = max(0, $sumRef('customer_payment'));
-        $cashDeposits = max(0, $sumRef('kasa_deposit'));
-
-        $knownInflowRefs = ['customer_payment', 'kasa_deposit'];
-        $knownOutflowRefs = ['expense', 'personnel_advance', 'supplier_payment', 'shipping_company_payment'];
-
-        $cashInflowsOther = 0.0;
-        $cashOutflowsOther = 0.0;
-        foreach ($byRef as $ref => $sum) {
-            if ($ref === 'kasa_transfer') {
-                continue;
-            }
-            if ($sum > 0.005 && ! in_array($ref, $knownInflowRefs, true)) {
-                $cashInflowsOther += $sum;
-            }
-            if ($sum < -0.005 && ! in_array($ref, $knownOutflowRefs, true)) {
-                $cashOutflowsOther += abs($sum);
-            }
-        }
-
-        $expenses = abs(min(0, $sumRef('expense')));
-        $personnelAdvances = abs(min(0, $sumRef('personnel_advance')));
-        $supplierPayments = abs(min(0, $sumRef('supplier_payment')));
-        $shippingPayments = abs(min(0, $sumRef('shipping_company_payment')));
+        $cashCollections = round((float) ($row->cashCollections ?? 0), 2);
+        $cashDeposits = round((float) ($row->cashDeposits ?? 0), 2);
+        $cashInflowsOther = round((float) ($row->cashInflowsOther ?? 0), 2);
+        // Gider, tedarikçi, nakliye ve avans: kasası seçilmiş kaydın kendi tarihi.
+        // Kasa satırı eksik veya türü boş olsa da panelde görünür.
+        $recorded = self::recordedOutflowTotals($fromDate, $toDate);
+        $expenses = $recorded['expenses'];
+        $personnelAdvances = $recorded['personnelAdvances'];
+        $supplierPayments = $recorded['supplierPayments'];
+        $shippingPayments = $recorded['shippingPayments'];
+        $cashOutflowsOther = self::otherOutflowTotal($fromDate, $toDate, $recorded['ids']);
 
         $cashInflows = round($cashCollections + $cashDeposits + $cashInflowsOther, 2);
         $cashOutflows = round(
@@ -227,12 +219,6 @@ final class PeriodAccounting
             2
         );
         $cashNet = round($cashInflows - $cashOutflows, 2);
-
-        // Defter toplamıyla birebir (yuvarlama kayması olursa ledger sum esas)
-        $ledgerSum = round((float) self::cashLedgerQuery($fromDate, $toDate)->sum('amount'), 2);
-        if (abs($ledgerSum - $cashNet) > 0.02) {
-            $cashNet = $ledgerSum;
-        }
 
         return [
             'cashCollections' => round($cashCollections, 2),
@@ -249,6 +235,80 @@ final class PeriodAccounting
         ];
     }
 
+    /**
+     * Kasası seçilmiş gider, tedarikçi, nakliye ve avans tutarları.
+     *
+     * @return array{expenses: float, personnelAdvances: float, supplierPayments: float, shippingPayments: float, ids: array<int, string>}
+     */
+    private static function recordedOutflowTotals(string $fromDate, string $toDate): array
+    {
+        $expenses = self::sumRecorded(Expense::class, 'expenseDate', $fromDate, $toDate);
+        $advances = self::sumRecorded(PersonnelAdvance::class, 'advanceDate', $fromDate, $toDate);
+        $suppliers = self::sumRecorded(SupplierPayment::class, 'paymentDate', $fromDate, $toDate);
+        $shipping = self::sumRecorded(ShippingCompanyPayment::class, 'paymentDate', $fromDate, $toDate);
+
+        return [
+            'expenses' => $expenses['total'],
+            'personnelAdvances' => $advances['total'],
+            'supplierPayments' => $suppliers['total'],
+            'shippingPayments' => $shipping['total'],
+            'ids' => array_values(array_unique(array_merge(
+                $expenses['ids'],
+                $advances['ids'],
+                $suppliers['ids'],
+                $shipping['ids'],
+            ))),
+        ];
+    }
+
+    /**
+     * @param  class-string  $model
+     * @return array{total: float, ids: array<int, string>}
+     */
+    private static function sumRecorded(string $model, string $dateColumn, string $fromDate, string $toDate): array
+    {
+        $table = (new $model)->getTable();
+        if (! Schema::hasTable($table) || ! Schema::hasColumn($table, 'kasaId')) {
+            return ['total' => 0.0, 'ids' => []];
+        }
+
+        $rows = $model::query()
+            ->whereNotNull('kasaId')
+            ->where('kasaId', '!=', '')
+            ->whereDate($dateColumn, '>=', $fromDate)
+            ->whereDate($dateColumn, '<=', $toDate)
+            ->get(['id', 'amount']);
+
+        return [
+            'total' => round((float) $rows->sum('amount'), 2),
+            'ids' => $rows->map(fn ($row) => (string) $row->id)->all(),
+        ];
+    }
+
+    /** Kasadan çıkan, gider/ödeme/avans kaydına bağlı olmayan diğer satırlar. */
+    private static function otherOutflowTotal(string $fromDate, string $toDate, array $recordedIds): float
+    {
+        $query = self::cashLedgerQuery($fromDate, $toDate)
+            ->where('amount', '<', 0)
+            ->where(function ($q) {
+                $q->whereNull('refType')
+                    ->orWhereNotIn('refType', [
+                        'expense',
+                        'personnel_advance',
+                        'supplier_payment',
+                        'shipping_company_payment',
+                    ]);
+            });
+
+        if ($recordedIds !== []) {
+            $query->where(function ($q) use ($recordedIds) {
+                $q->whereNull('refId')->orWhereNotIn('refId', $recordedIds);
+            });
+        }
+
+        return round(abs((float) $query->sum('amount')), 2);
+    }
+
     private static function cashLedgerQuery(string $fromDate, string $toDate)
     {
         return KasaHareket::query()
@@ -259,7 +319,10 @@ final class PeriodAccounting
                 $q->whereNull('refType')
                     ->orWhere('refType', '!=', 'kasa_transfer');
             })
-            ->whereNotIn('type', ['virman_cikis', 'virman_giris']);
+            ->where(function ($q) {
+                $q->whereNull('type')
+                    ->orWhereNotIn('type', ['virman_cikis', 'virman_giris']);
+            });
     }
 
     public static function assertSalesIdentity(float $revenue, float $collected, float $receivable, float $tolerance = 0.02): bool

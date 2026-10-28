@@ -25,7 +25,8 @@ class KasaController extends Controller
     public function index(Request $request)
     {
         $q = Kasa::query()
-            ->withSum(['hareketler as ledger_sum_amount' => fn ($h) => $h->ledger()], 'amount')
+            ->withSum(['hareketler as ledger_in' => fn ($h) => $h->ledger()->where('amount', '>', 0)], 'amount')
+            ->withSum(['hareketler as ledger_out' => fn ($h) => $h->ledger()->where('amount', '<', 0)], 'amount')
             ->orderByDesc('isDefault')
             ->orderBy('name');
         if ($request->filled('search')) {

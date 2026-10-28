@@ -11,7 +11,7 @@
 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
     <div>
         <h1 class="page-title">Kasa</h1>
-        <p class="page-desc">Kasa ve banka hesapları – nakit akış takibi. Varsayılan kasa; gider, tahsilat ve ödeme formlarında otomatik seçilir.</p>
+        <p class="page-desc">Her hesap ayrıdır. Güncel bakiye = açılış + müşteri tahsilatı ve diğer girişler − gider, tedarikçi, nakliye ve avans. Alış faturası bu bakiyeye yazılmaz.</p>
     </div>
     <a href="{{ route('kasa.create') }}" class="btn-primary">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
@@ -49,8 +49,10 @@
                     <th class="table-th">Ad</th>
                     <th class="table-th">Tip</th>
                     <th class="table-th">IBAN / Hesap</th>
-                    <th class="table-th text-right">Açılış Bakiyesi</th>
-                    <th class="table-th text-right">Güncel Bakiye</th>
+                    <th class="table-th text-right">Açılış</th>
+                    <th class="table-th text-right">Giriş</th>
+                    <th class="table-th text-right">Çıkış</th>
+                    <th class="table-th text-right">Güncel bakiye</th>
                     <th class="table-th text-right w-40">İşlem</th>
                 </tr>
             </thead>
@@ -70,9 +72,16 @@
                         <span class="inline-flex px-2 py-1 text-xs font-medium rounded-lg {{ \App\Support\KasaType::badgeClasses($k->type) }}">{{ \App\Support\KasaType::label($k->type) }}</span>
                     </td>
                     <td class="table-td text-sm tabular-nums tracking-wide text-neutral-600 dark:text-neutral-300">{{ $k->iban ?? $k->accountNumber ?? '-' }}</td>
-                    <td class="table-td text-right font-medium {{ ($k->openingBalance ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600' }}">{{ number_format((float)($k->openingBalance ?? 0), 0, ',', '.') }} ₺</td>
-                    @php $guncelBakiye = (float)($k->openingBalance ?? 0) + (float)($k->ledger_sum_amount ?? 0); @endphp
-                    <td class="table-td text-right font-semibold {{ $guncelBakiye >= 0 ? 'text-emerald-600' : 'text-red-600' }}">{{ number_format($guncelBakiye, 0, ',', '.') }} ₺</td>
+                    @php
+                        $opening = (float) ($k->openingBalance ?? 0);
+                        $giris = (float) ($k->ledger_in ?? 0);
+                        $cikis = abs((float) ($k->ledger_out ?? 0));
+                        $guncelBakiye = $opening + $giris - $cikis;
+                    @endphp
+                    <td class="table-td text-right font-medium tabular-nums {{ $opening >= 0 ? 'text-neutral-700 dark:text-neutral-200' : 'text-red-600' }}">{{ number_format($opening, 0, ',', '.') }} ₺</td>
+                    <td class="table-td text-right font-medium tabular-nums text-emerald-600">+{{ number_format($giris, 0, ',', '.') }} ₺</td>
+                    <td class="table-td text-right font-medium tabular-nums text-rose-600">−{{ number_format($cikis, 0, ',', '.') }} ₺</td>
+                    <td class="table-td text-right font-semibold tabular-nums {{ $guncelBakiye >= 0 ? 'text-emerald-600' : 'text-red-600' }}" title="Açılış + giriş − çıkış">{{ number_format($guncelBakiye, 0, ',', '.') }} ₺</td>
                     <td class="table-td">
                         <div class="flex items-center justify-end gap-1">
                             @if(! $k->isDefault && ($k->isActive ?? true))

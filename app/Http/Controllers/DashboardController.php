@@ -70,7 +70,15 @@ class DashboardController extends Controller
             $todayKasaInflow = $todayKasaBreakdown['total'];
 
             $calendarWeekStart = $today->copy()->startOfWeek(Carbon::MONDAY);
-            $todayCashOutflows = PeriodAccounting::forRange($today, $today)['cashOutflows'];
+            $todayAccounting = PeriodAccounting::forRange($today, $today);
+            $todayCashOutflows = $todayAccounting['cashOutflows'];
+            $todayCashBreakdown = [
+                'expenses' => $todayAccounting['expenses'],
+                'supplierPayments' => $todayAccounting['supplierPayments'],
+                'shippingPayments' => $todayAccounting['shippingPayments'],
+                'personnelAdvances' => $todayAccounting['personnelAdvances'],
+                'other' => $todayAccounting['cashOutflowsOther'],
+            ];
             $weekCashOutflows = PeriodAccounting::forRange($calendarWeekStart, $today)['cashOutflows'];
             $calendarWeekLabel = $calendarWeekStart->locale('tr')->isoFormat('D MMM') . ' – ' . $today->locale('tr')->isoFormat('D MMM');
 
@@ -142,6 +150,13 @@ class DashboardController extends Controller
             $todayKasaBreakdown = ['total' => 0, 'nakitTotal' => 0, 'kasaTotal' => 0, 'supplierTotal' => 0, 'byType' => collect(), 'byKasa' => collect()];
             $calendarWeekStart = $today->copy()->startOfWeek(Carbon::MONDAY);
             $todayCashOutflows = 0;
+            $todayCashBreakdown = [
+                'expenses' => 0,
+                'supplierPayments' => 0,
+                'shippingPayments' => 0,
+                'personnelAdvances' => 0,
+                'other' => 0,
+            ];
             $weekCashOutflows = 0;
             $calendarWeekLabel = $calendarWeekStart->locale('tr')->isoFormat('D MMM') . ' – ' . $today->locale('tr')->isoFormat('D MMM');
             $weekSalesCount = 0;
@@ -279,6 +294,7 @@ class DashboardController extends Controller
             'todayKasaInflow',
             'todayKasaBreakdown',
             'todayCashOutflows',
+            'todayCashBreakdown',
             'weekCashOutflows',
             'calendarWeekStart',
             'calendarWeekLabel',

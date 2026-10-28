@@ -448,51 +448,52 @@ class ReportsController extends Controller
         $fromDate = $from->toDateString();
         $toDate = $to->toDateString();
         $type = $request->input('type');
-        $allowedTypes = ['expense', 'supplier_payment', 'personnel_advance', 'shipping_company_payment', 'other'];
 
-        $query = KasaHareket::query()
-            ->ledger()
-            ->with(['kasa'])
-            ->where('amount', '<', 0)
-            ->where(function ($q) {
-                $q->whereNull('refType')->orWhere('refType', '!=', 'kasa_transfer');
-            })
-            ->whereNotIn('type', ['virman_cikis', 'virman_giris'])
-            ->whereDate('movementDate', '>=', $fromDate)
-            ->whereDate('movementDate', '<=', $toDate);
+        $recordedTypes = ['expense', 'supplier_payment', 'personnel_advance', 'shipping_company_payment'];
+        $recorded = $this->recordedOutflowMovements($fromDate, $toDate, $type, $request);
+        $recordedIds = $recorded->pluck('refId')->filter()->map(fn ($id) => (string) $id)->all();
 
-        if ($request->filled('kasaId')) {
-            $query->where('kasaId', $request->kasaId);
-        }
+        $movements = collect();
+        if ($type === null || $type === '' || $type === 'other') {
+            $query = KasaHareket::query()
+                ->ledger()
+                ->with(['kasa'])
+                ->where('amount', '<', 0)
+                ->where(function ($q) use ($recordedTypes) {
+                    $q->whereNull('refType')->orWhereNotIn('refType', array_merge($recordedTypes, ['kasa_transfer']));
+                })
+                ->where(function ($q) {
+                    $q->whereNull('type')->orWhereNotIn('type', ['virman_cikis', 'virman_giris']);
+                })
+                ->whereDate('movementDate', '>=', $fromDate)
+                ->whereDate('movementDate', '<=', $toDate);
 
-        if ($request->filled('search')) {
-            $s = $request->search;
-            $query->where('description', 'like', "%{$s}%");
-        }
-
-        if (in_array($type, $allowedTypes, true)) {
-            if ($type === 'other') {
-                $query->where(function ($q) {
-                    $q->whereNull('refType')
-                        ->orWhereNotIn('refType', [
-                            'expense',
-                            'supplier_payment',
-                            'personnel_advance',
-                            'shipping_company_payment',
-                            'kasa_transfer',
-                        ]);
+            if ($recordedIds !== []) {
+                $query->where(function ($q) use ($recordedIds) {
+                    $q->whereNull('refId')->orWhereNotIn('refId', $recordedIds);
                 });
-            } else {
-                $query->where('refType', $type);
             }
+
+            if ($request->filled('kasaId')) {
+                $query->where('kasaId', $request->kasaId);
+            }
+
+            if ($request->filled('search')) {
+                $query->where('description', 'like', '%'.$request->search.'%');
+            }
+
+            $movements = $query->orderByDesc('movementDate')->orderByDesc('createdAt')->get();
         }
 
-        $movements = (clone $query)
-            ->orderByDesc('movementDate')
-            ->orderByDesc('createdAt')
-            ->get();
+        if ($type !== 'other') {
+            $movements = $movements->concat($recorded);
+        }
 
-        $total = abs((float) (clone $query)->sum('amount'));
+        $movements = $movements
+            ->sortByDesc(fn (KasaHareket $h) => ($h->movementDate?->format('Y-m-d') ?? '').($h->createdAt ?? ''))
+            ->values();
+
+        $total = round((float) $movements->sum(fn (KasaHareket $h) => abs((float) $h->amount)), 2);
         $count = $movements->count();
 
         $byType = [
@@ -567,6 +568,131 @@ class ReportsController extends Controller
             'typeOptions',
             'type',
         );
+    }
+
+    /** @return \Illuminate\Support\Collection<int, KasaHareket> */
+    private function recordedOutflowMovements(string $fromDate, string $toDate, ?string $type, Request $request)
+    {
+        $rows = collect();
+        $want = fn (string $key) => $type === null || $type === '' || $type === $key;
+
+        if ($want('expense') && Schema::hasTable('expenses')) {
+            $query = Expense::with('kasa')->whereNotNull('kasaId')->where('kasaId', '!=', '')
+                ->whereDate('expenseDate', '>=', $fromDate)->whereDate('expenseDate', '<=', $toDate);
+            $this->applyOutflowFilters($query, $request, 'description');
+            foreach ($query->orderByDesc('expenseDate')->get() as $expense) {
+                $label = 'Gider - '.($expense->category ? $expense->category.': ' : '').($expense->description ?? '');
+                $rows->push($this->outflowMovement($expense->kasaId, $expense->kasa, -(float) $expense->amount, $expense->expenseDate?->toDateString(), $label, 'expense', (string) $expense->id));
+            }
+        }
+
+        if ($want('supplier_payment') && Schema::hasTable('supplier_payments')) {
+            $query = SupplierPayment::with(['supplier', 'kasa'])->whereNotNull('kasaId')->where('kasaId', '!=', '')
+                ->whereDate('paymentDate', '>=', $fromDate)->whereDate('paymentDate', '<=', $toDate);
+            $this->applyOutflowFilters($query, $request, 'notes');
+            if ($request->filled('search')) {
+                $s = $request->search;
+                $query->where(function ($q) use ($s) {
+                    $q->where('notes', 'like', "%{$s}%")
+                        ->orWhere('reference', 'like', "%{$s}%")
+                        ->orWhereHas('supplier', fn ($sq) => $sq->where('name', 'like', "%{$s}%"));
+                });
+            }
+            foreach ($query->orderByDesc('paymentDate')->get() as $payment) {
+                $rows->push($this->outflowMovement(
+                    $payment->kasaId,
+                    $payment->kasa,
+                    -(float) $payment->amount,
+                    $payment->paymentDate?->toDateString(),
+                    'Tedarikçi ödemesi - '.($payment->supplier?->name ?? 'Tedarikçi'),
+                    'supplier_payment',
+                    (string) $payment->id,
+                ));
+            }
+        }
+
+        if ($want('shipping_company_payment') && Schema::hasTable('shipping_company_payments')) {
+            $query = ShippingCompanyPayment::with(['shippingCompany', 'kasa'])->whereNotNull('kasaId')->where('kasaId', '!=', '')
+                ->whereDate('paymentDate', '>=', $fromDate)->whereDate('paymentDate', '<=', $toDate);
+            if ($request->filled('kasaId')) {
+                $query->where('kasaId', $request->kasaId);
+            }
+            if ($request->filled('search')) {
+                $s = $request->search;
+                $query->where(function ($q) use ($s) {
+                    $q->where('notes', 'like', "%{$s}%")
+                        ->orWhereHas('shippingCompany', fn ($sq) => $sq->where('name', 'like', "%{$s}%"));
+                });
+            }
+            foreach ($query->orderByDesc('paymentDate')->get() as $payment) {
+                $rows->push($this->outflowMovement(
+                    $payment->kasaId,
+                    $payment->kasa,
+                    -(float) $payment->amount,
+                    $payment->paymentDate?->toDateString(),
+                    'Nakliye ödemesi - '.($payment->shippingCompany?->name ?? 'Nakliye'),
+                    'shipping_company_payment',
+                    (string) $payment->id,
+                ));
+            }
+        }
+
+        if ($want('personnel_advance') && Schema::hasTable('personnel_advances')) {
+            $query = PersonnelAdvance::with(['personnel', 'kasa'])->whereNotNull('kasaId')->where('kasaId', '!=', '')
+                ->whereDate('advanceDate', '>=', $fromDate)->whereDate('advanceDate', '<=', $toDate);
+            if ($request->filled('kasaId')) {
+                $query->where('kasaId', $request->kasaId);
+            }
+            if ($request->filled('search')) {
+                $s = $request->search;
+                $query->where(function ($q) use ($s) {
+                    $q->where('note', 'like', "%{$s}%")
+                        ->orWhereHas('personnel', fn ($sq) => $sq->where('name', 'like', "%{$s}%"));
+                });
+            }
+            foreach ($query->orderByDesc('advanceDate')->get() as $advance) {
+                $rows->push($this->outflowMovement(
+                    $advance->kasaId,
+                    $advance->kasa,
+                    -(float) $advance->amount,
+                    $advance->advanceDate?->toDateString(),
+                    $advance->cariLabel(),
+                    'personnel_advance',
+                    (string) $advance->id,
+                ));
+            }
+        }
+
+        return $rows;
+    }
+
+    private function applyOutflowFilters($query, Request $request, string $searchColumn): void
+    {
+        if ($request->filled('kasaId')) {
+            $query->where('kasaId', $request->kasaId);
+        }
+        if ($request->filled('search') && $searchColumn === 'description') {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('description', 'like', "%{$s}%")->orWhere('category', 'like', "%{$s}%");
+            });
+        }
+    }
+
+    private function outflowMovement($kasaId, $kasa, float $amount, ?string $date, string $description, string $refType, string $refId): KasaHareket
+    {
+        $hareket = new KasaHareket([
+            'kasaId' => $kasaId,
+            'type' => 'cikis',
+            'amount' => $amount,
+            'movementDate' => $date,
+            'description' => $description,
+            'refType' => $refType,
+            'refId' => $refId,
+        ]);
+        $hareket->setRelation('kasa', $kasa);
+
+        return $hareket;
     }
 
     /** @return array<string, mixed> */

@@ -16,8 +16,8 @@
     <div class="p-4 border-b border-neutral-100">
         <form method="GET" class="flex flex-wrap gap-4 items-end">
         <div class="min-w-[180px] flex-1">
-            <label class="form-label">Ara (açıklama)</label>
-            <input type="text" name="search" placeholder="Ara..." value="{{ request('search') }}" class="form-input">
+            <label class="form-label">Ara</label>
+            <input type="text" name="search" placeholder="Açıklama, kategori, sipariş, ürün, kasa" value="{{ request('search') }}" class="form-input">
         </div>
         <div class="min-w-[130px]">
             <label class="form-label">Başlangıç</label>
@@ -39,6 +39,14 @@
                 <option value="{{ $k->id }}" {{ request('kasaId') == $k->id ? 'selected' : '' }}>{{ $k->name }}</option>
                 @endforeach
             </select>
+        </div>
+        <div class="min-w-[110px]">
+            <label class="form-label">Min tutar</label>
+            <input type="text" inputmode="decimal" name="amountMin" value="{{ request('amountMin') }}" placeholder="0" class="form-input money-input" autocomplete="off">
+        </div>
+        <div class="min-w-[110px]">
+            <label class="form-label">Max tutar</label>
+            <input type="text" inputmode="decimal" name="amountMax" value="{{ request('amountMax') }}" placeholder="0" class="form-input money-input" autocomplete="off">
         </div>
         <div class="flex gap-2">
             <button type="submit" class="btn-primary">Filtrele</button>
@@ -104,6 +112,12 @@
 
     <div class="px-4 pt-4 pb-2">
         <h2 class="text-sm font-semibold uppercase tracking-wide text-neutral-500">Gider kayıtları</h2>
+        <p class="text-xs text-neutral-500 mt-1">
+            {{ number_format($expenses->total(), 0, ',', '.') }} kayıt
+            @if($expenses->hasPages())
+            · bu sayfada {{ $expenses->firstItem() }}–{{ $expenses->lastItem() }}
+            @endif
+        </p>
     </div>
     <div class="overflow-x-auto">
         <table class="w-full">
@@ -123,7 +137,20 @@
             <tr class="hover:bg-slate-50">
                 <td class="table-td text-neutral-700">{{ $e->expenseDate?->format('d.m.Y') }}</td>
                 <td class="table-td">
-                    <a href="{{ route('expenses.show', $e) }}" class="text-primary-600 hover:underline font-medium">{{ Str::limit($e->description, 50) }}</a>
+                    <a href="{{ route('expenses.show', $e) }}" class="text-primary-600 hover:underline font-medium whitespace-normal">{{ $e->description }}</a>
+                    @php
+                        $saleItemNames = $e->sale?->items
+                            ?->map(fn ($item) => $item->productName ?: $item->product?->name)
+                            ->filter()
+                            ->unique()
+                            ->values() ?? collect();
+                    @endphp
+                    @if($saleItemNames->isNotEmpty())
+                    <span class="block text-xs text-neutral-500 mt-0.5 whitespace-normal">{{ $saleItemNames->implode(', ') }}</span>
+                    @endif
+                    @if($e->sale?->customer?->name)
+                    <span class="block text-xs text-neutral-400 mt-0.5">{{ $e->sale->customer->name }}</span>
+                    @endif
                 </td>
                 <td class="table-td text-slate-600">
                     @if($e->sale)

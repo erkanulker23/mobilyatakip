@@ -3,13 +3,14 @@
 namespace App\Exports;
 
 use App\Models\Customer;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStrictNullComparison;
 
 class CustomersExport implements FromCollection, WithHeadings, WithStrictNullComparison
 {
-    public function collection()
+    public function collection(): Collection
     {
         return Customer::query()->orderBy('name')->get()->map(function ($row) {
             return [
