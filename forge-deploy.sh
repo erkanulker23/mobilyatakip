@@ -19,7 +19,47 @@ fi
 
 BRANCH="${FORGE_SITE_BRANCH:-main}"
 FORGE_COMPOSER="${FORGE_COMPOSER:-composer}"
-FORGE_PHP="${FORGE_PHP:-php}"
+
+# Forge site PHP'si sunucuda yoksa (ör. php8.4) kurulu 8.3+ sürümü kullan.
+# composer.json php ^8.3 ister; 8.2 ile kurulum durur.
+pick_php() {
+  local candidate
+  if [ -n "${1:-}" ] && command -v "$1" >/dev/null 2>&1; then
+    printf '%s\n' "$1"
+    return 0
+  fi
+  for candidate in php8.5 php8.3 php8.4 php; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+REQUESTED_PHP="${FORGE_PHP:-php}"
+if ! FORGE_PHP="$(pick_php "$REQUESTED_PHP")"; then
+  echo "HATA: Sunucuda PHP 8.3 veya 8.5 yok. İstenen komut: ${REQUESTED_PHP}."
+  echo "Forge → Server → PHP ile 8.3 veya 8.5 kurun, Site → PHP sürümünü ona alın."
+  exit 1
+fi
+if [ "$FORGE_PHP" != "$REQUESTED_PHP" ]; then
+  echo "UYARI: ${REQUESTED_PHP} yok. Yerine ${FORGE_PHP} kullanılıyor."
+fi
+if ! "$FORGE_PHP" -r 'exit(PHP_VERSION_ID >= 80300 ? 0 : 1);'; then
+  echo "HATA: $($FORGE_PHP -r 'echo PHP_VERSION;') çok eski. Site PHP sürümü 8.3 veya 8.5 olmalı."
+  exit 1
+fi
+
+# composer bazen "php8.4 /usr/bin/composer" olarak gelir; o php yoksa seçilen php ile çalıştır.
+COMPOSER_BIN="$(command -v composer || true)"
+case "$FORGE_COMPOSER" in
+  php8.*|php\ *)
+    if [ -n "$COMPOSER_BIN" ]; then
+      FORGE_COMPOSER="$FORGE_PHP $COMPOSER_BIN"
+    fi
+    ;;
+esac
 
 # 1. Son kodu çek — sunucuda kalan npm/package-lock değişikliklerini repoya hizala (.env dokunulmaz)
 git fetch origin "$BRANCH"

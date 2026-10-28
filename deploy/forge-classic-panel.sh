@@ -11,6 +11,30 @@ cd "$FORGE_SITE_PATH"
 
 echo "Deploy başladı (klasik, npm yok): $(date -Iseconds)"
 
+pick_php() {
+  local candidate
+  if [ -n "${1:-}" ] && command -v "$1" >/dev/null 2>&1; then
+    printf '%s\n' "$1"
+    return 0
+  fi
+  for candidate in php8.5 php8.3 php8.4 php; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+REQUESTED_PHP="${FORGE_PHP:-php}"
+if ! FORGE_PHP="$(pick_php "$REQUESTED_PHP")"; then
+  echo "HATA: Sunucuda PHP 8.3 veya 8.5 yok. İstenen komut: ${REQUESTED_PHP}."
+  exit 1
+fi
+if [ "$FORGE_PHP" != "$REQUESTED_PHP" ]; then
+  echo "UYARI: ${REQUESTED_PHP} yok. Yerine ${FORGE_PHP} kullanılıyor."
+fi
+
 git fetch origin "$FORGE_SITE_BRANCH"
 git reset --hard "origin/$FORGE_SITE_BRANCH"
 
