@@ -95,6 +95,16 @@ Route::prefix('tasarla')->middleware('throttle:60,1')->group(function () {
         ->name('configurator.model');
 });
 
+Route::prefix('dolap')->middleware('throttle:60,1')->group(function () {
+    Route::get('/', [\App\Http\Controllers\PublicWardrobeController::class, 'index'])->name('wardrobe.index');
+    Route::post('/teklif', [\App\Http\Controllers\PublicWardrobeController::class, 'quote'])
+        ->middleware('throttle:8,1')
+        ->name('wardrobe.quote');
+});
+
+Route::get('/plan', [\App\Http\Controllers\PublicToolController::class, 'plan'])->name('tools.plan');
+Route::get('/dolap-uretim', [\App\Http\Controllers\PublicToolController::class, 'cabinet'])->name('tools.cabinet');
+
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/bildirimler/temizle', [\App\Http\Controllers\NotificationController::class, 'dismiss'])->name('notifications.dismiss');

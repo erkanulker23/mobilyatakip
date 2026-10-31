@@ -7,7 +7,7 @@
     @include('partials.site-meta', [
         'company' => $company,
         'pageTitle' => 'Giriş',
-        'metaDescription' => 'Üye girişi, sipariş takibi, malzeme kataloğu ve 3D TV ünitesi tasarımcısı.',
+        'metaDescription' => 'Üye girişi, sipariş takibi, malzeme kataloğu, 3D TV ünitesi ve modüler dolap tasarımı.',
     ])
     @include('partials.public-gate-head-bootstrap')
     <script defer src="{{ route('assets.js', ['file' => 'form-inputs.js']) }}"></script>
@@ -23,7 +23,7 @@
         <div class="hero-main rise rise-2">
             <p class="hero-kicker">Mobilya · Tasarım · Takip</p>
             <h1 class="hero-title">Her şey yerli yerinde</h1>
-            <p class="hero-lead">Siparişinizi izleyin, malzemeleri inceleyin veya TV ünitenizi 3D tasarlayın. Üyeler sağdan giriş yapar.</p>
+            <p class="hero-lead">Siparişinizi izleyin, malzemeleri inceleyin, TV ünitesi veya dolabınızı 3D tasarlayın. Üyeler sağdan giriş yapar.</p>
         </div>
 
         @include('partials.public-gate-portals')

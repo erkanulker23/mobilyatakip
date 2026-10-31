@@ -24,5 +24,26 @@
             <strong>3D tasarımcıya git</strong>
             <span>TV ünitesini sürükle-bırak ile kurun</span>
         </a>
+        <a class="portal @if($activePortal === 'dolap') is-active @endif" href="{{ url('/dolap') }}">
+            <span class="portal-ico" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 4h16v16H4z"/><path d="M12 4v16M4 10h8M12 14h8"/></svg>
+            </span>
+            <strong>3D Dolap tasarla</strong>
+            <span>Modüler dolabınızı ölçüsüyle kurun</span>
+        </a>
+        <a class="portal @if($activePortal === 'plan') is-active @endif" href="{{ url('/plan') }}">
+            <span class="portal-ico" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 4h16v16H4z"/><path d="M4 10h10M14 10v10M10 4v6"/></svg>
+            </span>
+            <strong>Oda planı</strong>
+            <span>Duvar ve odayı 2D/3D çizin</span>
+        </a>
+        <a class="portal @if($activePortal === 'uretim') is-active @endif" href="{{ url('/dolap-uretim') }}">
+            <span class="portal-ico" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h16v12H4z"/><path d="M8 7V5h8v2M4 12h16"/></svg>
+            </span>
+            <strong>Üretim dolabı</strong>
+            <span>Panel, delik ve DXF çıktısı</span>
+        </a>
     </div>
 </nav>

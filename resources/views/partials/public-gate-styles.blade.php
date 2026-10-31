@@ -171,13 +171,13 @@
 
     .portals {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 0.75rem;
         margin-top: clamp(1.75rem, 4vw, 2.5rem);
     }
     .hero--page .portals {
         margin-top: 1.25rem;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     @media (max-width: 640px) {
         .portals { grid-template-columns: 1fr; }
