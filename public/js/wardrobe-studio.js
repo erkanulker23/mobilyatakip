@@ -19,7 +19,7 @@ const ALUMINUM = [
 ];
 const GLASS = [
     { id: 'cam-seffaf', name: 'Şeffaf', color: '#e7eef2', transmission: 0.86 },
-    { id: 'cam-fum', name: 'Füme', color: '#2a2826', transmission: 1, attenuation: 1.5 },
+    { id: 'cam-fum', name: 'Füme', color: '#454340', transmission: 0.84 },
     { id: 'cam-bronz', name: 'Bronz', color: '#a56b3c', transmission: 0.42 },
     { id: 'cam-gri', name: 'Gri', color: '#9aa1a6', transmission: 0.5 },
     { id: 'cam-antrasit', name: 'Antrasit', color: '#3e4246', transmission: 0.28 },
@@ -470,19 +470,21 @@ function material(key, source, opts = {}) {
     const item = plain ? null : decor(source);
     const id = `${key}|${item ? item.id : source}|${opts.glass ? 1 : 0}|${opts.metal ? 1 : 0}|${opts.transmission ?? ''}|${opts.attenuation ?? ''}`;
     if (matCache.has(id)) return matCache.get(id);
+    // Volume attenuation (thickness > 0) makes three-gpu-pathtracer 0.0.23 return black
+    // for a pane a few millimeters thick. Thickness 0 and an infinite attenuation
+    // distance select its thin-film path, which tints by the base color and still transmits.
     const mat = opts.glass
         ? new THREE.MeshPhysicalMaterial({
-            color: '#ffffff',
+            color: source,
             roughness: 0.08,
             metalness: 0,
             transmission: opts.transmission ?? 1,
-            thickness: 0.6,
-            transparent: true,
+            thickness: 0,
+            transparent: false,
             opacity: 1,
-            depthWrite: false,
+            depthWrite: true,
             ior: 1.5,
-            attenuationColor: new THREE.Color(source),
-            attenuationDistance: opts.attenuation ?? 80,
+            attenuationDistance: Infinity,
         })
         : new THREE.MeshStandardMaterial({
             color: item ? '#ffffff' : source,
@@ -1665,6 +1667,12 @@ function addUpperCabinet(parent, w, d, mod, preview) {
 }
 
 function addDoors(parent, w, h, d, mod, preview) {
+    if (mod.door === 'glass' && !preview) {
+        // Scene units are centimeters, so a physical 1/r^2 light needs a large candela value.
+        const fill = new THREE.PointLight(0xfff4e8, 48000, Math.max(w, d) * 1.6, 2);
+        fill.position.set(w / 2, h * 0.62, d * 0.42);
+        parent.add(fill);
+    }
     if (mod.door === 'panjur') {
         addTambour(parent, w, h, d, mod, preview);
         return;
