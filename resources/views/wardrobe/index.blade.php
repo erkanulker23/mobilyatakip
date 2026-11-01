@@ -24,10 +24,10 @@
             --shadow: 0 12px 32px rgba(28, 28, 28, .08);
         }
         * { box-sizing: border-box; }
-        html, body { margin: 0; height: 100%; overflow: hidden; font-family: Montserrat, system-ui, sans-serif; color: var(--ink); background: var(--bg); }
+        html, body { margin: 0; height: 100%; height: 100dvh; overflow: hidden; font-family: Montserrat, system-ui, sans-serif; color: var(--ink); background: var(--bg); }
         button, input, select { font-family: inherit; }
         button { cursor: pointer; }
-        #studio { display: grid; grid-template-rows: 56px 1fr 48px; height: 100%; }
+        #studio { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100dvh; min-height: 0; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
         header.bar, footer.bar, .series {
             display: flex; align-items: center; gap: 8px; padding: 0 14px; background: var(--panel);
         }
@@ -129,14 +129,34 @@
         .check { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 13px; font-weight: 600; }
         .check input { width: auto; }
         .mobile-nav { display: none; }
-        @media (max-width: 980px) {
-            #studio { grid-template-rows: 56px 1fr 52px; }
-            .workspace { grid-template-columns: 1fr; }
-            aside { position: fixed; left: 0; right: 0; bottom: 52px; height: min(70vh, 620px); z-index: 15; transform: translateY(110%); transition: transform .2s ease; box-shadow: var(--shadow); }
+        .sheet-close, #project-sheet { display: none; }
+        @media (max-width: 900px) {
+            header.bar { min-height: 52px; }
+            header.bar .btn:not(#btn-save), header.bar .extra { display: none; }
+            .workspace { display: flex; min-height: 0; }
+            .stage { flex: 1 1 auto; min-height: 0; width: 100%; }
+            #viewport { min-height: 0; }
+            aside {
+                position: fixed; left: 0; right: 0; bottom: calc(72px + env(safe-area-inset-bottom));
+                height: min(62dvh, 560px); z-index: 20; transform: translateY(120%);
+                transition: transform .2s ease; border-radius: 16px 16px 0 0; box-shadow: var(--shadow);
+            }
             aside.is-open { transform: none; }
-            .mobile-nav { display: flex; gap: 8px; }
-            .name-input { width: 96px; }
-            header.bar .extra { display: none; }
+            .sheet-close { display: block; margin: 8px 12px 0 auto; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 700; }
+            #project-sheet {
+                display: none; position: fixed; left: 0; right: 0; bottom: calc(72px + env(safe-area-inset-bottom));
+                z-index: 20; background: var(--panel); border-radius: 16px 16px 0 0; box-shadow: var(--shadow); padding: 12px;
+            }
+            #project-sheet.is-open { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+            .mobile-nav { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; width: 100%; }
+            .mobile-nav .btn { padding: 8px 4px; font-size: 11px; }
+            footer.bar { display: block; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
+            footer.bar .stat, footer.bar #btn-quote { display: none; }
+            #view-bar { top: 8px; bottom: auto; left: 8px; max-width: calc(100% - 16px); }
+            .name-input { width: min(42vw, 180px); }
+            body[data-sheet="material"] #inspector-body > :not([data-picker]) { display: none; }
+            body[data-sheet="doors"] #inspector-body > :not(:has([data-door], [data-swing], #mod-open)) { display: none; }
+            body[data-sheet="measure"] #inspector-body > :not(:has(#wall-left, #wall-front, #wall-right, #room-h, #cab-h, #cab-d, #mod-w, #mod-h)) { display: none; }
         }
     </style>
 </head>
@@ -162,6 +182,7 @@
     </header>
     <div class="workspace">
         <aside class="left" id="library">
+            <button type="button" class="sheet-close" id="close-library">Kapat</button>
             <div class="side-head">Dolap modülleri</div>
             <div class="library-search"><input id="module-search" type="search" placeholder="Modül ara" autocomplete="off"></div>
             <div class="side-body" id="library-body"></div>
@@ -191,6 +212,7 @@
             <div id="warn" class="warn hidden"></div>
         </section>
         <aside class="right" id="inspector">
+            <button type="button" class="sheet-close" id="close-inspector">Kapat</button>
             <div class="side-body" id="inspector-body"></div>
             <div class="side-foot">
                 <button type="button" class="btn" id="btn-production">Üretim listesi</button>
@@ -200,11 +222,24 @@
     <footer class="bar">
         <div class="stat" id="summary"></div>
         <div class="mobile-nav">
-            <button type="button" class="btn" id="open-library">Modüller</button>
-            <button type="button" class="btn" id="open-inspector">Ayarlar</button>
+            <button type="button" class="btn" id="open-library">Modül Ekle</button>
+            <button type="button" class="btn" id="open-material">Malzeme</button>
+            <button type="button" class="btn" id="open-doors">Kapaklar</button>
+            <button type="button" class="btn" id="open-measures">Ölçüler</button>
+            <button type="button" class="btn" id="open-project">Proje</button>
         </div>
         <button type="button" class="btn-primary" id="btn-quote">Fiyat teklifi al</button>
     </footer>
+</div>
+<div id="project-sheet">
+    <button type="button" class="btn" id="sheet-new">Yeni proje</button>
+    <button type="button" class="btn" id="sheet-undo">Geri</button>
+    <button type="button" class="btn" id="sheet-redo">İleri</button>
+    <button type="button" class="btn" id="sheet-saved">Kayıtlar</button>
+    <button type="button" class="btn" id="sheet-share">Paylaş</button>
+    <button type="button" class="btn" id="sheet-quote">Fiyat teklifi</button>
+    <button type="button" class="btn" id="sheet-shot">Render al</button>
+    <button type="button" class="sheet-close" id="close-project">Kapat</button>
 </div>
 
 <div id="customer-modal" class="overlay hidden">
@@ -303,6 +338,6 @@
         csrf: @json(csrf_token())
     };
 </script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=99"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=100"></script>
 </body>
 </html>

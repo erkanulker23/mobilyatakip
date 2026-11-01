@@ -1,0 +1,113 @@
+[
+  {
+    "size": "375x812",
+    "visible": true,
+    "canvas": [
+      375,
+      697
+    ],
+    "stage": [
+      375,
+      697
+    ],
+    "nav": [
+      "Modül Ekle",
+      "Malzeme",
+      "Kapaklar",
+      "Ölçüler",
+      "Proje"
+    ],
+    "save": "block",
+    "panels": "fixed"
+  },
+  {
+    "size": "390x844",
+    "visible": true,
+    "canvas": [
+      390,
+      729
+    ],
+    "stage": [
+      390,
+      729
+    ],
+    "nav": [
+      "Modül Ekle",
+      "Malzeme",
+      "Kapaklar",
+      "Ölçüler",
+      "Proje"
+    ],
+    "save": "block",
+    "panels": "fixed"
+  },
+  {
+    "size": "430x932",
+    "visible": true,
+    "canvas": [
+      430,
+      831
+    ],
+    "stage": [
+      430,
+      831
+    ],
+    "nav": [
+      "Modül Ekle",
+      "Malzeme",
+      "Kapaklar",
+      "Ölçüler",
+      "Proje"
+    ],
+    "save": "block",
+    "panels": "fixed"
+  },
+  {
+    "size": "768x1024",
+    "visible": true,
+    "canvas": [
+      768,
+      923
+    ],
+    "stage": [
+      768,
+      923
+    ],
+    "nav": [
+      "Modül Ekle",
+      "Malzeme",
+      "Kapaklar",
+      "Ölçüler",
+      "Proje"
+    ],
+    "save": "block",
+    "panels": "fixed"
+  },
+  {
+    "size": "1366x768",
+    "visible": true,
+    "canvas": [
+      786,
+      704
+    ],
+    "stage": [
+      786,
+      704
+    ],
+    "nav": [
+      "Modül Ekle",
+      "Malzeme",
+      "Kapaklar",
+      "Ölçüler",
+      "Proje"
+    ],
+    "save": "block",
+    "panels": "static"
+  },
+  {
+    "sheet": true,
+    "opened": true,
+    "closed": true,
+    "material": true
+  }
+]

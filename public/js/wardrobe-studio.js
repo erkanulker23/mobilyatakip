@@ -2153,6 +2153,29 @@ function tick() {
     renderer.render(scene, camera);
 }
 
+function openPhoneSheet(name) {
+    const phone = window.matchMedia('(max-width: 900px)').matches;
+    if (!phone) {
+        if (name === 'modules') el('library').scrollIntoView();
+        else el('inspector').classList.add('is-open');
+        return;
+    }
+    const same = document.body.dataset.sheet === name;
+    el('library').classList.remove('is-open');
+    el('inspector').classList.remove('is-open');
+    el('project-sheet').classList.remove('is-open');
+    if (same) {
+        document.body.dataset.sheet = '';
+        requestAnimationFrame(resize);
+        return;
+    }
+    document.body.dataset.sheet = name;
+    if (name === 'modules') el('library').classList.add('is-open');
+    else if (name === 'project') el('project-sheet').classList.add('is-open');
+    else el('inspector').classList.add('is-open');
+    requestAnimationFrame(resize);
+}
+
 function resize() {
     const viewport = el('viewport');
     const width = viewport.clientWidth || 600;
@@ -2565,7 +2588,7 @@ function bindDecor(root, attr, active, onPick) {
 
 function swatchPicker(list, active, attr, label, strong) {
     const current = list.find((item) => item.id === active) || list[0];
-    return `<div class="field${strong ? ' field-key' : ''}"><label>${label}: ${current.name}</label><div class="swatches">${list.map((item) => `<button type="button" class="swatch ${item.id === active ? 'is-on' : ''}" style="background:${item.color}" title="${item.name}" data-${attr}="${item.id}"></button>`).join('')}</div></div>`;
+    return `<div class="field${strong ? ' field-key' : ''}" data-picker="${attr}"><label>${label}: ${current.name}</label><div class="swatches">${list.map((item) => `<button type="button" class="swatch ${item.id === active ? 'is-on' : ''}" style="background:${item.color}" title="${item.name}" data-${attr}="${item.id}"></button>`).join('')}</div></div>`;
 }
 
 function bindSwatch(root, attr, onPick) {
@@ -2829,7 +2852,7 @@ function renderInspector() {
         return;
     }
     config.classList.add('hidden');
-    el('inspector').classList.add('is-open');
+    if (!window.matchMedia('(max-width: 900px)').matches) el('inspector').classList.add('is-open');
     body.innerHTML = moduleConfigHtml(mod);
     bindModuleConfig(body, mod);
 }
@@ -3190,7 +3213,7 @@ function addCabinet(target) {
         selectedId = mod.id;
     });
     el('library').classList.remove('is-open');
-    el('inspector').classList.add('is-open');
+    if (!window.matchMedia('(max-width: 900px)').matches) el('inspector').classList.add('is-open');
 }
 
 async function ensureGlb(item) {
@@ -3341,7 +3364,7 @@ async function addGlbModule(id, dropEvent) {
             selectedId = mod.id;
         });
         el('library').classList.remove('is-open');
-        el('inspector').classList.add('is-open');
+        if (!window.matchMedia('(max-width: 900px)').matches) el('inspector').classList.add('is-open');
     } catch (error) {
         noteDrop({ phase: 'error', id, message: String(error?.stack || error).slice(0, 500) });
     }
@@ -3393,7 +3416,7 @@ function addCadModule(id, dropEvent) {
         selectedId = mod.id;
     });
     el('library').classList.remove('is-open');
-    el('inspector').classList.add('is-open');
+    if (!window.matchMedia('(max-width: 900px)').matches) el('inspector').classList.add('is-open');
 }
 
 function addProduct(productId, dropEvent) {
@@ -3974,14 +3997,31 @@ function bindChrome() {
     el('act-config').onclick = () => {
         if (!selected()) return;
         el('config-modal').classList.add('hidden');
-        el('inspector').classList.add('is-open');
         renderInspector();
+        openPhoneSheet('doors');
     };
     el('config-close').onclick = () => el('config-modal').classList.add('hidden');
     el('act-clone').onclick = cloneSelected;
     el('act-delete').onclick = deleteSelected;
-    el('open-library').onclick = () => el('library').classList.toggle('is-open');
-    el('open-inspector').onclick = () => el('inspector').classList.toggle('is-open');
+    el('open-library').onclick = () => openPhoneSheet('modules');
+    el('open-material').onclick = () => openPhoneSheet('material');
+    el('open-doors').onclick = () => openPhoneSheet('doors');
+    el('open-measures').onclick = () => {
+        showMeasures = true;
+        el('btn-measures').classList.add('is-on');
+        openPhoneSheet('measure');
+    };
+    el('open-project').onclick = () => openPhoneSheet('project');
+    el('close-library').onclick = () => openPhoneSheet('modules');
+    el('close-inspector').onclick = () => openPhoneSheet(document.body.dataset.sheet || 'material');
+    el('close-project').onclick = () => openPhoneSheet('project');
+    el('sheet-new').onclick = () => el('btn-new').click();
+    el('sheet-undo').onclick = () => el('btn-undo').click();
+    el('sheet-redo').onclick = () => el('btn-redo').click();
+    el('sheet-saved').onclick = () => el('btn-saved').click();
+    el('sheet-share').onclick = () => el('btn-share').click();
+    el('sheet-quote').onclick = () => el('btn-quote').click();
+    el('sheet-shot').onclick = () => el('btn-shot').click();
     el('selection-ui').addEventListener('pointerdown', (event) => event.stopPropagation());
 }
 
