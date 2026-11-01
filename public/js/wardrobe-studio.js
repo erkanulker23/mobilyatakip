@@ -96,6 +96,8 @@ const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 let pointerDown = null;
 let pointerPress = null;
+let catalogDrag = null;
+let catalogBound = false;
 let catalogMode = 'glb';
 const glbTemplates = new Map();
 const glbFailed = new Set();
@@ -2051,16 +2053,6 @@ function updateHud() {
     const under = project(new THREE.Vector3(center.x, box.min.y + 8, box.max.z));
     const top = project(new THREE.Vector3(center.x, box.max.y + 6, center.z));
     el('selection-name').textContent = mod.name;
-    const doorChoice = el('selection-doors');
-    doorChoice.classList.toggle('hidden', mod.kind === 'end' || mod.kind === 'corner');
-    el('act-solid').classList.toggle('is-on', mod.door === 'solid');
-    el('act-glass').classList.toggle('is-on', mod.door === 'glass');
-    const drawerBtn = el('act-drawers');
-    if (drawerBtn) {
-        const drawers = moduleDrawerCount(mod);
-        drawerBtn.classList.toggle('hidden', drawers <= 0);
-        drawerBtn.textContent = mod.drawersOpen > 0.5 ? 'Çekmeceleri kapat' : 'Çekmeceleri aç';
-    }
     ui.classList.toggle('hidden', under.behind);
     handle.classList.toggle('hidden', top.behind || Boolean(mod.glb));
     ui.style.left = `${under.x}px`;
@@ -2181,18 +2173,26 @@ function init3d() {
             pointerPress.moved = true;
             return;
         }
+        const id = moduleUnder(event);
         pointerDown = { x: event.clientX, y: event.clientY, t: performance.now() };
         pointerPress = {
             x: event.clientX,
             y: event.clientY,
             pointerId: event.pointerId,
-            id: moduleUnder(event),
+            id,
             moved: false,
         };
-    });
+        if (!id) return;
+        controls.enabled = false;
+        if (selectedId !== id) {
+            selectedId = id;
+            render();
+        }
+    }, true);
     window.addEventListener('pointermove', (event) => {
         if (pointerPress && Math.hypot(event.clientX - pointerPress.x, event.clientY - pointerPress.y) > clickSlop) {
             pointerPress.moved = true;
+            if (pointerPress.id && !moduleDrag) beginModuleDrag(pointerPress.id, event);
         }
         if (!moduleDrag || heightDrag) return;
         if (Math.hypot(event.clientX - moduleDrag.x, event.clientY - moduleDrag.y) < 8) return;
@@ -2238,6 +2238,7 @@ function init3d() {
         if (!press || press.moved || !press.id) return;
         if (event.pointerType === 'mouse' && event.button !== 0) return;
         if (Math.hypot(event.clientX - press.x, event.clientY - press.y) > clickSlop) return;
+        if (selectedId === press.id) return;
         selectedId = press.id;
         render();
     });
@@ -2382,18 +2383,37 @@ function renderLibrary() {
                 </button>`).join('');
         body = cards ? `<div class="catalog">${cards}</div>` : '';
     }
-    host.innerHTML = `${switcher}${body ? `<p class="hint">Modüle basınca dolaba eklenir. Taşımak için seçili ismi sürükle.</p>${body}` : '<p class="hint">Eşleşen modül yok.</p>'}`;
+    host.innerHTML = `${switcher}${body ? `<p class="hint">Modülü sahneye sürükle. Basınca da eklenir.</p>${body}` : '<p class="hint">Eşleşen modül yok.</p>'}`;
     host.querySelector('#catalog-glb').onclick = () => { catalogMode = 'glb'; renderLibrary(); };
     host.querySelector('#catalog-cad').onclick = () => { catalogMode = 'cad'; renderLibrary(); };
-    host.querySelectorAll('[data-glb]').forEach((button) => {
-        button.onclick = () => addGlbModule(button.dataset.glb);
-    });
-    host.querySelectorAll('[data-cad]').forEach((button) => {
-        button.onclick = () => addCadModule(button.dataset.cad);
-    });
-    host.querySelectorAll('[data-product]').forEach((button) => {
-        button.onclick = () => addProduct(button.dataset.product);
-    });
+    const bindCard = (button, kind, id) => {
+        button.addEventListener('pointerdown', (event) => {
+            if (event.button !== 0) return;
+            button.dataset.skipClick = '';
+            catalogDrag = {
+                kind,
+                id,
+                x: event.clientX,
+                y: event.clientY,
+                active: false,
+                name: button.querySelector('strong')?.textContent || 'Modül',
+            };
+        });
+        button.addEventListener('click', (event) => {
+            if (button.dataset.skipClick === '1') {
+                button.dataset.skipClick = '';
+                event.preventDefault();
+                return;
+            }
+            if (kind === 'glb') addGlbModule(id);
+            else if (kind === 'cad') addCadModule(id);
+            else addProduct(id);
+        });
+    };
+    host.querySelectorAll('[data-glb]').forEach((button) => bindCard(button, 'glb', button.dataset.glb));
+    host.querySelectorAll('[data-cad]').forEach((button) => bindCard(button, 'cad', button.dataset.cad));
+    host.querySelectorAll('[data-product]').forEach((button) => bindCard(button, 'product', button.dataset.product));
+    ensureCatalogDrag();
 }
 
 function decorLabel(id) {
@@ -2516,7 +2536,8 @@ function moduleConfigHtml(mod) {
     return `
         <p class="picked">Seçili dolap</p>
         <h2>${mod.name}</h2>
-        <p class="hint">${mod.width} cm. Yerini sahnede sürükleyerek değiştir.</p>
+        <p class="hint">${mod.width} cm. Yerini sahnede sürükleyerek değiştir. Kapak sağda seçilir.</p>
+        ${mod.kind === 'end' || mod.kind === 'corner' ? '' : `<div class="field field-key"><label>Kapak</label><div class="seg"><button type="button" data-door="solid" class="${mod.door === 'solid' ? 'is-on' : ''}">Kapaklı</button><button type="button" data-door="glass" class="${mod.door === 'glass' ? 'is-on' : ''}">Cam kapaklı</button></div></div>`}
         ${mod.glb ? '' : `<div class="field"><label>Genişlik (cm)</label><input id="mod-w" type="number" min="30" max="200" value="${mod.width}"></div>`}
         ${shelfField}
         ${drawerField}
@@ -2542,6 +2563,12 @@ function moduleConfigHtml(mod) {
 }
 
 function bindModuleConfig(root, mod) {
+    root.querySelectorAll('[data-door]').forEach((button) => {
+        button.onclick = () => {
+            if (mod.door === button.dataset.door) return;
+            commit(() => { mod.door = button.dataset.door; });
+        };
+    });
     root.querySelectorAll('[data-swing]').forEach((button) => {
         button.onclick = () => commit(() => { mod.swing = button.dataset.swing; });
     });
@@ -3050,7 +3077,63 @@ async function ensureGlb(item) {
     }
 }
 
-async function addGlbModule(id) {
+function ensureCatalogDrag() {
+    if (catalogBound) return;
+    catalogBound = true;
+    const ghost = document.createElement('div');
+    ghost.id = 'catalog-ghost';
+    ghost.style.cssText = 'position:fixed;z-index:30;pointer-events:none;display:none;background:#149152;color:#fff;padding:6px 10px;border-radius:8px;font:600 12px Montserrat,sans-serif;';
+    document.body.appendChild(ghost);
+    window.addEventListener('pointermove', (event) => {
+        if (!catalogDrag) return;
+        if (Math.hypot(event.clientX - catalogDrag.x, event.clientY - catalogDrag.y) > 6) catalogDrag.active = true;
+        if (!catalogDrag.active) return;
+        ghost.style.display = 'block';
+        ghost.style.left = `${event.clientX + 14}px`;
+        ghost.style.top = `${event.clientY + 14}px`;
+        ghost.textContent = catalogDrag.name;
+    });
+    window.addEventListener('pointerup', (event) => {
+        if (!catalogDrag) return;
+        const drag = catalogDrag;
+        catalogDrag = null;
+        ghost.style.display = 'none';
+        if (!drag.active) return;
+        const card = document.querySelector(`[data-${drag.kind}="${drag.id}"]`);
+        if (card) card.dataset.skipClick = '1';
+        const rect = el('viewport')?.getBoundingClientRect();
+        if (!rect || event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) return;
+        if (drag.kind === 'glb') addGlbModule(drag.id, event);
+        else if (drag.kind === 'cad') addCadModule(drag.id, event);
+        else addProduct(drag.id, event);
+    });
+}
+
+function placeDropped(mod, dropEvent) {
+    if (!dropEvent) return true;
+    const pick = dragTarget(dropEvent, mod);
+    if (!pick) {
+        toast('Duvarın üzerine bırak.');
+        return false;
+    }
+    if (mod.kind === 'corner') {
+        const wantRight = pick.wall === 'right' || (pick.wall === 'front' && pick.offset > wallLimit() / 2);
+        const taken = state.modules.some((entry) => entry.kind === 'corner' && (wantRight ? entry.cornerSide !== 'left' : entry.cornerSide === 'left'));
+        if (taken) {
+            toast(wantRight ? 'Sağ köşe dolu.' : 'Sol köşe dolu.');
+            return false;
+        }
+        mod.cornerSide = wantRight ? 'right' : 'left';
+        mod.wall = 'front';
+        mod.offset = wantRight ? 10000 : -1;
+        return true;
+    }
+    mod.wall = pick.wall;
+    mod.offset = pick.offset;
+    return true;
+}
+
+async function addGlbModule(id, dropEvent) {
     const item = glbCatalog.find((entry) => entry.id === id);
     if (!item) return;
     try {
@@ -3073,7 +3156,9 @@ async function addGlbModule(id) {
     mod.kind = item.category === 'kose' ? 'corner' : 'wardrobe';
     mod.wall = 'front';
     mod.offset = 10000;
-    if (mod.kind === 'corner') {
+    if (dropEvent) {
+        if (!placeDropped(mod, dropEvent)) return;
+    } else if (mod.kind === 'corner') {
         const hasLeft = state.modules.some((entry) => entry.kind === 'corner' && entry.cornerSide === 'left');
         const hasRight = state.modules.some((entry) => entry.kind === 'corner' && entry.cornerSide !== 'left');
         if (hasLeft && hasRight) {
@@ -3094,7 +3179,7 @@ async function addGlbModule(id) {
     el('inspector').classList.add('is-open');
 }
 
-function addCadModule(id) {
+function addCadModule(id, dropEvent) {
     const item = cadById(id);
     if (!item) return;
     const mod = createModule(item.width > 70 ? 'cift-raf' : 'tek-raf');
@@ -3122,6 +3207,9 @@ function addCadModule(id) {
     mod.rail = item.rails > 0;
     mod.wall = 'front';
     mod.offset = 10000;
+    if (dropEvent) {
+        if (!placeDropped(mod, dropEvent)) return;
+    }
     if (!layout([...state.modules, mod])) {
         toast('Bu modül duvara sığmıyor.');
         return;
@@ -3134,13 +3222,14 @@ function addCadModule(id) {
     el('inspector').classList.add('is-open');
 }
 
-function addProduct(productId) {
+function addProduct(productId, dropEvent) {
     const product = productById(productId);
     if (product.kind === 'corner' && state.modules.some((mod) => mod.kind === 'corner')) {
         toast('Köşe modülü bir kez konur.');
         return;
     }
     const mod = createModule(productId);
+    if (dropEvent && !placeDropped(mod, dropEvent)) return;
     if (!layout([...state.modules, mod])) {
         toast('Bu modül duvarın dışında kalıyor.');
         return;
@@ -3346,7 +3435,7 @@ function renderBackdrop(box) {
     const height = Math.max(roomHeightLimit(), box.max.y) + 520;
     const wall = new THREE.Mesh(
         new THREE.PlaneGeometry(width, height),
-        new THREE.MeshStandardMaterial({ color: '#f7f6f4', roughness: 0.94, metalness: 0 })
+        new THREE.MeshStandardMaterial({ color: '#f6f4f1', roughness: 0.78, metalness: 0 })
     );
     wall.name = 'render-backdrop';
     wall.position.set(center.x, height / 2 - 40, -14);
@@ -3362,7 +3451,7 @@ function studioKeyLight(cam, box) {
     group.name = 'studio-key';
     const retreat = cam.position.clone().sub(center).normalize();
     const lightDist = cam.position.distanceTo(center) + 90;
-    const intensity = THREE.MathUtils.clamp(2.1 * (lightDist / 460) ** 2, 0.45, 3.1);
+    const intensity = THREE.MathUtils.clamp(2.45 * (lightDist / 460) ** 2, 0.55, 3.2);
     const keyMat = new THREE.MeshStandardMaterial({
         color: '#000000', emissive: '#fff1e2', emissiveIntensity: intensity, roughness: 1, side: THREE.FrontSide,
     });
@@ -3405,6 +3494,73 @@ function prepareTraceTextures() {
 }
 
 let rendering = false;
+
+function denoiseRender(source) {
+    const width = source.width;
+    const height = source.height;
+    const copy = document.createElement('canvas');
+    copy.width = width;
+    copy.height = height;
+    const ctx = copy.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(source, 0, 0);
+    const image = ctx.getImageData(0, 0, width, height);
+    const count = width * height;
+    let src = new Float32Array(count * 3);
+    const dst = new Float32Array(count * 3);
+    for (let i = 0; i < count; i += 1) {
+        src[i * 3] = image.data[i * 4];
+        src[i * 3 + 1] = image.data[i * 4 + 1];
+        src[i * 3 + 2] = image.data[i * 4 + 2];
+    }
+    const kernel = [1, 4, 6, 4, 1];
+    const colorSigma = 28 * 28 * 2;
+    let read = src;
+    let write = dst;
+    let step = 1;
+    for (let pass = 0; pass < 3; pass += 1) {
+        for (let y = 0; y < height; y += 1) {
+            for (let x = 0; x < width; x += 1) {
+                const center = (y * width + x) * 3;
+                const cr = read[center];
+                const cg = read[center + 1];
+                const cb = read[center + 2];
+                let r = 0;
+                let g = 0;
+                let b = 0;
+                let weight = 0;
+                for (let ky = -2; ky <= 2; ky += 1) {
+                    const yy = Math.min(height - 1, Math.max(0, y + ky * step));
+                    for (let kx = -2; kx <= 2; kx += 1) {
+                        const xx = Math.min(width - 1, Math.max(0, x + kx * step));
+                        const sample = (yy * width + xx) * 3;
+                        const dr = read[sample] - cr;
+                        const dg = read[sample + 1] - cg;
+                        const db = read[sample + 2] - cb;
+                        const influence = Math.exp(-(dr * dr + dg * dg + db * db) / colorSigma) * kernel[kx + 2] * kernel[ky + 2];
+                        r += read[sample] * influence;
+                        g += read[sample + 1] * influence;
+                        b += read[sample + 2] * influence;
+                        weight += influence;
+                    }
+                }
+                write[center] = r / weight;
+                write[center + 1] = g / weight;
+                write[center + 2] = b / weight;
+            }
+        }
+        const swap = read;
+        read = write;
+        write = swap;
+        step *= 2;
+    }
+    for (let i = 0; i < count; i += 1) {
+        image.data[i * 4] = read[i * 3];
+        image.data[i * 4 + 1] = read[i * 3 + 1];
+        image.data[i * 4 + 2] = read[i * 3 + 2];
+    }
+    ctx.putImageData(image, 0, 0);
+    return copy;
+}
 
 async function takeRender() {
     if (rendering || !renderer) return;
@@ -3464,33 +3620,33 @@ async function takeRender() {
         envTex.bottomColor.set('#c9b59a');
         envTex.update();
         scene.environment = envTex;
-        scene.environmentIntensity = 0.7;
+        scene.environmentIntensity = 1.05;
         const tracer = new WebGLPathTracer(renderer);
-        tracer.tiles.set(2, 2);
+        const tilesX = 2;
+        const tilesY = 2;
+        const passes = 80;
+        tracer.tiles.set(tilesX, tilesY);
         tracer.bounces = 6;
         tracer.transmissiveBounces = 8;
         tracer.multipleImportanceSampling = true;
-        tracer.filterGlossyFactor = 0.35;
+        tracer.filterGlossyFactor = 0.55;
         tracer.stableNoise = true;
         tracer.renderDelay = 0;
         tracer.fadeDuration = 0;
         tracer.minSamples = 1;
         tracer.renderScale = 1;
         tracer.setScene(scene, camera);
-        const goal = 120;
+        const goal = passes * tilesX * tilesY;
         const started = performance.now();
-        let href = '';
-        while (tracer.samples < goal && performance.now() - started < 240000) {
+        while (tracer.samples < goal && performance.now() - started < 420000) {
             tracer.renderSample();
-            const shown = Math.min(goal, Math.floor(tracer.samples));
-            button.textContent = `Render ${shown}/${goal}`;
-            if (tracer.samples >= goal || performance.now() - started >= 240000) {
-                href = renderer.domElement.toDataURL('image/png');
-                break;
-            }
+            const shown = Math.min(passes, Math.floor(tracer.samples / (tilesX * tilesY)));
+            button.textContent = `Render ${shown}/${passes}`;
             await new Promise((resolve) => requestAnimationFrame(resolve));
         }
-        if (!href) href = renderer.domElement.toDataURL('image/png');
+        button.textContent = 'Netleştiriliyor';
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        const href = denoiseRender(renderer.domElement).toDataURL('image/png');
         renderer.setPixelRatio(ratio);
         renderer.setSize(size.x, size.y, false);
         const link = document.createElement('a');
@@ -3636,20 +3792,6 @@ function bindChrome() {
             msg.textContent = 'Bağlantı kurulamadı. Tasarımı kaydedip daha sonra deneyin.';
         }
     });
-    const setDoorStyle = (style) => {
-        const mod = selected();
-        if (!mod || mod.kind === 'end' || mod.door === style) return;
-        commit(() => { mod.door = style; });
-    };
-    el('act-solid').onclick = () => setDoorStyle('solid');
-    el('act-glass').onclick = () => setDoorStyle('glass');
-    el('act-drawers').onclick = () => {
-        const mod = selected();
-        if (!mod || moduleDrawerCount(mod) <= 0) return;
-        commit(() => { mod.drawersOpen = mod.drawersOpen > 0.5 ? 0 : 1; });
-    };
-    el('act-left').onclick = () => { if (selected()) moveModule(selected().id, -1); };
-    el('act-right').onclick = () => { if (selected()) moveModule(selected().id, 1); };
     el('act-config').onclick = () => {
         if (!selected()) return;
         el('config-modal').classList.add('hidden');

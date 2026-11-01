@@ -45,6 +45,8 @@
         .field { margin-bottom: 10px; }
         canvas { width: 100%; height: 240px; background: #f7f6f4; border: 1px solid var(--line); border-radius: 10px; touch-action: none; }
         .msg { min-height: 18px; color: var(--danger); font-size: 13px; }
+        .is-hidden { display: none; }
+        .mode .btn.is-on { background: var(--accent); color: #fff; border-color: var(--accent); }
         @media (max-width: 800px) { section.form { max-width: none; } }
     </style>
 </head>
@@ -67,18 +69,24 @@
         <form id="create">
             <div class="field"><label>Ad</label><input name="customerName" required maxlength="120"></div>
             <div class="field"><label>Proje adı</label><input name="projectName" required maxlength="80" value="Dolabım"></div>
-            <div class="grid">
-                <div class="field"><label>Sol duvar (cm)</label><input name="leftWall" type="number" min="80" max="800" value="300" required></div>
-                <div class="field"><label>Ön duvar (cm)</label><input name="frontWall" type="number" min="80" max="800" value="300" required></div>
-                <div class="field"><label>Sağ duvar (cm)</label><input name="rightWall" type="number" min="80" max="800" value="300" required></div>
-                <div class="field"><label>Yükseklik (cm)</label><input name="roomHeight" type="number" min="160" max="400" value="270" required></div>
+            <div class="row mode">
+                <button type="button" class="btn" id="mode-draw">Duvarları çiz</button>
+                <button type="button" class="btn is-on" id="mode-measure">Ölçüye göre</button>
             </div>
-            <p class="hint">Kapı veya pencereyi duvarın üzerine bırak. Bir daha basınca kalkar.</p>
-            <div class="row">
-                <button type="button" class="btn primary" id="tool-door">Kapı</button>
-                <button type="button" class="btn" id="tool-window">Pencere</button>
+            <div id="measure-fields" class="grid">
+                <div class="field"><label>Sol duvar (cm)</label><input name="leftWall" type="number" min="80" max="800" value="300"></div>
+                <div class="field"><label>Ön duvar (cm)</label><input name="frontWall" type="number" min="80" max="800" value="300"></div>
+                <div class="field"><label>Sağ duvar (cm)</label><input name="rightWall" type="number" min="80" max="800" value="300"></div>
             </div>
-            <canvas id="sketch" width="680" height="440"></canvas>
+            <div class="field"><label>Yükseklik (cm)</label><input name="roomHeight" type="number" min="160" max="400" value="270" required></div>
+            <div id="draw-fields" class="is-hidden">
+                <p class="hint">Duvarın ucundaki noktayı çekerek uzat. Kapı veya pencereyi duvarın üzerine bırak. Bir daha basınca kalkar.</p>
+                <div class="row">
+                    <button type="button" class="btn primary" id="tool-door">Kapı</button>
+                    <button type="button" class="btn" id="tool-window">Pencere</button>
+                </div>
+                <canvas id="sketch" width="680" height="440"></canvas>
+            </div>
             <div class="field" style="margin-top:10px"><label>Not</label><input name="note" maxlength="2000"></div>
             <p class="msg" id="msg"></p>
             <button class="btn primary" type="submit">Dolabı tasarla</button>
@@ -141,6 +149,21 @@ function draw() {
         else { ctx.moveTo(x, z); ctx.lineTo(x, z + len); }
         ctx.stroke();
     });
+    const grips = [
+        { id: 'left', x: room.left.x2, z: room.left.z2, label: `${room.left.length} cm`, lx: room.left.x1 - 8, lz: (room.left.z1 + room.left.z2) / 2 },
+        { id: 'front', x: room.front.x2, z: room.front.z2, label: `${room.front.length} cm`, lx: (room.front.x1 + room.front.x2) / 2, lz: room.front.z1 - 16 },
+        { id: 'right', x: room.right.x2, z: room.right.z2, label: `${room.right.length} cm`, lx: room.right.x1 + 12, lz: (room.right.z1 + room.right.z2) / 2 },
+    ];
+    ctx.fillStyle = '#1f6b4a';
+    ctx.font = '12px Montserrat, sans-serif';
+    grips.forEach((grip) => {
+        ctx.beginPath();
+        ctx.arc(grip.x, grip.z, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#6d6a64';
+        ctx.fillText(grip.label, grip.lx, grip.lz);
+        ctx.fillStyle = '#1f6b4a';
+    });
 }
 
 function nearest(event) {
@@ -163,7 +186,35 @@ function nearest(event) {
     return best && best.dist < 28 ? best : null;
 }
 
+function pointerPos(event) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+        x: (event.clientX - rect.left) * (canvas.width / rect.width),
+        z: (event.clientY - rect.top) * (canvas.height / rect.height),
+    };
+}
+
+function gripAt(event) {
+    const point = pointerPos(event);
+    const room = walls();
+    const grips = [
+        { id: 'left', x: room.left.x2, z: room.left.z2 },
+        { id: 'front', x: room.front.x2, z: room.front.z2 },
+        { id: 'right', x: room.right.x2, z: room.right.z2 },
+    ];
+    return grips.find((grip) => Math.hypot(point.x - grip.x, point.z - grip.z) < 16) || null;
+}
+
+let gripDrag = null;
 canvas.addEventListener('pointerdown', (event) => {
+    const grip = gripAt(event);
+    if (grip) {
+        const form = document.getElementById('create');
+        const field = grip.id === 'front' ? 'frontWall' : `${grip.id}Wall`;
+        gripDrag = { id: grip.id, field, cm: Number(form[field].value) || 300, y: event.clientY, x: event.clientX, scale: walls().scale };
+        canvas.setPointerCapture(event.pointerId);
+        return;
+    }
     const hit = nearest(event);
     if (!hit) return;
     const width = tool === 'door' ? 90 : 120;
@@ -173,6 +224,31 @@ canvas.addEventListener('pointerdown', (event) => {
     else openings.push({ id: `o${Date.now()}`, wallId: hit.wall.id, kind: tool, offset: Math.round(offset), width, height: tool === 'door' ? 210 : 120, sill: tool === 'door' ? 0 : 90 });
     draw();
 });
+canvas.addEventListener('pointermove', (event) => {
+    if (!gripDrag) return;
+    const form = document.getElementById('create');
+    const rect = canvas.getBoundingClientRect();
+    const dx = (event.clientX - gripDrag.x) * (canvas.width / rect.width);
+    const dy = (event.clientY - gripDrag.y) * (canvas.height / rect.height);
+    const delta = gripDrag.id === 'front' ? dx : dy;
+    const next = Math.round(gripDrag.cm + delta / gripDrag.scale);
+    form[gripDrag.field].value = String(Math.max(80, Math.min(800, next)));
+    draw();
+});
+canvas.addEventListener('pointerup', () => { gripDrag = null; });
+document.getElementById('mode-draw').onclick = () => {
+    document.getElementById('measure-fields').classList.add('is-hidden');
+    document.getElementById('draw-fields').classList.remove('is-hidden');
+    document.getElementById('mode-draw').classList.add('is-on');
+    document.getElementById('mode-measure').classList.remove('is-on');
+    draw();
+};
+document.getElementById('mode-measure').onclick = () => {
+    document.getElementById('draw-fields').classList.add('is-hidden');
+    document.getElementById('measure-fields').classList.remove('is-hidden');
+    document.getElementById('mode-measure').classList.add('is-on');
+    document.getElementById('mode-draw').classList.remove('is-on');
+};
 document.getElementById('tool-door').onclick = () => { tool = 'door'; document.getElementById('tool-door').className = 'btn primary'; document.getElementById('tool-window').className = 'btn'; };
 document.getElementById('tool-window').onclick = () => { tool = 'window'; document.getElementById('tool-window').className = 'btn primary'; document.getElementById('tool-door').className = 'btn'; };
 document.getElementById('create').addEventListener('input', draw);
@@ -228,6 +304,14 @@ document.getElementById('create').addEventListener('submit', async (event) => {
     const front = Number(form.get('frontWall'));
     const right = Number(form.get('rightWall'));
     const roomH = Number(form.get('roomHeight'));
+    if (![left, front, right].every((value) => Number.isFinite(value) && value >= 80 && value <= 800)) {
+        msg.textContent = 'Duvar genişlikleri 80 ile 800 cm arasında olmalı.';
+        return;
+    }
+    if (!Number.isFinite(roomH) || roomH < 160 || roomH > 400) {
+        msg.textContent = 'Yükseklik 160 ile 400 cm arasında olmalı.';
+        return;
+    }
     const name = String(form.get('projectName') || 'Dolabım');
     msg.textContent = 'Kaydediliyor…';
     const response = await fetch(storeUrl, {

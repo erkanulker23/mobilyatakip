@@ -37,6 +37,7 @@ final class WorkshopUser
             'notifications.',
             'api.user-tasks.',
             'logout',
+            'wardrobe.',
             'assets.',
             'storage.',
             'company.',

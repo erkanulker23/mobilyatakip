@@ -87,7 +87,7 @@ Route::prefix('katalog')->middleware('throttle:60,1')->group(function () {
         ->name('catalog.category');
 });
 
-Route::prefix('dolap')->group(function () {
+Route::prefix('dolap')->middleware('auth')->group(function () {
     Route::get('/', [\App\Http\Controllers\PublicWardrobeController::class, 'index'])
         ->middleware('throttle:120,1,wardrobe-page')
         ->name('wardrobe.index');

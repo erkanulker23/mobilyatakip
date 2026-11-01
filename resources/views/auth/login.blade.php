@@ -67,7 +67,7 @@
                 <button type="submit" class="btn-login" id="login-btn">Giriş Yap</button>
             </form>
 
-            <p class="panel-note">Misafir olarak takip, katalog ve 3D tasarımı soldaki bağlantılardan kullanabilirsiniz.</p>
+            <p class="panel-note">Misafir olarak takip ve kataloğu soldaki bağlantılardan kullanabilirsiniz. Dolap için üye girişi gerekir.</p>
         </div>
     </aside>
 </div>

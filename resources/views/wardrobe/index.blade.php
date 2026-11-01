@@ -59,7 +59,7 @@
         .side-foot { border-top: 1px solid var(--line); padding: 12px; flex: 0 0 auto; }
         .side-foot .btn { width: 100%; }
         .catalog { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .card { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 12px; background: #fff; padding: 6px; text-align: left; }
+        .card { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 12px; background: #fff; padding: 6px; text-align: left; cursor: grab; touch-action: none; }
         .card:hover { border-color: #c8c2b6; }
         .card img { width: 100%; height: 168px; object-fit: contain; background: #fff; border-radius: 8px; }
         .catalog-switch { display: flex; gap: 6px; margin: 0 0 8px; }
@@ -168,14 +168,7 @@
             <div id="measure-layer" class="hidden"></div>
             <div id="selection-ui" class="hidden">
                 <div id="selection-name"></div>
-                <div class="selection-actions" id="selection-doors">
-                    <button type="button" id="act-solid">Kapaklı</button>
-                    <button type="button" id="act-glass">Cam kapaklı</button>
-                    <button type="button" id="act-drawers" class="hidden">Çekmeceleri aç</button>
-                </div>
                 <div class="selection-actions">
-                    <button type="button" id="act-left">Sola</button>
-                    <button type="button" id="act-right">Sağa</button>
                     <button type="button" id="act-config">Yapılandır</button>
                     <button type="button" id="act-clone">Klonla</button>
                     <button type="button" id="act-delete">Sil</button>
@@ -298,6 +291,6 @@
         csrf: @json(csrf_token())
     };
 </script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=83"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=85"></script>
 </body>
 </html>
