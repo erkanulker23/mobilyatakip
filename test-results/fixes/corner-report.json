@@ -1,0 +1,104 @@
+[
+  {
+    "id": "kose_1",
+    "doors": true,
+    "sum": "Sol 240 cm · Ön 360 cm · Sağ 240 cm · Yükseklik 270 cm · Dolap yüksekliği 250 cm · Dolap 90 cm"
+  },
+  {
+    "id": "kose_2",
+    "doors": true,
+    "sum": "Sol 240 cm · Ön 360 cm · Sağ 240 cm · Yükseklik 270 cm · Dolap yüksekliği 250 cm · Dolap 90 cm"
+  },
+  {
+    "id": "kose_3",
+    "doors": true,
+    "sum": "Sol 240 cm · Ön 360 cm · Sağ 240 cm · Yükseklik 270 cm · Dolap yüksekliği 250 cm · Dolap 90 cm"
+  },
+  {
+    "id": "kose_4",
+    "doors": true,
+    "sum": "Sol 240 cm · Ön 360 cm · Sağ 240 cm · Yükseklik 270 cm · Dolap yüksekliği 250 cm · Dolap 90 cm"
+  },
+  {
+    "id": "kose_5",
+    "doors": true,
+    "sum": "Sol 240 cm · Ön 360 cm · Sağ 240 cm · Yükseklik 270 cm · Dolap yüksekliği 250 cm · Dolap 90 cm"
+  },
+  {
+    "joined": "Sol 240 cm · Ön 360 cm · Sağ 240 cm · Yükseklik 270 cm · Dolap yüksekliği 250 cm · Dolap 225 cm",
+    "log": [
+      {
+        "at": "2026-11-01T11:07:32.981Z",
+        "id": "kose_1",
+        "result": "accepted",
+        "wall": "front",
+        "offset": 10000,
+        "count": 1
+      },
+      {
+        "at": "2026-11-01T11:07:33.345Z",
+        "id": "cift_v1",
+        "width": 90,
+        "clientX": 641,
+        "clientY": 413,
+        "wall": "front",
+        "offset": -36.1,
+        "hitX": 8.9,
+        "hitZ": 0,
+        "front": 360,
+        "left": 240,
+        "existing": [
+          {
+            "id": "kose_1",
+            "wall": "front",
+            "offset": 10000,
+            "width": 90
+          }
+        ]
+      },
+      {
+        "at": "2026-11-01T11:07:33.345Z",
+        "id": "cift_v1",
+        "result": "accepted",
+        "wall": "front",
+        "offset": 90,
+        "count": 2
+      },
+      {
+        "at": "2026-11-01T11:07:34.206Z",
+        "id": "tek_v1",
+        "width": 45,
+        "clientX": 710,
+        "clientY": 379,
+        "wall": "left",
+        "offset": 22.1,
+        "hitX": 0,
+        "hitZ": 44.6,
+        "front": 360,
+        "left": 240,
+        "existing": [
+          {
+            "id": "kose_1",
+            "wall": "front",
+            "offset": 10000,
+            "width": 90
+          },
+          {
+            "id": "cift_v1",
+            "wall": "front",
+            "offset": 90,
+            "width": 90
+          }
+        ]
+      },
+      {
+        "at": "2026-11-01T11:07:34.206Z",
+        "id": "tek_v1",
+        "result": "accepted",
+        "wall": "left",
+        "offset": 90,
+        "count": 3
+      }
+    ]
+  }
+]

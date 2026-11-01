@@ -1735,6 +1735,20 @@ function selectionFrame(mod) {
         selectionWashMat = new THREE.MeshBasicMaterial({ color: 0x149152, depthTest: false, depthWrite: false, transparent: true, opacity: 0.05 });
     }
     const box = footprint(mod);
+    if (mod.kind === 'corner') {
+        const group = new THREE.Group();
+        const arm = cornerArm();
+        const right = mod.cornerSide === 'right';
+        const place = (w, d, x, z) => {
+            const wash = new THREE.Mesh(new THREE.BoxGeometry(w, box.h, d), selectionWashMat);
+            wash.position.set(right ? 90 - x : x, box.h / 2, z);
+            wash.renderOrder = 19;
+            group.add(wash);
+        };
+        place(arm, 90, arm / 2, 45);
+        place(90 - arm, arm, arm + (90 - arm) / 2, arm / 2);
+        return group;
+    }
     const group = new THREE.Group();
     const w = box.w + 1.2;
     const h = box.h + 1.2;
@@ -1864,25 +1878,178 @@ function mountGlbDrawers(model, mod) {
     });
 }
 
+function cornerRecipe(id) {
+    return {
+        kose_1: { shelves: [42, 82, 122, 162, 204] },
+        kose_2: { shelves: [44, 109, 204], rail: 181 },
+        kose_3: { shelves: [33, 74, 119, 204], rail: 181, drawers: [17, 33] },
+        kose_4: { shelves: [33, 60, 87, 114, 141, 204] },
+        kose_5: { shelves: [39, 89, 149, 204], rail: 181 },
+    }[id] || { shelves: [40, 90, 140, 200] };
+}
+
+function cornerArm() {
+    return Math.min(60, Math.max(50, Number(state.depth) || 60));
+}
+
+function buildCornerCabinet(mod, preview) {
+    const outer = 90;
+    const arm = cornerArm();
+    const right = mod.cornerSide === 'right';
+    const h = moduleHeight(mod);
+    const base = plinthOf(mod);
+    const recipe = cornerRecipe(mod.glb);
+    const group = new THREE.Group();
+    const body = material('glb-body', carcassOf(mod));
+    const backMat = material('glb-back', backOf(mod));
+    const shelfMat = material('glb-shelf', shelfOf(mod));
+    const cx = (left, width) => (right ? outer - left - width : left) + width / 2;
+    const sideH = h - base;
+    const sideY = base + sideH / 2;
+    panel(group, T, sideH, outer - BACK, cx(0, T), sideY, BACK + (outer - BACK) / 2, body);
+    panel(group, outer - T, sideH, BACK, outer / 2, sideY, BACK / 2, backMat);
+    panel(group, T, sideH, arm - BACK, cx(outer - T, T), sideY, BACK + (arm - BACK) / 2, body);
+    panel(group, arm - T, sideH, T, cx(T, arm - T), sideY, outer - T / 2, body);
+    const yBottom = base + T / 2;
+    const yTop = h - T / 2;
+    const layL = (y, thick, mat) => {
+        panel(group, arm - T + 0.6, thick, outer - BACK - T, cx(T, arm - T + 0.6), y, BACK + (outer - BACK - T) / 2, mat);
+        panel(group, outer - arm, thick, Math.max(4, arm - BACK - 1.4), cx(arm, outer - arm), y, BACK + Math.max(4, arm - BACK - 1.4) / 2, mat);
+    };
+    layL(yBottom, T, body);
+    layL(yTop, T, body);
+    const drawerTop = recipe.drawers ? Math.max(...recipe.drawers) + 10 : 0;
+    recipe.shelves.forEach((height) => {
+        if (height <= base + T || height >= h - T) return;
+        if (height > drawerTop) layL(height, T, shelfMat);
+        else panel(group, outer - arm - T, T, arm - BACK - T, cx(arm + T, outer - arm - T), height, BACK + T + (arm - BACK - T) / 2, shelfMat);
+    });
+    if (recipe.rail) {
+        const rail = new THREE.Mesh(
+            new THREE.CylinderGeometry(1.1, 1.1, Math.max(12, arm - T * 3), 10),
+            material(`glb-metal-${aluminumOf(mod).id}`, aluminumOf(mod).color, { metal: true })
+        );
+        rail.rotation.z = Math.PI / 2;
+        rail.position.set(cx(T * 1.5, arm - T * 3), recipe.rail, arm * 0.72);
+        rail.name = 'askilik';
+        group.add(rail);
+    }
+    if (!preview && recipe.drawers) addCornerDrawers(group, mod, recipe, { outer, arm, right, h, base, cx });
+    if (mod.door !== 'none' && (preview || !doorsAreHidden(mod))) addCornerDoors(group, mod, { outer, arm, right, h, base, cx, drawerTop }, preview);
+    return group;
+}
+
+function addCornerDrawers(group, mod, recipe, box) {
+    const { arm, right, cx } = box;
+    const span = arm - T * 2;
+    const depth = Math.max(16, span - 4);
+    const frontT = DOOR_T;
+    const boxH = 14;
+    recipe.drawers.forEach((centerY) => {
+        const slide = new THREE.Group();
+        slide.name = 'drawer-slide';
+        const face = material('glb-drawer', drawerOf(mod));
+        const shell = material('glb-body', carcassOf(mod));
+        const z0 = arm + 2;
+        const z1 = 90 - T - 2;
+        const zSpan = Math.max(16, z1 - z0);
+        panel(slide, frontT, boxH, zSpan - 0.4, cx(arm - frontT, frontT), centerY, z0 + zSpan / 2, face);
+        panel(slide, depth, 1.2, zSpan - 2, cx(arm - frontT - depth, depth), centerY - boxH / 2 + 0.8, z0 + zSpan / 2, shell);
+        panel(slide, depth, boxH - 2, 1.2, cx(arm - frontT - depth, depth), centerY, z0 + 1, shell);
+        panel(slide, depth, boxH - 2, 1.2, cx(arm - frontT - depth, depth), centerY, z0 + zSpan - 1, shell);
+        panel(slide, 1.2, boxH - 2, zSpan - 2, cx(arm - frontT - 1.2, 1.2), centerY, z0 + zSpan / 2, shell);
+        panel(slide, 1.2, boxH - 2, zSpan - 2, cx(arm - frontT - depth, 1.2), centerY, z0 + zSpan / 2, shell);
+        slide.userData.slide = mod;
+        slide.userData.axis = 'x';
+        slide.userData.travel = (right ? -1 : 1) * Math.min(28, depth * 0.62);
+        group.add(slide);
+        slides.push(slide);
+    });
+}
+
+function addCornerDoors(group, mod, box, preview) {
+    const { outer, arm, right, h, base, drawerTop } = box;
+    const doorH = h - Math.max(base, drawerTop) - T - 0.6;
+    const y = Math.max(base, drawerTop) + doorH / 2;
+    const doorW = outer - arm - T;
+    if (doorH < 20 || doorW < 12) return;
+    const style = mod.door === 'glass' ? 'glass' : 'solid';
+    const front = new THREE.Group();
+    const hingeX = right ? T : outer - T;
+    front.position.set(hingeX, y, arm);
+    const frontLeaf = new THREE.Group();
+    frontLeaf.position.x = right ? doorW / 2 : -doorW / 2;
+    addCornerLeaf(frontLeaf, doorW, doorH, style, mod, right ? 'left' : 'right');
+    front.add(frontLeaf);
+    front.userData.kind = 'corner-door';
+    front.userData.sign = right ? 1 : -1;
+    front.userData.mod = mod;
+    group.add(front);
+    const side = new THREE.Group();
+    side.position.set(right ? outer - arm : arm, y, outer - T);
+    const sideLeaf = new THREE.Group();
+    sideLeaf.position.z = -doorW / 2;
+    const turned = new THREE.Group();
+    turned.rotation.y = Math.PI / 2;
+    addCornerLeaf(turned, doorW, doorH, style, mod, 'left');
+    sideLeaf.add(turned);
+    side.add(sideLeaf);
+    side.userData.kind = 'corner-door';
+    side.userData.sign = right ? -1 : 1;
+    side.userData.mod = mod;
+    group.add(side);
+    if (!preview) {
+        doorPivots.push(front, side);
+    }
+}
+
+function addCornerLeaf(parent, w, h, style, mod, hinge) {
+    if (style === 'glass') {
+        const alum = aluminumOf(mod);
+        const glass = glassOf(mod);
+        const frame = material(`alum-${alum.id}`, alum.color, { metal: true });
+        const bar = 3.2;
+        panel(parent, w, bar, DOOR_T, 0, h / 2 - bar / 2, DOOR_T / 2, frame);
+        panel(parent, w, bar, DOOR_T, 0, -h / 2 + bar / 2, DOOR_T / 2, frame);
+        panel(parent, bar, h, DOOR_T, -w / 2 + bar / 2, 0, DOOR_T / 2, frame);
+        panel(parent, bar, h, DOOR_T, w / 2 - bar / 2, 0, DOOR_T / 2, frame);
+        panel(parent, Math.max(1, w - bar * 2), Math.max(1, h - bar * 2), 0.6, 0, 0, DOOR_T * 0.55, material(`glass-${glass.id}`, glass.color, { glass: true, transmission: glass.transmission, attenuation: glass.attenuation }));
+    } else {
+        panel(parent, w - 0.35, h - 0.35, DOOR_T, 0, 0, DOOR_T / 2, material('door', doorOf(mod)));
+    }
+    if (hasKulp(mod)) {
+        const handle = new THREE.Mesh(
+            new THREE.BoxGeometry(1.1, Math.min(14, h * 0.18), 1.3),
+            material(`handle-${aluminumOf(mod).id}`, aluminumOf(mod).color, { metal: true })
+        );
+        handle.position.set(hinge === 'right' ? -w / 2 + 3.5 : w / 2 - 3.5, 0, DOOR_T + 0.7);
+        parent.add(handle);
+    }
+}
+
 function buildModule(mod, preview) {
     const group = new THREE.Group();
     group.name = `mod-${mod.id}`;
     group.userData.moduleId = mod.id;
     if (mod.glb) {
-        const template = glbTemplates.get(mod.glb);
-        if (!template) {
-            const box = footprint(mod);
-            const missing = new THREE.Mesh(
-                new THREE.BoxGeometry(box.w, box.h, box.d),
-                new THREE.MeshBasicMaterial({ color: '#c0392b', wireframe: true })
-            );
-            missing.position.set(box.w / 2, box.h / 2, box.d / 2);
-            group.add(missing);
+        if (mod.kind === 'corner') {
+            group.add(buildCornerCabinet(mod, preview));
         } else {
-            group.add(placeGlb(template, mod));
-            const box = footprint(mod);
-            if (mod.kind !== 'corner' && mod.door && mod.door !== 'none' && (preview || !doorsAreHidden(mod))) {
-                addDoors(group, box.w, box.h, box.d, mod, preview);
+            const template = glbTemplates.get(mod.glb);
+            if (!template) {
+                const box = footprint(mod);
+                const missing = new THREE.Mesh(
+                    new THREE.BoxGeometry(box.w, box.h, box.d),
+                    new THREE.MeshBasicMaterial({ color: '#c0392b', wireframe: true })
+                );
+                missing.position.set(box.w / 2, box.h / 2, box.d / 2);
+                group.add(missing);
+            } else {
+                group.add(placeGlb(template, mod));
+                const box = footprint(mod);
+                if (mod.door && mod.door !== 'none' && (preview || !doorsAreHidden(mod))) {
+                    addDoors(group, box.w, box.h, box.d, mod, preview);
+                }
             }
         }
     } else if (mod.kind === 'end') addEndPanel(group, mod);
@@ -2045,7 +2212,9 @@ function doorAngle(pivot) {
     const open = pivot.userData.mod?.open || 0;
     const sign = pivot.userData.kind === 'accordion'
         ? pivot.userData.sign
-        : (pivot.userData.hinge === 'left' ? -1 : 1);
+        : pivot.userData.kind === 'corner-door'
+            ? (pivot.userData.sign || 1)
+            : (pivot.userData.hinge === 'left' ? -1 : 1);
     return sign * open * (pivot.userData.kind === 'accordion' ? 1.25 : 1.15);
 }
 
@@ -2060,7 +2229,9 @@ function snapDoors() {
     });
     slides.forEach((group) => {
         const open = group.userData.slide?.drawersOpen > 0.5 ? 1 : 0;
-        group.position.z = open * (group.userData.travel || 28);
+        const amount = open * (group.userData.travel || 28);
+        if (group.userData.axis === 'x') group.position.x = amount;
+        else group.position.z = amount;
     });
 }
 
@@ -2075,7 +2246,9 @@ function paintDoors(dt) {
     });
     slides.forEach((group) => {
         const open = group.userData.slide?.drawersOpen > 0.5 ? 1 : 0;
-        group.position.z = THREE.MathUtils.damp(group.position.z, open * (group.userData.travel || 28), 8, dt);
+        const amount = open * (group.userData.travel || 28);
+        if (group.userData.axis === 'x') group.position.x = THREE.MathUtils.damp(group.position.x, amount, 8, dt);
+        else group.position.z = THREE.MathUtils.damp(group.position.z, amount, 8, dt);
     });
 }
 
@@ -2132,10 +2305,11 @@ function setCameraView(mode) {
         right: new THREE.Vector3(center.x + dist, center.y, center.z),
         left45: new THREE.Vector3(center.x - dist * 0.72, center.y + dist * 0.18, center.z + dist * 0.72),
         right45: new THREE.Vector3(center.x + dist * 0.72, center.y + dist * 0.18, center.z + dist * 0.72),
-        top: new THREE.Vector3(center.x, center.y + dist, center.z + radius * 0.12),
+        top: new THREE.Vector3(center.x, center.y + dist, center.z + 0.2),
         perspective: new THREE.Vector3(center.x + dist * 0.42, center.y + dist * 0.34, center.z + dist * 0.9),
     };
-    controls.maxPolarAngle = Math.PI / 2 - 0.02;
+    controls.minPolarAngle = mode === 'top' ? 0 : 0.08;
+    controls.maxPolarAngle = mode === 'top' ? Math.PI : Math.PI / 2 - 0.02;
     controls.target.copy(center);
     camera.position.copy(eyes[mode] || eyes.perspective);
     camera.near = 1;
@@ -2644,7 +2818,7 @@ function moduleConfigHtml(mod) {
         <p class="picked">Seçili dolap</p>
         <h2>${mod.name}</h2>
         <p class="hint">${mod.width} cm. Yerini sahnede sürükleyerek değiştir. Kapak sağda seçilir.</p>
-        ${mod.kind === 'end' || mod.kind === 'corner' ? '' : `<div class="field field-key"><label>Kapak</label><div class="seg"><button type="button" data-door="solid" class="${mod.door === 'solid' ? 'is-on' : ''}">Kapaklı</button><button type="button" data-door="glass" class="${mod.door === 'glass' ? 'is-on' : ''}">Cam kapaklı</button></div></div>`}
+        ${mod.kind === 'end' ? '' : `<div class="field field-key"><label>Kapak</label><div class="seg"><button type="button" data-door="solid" class="${mod.door === 'solid' ? 'is-on' : ''}">Kapaklı</button><button type="button" data-door="glass" class="${mod.door === 'glass' ? 'is-on' : ''}">Cam kapaklı</button></div></div>`}
         ${mod.glb ? '' : `<div class="field"><label>Genişlik (cm)</label><input id="mod-w" type="number" min="30" max="200" value="${mod.width}"></div>`}
         ${shelfField}
         ${drawerField}
@@ -3057,9 +3231,11 @@ function dragTarget(event, mod) {
     const inHeight = (p) => p.y >= -20 && p.y <= tall + 40;
     const frontDepth = Math.max(30, Number(state.depth) || 60);
     const sideNear = frontDepth + 70;
+    const watchingLeft = camera.position.x < frontDepth;
+    const watchingRight = camera.position.x > front - frontDepth;
     consider('front', new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), (p) => inHeight(p) && p.x >= -40 && p.x <= front + 40, (p) => p.x - along / 2);
-    consider('left', new THREE.Plane(new THREE.Vector3(1, 0, 0), 0), (p) => inHeight(p) && p.z >= sideNear && p.z <= sideLimit('left') + 40, (p) => p.z - along / 2);
-    consider('right', new THREE.Plane(new THREE.Vector3(-1, 0, 0), -front), (p) => inHeight(p) && p.z >= sideNear && p.z <= sideLimit('right') + 40, (p) => p.z - along / 2);
+    consider('left', new THREE.Plane(new THREE.Vector3(1, 0, 0), 0), (p) => inHeight(p) && p.z >= (watchingLeft ? -40 : sideNear) && p.z <= sideLimit('left') + 40, (p) => p.z - along / 2);
+    consider('right', new THREE.Plane(new THREE.Vector3(-1, 0, 0), -front), (p) => inHeight(p) && p.z >= (watchingRight ? -40 : sideNear) && p.z <= sideLimit('right') + 40, (p) => p.z - along / 2);
     if (hits.length) return hits.sort((a, b) => a.distance - b.distance)[0];
     if (!ray.intersectPlane(floorPlane, floorHit)) return null;
     const choices = [{ wall: 'front', dist: Math.abs(floorHit.z), offset: floorHit.x - along / 2 }];
@@ -3334,7 +3510,7 @@ async function addGlbModule(id, dropEvent) {
         mod.spec = item.spec;
         mod.width = Math.round(item.width * 100);
         mod.height = mod.glbHeight;
-        mod.door = 'none';
+        mod.door = item.category === 'kose' ? 'solid' : 'none';
         mod.kind = item.category === 'kose' ? 'corner' : 'wardrobe';
         mod.wall = 'front';
         mod.offset = 10000;
