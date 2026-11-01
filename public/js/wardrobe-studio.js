@@ -73,6 +73,7 @@ let state = blankState();
 let history = [];
 let future = [];
 let selectedId = null;
+let allCabinetsSelected = false;
 let toastTimer = 0;
 let heightDrag = null;
 
@@ -105,6 +106,12 @@ const glbTemplates = new Map();
 const glbFailed = new Set();
 let glbCatalog = [];
 let showMeasures = false;
+let planMode = '3d';
+let guidesOn = true;
+let perspCamera = null;
+let orthoCamera = null;
+let guideLines = null;
+let customFor = null;
 let lightsOn = true;
 let hideAllDoors = false;
 let addDoor = 'solid';
@@ -240,7 +247,10 @@ function plinthOf(mod) {
 }
 
 function moduleHeight(mod) {
-    if (mod?.glbHeight) return mod.glbHeight;
+    if (mod?.glb) {
+        const raw = Number(mod.height) || Number(mod.glbHeight) || state.height;
+        return clamp(raw, H_MIN, H_MAX);
+    }
     const raw = Number(mod?.height) || state.height;
     const floor = mod?.cad === '11_ust_dolap' || mod?.dxf === 'ust' || raw < H_MIN ? 40 : H_MIN;
     return clamp(raw, floor, H_MAX);
@@ -303,10 +313,32 @@ function alongSize(mod) {
     return Math.max(30, Number(mod.width) || 45);
 }
 
+function depthNudge(mod) {
+    return clamp(Number(mod?.depthOffset) || 0, 0, 120);
+}
+
 function wallName(mod) {
     if (mod.kind === 'corner') return 'front';
     if (mod.wall === 'left' || mod.wall === 'right') return mod.wall;
     return 'front';
+}
+
+function sideCornerWall(mod) {
+    if (!mod || mod.kind === 'corner' || mod.kind === 'end') return '';
+    const wall = wallName(mod);
+    if (wall !== 'left' && wall !== 'right') return '';
+    const cornerTaken = state.modules.some((item) => item.kind === 'corner' && (wall === 'left' ? item.cornerSide === 'left' : item.cornerSide !== 'left'));
+    if (cornerTaken) return '';
+    const mates = state.modules.filter((item) => item !== mod && item.kind !== 'corner' && item.kind !== 'end' && wallName(item) === wall);
+    const start = mates.reduce((min, item) => Math.min(min, Number(item.offset) || 0), Number(mod.offset) || 0);
+    return Math.abs((Number(mod.offset) || 0) - start) < 8 ? wall : '';
+}
+
+function cornerModelId(mod) {
+    if (mod?.kind === 'corner' && mod.glb) return mod.glb;
+    if (cabinetHasDrawers(mod)) return 'kose_3';
+    if (/ask/i.test(`${mod?.name || ''} ${mod?.spec || ''}`)) return 'kose_2';
+    return 'kose_1';
 }
 
 function ensurePlacement(modules) {
@@ -368,9 +400,10 @@ function layout(modules) {
                 mod.offset = at;
             }
             occupied.push({ start: at, end: at + along });
-            if (wall === 'front') spots.push({ mod, x: at, z: 0, rot: 0 });
-            else if (wall === 'left') spots.push({ mod, x: 0, z: at + along, rot: Math.PI / 2 });
-            else spots.push({ mod, x: front, z: at, rot: -Math.PI / 2 });
+            const nudge = depthNudge(mod);
+            if (wall === 'front') spots.push({ mod, x: at, z: nudge, rot: 0 });
+            else if (wall === 'left') spots.push({ mod, x: nudge, z: at + along, rot: Math.PI / 2 });
+            else spots.push({ mod, x: front - nudge, z: at, rot: -Math.PI / 2 });
             return occupied;
         };
         const dragged = list.find((mod) => mod.id === dragId);
@@ -1353,17 +1386,6 @@ function paintGlb(root, mod) {
                 added.push([child, lip]);
             }
         }
-        if (role === 'drawer' && /_on_/.test(name) && child.geometry?.attributes?.normal) {
-            const cap = extractFaces(child.geometry, (_nx, ny) => Math.abs(ny) > 0.72);
-            if (cap.taken && cap.left) {
-                child.geometry = cap.left;
-                const lip = new THREE.Mesh(cap.taken, edgeBandMaterial(drawerId, woodOpts));
-                lip.name = `${child.name}_BANT`;
-                lip.castShadow = true;
-                lip.receiveShadow = true;
-                added.push([child, lip]);
-            }
-        }
         if (role !== 'shelf' || !child.geometry?.attributes?.normal) return;
         const front = extractFaces(child.geometry, (_nx, _ny, nz) => nz > 0.72);
         if (!front.taken || !front.left) return;
@@ -1389,6 +1411,11 @@ function moduleDrawerCount(mod) {
     const cad = cadById(mod.cad);
     if (cad) return mod.drawerCount ?? cad.drawers ?? 0;
     return mod.drawers || 0;
+}
+
+function cabinetHasDrawers(mod) {
+    if (mod?.glb) return glbDrawerCount(mod) > 0;
+    return moduleDrawerCount(mod) > 0;
 }
 
 function interiorZone(mod, h) {
@@ -2464,20 +2491,7 @@ function selectionFrame(mod) {
         selectionWashMat = new THREE.MeshBasicMaterial({ color: 0x149152, depthTest: false, depthWrite: false, transparent: true, opacity: 0 });
     }
     const box = footprint(mod);
-    if (mod.kind === 'corner') {
-        const group = new THREE.Group();
-        const arm = cornerArm();
-        const right = mod.cornerSide === 'right';
-        const place = (w, d, x, z) => {
-            const wash = new THREE.Mesh(new THREE.BoxGeometry(w, box.h, d), selectionWashMat);
-            wash.position.set(right ? 90 - x : x, box.h / 2, z);
-            wash.renderOrder = 19;
-            group.add(wash);
-        };
-        place(arm, 90, arm / 2, 45);
-        place(90 - arm, arm, arm + (90 - arm) / 2, arm / 2);
-        return group;
-    }
+    if (mod.kind === 'corner' || sideCornerWall(mod)) return cornerSelection(mod, box);
     const group = new THREE.Group();
     const w = box.w + 1.2;
     const h = box.h + 1.2;
@@ -2498,6 +2512,36 @@ function selectionFrame(mod) {
     wash.renderOrder = 19;
     group.add(wash);
     group.position.set(box.w / 2, box.h / 2, box.d / 2);
+    return group;
+}
+
+let selectionLineMat = null;
+
+function cornerSelection(mod, box) {
+    if (!selectionLineMat) {
+        selectionLineMat = new THREE.LineBasicMaterial({ color: 0x149152, depthTest: false, transparent: true, opacity: 0.95 });
+    }
+    const w = box.w;
+    const d = box.d;
+    const h = box.h;
+    const mirrored = sideCornerWall(mod) === 'left' || (mod.kind === 'corner' && mod.cornerSide === 'right');
+    const pts = mirrored
+        ? [[w, 0], [0, 0], [0, d / 2], [w / 2, d / 2], [w / 2, d], [w, d]]
+        : [[0, 0], [w, 0], [w, d / 2], [w / 2, d / 2], [w / 2, d], [0, d]];
+    const positions = [];
+    const edge = (x1, y1, z1, x2, y2, z2) => positions.push(x1, y1, z1, x2, y2, z2);
+    pts.forEach((point, index) => {
+        const next = pts[(index + 1) % pts.length];
+        edge(point[0], 0, point[1], next[0], 0, next[1]);
+        edge(point[0], h, point[1], next[0], h, next[1]);
+        edge(point[0], 0, point[1], point[0], h, point[1]);
+    });
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    const line = new THREE.LineSegments(geometry, selectionLineMat);
+    line.renderOrder = 20;
+    const group = new THREE.Group();
+    group.add(line);
     return group;
 }
 
@@ -2572,16 +2616,31 @@ function orientGlbToFront(root) {
         if (!panel || panel.max.z - panel.min.z > depth * 0.2) return;
         backZ = (panel.min.z + panel.max.z) / 2;
     });
-    if (backZ == null || backZ < box.min.z + depth * 0.5) return;
-    const limit = box.min.z + box.max.z;
-    rewritePositions(root, (x, y, z, nx, ny, nz) => ({
-        x,
-        y,
-        z: limit - z,
-        nx,
-        ny,
-        nz: -nz,
-    }));
+    if (!(backZ == null || backZ < box.min.z + depth * 0.5)) {
+        const limit = box.min.z + box.max.z;
+        rewritePositions(root, (x, y, z, nx, ny, nz) => ({
+            x,
+            y,
+            z: limit - z,
+            nx,
+            ny,
+            nz: -nz,
+        }));
+    }
+    const seated = geometryBounds(root);
+    const dx = Math.abs(seated.min.x) > 0.001 ? -seated.min.x : 0;
+    const dy = seated.min.y < -0.001 ? -seated.min.y : 0;
+    const dz = Math.abs(seated.min.z) > 0.001 ? -seated.min.z : 0;
+    if (dx || dy || dz) {
+        rewritePositions(root, (x, y, z, nx, ny, nz) => ({
+            x: x + dx,
+            y: y + dy,
+            z: z + dz,
+            nx,
+            ny,
+            nz,
+        }));
+    }
 }
 
 function mirrorModuleX(root, widthMeters) {
@@ -2887,7 +2946,13 @@ function placeGlb(template, mod) {
     const key = `${mod.glb}:${side}`;
     if (!bakedGlb.has(key)) bakedGlb.set(key, bakeGlb(template, side === 'right', mod.glbWidth || mod.width / 100, mod.glb));
     const wrap = new THREE.Group();
-    wrap.scale.setScalar(100);
+    const nativeW = (mod.glbWidth || mod.width / 100) * 100;
+    const nativeH = mod.glbHeight || moduleHeight(mod);
+    const sx = 100 * (mod.width / nativeW);
+    const sy = 100 * (moduleHeight(mod) / nativeH);
+    const returnCm = mod.returnDepth || mod.width;
+    const sz = mod.kind === 'corner' ? 100 * (returnCm / nativeW) : 100;
+    wrap.scale.set(sx, sy, sz);
     const model = bakedGlb.get(key).clone(true);
     paintGlb(model, mod);
     mountGlbDrawers(model, mod);
@@ -3174,14 +3239,16 @@ function addGlbLeds(wrap, model, mod) {
     if (host.children.length) wrap.add(host);
 }
 
-function remapGeometryY(mesh, oldMin, oldMax, newMin, newMax) {
+function remapGeometryAxis(mesh, axis, oldMin, oldMax, newMin, newMax) {
     const span = oldMax - oldMin;
     if (span < 0.001) return;
     const geometry = mesh.geometry.clone();
     const position = geometry.attributes.position;
     const scale = (newMax - newMin) / span;
+    const get = axis === 'x' ? 'getX' : 'getY';
+    const set = axis === 'x' ? 'setX' : 'setY';
     for (let i = 0; i < position.count; i += 1) {
-        position.setY(i, newMin + (position.getY(i) - oldMin) * scale);
+        position[set](i, newMin + (position[get](i) - oldMin) * scale);
     }
     position.needsUpdate = true;
     geometry.computeBoundingBox();
@@ -3189,19 +3256,37 @@ function remapGeometryY(mesh, oldMin, oldMax, newMin, newMax) {
     mesh.geometry = geometry;
 }
 
+function shiftTreeY(root, dy) {
+    root.traverse((child) => {
+        if (!child.isMesh || !child.geometry?.attributes?.position) return;
+        const geometry = child.geometry.clone();
+        const position = geometry.attributes.position;
+        for (let i = 0; i < position.count; i += 1) position.setY(i, position.getY(i) + dy);
+        position.needsUpdate = true;
+        geometry.computeBoundingBox();
+        geometry.computeBoundingSphere();
+        child.geometry = geometry;
+    });
+}
+
 function packDrawerFronts(model, meshes) {
     const reveal = 0.002;
+    const minFront = 0.14;
     const fronts = meshes.filter((mesh) => /_on_/.test(String(mesh.name || '').toLowerCase()));
     fronts.forEach((mesh) => {
         if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
     });
     const boards = [];
+    const sides = [];
     model.traverse((child) => {
         if (!child.isMesh || !child.geometry) return;
         const name = String(child.name || '').toLowerCase();
-        if (!/govde_alt|govde_ust|raf/.test(name) || /bant|_alt/.test(name)) return;
+        if (/bant|_alt/.test(name)) return;
         if (!child.geometry.boundingBox) child.geometry.computeBoundingBox();
-        if (child.geometry.boundingBox) boards.push(child.geometry.boundingBox);
+        const box = child.geometry.boundingBox;
+        if (!box) return;
+        if (/govde_alt|govde_ust|raf/.test(name)) boards.push({ mesh: child, box });
+        if (/govde_sol|govde_sag/.test(name)) sides.push(box);
     });
     const overlapsX = (box, other) => Math.min(box.max.x, other.max.x) - Math.max(box.min.x, other.min.x) > 0.04;
     const columns = [];
@@ -3215,29 +3300,50 @@ function packDrawerFronts(model, meshes) {
         column.sort((a, b) => a.geometry.boundingBox.min.y - b.geometry.boundingBox.min.y);
         const first = column[0].geometry.boundingBox;
         const last = column[column.length - 1].geometry.boundingBox;
-        const floor = boards.filter((box) => box.max.y <= first.min.y + 0.02 && overlapsX(box, first))
-            .sort((a, b) => b.max.y - a.max.y)[0];
-        const ceiling = boards.filter((box) => box.min.y >= (floor ? floor.max.y : 0) + 0.05 && overlapsX(box, first))
-            .sort((a, b) => a.min.y - b.min.y)[0];
-        let start = first.min.y;
-        let end = last.max.y;
-        if (floor && start - floor.max.y < 0.03 && start - floor.max.y > -0.002) start = floor.max.y + reveal;
-        if (ceiling && ceiling.min.y - end < 0.04) end = ceiling.min.y - reveal;
-        const slot = (end - start - reveal * (column.length - 1)) / column.length;
-        if (slot < 0.06 || end <= start) return;
+        const floor = boards.filter((entry) => entry.box.max.y <= first.min.y + 0.02 && overlapsX(entry.box, first))
+            .sort((a, b) => b.box.max.y - a.box.max.y)[0];
+        const above = boards.filter((entry) => entry.box.min.y >= (floor ? floor.box.max.y : 0) + 0.05 && overlapsX(entry.box, first))
+            .sort((a, b) => a.box.min.y - b.box.min.y);
+        const ceiling = above[0];
+        const next = above[1];
+        let start = floor ? floor.box.max.y + reveal : first.min.y;
+        let end = ceiling ? ceiling.box.min.y - reveal : last.max.y;
+        let slot = (end - start - reveal * (column.length - 1)) / column.length;
+        if (ceiling && slot < minFront) {
+            const current = Math.max(minFront, (last.max.y - first.min.y - reveal * (column.length - 1)) / column.length);
+            slot = current;
+            end = start + column.length * slot + reveal * (column.length - 1);
+            const dy = (end + reveal) - ceiling.box.min.y;
+            const height = ceiling.box.max.y - ceiling.box.min.y;
+            const blocked = next && ceiling.box.min.y + dy + height > next.box.min.y - reveal;
+            if (dy > 0 && !blocked) shiftTreeY(ceiling.mesh, dy);
+        }
+        if (slot < 0.08 || end <= start) return;
+        const left = sides.filter((box) => box.max.x <= first.min.x + 0.015).sort((a, b) => b.max.x - a.max.x)[0];
+        const right = sides.filter((box) => box.min.x >= first.max.x - 0.015).sort((a, b) => a.min.x - b.min.x)[0];
         column.forEach((front, index) => {
-            const old = front.geometry.boundingBox;
+            const old = front.geometry.boundingBox.clone();
             const newMin = start + index * (slot + reveal);
             const newMax = newMin + slot;
             const suffix = String(front.name || '').match(/_(\d+)$/)?.[1];
-            remapGeometryY(front, old.min.y, old.max.y, newMin, newMax);
+            const applyY = (mesh) => {
+                remapGeometryAxis(mesh, 'y', old.min.y, old.max.y, newMin, newMax);
+                mesh.children.forEach((child) => {
+                    if (child.isMesh) remapGeometryAxis(child, 'y', old.min.y, old.max.y, newMin, newMax);
+                });
+            };
+            applyY(front);
+            if (left && right) {
+                const face = front.geometry.boundingBox;
+                remapGeometryAxis(front, 'x', face.min.x, face.max.x, left.max.x + reveal, right.min.x - reveal);
+            }
             if (!suffix) return;
             meshes.forEach((mesh) => {
                 if (mesh === front) return;
                 const meshSuffix = String(mesh.name || '').match(/_(\d+)$/)?.[1];
                 if (meshSuffix !== suffix) return;
                 if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
-                remapGeometryY(mesh, old.min.y, old.max.y, newMin, newMax);
+                applyY(mesh);
             });
         });
     });
@@ -3414,7 +3520,7 @@ function cornerArm() {
 }
 
 function buildCornerCabinet(mod, preview) {
-    const outer = 90;
+    const outer = mod.width || 90;
     const arm = cornerArm();
     const right = mod.cornerSide === 'right';
     const h = moduleHeight(mod);
@@ -3488,6 +3594,36 @@ function addCornerDrawers(group, mod, recipe, box) {
     });
 }
 
+function addCornerGlbDoors(group, mod, preview) {
+    const w = mod.width || 90;
+    const d = mod.returnDepth || w;
+    const h = moduleHeight(mod);
+    const base = plinthOf(mod);
+    const doorH = h - base - T - 0.6;
+    if (doorH < 20) return;
+    const y = base + doorH / 2;
+    const mirrored = mod.cornerSide === 'right';
+    const style = mod.door === 'glass' ? 'glass' : 'solid';
+    const leafW = Math.max(12, w / 2 - T);
+    const leafD = Math.max(12, d / 2 - T);
+    const along = new THREE.Group();
+    along.position.set(mirrored ? leafW / 2 + T : w - leafW / 2, y, d / 2 + 0.2);
+    addCornerLeaf(along, leafW, doorH, style, mod, mirrored ? 'right' : 'left');
+    along.userData.kind = 'corner-door';
+    along.userData.sign = 1;
+    along.userData.mod = mod;
+    group.add(along);
+    const side = new THREE.Group();
+    side.position.set(w / 2, y, d - leafD / 2);
+    side.rotation.y = mirrored ? -Math.PI / 2 : Math.PI / 2;
+    addCornerLeaf(side, leafD, doorH, style, mod, 'left');
+    side.userData.kind = 'corner-door';
+    side.userData.sign = mirrored ? -1 : 1;
+    side.userData.mod = mod;
+    group.add(side);
+    if (!preview) doorPivots.push(along, side);
+}
+
 function addCornerDoors(group, mod, box, preview) {
     const { outer, arm, right, h, base, drawerTop } = box;
     const doorH = h - Math.max(base, drawerTop) - T - 0.6;
@@ -3554,7 +3690,25 @@ function buildModule(mod, preview) {
     group.name = `mod-${mod.id}`;
     group.userData.moduleId = mod.id;
     if (mod.glb) {
-        if (mod.kind === 'corner') {
+        const cornerWall = sideCornerWall(mod);
+        const cornerId = (mod.kind === 'corner' || cornerWall) ? cornerModelId(mod) : '';
+        const cornerTemplate = cornerId ? glbTemplates.get(cornerId) : null;
+        if (cornerId && !cornerTemplate && !glbFailed.has(cornerId) && !preview) {
+            const item = glbCatalog.find((entry) => entry.id === cornerId);
+            if (item) ensureGlb(item).then(() => rebuild()).catch(() => {});
+        }
+        if (cornerTemplate) {
+            const stand = {
+                ...mod,
+                glb: cornerId,
+                kind: 'corner',
+                cornerSide: cornerWall === 'left' ? 'right' : cornerWall === 'right' ? 'left' : (mod.cornerSide === 'right' ? 'right' : 'left'),
+                glbWidth: 0.9,
+                returnDepth: mod.kind === 'corner' ? (mod.width || 90) : (mod.glbDepth || state.depth || 60),
+            };
+            group.add(placeGlb(cornerTemplate, stand));
+            if (mod.door && mod.door !== 'none' && (preview || !doorsAreHidden(mod))) addCornerGlbDoors(group, stand, preview);
+        } else if (mod.kind === 'corner') {
             group.add(buildCornerCabinet(mod, preview));
         } else {
             const template = glbTemplates.get(mod.glb);
@@ -3592,7 +3746,7 @@ function buildModule(mod, preview) {
         }
         group.add(wing);
     } else addWardrobe(group, mod, mod.width, state.depth, preview);
-    if (!preview && mod.id === selectedId && !window.__qaShot) group.add(selectionFrame(mod));
+    if (!preview && !window.__qaShot && (mod.id === selectedId || (allCabinetsSelected && mod.kind !== 'end'))) group.add(selectionFrame(mod));
     if (!preview && showMeasures) addModuleMeasures(group, mod);
     return group;
 }
@@ -3732,6 +3886,7 @@ function rebuild() {
         cabinetRoot.add(group);
     });
     snapDoors();
+    syncGuides(spots);
 }
 
 function doorAngle(pivot) {
@@ -3803,9 +3958,9 @@ function updateHud() {
     box.getCenter(center);
     const under = project(new THREE.Vector3(center.x, box.min.y + 8, box.max.z));
     const top = project(new THREE.Vector3(center.x, box.max.y + 6, center.z));
-    el('selection-name').textContent = mod.name;
+    el('selection-name').textContent = allCabinetsSelected ? 'Tüm dolaplar' : mod.name;
     ui.classList.toggle('hidden', under.behind);
-    handle.classList.toggle('hidden', top.behind || Boolean(mod.glb));
+    handle.classList.toggle('hidden', top.behind);
     ui.style.left = `${under.x}px`;
     ui.style.top = `${under.y}px`;
     handle.style.left = `${top.x}px`;
@@ -3813,7 +3968,8 @@ function updateHud() {
 }
 
 function frameCamera() {
-    setCameraView('perspective');
+    if (planMode === '2d') framePlan();
+    else setCameraView('perspective');
 }
 
 function focusPart(pattern) {
@@ -3985,9 +4141,119 @@ function resize() {
     const viewport = el('viewport');
     const width = viewport.clientWidth || 600;
     const height = viewport.clientHeight || 400;
-    camera.aspect = width / Math.max(1, height);
-    camera.updateProjectionMatrix();
-    renderer.setSize(width, height, true);
+    if (camera?.isOrthographicCamera) {
+        const aspect = width / Math.max(1, height);
+        const halfH = Math.max(Math.abs(camera.top), 80);
+        camera.left = -halfH * aspect;
+        camera.right = halfH * aspect;
+    } else if (camera) {
+        camera.aspect = width / Math.max(1, height);
+    }
+    camera?.updateProjectionMatrix();
+    renderer?.setSize(width, height, true);
+}
+
+function framePlan() {
+    const width = wallLimit();
+    const depth = Math.max(roomDepthLimit(), 160);
+    const cx = width / 2;
+    const cz = depth / 2;
+    const aspect = (el('viewport').clientWidth || 600) / Math.max(1, el('viewport').clientHeight || 400);
+    const halfH = Math.max(width, depth) * 0.62;
+    orthoCamera.position.set(cx, 1200, cz);
+    orthoCamera.up.set(0, 0, -1);
+    orthoCamera.lookAt(cx, 0, cz);
+    orthoCamera.left = -halfH * aspect;
+    orthoCamera.right = halfH * aspect;
+    orthoCamera.top = halfH;
+    orthoCamera.bottom = -halfH;
+    orthoCamera.zoom = 1;
+    orthoCamera.updateProjectionMatrix();
+    controls.target.set(cx, 0, cz);
+    controls.update();
+}
+
+function setPlanMode(mode) {
+    if (!perspCamera || !orthoCamera || !controls) return;
+    planMode = mode === '2d' ? '2d' : '3d';
+    document.querySelectorAll('[data-plan]').forEach((button) => {
+        button.classList.toggle('is-on', button.dataset.plan === planMode);
+    });
+    if (planMode === '2d') {
+        camera = orthoCamera;
+        controls.object = orthoCamera;
+        controls.enableRotate = false;
+        controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
+        controls.minPolarAngle = 0;
+        controls.maxPolarAngle = 0.01;
+        framePlan();
+    } else {
+        camera = perspCamera;
+        controls.object = perspCamera;
+        controls.enableRotate = true;
+        controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
+        controls.minPolarAngle = 0.08;
+        controls.maxPolarAngle = Math.PI / 2 - 0.02;
+        setCameraView('perspective');
+    }
+    resize();
+}
+
+function revealCustomizer(mod) {
+    if (!mod || customFor === mod.id) return;
+    customFor = mod.id;
+    document.body.classList.add('show-custom');
+    document.body.classList.remove('show-library');
+    if (window.matchMedia('(max-width: 900px)').matches) {
+        el('library').classList.remove('is-open');
+        el('inspector').classList.add('is-open');
+        document.body.dataset.sheet = 'doors';
+    }
+    requestAnimationFrame(resize);
+}
+
+function showModuleLibrary() {
+    customFor = selectedId;
+    document.body.classList.add('show-library');
+    document.body.classList.remove('show-custom');
+    if (window.matchMedia('(max-width: 900px)').matches) openPhoneSheet('modules');
+    requestAnimationFrame(resize);
+}
+
+function syncGuides(spots) {
+    if (!guideLines) return;
+    guideLines.visible = guidesOn;
+    if (!guidesOn) return;
+    const width = wallLimit();
+    const depth = roomDepthLimit();
+    const pts = [];
+    const add = (x1, z1, x2, z2) => pts.push(x1, 0.6, z1, x2, 0.6, z2);
+    for (let x = 0; x <= width + 0.1; x += 50) add(x, 0, x, depth);
+    for (let z = 0; z <= depth + 0.1; z += 50) add(0, z, width, z);
+    add(0, 0, width, 0);
+    add(0, 0, 0, depth);
+    add(width, 0, width, depth);
+    (spots || []).forEach((spot) => {
+        const along = alongSize(spot.mod);
+        const boxDepth = spot.mod.kind === 'corner' ? spot.mod.width : (spot.mod.glbDepth || state.depth || 60);
+        if (Math.abs(spot.rot) < 0.01) {
+            add(spot.x, spot.z, spot.x, spot.z + boxDepth);
+            add(spot.x + along, spot.z, spot.x + along, spot.z + boxDepth);
+            add(spot.x, spot.z + boxDepth, spot.x + along, spot.z + boxDepth);
+        }
+    });
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+    guideLines.geometry.dispose();
+    guideLines.geometry = geometry;
+}
+
+function nudgeDepth(step) {
+    const mod = selected();
+    if (!mod || mod.kind === 'end') return;
+    commit(() => {
+        mod.depthOffset = clamp(depthNudge(mod) + step, 0, 120);
+    });
 }
 
 function init3d() {
@@ -3995,8 +4261,10 @@ function init3d() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color('#e7e6e3');
     camera = new THREE.PerspectiveCamera(42, 1, 2, 4000);
+    perspCamera = camera;
+    orthoCamera = new THREE.OrthographicCamera(-200, 200, 200, -200, 1, 4000);
     renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.98;
@@ -4012,7 +4280,7 @@ function init3d() {
     const key = new THREE.DirectionalLight(0xfffaf6, 0.78);
     key.position.set(200, 280, 360);
     key.castShadow = true;
-    key.shadow.mapSize.set(1024, 1024);
+    key.shadow.mapSize.set(2048, 2048);
     key.shadow.radius = 1.6;
     key.shadow.bias = -0.00018;
     key.shadow.normalBias = 0.12;
@@ -4064,6 +4332,12 @@ function init3d() {
 
     cabinetRoot = new THREE.Group();
     scene.add(cabinetRoot);
+    guideLines = new THREE.LineSegments(
+        new THREE.BufferGeometry(),
+        new THREE.LineBasicMaterial({ color: 0x7f978c, transparent: true, opacity: 0.55 })
+    );
+    guideLines.raycast = () => {};
+    scene.add(guideLines);
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.maxPolarAngle = Math.PI * 0.49;
@@ -4099,7 +4373,8 @@ function init3d() {
         };
         if (!id) return;
         controls.enabled = false;
-        if (selectedId !== id) {
+        if (selectedId !== id || allCabinetsSelected) {
+            allCabinetsSelected = false;
             selectedId = id;
             render();
         }
@@ -4153,7 +4428,8 @@ function init3d() {
         if (!press || press.moved || !press.id) return;
         if (event.pointerType === 'mouse' && event.button !== 0) return;
         if (Math.hypot(event.clientX - press.x, event.clientY - press.y) > clickSlop) return;
-        if (selectedId === press.id) return;
+        if (selectedId === press.id && !allCabinetsSelected) return;
+        allCabinetsSelected = false;
         selectedId = press.id;
         render();
     });
@@ -4368,6 +4644,48 @@ function decorLabel(id) {
     return `${item.name}${item.code ? ` ${item.code}` : ''}`;
 }
 
+function colorChoicesHtml(source, showDrawer) {
+    const allOn = allCabinetsSelected ? ' is-on' : '';
+    return `
+        ${decorPicker(source.carcassId, 'carcass', 'Gövde rengi', true)}
+        ${decorPicker(source.doorColorId, 'door', 'Kapak rengi', true)}
+        ${decorPicker(backOf(source), 'back', 'Arkalık rengi', true)}
+        ${decorPicker(shelfOf(source), 'shelf', 'Raf rengi', true)}
+        ${showDrawer ? decorPicker(drawerOf(source), 'drawer', 'Çekmece rengi', true) : ''}
+        <div class="field" data-picker="scope">
+            <button type="button" class="btn${allOn}" id="select-all-cabinets" style="width:100%">Tüm dolapları seç</button>
+            <button type="button" class="btn" id="apply-all" style="width:100%;margin-top:8px">Seçimi tüm dolaplara uygula</button>
+        </div>`;
+}
+
+function selectAllCabinets() {
+    const cabinets = state.modules.filter((item) => item.kind !== 'end');
+    if (!cabinets.length) {
+        toast('Sahnede dolap yok.');
+        return;
+    }
+    allCabinetsSelected = !allCabinetsSelected;
+    if (allCabinetsSelected && !cabinets.some((item) => item.id === selectedId)) selectedId = cabinets[0].id;
+    render();
+}
+
+function paintColor(mod, field, id) {
+    mod[field] = id;
+    if (!allCabinetsSelected) return;
+    state[field] = id;
+    state.modules.forEach((item) => {
+        if (item.kind === 'end') return;
+        item[field] = id;
+    });
+}
+
+function bindColorScope(root, source) {
+    const selectAll = root.querySelector('#select-all-cabinets');
+    if (selectAll) selectAll.onclick = () => selectAllCabinets();
+    const applyAll = root.querySelector('#apply-all');
+    if (applyAll) applyAll.onclick = () => commit(() => applyColorsToAll(source));
+}
+
 function decorPicker(active, attr, label, strong) {
     return `
         <div class="field${strong ? ' field-key' : ''}" data-picker="${attr}">
@@ -4490,11 +4808,10 @@ function moduleConfigHtml(mod) {
         ? `<div class="field"><label>Raf adedi</label><input id="mod-shelves" type="number" min="1" max="12" value="${shelves}"></div>`
         : '';
     const drawerField = mod.glb && glbDrawerCount(mod) > 0
-        ? `<div class="field field-key"><label>Çekmece</label>${decorPicker(drawerOf(mod), 'drawer', 'Çekmece rengi', false)}<button type="button" class="btn" id="mod-drawers" style="width:100%">${mod.drawersOpen > 0.5 ? 'Çekmeceleri kapat' : 'Çekmeceleri aç'}</button></div>`
+        ? `<div class="field field-key"><label>Çekmece</label><button type="button" class="btn" id="mod-drawers" style="width:100%">${mod.drawersOpen > 0.5 ? 'Çekmeceleri kapat' : 'Çekmeceleri aç'}</button></div>`
         : drawers > 0
         ? `<div class="field field-key"><label>Çekmece</label>
             <div class="field"><label>Adet</label><input id="mod-drawer-count" type="number" min="1" max="8" value="${drawers}"></div>
-            ${decorPicker(drawerOf(mod), 'drawer', 'Çekmece rengi', false)}
             <button type="button" class="btn" id="mod-drawers" style="width:100%">${mod.drawersOpen > 0.5 ? 'Çekmeceleri kapat' : 'Çekmeceleri aç'}</button>
         </div>`
         : '';
@@ -4505,26 +4822,24 @@ function moduleConfigHtml(mod) {
     return `
         <p class="picked">Seçili dolap</p>
         <h2>${mod.name}</h2>
-        <p class="hint">${mod.width} cm. Yerini sahnede sürükleyerek değiştir. ${mod.door === 'none' ? 'Kapak yok. Ahşap veya cam kapağı aşağıdan seç.' : 'Kapağı aşağıdan değiştirebilirsin.'}</p>
+        <p class="hint">${mod.width} × ${moduleHeight(mod)} cm. Yerini sahnede sürükleyerek değiştir. ${mod.door === 'none' ? 'Kapak yok. Ahşap veya cam kapağı aşağıdan seç.' : 'Kapağı aşağıdan değiştirebilirsin.'}</p>
+        ${allCabinetsSelected ? '<p class="hint">Tüm dolaplar seçili. Bir rengi değiştirince hepsine yazılır.</p>' : ''}
         ${boardNote}
+        ${colorChoicesHtml(mod, cabinetHasDrawers(mod))}
         ${mod.kind === 'end' ? '' : `<div class="field field-key"><label>Kapak</label><div class="seg"><button type="button" data-door="none" class="${mod.door === 'none' ? 'is-on' : ''}">Kapaksız</button><button type="button" data-door="solid" class="${mod.door === 'solid' ? 'is-on' : ''}">Ahşap kapak</button><button type="button" data-door="glass" class="${mod.door === 'glass' ? 'is-on' : ''}">Cam kapak</button></div></div>`}
-        ${mod.glb ? '' : `<div class="field"><label>Genişlik (cm)</label><input id="mod-w" type="number" min="30" max="200" value="${mod.width}"></div>`}
+        ${mod.kind === 'end' ? '' : `<div class="field"><label>Genişlik (cm)</label><input id="mod-w" type="number" min="30" max="200" value="${mod.width}"></div>`}
+        ${mod.kind === 'end' ? '' : `<div class="field"><label>Öne / arkaya (cm)</label><input id="mod-depth" type="number" min="0" max="120" value="${depthNudge(mod)}"></div>`}
         ${shelfField}
         ${drawerField}
         ${ledPicker(mod)}
         ${swingPicker(mod)}
         ${!swingPicker(mod) ? doorTools(mod) : ''}
-        ${decorPicker(mod.carcassId, 'carcass', 'Gövde rengi', true)}
-        ${decorPicker(mod.doorColorId, 'door', 'Dolap rengi', true)}
-        ${decorPicker(backOf(mod), 'back', 'Arkalık rengi', true)}
-        ${decorPicker(shelfOf(mod), 'shelf', 'Rafların rengi', true)}
         ${swatchPicker(ALUMINUM, aluminumOf(mod).id, 'alum', 'Alüminyum kapak', true)}
         ${swatchPicker(GLASS, glassOf(mod).id, 'glass', 'Cam')}
-        <button type="button" class="btn" id="apply-all" style="width:100%;margin-top:8px">Renkleri tümüne uygula</button>
         <label class="check"><input id="mod-plinth" type="checkbox" ${mod.plinth === false ? '' : 'checked'}> Bu dolapta baza olsun</label>
         <label class="check"><input id="mod-plinth-hidden" type="checkbox" ${mod.plinthHidden ? 'checked' : ''} ${mod.plinth === false ? 'disabled' : ''}> Gizli baza olsun</label>
         <label class="check"><input id="mod-kulp" type="checkbox" ${mod.kulp === false ? '' : 'checked'}> Bu dolapta kulp olsun</label>
-        ${mod.glb ? '' : `<div class="field"><label>Bu dolabın yüksekliği (cm)</label><input id="mod-h" type="number" min="${mod.dxf === 'ust' ? 40 : H_MIN}" max="${H_MAX}" value="${moduleHeight(mod)}"></div>`}
+        ${mod.kind === 'end' ? '' : `<div class="field"><label>Bu dolabın yüksekliği (cm)</label><input id="mod-h" type="number" min="${mod.dxf === 'ust' ? 40 : H_MIN}" max="${H_MAX}" value="${moduleHeight(mod)}"></div>`}
         ${mod.kind !== 'end' && !mod.glb ? `<button type="button" class="btn" id="mod-upper" style="width:100%;margin-bottom:12px">${upperHeight(mod) ? 'Üst dolabı kaldır' : 'Üst dolap ekle'}</button>` : ''}
         ${mod.kind !== 'end' && (mod.door === 'panjur' || mod.door === 'accordion') ? `<div class="field"><button type="button" class="btn" id="mod-open">${mod.open > 0.5 ? 'Kapağı kapat' : 'Kapağı aç'}</button></div>` : ''}
         <div style="display:flex;gap:8px">
@@ -4549,6 +4864,10 @@ function bindModuleConfig(root, mod) {
     const widthInput = root.querySelector('#mod-w');
     if (widthInput) widthInput.addEventListener('change', (event) => commit(() => {
         mod.width = clamp(Number(event.target.value), 30, 200);
+    }));
+    const depthInput = root.querySelector('#mod-depth');
+    if (depthInput) depthInput.addEventListener('change', (event) => commit(() => {
+        mod.depthOffset = clamp(Number(event.target.value), 0, 120);
     }));
     const shelfInput = root.querySelector('#mod-shelves');
     if (shelfInput) shelfInput.addEventListener('change', (event) => commit(() => {
@@ -4581,7 +4900,7 @@ function bindModuleConfig(root, mod) {
         mod.layout = 'custom';
         mod.product = 'custom';
     }));
-    bindDecor(root, 'drawer', drawerOf(mod), (id) => commit(() => { mod.drawerColorId = id; }));
+    bindDecor(root, 'drawer', drawerOf(mod), (id) => commit(() => paintColor(mod, 'drawerColorId', id)));
     root.querySelector('#mod-plinth').addEventListener('change', (event) => commit(() => {
         mod.plinth = event.target.checked;
         if (!mod.plinth) mod.plinthHidden = false;
@@ -4601,12 +4920,11 @@ function bindModuleConfig(root, mod) {
     }));
     bindSwatch(root, 'alum', (id) => commit(() => { mod.aluminumId = id; }));
     bindSwatch(root, 'glass', (id) => commit(() => { mod.glassId = id; }));
-    bindDecor(root, 'carcass', mod.carcassId, (id) => commit(() => { mod.carcassId = id; }));
-    bindDecor(root, 'door', mod.doorColorId, (id) => commit(() => { mod.doorColorId = id; }));
-    bindDecor(root, 'back', backOf(mod), (id) => commit(() => { mod.backId = id; }));
-    bindDecor(root, 'shelf', shelfOf(mod), (id) => commit(() => { mod.shelfId = id; }));
-    const applyAll = root.querySelector('#apply-all');
-    if (applyAll) applyAll.onclick = () => commit(() => applyColorsToAll(mod));
+    bindDecor(root, 'carcass', mod.carcassId, (id) => commit(() => paintColor(mod, 'carcassId', id)));
+    bindDecor(root, 'door', mod.doorColorId, (id) => commit(() => paintColor(mod, 'doorColorId', id)));
+    bindDecor(root, 'back', backOf(mod), (id) => commit(() => paintColor(mod, 'backId', id)));
+    bindDecor(root, 'shelf', shelfOf(mod), (id) => commit(() => paintColor(mod, 'shelfId', id)));
+    bindColorScope(root, mod);
     const opener = root.querySelector('#mod-open');
     if (opener) opener.onclick = () => commit(() => { mod.open = mod.open > 0.5 ? 0 : 1; });
     const hideOne = root.querySelector('#mod-hide-door');
@@ -4656,6 +4974,7 @@ function renderInspector() {
     renderProduction();
     const config = el('config-modal');
     if (!mod) {
+        customFor = null;
         config.classList.add('hidden');
         body.innerHTML = `
             <p class="hint">Dolap seçili değil. Burada seçili renkler yeni eklenen dolaba yazılır. Dekor görselleri temsili dijital dokudur, resmî Kastamonu taraması değildir.</p>
@@ -4663,11 +4982,7 @@ function renderInspector() {
             <div class="field"><label>Ön duvar genişliği (cm)</label><input id="wall-front" type="number" min="80" max="800" value="${wallLimit()}"></div>
             <div class="field"><label>Sağ duvar genişliği (cm)</label><input id="wall-right" type="number" min="80" max="800" value="${sideLimit('right')}"></div>
             <div class="field"><label>Yükseklik (cm)</label><input id="room-h" type="number" min="160" max="400" value="${roomHeightLimit()}"></div>
-            ${decorPicker(state.carcassId, 'carcass', 'Gövde rengi', true)}
-            ${decorPicker(state.doorColorId, 'door', 'Dolap rengi', true)}
-            ${decorPicker(state.backId, 'back', 'Arkalık rengi', true)}
-            ${decorPicker(state.shelfId, 'shelf', 'Rafların rengi', true)}
-            <button type="button" class="btn" id="apply-all" style="width:100%;margin:8px 0">Renkleri tümüne uygula</button>
+            ${colorChoicesHtml(state, state.modules.some((item) => cabinetHasDrawers(item)))}
             ${swatchPicker(ALUMINUM, state.aluminumId, 'alum', 'Alüminyum kapak', true)}
             ${swatchPicker(GLASS, state.glassId, 'glass', 'Cam')}
             <label class="check"><input id="cab-plinth" type="checkbox" ${state.plinth === false ? '' : 'checked'}> Baza olsun</label>
@@ -4734,12 +5049,13 @@ function renderInspector() {
         bindDecor(body, 'door', state.doorColorId, (id) => commit(() => { state.doorColorId = id; }));
         bindDecor(body, 'back', state.backId, (id) => commit(() => { state.backId = id; }));
         bindDecor(body, 'shelf', state.shelfId, (id) => commit(() => { state.shelfId = id; }));
-        const applyAll = body.querySelector('#apply-all');
-        if (applyAll) applyAll.onclick = () => commit(() => applyColorsToAll(state));
+        bindDecor(body, 'drawer', state.drawerColorId || solidDoorColor(), (id) => commit(() => { state.drawerColorId = id; }));
+        bindColorScope(body, state);
         return;
     }
     config.classList.add('hidden');
     if (!window.matchMedia('(max-width: 900px)').matches) el('inspector').classList.add('is-open');
+    revealCustomizer(mod);
     body.innerHTML = moduleConfigHtml(mod);
     bindModuleConfig(body, mod);
 }
@@ -4925,6 +5241,10 @@ function showDropGuide(mod, pick, ok) {
     dropGuide.visible = true;
 }
 
+function nearerSide(pick) {
+    return Number(pick?.x) < wallLimit() / 2 ? 'left' : 'right';
+}
+
 function dragTarget(event, mod) {
     const rect = renderer.domElement.getBoundingClientRect();
     pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -4932,37 +5252,53 @@ function dragTarget(event, mod) {
     raycaster.setFromCamera(pointer, camera);
     const along = alongSize(mod);
     const front = wallLimit();
-    const tall = Math.max(roomHeightLimit(), moduleHeight(mod));
-    const ray = raycaster.ray;
     const hits = [];
-    const consider = (wall, plane, ok, offsetOf) => {
-        const hit = ray.intersectPlane(plane, wallPoint);
+    [['front', room.back], ['left', room.left], ['right', room.right]].forEach(([wall, mesh]) => {
+        if (!mesh) return;
+        const hit = raycaster.intersectObject(mesh, true)[0];
         if (!hit) return;
-        const dx = hit.x - ray.origin.x;
-        const dy = hit.y - ray.origin.y;
-        const dz = hit.z - ray.origin.z;
-        if (dx * ray.direction.x + dy * ray.direction.y + dz * ray.direction.z <= 0) return;
-        if (!ok(hit)) return;
-        hits.push({ wall, offset: offsetOf(hit), distance: Math.hypot(dx, dy, dz), x: hit.x, y: hit.y, z: hit.z });
+        const point = hit.point;
+        hits.push({
+            wall,
+            offset: wall === 'front' ? point.x - along / 2 : point.z - along / 2,
+            distance: hit.distance,
+            x: point.x,
+            y: point.y,
+            z: point.z,
+        });
+    });
+    const floorMeshHit = room.floor ? raycaster.intersectObject(room.floor, true)[0] : null;
+    hits.sort((a, b) => a.distance - b.distance);
+    if (hits.length && (!floorMeshHit || hits[0].distance <= floorMeshHit.distance)) return hits[0];
+    if (!floorMeshHit && !raycaster.ray.intersectPlane(floorPlane, floorHit)) return null;
+    const point = floorMeshHit ? floorMeshHit.point : floorHit;
+    const choices = [
+        { wall: 'front', dist: Math.abs(point.z), offset: point.x - along / 2 },
+        { wall: 'left', dist: Math.abs(point.x), offset: point.z - along / 2 },
+        { wall: 'right', dist: Math.abs(point.x - front), offset: point.z - along / 2 },
+    ];
+    const pick = choices.sort((a, b) => a.dist - b.dist)[0];
+    return { ...pick, distance: floorMeshHit?.distance || 0, x: point.x, y: point.y, z: point.z };
+}
+
+function applyWallDrop(mod, pick) {
+    const previous = { wall: mod.wall, offset: mod.offset, cornerSide: mod.cornerSide };
+    const fitsWall = (wall, offset) => {
+        mod.wall = wall;
+        mod.offset = offset;
+        const modules = state.modules.includes(mod) ? state.modules : [...state.modules, mod];
+        return Boolean(layout(modules));
     };
-    const inHeight = (p) => p.y >= -20 && p.y <= tall + 40;
-    const frontDepth = Math.max(30, Number(state.depth) || 60);
-    const sideNear = frontDepth + 70;
-    const watchingLeft = camera.position.x < frontDepth;
-    const watchingRight = camera.position.x > front - frontDepth;
-    consider('front', new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), (p) => inHeight(p) && p.x >= -40 && p.x <= front + 40, (p) => p.x - along / 2);
-    consider('left', new THREE.Plane(new THREE.Vector3(1, 0, 0), 0), (p) => inHeight(p) && p.z >= (watchingLeft ? -40 : sideNear) && p.z <= sideLimit('left') + 40, (p) => p.z - along / 2);
-    consider('right', new THREE.Plane(new THREE.Vector3(-1, 0, 0), -front), (p) => inHeight(p) && p.z >= (watchingRight ? -40 : sideNear) && p.z <= sideLimit('right') + 40, (p) => p.z - along / 2);
-    if (hits.length) return hits.sort((a, b) => a.distance - b.distance)[0];
-    if (!ray.intersectPlane(floorPlane, floorHit)) return null;
-    const choices = [{ wall: 'front', dist: Math.abs(floorHit.z), offset: floorHit.x - along / 2 }];
-    if (floorHit.z >= frontDepth) {
-        choices.push(
-            { wall: 'left', dist: Math.abs(floorHit.x), offset: floorHit.z - along / 2 },
-            { wall: 'right', dist: Math.abs(floorHit.x - front), offset: floorHit.z - along / 2 },
-        );
-    }
-    return choices.sort((a, b) => a.dist - b.dist)[0];
+    if (fitsWall(pick.wall, pick.offset)) return true;
+    const side = pick.wall === 'front' ? nearerSide(pick) : '';
+    if (side && fitsWall(side, Math.max(0, Number(pick.z) - alongSize(mod) / 2))) return true;
+    Object.assign(mod, previous);
+    return false;
+}
+
+function wallFullMessage(wall) {
+    const name = wall === 'left' ? 'Sol duvarda' : wall === 'right' ? 'Sağ duvarda' : 'Ön duvarda';
+    return `${name} bu dolap için yer kalmadı.`;
 }
 
 function dragModule(id, event) {
@@ -4976,11 +5312,11 @@ function dragModule(id, event) {
         mod.cornerSide = pick.wall === 'right' || (pick.wall === 'front' && pick.offset > front / 2) ? 'right' : 'left';
         mod.wall = 'front';
         mod.offset = mod.cornerSide === 'left' ? -1 : 10000;
-    } else {
-        mod.wall = pick.wall;
-        mod.offset = pick.offset;
-    }
-    if (!layout(state.modules)) {
+        if (!layout(state.modules)) {
+            Object.assign(mod, previous);
+            return;
+        }
+    } else if (!applyWallDrop(mod, pick)) {
         Object.assign(mod, previous);
         return;
     }
@@ -5145,9 +5481,8 @@ function ensureCatalogDrag() {
             hideDropGuide();
             return;
         }
-        probe.wall = pick.wall;
-        probe.offset = pick.offset;
-        showDropGuide(probe, pick, Boolean(layout([...state.modules, probe])));
+        const ok = applyWallDrop(probe, pick);
+        showDropGuide(probe, { ...pick, wall: probe.wall, offset: probe.offset }, ok);
     });
     window.addEventListener('pointerup', (event) => {
         if (!catalogDrag) return;
@@ -5207,8 +5542,10 @@ function placeDropped(mod, dropEvent) {
         mod.offset = wantRight ? 10000 : -1;
         return true;
     }
-    mod.wall = pick.wall;
-    mod.offset = pick.offset;
+    if (!applyWallDrop(mod, pick)) {
+        toast(wallFullMessage(pick.wall));
+        return false;
+    }
     return true;
 }
 
@@ -5248,9 +5585,7 @@ async function addGlbModule(id, dropEvent) {
             const run = state.modules.filter((entry) => entry.wall === mod.wall && entry.kind !== 'corner').reduce((sum, entry) => sum + alongSize(entry), 0);
             const room = (mod.wall === 'front' ? wallLimit() : sideLimit(mod.wall)) - run;
             noteDrop({ id: mod.glb || mod.name, result: 'rejected', wall: mod.wall, offset: mod.offset, free: room });
-            toast(room >= alongSize(mod)
-                ? 'Bu noktada bitişik boşluk yok. Karttaki Ekle, sıranın sonuna koyar.'
-                : 'Bu modül duvara sığmıyor.');
+            toast(wallFullMessage(mod.wall));
             return;
         }
         noteDrop({ id: mod.glb || mod.name, result: 'accepted', wall: mod.wall, offset: Math.round(Number(mod.offset) || 0), count: state.modules.length + 1 });
@@ -5303,9 +5638,7 @@ function addCadModule(id, dropEvent) {
         const run = state.modules.filter((item) => item.wall === mod.wall && item.kind !== 'corner').reduce((sum, item) => sum + alongSize(item), 0);
         const room = (mod.wall === 'front' ? wallLimit() : sideLimit(mod.wall)) - run;
         noteDrop({ id: mod.glb || mod.name, result: 'rejected', wall: mod.wall, offset: mod.offset, free: room });
-        toast(room >= alongSize(mod)
-            ? 'Bu noktada bitişik boşluk yok. Karttaki Ekle, sıranın sonuna koyar.'
-            : 'Bu modül duvara sığmıyor.');
+        toast(wallFullMessage(mod.wall));
         return;
     }
     noteDrop({ id: mod.glb || mod.name, result: 'accepted', wall: mod.wall, offset: Math.round(Number(mod.offset) || 0), count: state.modules.length + 1 });
@@ -5703,6 +6036,7 @@ async function takeRender() {
     const label = button.textContent;
     const opens = state.modules.map((mod) => mod.open);
     const wasSelected = selectedId;
+    const wasAllCabinets = allCabinetsSelected;
     const measures = showMeasures;
         const exposure = renderer.toneMappingExposure;
         const envMap = scene.environment;
@@ -5725,6 +6059,7 @@ async function takeRender() {
     try {
         showMeasures = false;
         selectedId = null;
+        allCabinetsSelected = false;
         rebuild();
         snapDoors();
         el('selection-ui').classList.add('hidden');
@@ -5942,6 +6277,7 @@ async function takeRender() {
         }
         state.modules.forEach((mod, index) => { mod.open = opens[index]; });
         selectedId = wasSelected;
+        allCabinetsSelected = wasAllCabinets;
         showMeasures = measures;
         scene.environment = envMap;
         scene.environmentIntensity = env;
@@ -5995,8 +6331,33 @@ function bindChrome() {
     el('view-bar').addEventListener('click', (event) => {
         const button = event.target.closest('[data-view]');
         if (!button) return;
-        setCameraView(button.dataset.view);
+        if (button.dataset.view === 'top') setPlanMode('2d');
+        else {
+            if (planMode === '2d') {
+                planMode = '3d';
+                camera = perspCamera;
+                controls.object = perspCamera;
+                controls.enableRotate = true;
+                controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
+                controls.minPolarAngle = 0.08;
+                controls.maxPolarAngle = Math.PI / 2 - 0.02;
+                document.querySelectorAll('[data-plan]').forEach((item) => item.classList.toggle('is-on', item.dataset.plan === '3d'));
+            }
+            setCameraView(button.dataset.view);
+        }
     });
+    el('plan-switch').addEventListener('click', (event) => {
+        const button = event.target.closest('[data-plan]');
+        if (button) setPlanMode(button.dataset.plan);
+    });
+    el('btn-modules').onclick = () => showModuleLibrary();
+    el('btn-guides').onclick = () => {
+        guidesOn = !guidesOn;
+        el('btn-guides').classList.toggle('is-on', guidesOn);
+        syncGuides(layout(state.modules) || []);
+    };
+    el('act-forward').onclick = () => nudgeDepth(10);
+    el('act-back').onclick = () => nudgeDepth(-10);
     el('btn-quote').onclick = () => {
         const form = el('quote-form');
         form.name.value = state.customerName || '';
@@ -6080,8 +6441,21 @@ function bindChrome() {
         openPhoneSheet('measure');
     };
     el('open-project').onclick = () => openPhoneSheet('project');
-    el('close-library').onclick = () => openPhoneSheet('modules');
-    el('close-inspector').onclick = () => openPhoneSheet(document.body.dataset.sheet || 'material');
+    el('close-library').onclick = () => {
+        if (window.matchMedia('(max-width: 900px)').matches) openPhoneSheet('modules');
+        else {
+            document.body.classList.remove('show-library');
+            requestAnimationFrame(resize);
+        }
+    };
+    el('close-inspector').onclick = () => {
+        if (window.matchMedia('(max-width: 900px)').matches) openPhoneSheet(document.body.dataset.sheet || 'material');
+        else {
+            document.body.classList.remove('show-custom');
+            customFor = selectedId;
+            requestAnimationFrame(resize);
+        }
+    };
     el('close-project').onclick = () => openPhoneSheet('project');
     el('sheet-new').onclick = () => el('btn-new').click();
     el('sheet-undo').onclick = () => el('btn-undo').click();
@@ -6203,6 +6577,7 @@ function startNewProject() {
     applyDefaultColors();
     projectToken = null;
     selectedId = null;
+    allCabinetsSelected = false;
     history = [];
     future = [];
     lightsOn = true;
@@ -6266,6 +6641,7 @@ async function openProject(token) {
         await preloadModuleGlbs();
         projectToken = data.token;
         selectedId = null;
+        allCabinetsSelected = false;
         history = [];
         future = [];
         window.history.replaceState(null, '', `${location.pathname}?proje=${projectToken}`);

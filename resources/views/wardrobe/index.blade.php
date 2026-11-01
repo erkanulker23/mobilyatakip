@@ -48,10 +48,19 @@
         .seg { display: flex; gap: 6px; flex-wrap: wrap; }
         .seg button { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 7px 10px; font-size: 12px; font-weight: 600; }
         .seg button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
-        .workspace { display: grid; grid-template-columns: 220px minmax(0, 1fr) 248px; min-height: 0; }
+        .workspace { display: block; position: relative; min-height: 0; }
+        .stage { position: absolute; inset: 0; min-width: 0; min-height: 0; background: #eceae6; }
         aside { background: var(--panel); min-height: 0; display: flex; flex-direction: column; }
-        aside.left { border-right: 1px solid var(--line); }
-        aside.right { border-left: 1px solid var(--line); }
+        @media (min-width: 901px) {
+            aside.left, aside.right {
+                position: absolute; top: 0; bottom: 0; width: min(320px, 34vw); z-index: 6;
+                transition: transform .2s ease; box-shadow: var(--shadow);
+            }
+            aside.left { left: 0; border-right: 1px solid var(--line); transform: translateX(-105%); }
+            aside.right { right: 0; border-left: 1px solid var(--line); transform: translateX(105%); }
+            body.show-library aside.left, body.show-custom aside.right { transform: none; }
+            aside .sheet-close { display: block; }
+        }
         .side-head { padding: 12px 14px 0; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
         .library-search { padding: 10px 12px 0; }
         .library-search input { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: #fff; font-size: 13px; }
@@ -81,11 +90,12 @@
         .parts { margin: 0 0 12px; padding-left: 18px; font-size: 12px; }
         .parts li { margin: 0 0 8px; }
         .parts li.is-on { background: #e5f6ec; border: 2px solid #149152; border-radius: 8px; padding: 6px 8px; list-style-position: inside; }
-        .stage { position: relative; min-width: 0; min-height: 0; background: #eceae6; }
         #viewport { position: absolute; inset: 0; }
         #viewport canvas { display: block; }
         #view-bar { position: absolute; left: 12px; bottom: 12px; z-index: 4; display: flex; flex-wrap: wrap; gap: 6px; max-width: min(420px, calc(100% - 24px)); }
-        #view-bar button { border: 1px solid var(--line); background: rgba(255,252,248,.92); border-radius: 999px; padding: 6px 10px; font-size: 12px; }
+        #view-bar button, #plan-switch button { border: 1px solid var(--line); background: rgba(255,252,248,.94); border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 700; }
+        #plan-switch { position: absolute; top: 12px; right: 12px; z-index: 5; display: flex; gap: 6px; }
+        #plan-switch button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
         #measure-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
         .measure { position: absolute; transform: translate(-50%, -50%); background: #1f6b4a; color: #fff; font-size: 11px; font-weight: 700; line-height: 1.2; padding: 2px 6px; border-radius: 999px; white-space: nowrap; }
         .btn.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
@@ -138,7 +148,7 @@
             header.bar { min-height: 52px; }
             header.bar .btn:not(#btn-save), header.bar .extra { display: none; }
             .workspace { display: flex; min-height: 0; }
-            .stage { flex: 1 1 auto; min-height: 0; width: 100%; }
+            .stage { position: relative; inset: auto; flex: 1 1 auto; min-height: 0; width: 100%; }
             #viewport { min-height: 0; }
             aside {
                 position: fixed; left: 0; right: 0; bottom: calc(72px + env(safe-area-inset-bottom));
@@ -157,6 +167,7 @@
             footer.bar { display: block; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
             footer.bar .stat, footer.bar #btn-quote { display: none; }
             #view-bar { top: 8px; bottom: auto; left: 8px; max-width: calc(100% - 16px); }
+            #plan-switch { top: 86px; right: 8px; }
             .name-input { width: min(42vw, 180px); }
             body[data-sheet="material"] #inspector-body > :not([data-picker]) { display: none; }
             body[data-sheet="doors"] #inspector-body > :not(:has([data-door], [data-swing], #mod-open)) { display: none; }
@@ -164,7 +175,7 @@
         }
     </style>
 </head>
-<body>
+<body class="show-library">
 <div id="studio">
     <header class="bar">
         <a href="{{ route('login') }}" class="brand">
@@ -198,6 +209,12 @@
         </div>
         <section class="stage">
             <div id="viewport"></div>
+            <div id="plan-switch">
+                <button type="button" id="btn-modules">Modüller</button>
+                <button type="button" data-plan="2d">2B</button>
+                <button type="button" data-plan="3d" class="is-on">3B</button>
+                <button type="button" id="btn-guides" class="is-on">Kılavuz</button>
+            </div>
             <div id="view-bar">
                 <button type="button" data-view="front">Ön</button>
                 <button type="button" data-view="left">Sol</button>
@@ -215,7 +232,9 @@
             <div id="selection-ui" class="hidden">
                 <div id="selection-name"></div>
                 <div class="selection-actions">
-                    <button type="button" id="act-config">Yapılandır</button>
+                    <button type="button" id="act-config">Özelleştir</button>
+                    <button type="button" id="act-forward">Öne</button>
+                    <button type="button" id="act-back">Arkaya</button>
                     <button type="button" id="act-clone">Klonla</button>
                     <button type="button" id="act-delete">Sil</button>
                 </div>
@@ -351,6 +370,6 @@
         csrf: @json(csrf_token())
     };
 </script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=180"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=189"></script>
 </body>
 </html>
