@@ -240,7 +240,7 @@ class PublicWardrobeController extends Controller
                     'brand' => $p['brand'] ?? '',
                     'series' => $p['series'] ?? null,
                     'finish_hint' => $meta['finish_hint'],
-                    'image' => asset('catalog/kastamonu-entegre/'.$slug.'/'.$p['image']),
+                    'image' => asset('catalog/kastamonu-entegre/'.$slug.'/'.$p['image']).'?v=3',
                 ];
             }
 

@@ -186,7 +186,7 @@ function doorLabel(mod) {
     if (mod.door === 'glass') return 'Camlı';
     if (mod.door === 'mixed') return 'Karışık';
     if (mod.door === 'accordion') return 'Akordeon';
-    if (mod.door === 'none') return '';
+    if (mod.door === 'none') return 'Kapaksız';
     return 'Düz kapak';
 }
 
@@ -206,7 +206,7 @@ function createModule(productId) {
         kind: product.kind,
         name: product.name,
         width: product.width,
-        door: doorFor(product),
+        door: 'none',
         shelves: product.shelves,
         rail: product.rail,
         drawers: product.drawers,
@@ -659,7 +659,6 @@ function material(key, source, opts = {}) {
     } else if (item?.image) {
         mat.userData.decorUrl = item.image;
         mat.userData.finish = item.finish_hint || 'matte';
-        if (item.finish_hint !== 'highgloss') applyWoodPbr(mat);
     }
     matCache.set(id, mat);
     return mat;
@@ -769,8 +768,8 @@ function tintMaterial(mat, url, scale = 1) {
 
 function woodStudyMode() {
     const mode = window.__woodMode;
-    if (mode === 'catalog' || mode === 'mismatch' || mode === 'oak') return mode;
-    return 'wood094';
+    if (mode === 'catalog' || mode === 'mismatch' || mode === 'wood094') return mode;
+    return 'oak';
 }
 
 let oakMaps = null;
@@ -778,7 +777,7 @@ let oakMaps = null;
 function ensureOakMaps() {
     if (oakMaps) return oakMaps;
     const loader = new THREE.TextureLoader();
-    const repeat = 2 / 1.83;
+    const repeat = 1 / 1.83;
     const load = (url, color) => {
         const tex = loader.load(url, () => {
             oakMaps.ready += 1;
@@ -824,9 +823,10 @@ function applyRepresentativeWood(mat, imageUrl) {
         mat.map = oak.color;
         mat.color.set('#ffffff');
         mat.normalMap = oak.normal;
-        mat.normalScale = new THREE.Vector2(0.18, 0.18);
+        mat.normalScale = new THREE.Vector2(0.12, 0.12);
         mat.roughnessMap = oak.rough;
-        mat.roughness = 0.84;
+        mat.roughness = 0.82;
+        mat.userData.matchedWood = true;
         mat.metalness = 0;
         mat.envMapIntensity = 0.2;
         mat.aoMap = null;
@@ -920,6 +920,43 @@ function assignPanelUv(geometry, opts = {}) {
         } else {
             u = x / tile;
             v = y / tile;
+        }
+        uv.setXY(i, u, v);
+    }
+    geometry.setAttribute('uv', uv);
+    geometry.setAttribute('uv2', uv.clone());
+}
+
+function assignDecorUv(geometry) {
+    const position = geometry.attributes.position;
+    const normal = geometry.attributes.normal;
+    if (!position || !normal) return;
+    geometry.computeBoundingBox();
+    const size = geometry.boundingBox.getSize(new THREE.Vector3());
+    const uv = new THREE.BufferAttribute(new Float32Array(position.count * 2), 2);
+    for (let i = 0; i < position.count; i += 1) {
+        const x = position.getX(i);
+        const y = position.getY(i);
+        const z = position.getZ(i);
+        const nx = Math.abs(normal.getX(i));
+        const ny = Math.abs(normal.getY(i));
+        const nz = Math.abs(normal.getZ(i));
+        let u;
+        let v;
+        if (ny >= nx && ny >= nz) {
+            if (size.x >= size.z) {
+                u = z;
+                v = x;
+            } else {
+                u = x;
+                v = z;
+            }
+        } else if (nx >= nz) {
+            u = z;
+            v = y;
+        } else {
+            u = x;
+            v = y;
         }
         uv.setXY(i, u, v);
     }
@@ -1225,7 +1262,10 @@ function edgeBandMaterial(sourceId, opts = {}) {
     next.roughnessMap = null;
     next.normalMap = null;
     const tintUrl = base.userData.tintUrl;
-    if (tintUrl) tintMaterial(next, tintUrl, 0.9);
+    if (opts.representative && woodStudyMode() === 'oak') {
+        next.color.set('#947455');
+        next.roughness = 0.58;
+    } else if (tintUrl) tintMaterial(next, tintUrl, 0.9);
     else {
         next.userData.flatDark = 0.96;
         if (next.userData.flatUrl) {
@@ -1281,7 +1321,23 @@ function paintGlb(root, mod) {
         child.castShadow = true;
         child.receiveShadow = true;
         child.material = next;
+        if (woodStudyMode() === 'oak' && role !== 'metal' && child.geometry?.attributes?.position) {
+            child.geometry = child.geometry.clone();
+            assignDecorUv(child.geometry);
+        }
         const name = String(child.name || '').toLowerCase();
+        if (role === 'drawer' && /_on_/.test(name)) {
+            const face = next.clone();
+            face.roughness = 0.94;
+            face.roughnessMap = null;
+            face.normalMap = null;
+            face.aoMap = null;
+            face.metalness = 0;
+            face.envMapIntensity = 0.05;
+            face.specularIntensity = 0.06;
+            face.userData.externalPbr = true;
+            child.material = face;
+        }
         if (role === 'metal' && /askilik|boru|rail/.test(name)) {
             child.material = alumFrameMaterial(alum);
             if (mod.glb === 'y26_cift_01') addRailSockets(child);
@@ -2189,6 +2245,17 @@ async function loadProps() {
                 if (!child.isMesh) return;
                 child.castShadow = true;
                 child.receiveShadow = true;
+                const src = child.material;
+                if (src?.isMeshPhysicalMaterial) {
+                    child.material = new THREE.MeshStandardMaterial({
+                        color: src.color.clone(),
+                        roughness: src.roughness,
+                        metalness: src.metalness,
+                        map: src.map || null,
+                        normalMap: src.normalMap || null,
+                        side: THREE.DoubleSide,
+                    });
+                }
             });
             loaded[key] = gltf.scene;
         } catch (error) {
@@ -2858,9 +2925,9 @@ function dressGlb(wrap, model, mod) {
                 x: rail.x + offset,
                 y: rail.y + 0.012,
                 z: rail.z,
-                maxW: 0.22,
-                maxH: 0.72,
-                maxD: 0.18,
+                maxW: 0.56,
+                maxH: 0.82,
+                maxD: 0.16,
                 anchor: 'top',
                 yaw: 0.08,
             });
@@ -3107,37 +3174,73 @@ function addGlbLeds(wrap, model, mod) {
     if (host.children.length) wrap.add(host);
 }
 
-function shiftGeometryY(mesh, dy) {
+function remapGeometryY(mesh, oldMin, oldMax, newMin, newMax) {
+    const span = oldMax - oldMin;
+    if (span < 0.001) return;
     const geometry = mesh.geometry.clone();
     const position = geometry.attributes.position;
-    for (let i = 0; i < position.count; i += 1) position.setY(i, position.getY(i) + dy);
+    const scale = (newMax - newMin) / span;
+    for (let i = 0; i < position.count; i += 1) {
+        position.setY(i, newMin + (position.getY(i) - oldMin) * scale);
+    }
     position.needsUpdate = true;
     geometry.computeBoundingBox();
     geometry.computeBoundingSphere();
     mesh.geometry = geometry;
 }
 
-function separateDrawerFronts(meshes) {
-    const fronts = meshes.filter((mesh) => /_on_/.test(String(mesh.name || '').toLocaleLowerCase('tr')));
-    const gap = 0.003;
-    for (let pass = 0; pass < fronts.length; pass += 1) {
-        const ordered = fronts.map((mesh) => {
-            if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
-            return mesh;
-        }).sort((a, b) => a.geometry.boundingBox.min.y - b.geometry.boundingBox.min.y);
-        let moved = false;
-        for (let i = 0; i < ordered.length - 1; i += 1) {
-            const lower = ordered[i].geometry.boundingBox;
-            const upper = ordered[i + 1].geometry.boundingBox;
-            const space = upper.min.y - lower.max.y;
-            if (space >= gap) continue;
-            const need = (gap - space) / 2;
-            shiftGeometryY(ordered[i], -need);
-            shiftGeometryY(ordered[i + 1], need);
-            moved = true;
-        }
-        if (!moved) break;
-    }
+function packDrawerFronts(model, meshes) {
+    const reveal = 0.002;
+    const fronts = meshes.filter((mesh) => /_on_/.test(String(mesh.name || '').toLowerCase()));
+    fronts.forEach((mesh) => {
+        if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+    });
+    const boards = [];
+    model.traverse((child) => {
+        if (!child.isMesh || !child.geometry) return;
+        const name = String(child.name || '').toLowerCase();
+        if (!/govde_alt|govde_ust|raf/.test(name) || /bant|_alt/.test(name)) return;
+        if (!child.geometry.boundingBox) child.geometry.computeBoundingBox();
+        if (child.geometry.boundingBox) boards.push(child.geometry.boundingBox);
+    });
+    const overlapsX = (box, other) => Math.min(box.max.x, other.max.x) - Math.max(box.min.x, other.min.x) > 0.04;
+    const columns = [];
+    fronts.forEach((mesh) => {
+        const box = mesh.geometry.boundingBox;
+        const column = columns.find((entry) => overlapsX(entry[0].geometry.boundingBox, box));
+        if (column) column.push(mesh);
+        else columns.push([mesh]);
+    });
+    columns.forEach((column) => {
+        column.sort((a, b) => a.geometry.boundingBox.min.y - b.geometry.boundingBox.min.y);
+        const first = column[0].geometry.boundingBox;
+        const last = column[column.length - 1].geometry.boundingBox;
+        const floor = boards.filter((box) => box.max.y <= first.min.y + 0.02 && overlapsX(box, first))
+            .sort((a, b) => b.max.y - a.max.y)[0];
+        const ceiling = boards.filter((box) => box.min.y >= (floor ? floor.max.y : 0) + 0.05 && overlapsX(box, first))
+            .sort((a, b) => a.min.y - b.min.y)[0];
+        let start = first.min.y;
+        let end = last.max.y;
+        if (floor && start - floor.max.y < 0.03 && start - floor.max.y > -0.002) start = floor.max.y + reveal;
+        if (ceiling && ceiling.min.y - end < 0.04) end = ceiling.min.y - reveal;
+        const slot = (end - start - reveal * (column.length - 1)) / column.length;
+        if (slot < 0.06 || end <= start) return;
+        column.forEach((front, index) => {
+            const old = front.geometry.boundingBox;
+            const newMin = start + index * (slot + reveal);
+            const newMax = newMin + slot;
+            const suffix = String(front.name || '').match(/_(\d+)$/)?.[1];
+            remapGeometryY(front, old.min.y, old.max.y, newMin, newMax);
+            if (!suffix) return;
+            meshes.forEach((mesh) => {
+                if (mesh === front) return;
+                const meshSuffix = String(mesh.name || '').match(/_(\d+)$/)?.[1];
+                if (meshSuffix !== suffix) return;
+                if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+                remapGeometryY(mesh, old.min.y, old.max.y, newMin, newMax);
+            });
+        });
+    });
 }
 
 function hollowDrawerBox(group, kutu, mod) {
@@ -3215,7 +3318,7 @@ function mountGlbDrawers(model, mod) {
     model.traverse((child) => {
         if (child.isMesh && /cekmece/.test(String(child.name || '').toLocaleLowerCase('tr'))) meshes.push(child);
     });
-    separateDrawerFronts(meshes);
+    packDrawerFronts(model, meshes);
     const groups = new Map();
     meshes.forEach((mesh) => {
         const match = String(mesh.name || '').match(/_(\d+)$/);
@@ -3739,10 +3842,10 @@ function placeReflectCard(center, frontZ) {
     const card = new THREE.Mesh(
         new THREE.PlaneGeometry(70, 42),
         new THREE.MeshStandardMaterial({
-            color: '#fffaf6',
-            emissive: '#fff1dc',
-            emissiveIntensity: 6,
-            roughness: 1,
+            color: '#f7f4ef',
+            emissive: '#000000',
+            emissiveIntensity: 0,
+            roughness: 0.86,
             metalness: 0,
         })
     );
@@ -3766,10 +3869,19 @@ function setCameraView(mode) {
             const size = part.getSize(new THREE.Vector3());
             if (mode === 'glass') {
                 const root = new THREE.Box3().setFromObject(cabinetRoot);
-                camera.fov = 32;
-                controls.target.set(center.x - 1, center.y, center.z);
-                camera.position.set(center.x + 24, center.y + 1, root.max.z + 14);
-                placeReflectCard(center, root.max.z);
+                const rootCenter = root.getCenter(new THREE.Vector3());
+                const rootSize = root.getSize(new THREE.Vector3());
+                const fov = 32;
+                camera.fov = fov;
+                controls.target.set(rootCenter.x + rootSize.x * 0.06, rootCenter.y, root.max.z - 0.4);
+                camera.position.set(rootCenter.x - rootSize.x * 0.2, rootCenter.y + 8, root.max.z + 52);
+                placeReflectCard(rootCenter, root.max.z);
+                window.__camDebug = {
+                    cam: camera.position.toArray(),
+                    aim: controls.target.toArray(),
+                    root: [root.min.toArray(), root.max.toArray()],
+                    part: center.toArray(),
+                };
             } else if (mode === 'drawer') {
                 const root = new THREE.Box3().setFromObject(cabinetRoot);
                 const aim = part.getCenter(new THREE.Vector3());
@@ -4393,9 +4505,9 @@ function moduleConfigHtml(mod) {
     return `
         <p class="picked">Seçili dolap</p>
         <h2>${mod.name}</h2>
-        <p class="hint">${mod.width} cm. Yerini sahnede sürükleyerek değiştir. Kapak sağda seçilir.</p>
+        <p class="hint">${mod.width} cm. Yerini sahnede sürükleyerek değiştir. ${mod.door === 'none' ? 'Kapak yok. Ahşap veya cam kapağı aşağıdan seç.' : 'Kapağı aşağıdan değiştirebilirsin.'}</p>
         ${boardNote}
-        ${mod.kind === 'end' ? '' : `<div class="field field-key"><label>Kapak</label><div class="seg"><button type="button" data-door="solid" class="${mod.door === 'solid' ? 'is-on' : ''}">Kapaklı</button><button type="button" data-door="glass" class="${mod.door === 'glass' ? 'is-on' : ''}">Cam kapaklı</button></div></div>`}
+        ${mod.kind === 'end' ? '' : `<div class="field field-key"><label>Kapak</label><div class="seg"><button type="button" data-door="none" class="${mod.door === 'none' ? 'is-on' : ''}">Kapaksız</button><button type="button" data-door="solid" class="${mod.door === 'solid' ? 'is-on' : ''}">Ahşap kapak</button><button type="button" data-door="glass" class="${mod.door === 'glass' ? 'is-on' : ''}">Cam kapak</button></div></div>`}
         ${mod.glb ? '' : `<div class="field"><label>Genişlik (cm)</label><input id="mod-w" type="number" min="30" max="200" value="${mod.width}"></div>`}
         ${shelfField}
         ${drawerField}
@@ -4919,7 +5031,6 @@ function applyDxf(mod, recipe) {
     mod.drawers = Math.min(6, recipe.drawers || 0);
     mod.drawerHeight = clamp(Number(recipe.drawerHeight) || 18, 12, 40);
     mod.rail = (recipe.rails || []).length > 0;
-    mod.door = recipe.door;
     if (recipe.id === 'ust') mod.height = 65;
     else if (wasUpper) mod.height = state.height;
     if (recipe.kind === 'corner') {
@@ -4969,7 +5080,7 @@ function addCabinet(target) {
     preferCatalogWood(mod);
     mod.kind = corner ? 'corner' : 'wardrobe';
     mod.width = recipe?.kind === 'corner' ? recipe.width : width;
-    mod.door = corner ? 'solid' : addDoor;
+    mod.door = 'none';
     if (recipe) applyDxf(mod, recipe);
     else if (corner) {
         mod.product = 'kose-raf';
@@ -4981,7 +5092,7 @@ function addCabinet(target) {
         mod.rail = false;
         mod.drawers = 0;
     } else applyInterior(mod, addInteriorKind);
-    if (recipe && recipe.door !== 'none') mod.door = addDoor;
+    mod.door = 'none';
     mod.kind = corner ? 'corner' : 'wardrobe';
     mod.wall = corner ? 'front' : side;
     mod.cornerSide = place === 'corner-left' ? 'left' : 'right';
@@ -5116,9 +5227,9 @@ async function addGlbModule(id, dropEvent) {
         mod.spec = item.spec;
         mod.width = Math.round(item.width * 100);
         mod.height = mod.glbHeight;
-        mod.door = 'solid';
+        mod.door = 'none';
         preferCatalogWood(mod);
-        mod.open = 1;
+        mod.open = 0;
         mod.kind = item.category === 'kose' ? 'corner' : 'wardrobe';
         mod.wall = 'front';
         mod.offset = 10000;
@@ -5165,7 +5276,7 @@ function addCadModule(id, dropEvent) {
     mod.name = item.name;
     mod.width = item.width;
     mod.height = item.height < 160 ? item.height : state.height;
-    mod.door = item.door;
+    mod.door = 'none';
     mod.kind = item.kind === 'corner' ? 'corner' : 'wardrobe';
     if (mod.kind === 'corner') {
         const hasLeft = state.modules.some((entry) => entry.kind === 'corner' && entry.cornerSide === 'left');
@@ -5319,6 +5430,20 @@ function openSaved() {
     el('saved-phone').value = state.phone || '';
     el('saved-modal').classList.remove('hidden');
     searchProjects(el('saved-phone').value, el('saved-list'), () => el('saved-modal').classList.add('hidden'));
+}
+
+let studioHdrPromise = null;
+
+function studioHdri() {
+    if (!studioHdrPromise) {
+        studioHdrPromise = import('three/addons/loaders/RGBELoader.js').then(({ RGBELoader }) => new Promise((resolve, reject) => {
+            new RGBELoader().load('/textures/wardrobe/studio_small_09_1k.hdr', (tex) => {
+                tex.mapping = THREE.EquirectangularReflectionMapping;
+                resolve(tex);
+            }, undefined, reject);
+        }));
+    }
+    return studioHdrPromise;
 }
 
 function studioReflectEnvironment() {
@@ -5616,11 +5741,16 @@ async function takeRender() {
             room.floor.position.set(reach / 2 - 60, -1, deep / 2 - 30);
         }
         const subjectSize = subject.getSize(new THREE.Vector3());
-        const keepFrame = window.__traceKeepCamera === true;
+        const keepFrame = window.__traceReframe !== true;
         const maxEdge = Number(window.__ultraMax) > 400 ? Number(window.__ultraMax) : 1600;
+        const forceW = Number(window.__traceW);
+        const forceH = Number(window.__traceH);
         let capW;
         let capH;
-        if (keepFrame) {
+        if (forceW > 200 && forceH > 200) {
+            capW = Math.round(forceW);
+            capH = Math.round(forceH);
+        } else if (keepFrame) {
             const aspect = Math.max(0.25, shot.aspect || 1);
             if (aspect >= 1) {
                 capW = Math.min(maxEdge, 1400);
@@ -5637,8 +5767,8 @@ async function takeRender() {
         renderer.setPixelRatio(1);
         renderer.setSize(capW, capH, false);
         backdrop = renderBackdrop(subject);
+        camera.aspect = capW / capH;
         if (keepFrame) {
-            camera.aspect = shot.aspect;
             camera.fov = shot.fov;
             camera.near = shot.near;
             camera.far = shot.far;
@@ -5649,11 +5779,10 @@ async function takeRender() {
             camera.updateMatrixWorld(true);
             controls.target.copy(shot.target);
         } else {
-            camera.aspect = capW / capH;
             frameRenderCamera(camera, subject);
             controls.target.copy(subject.getCenter(new THREE.Vector3()));
         }
-        if (window.__traceKey !== false) key = studioKeyLight(camera, subject);
+        if (window.__traceKey === true) key = studioKeyLight(camera, subject);
         scene.background = new THREE.Color('#f4f1ec');
         renderer.toneMappingExposure = 1;
         prepareTraceTextures();
@@ -5683,7 +5812,7 @@ async function takeRender() {
                 }
             });
         });
-        const ledMode = window.__traceLeds || 'scene';
+        const ledMode = window.__traceLeds || 'soft';
         scene.traverse((obj) => {
             if (obj.isMesh && obj.name === 'LED_GLOW' && obj.material) ledMat = obj.material;
         });
@@ -5696,7 +5825,8 @@ async function takeRender() {
             ledMat.emissiveIntensity = 0.42;
         }
         let envTex;
-        if (window.__traceEnv === 'room') envTex = studioReflectEnvironment();
+        if (window.__traceEnv === 'hdri') envTex = await studioHdri();
+        else if (window.__traceEnv === 'room') envTex = studioReflectEnvironment();
         else {
             const gradient = new GradientEquirectTexture();
             gradient.topColor.set('#fbfaf8');
@@ -5705,7 +5835,7 @@ async function takeRender() {
             envTex = gradient;
         }
         scene.environment = envTex;
-        scene.environmentIntensity = window.__traceEnv === 'room' ? 0.9 : 0.7;
+        scene.environmentIntensity = window.__traceEnv === 'hdri' ? 1 : window.__traceEnv === 'room' ? 0.9 : 0.7;
         const tracer = new WebGLPathTracer(renderer);
         const tilesX = 2;
         const tilesY = 2;
@@ -5767,7 +5897,7 @@ async function takeRender() {
             denoiseSigma: !window.__skipDenoise ? (Number(window.__denoiseSigma) > 0 ? Number(window.__denoiseSigma) : 1.6) : 0,
             ledMode,
             keepFrame,
-            env: window.__traceEnv === 'room' ? 'room' : 'gradient',
+            env: window.__traceEnv || 'gradient',
             width: capW,
             height: capH,
             bvhMs,

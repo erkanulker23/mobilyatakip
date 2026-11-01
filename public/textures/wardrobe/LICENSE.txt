@@ -1,10 +1,14 @@
 Poly Haven oak_veneer_01, CC0. Albedo, OpenGL normal ve roughness aynı taramadan.
-Gerçek ölçü 1830 × 1830 mm. Damar görüntüde dik. UV tekrarı bu ölçüde hizalanır.
+Gerçek ölçü 1830 × 1830 mm. Damar görüntüde dik. UV metre cinsinden; tekrar 1/1.83.
 https://polyhaven.com/a/oak_veneer_01
 
 Bu set y26_cift_01 için temsili meşe kaplamadır. Kastamonu Entegre’nin resmî dekor taraması değildir.
-Melamin MDF’nin gözenek derinliği abartılmasın diye normal ölçeği 0.18’de tutulur.
+Melamin MDF’nin gözenek derinliği abartılmasın diye normal ölçeği 0.12’de tutulur.
+Kenar bandı bu albedo’nun ortalama rengi #A17E57 üzerinden #947455, pürüzlülük 0.58.
 
 Wood094 (ambientCG, CC0) yalnızca “uyumsuz harita” karşılaştırmasında durur.
 Katalog JPEG’i albedo olarak ayrıca durur; doğrulanmış resmî doku değildir.
 https://ambientcg.com/view?id=Wood094
+
+studio_small_09_1k.hdr Poly Haven CC0. Cam path karşılaştırmasında ortam yansıması içindir.
+https://polyhaven.com/a/studio_small_09

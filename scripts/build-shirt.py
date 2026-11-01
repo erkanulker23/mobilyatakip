@@ -1,222 +1,177 @@
-# Erkek gömleği, gerçek ölçü, Blender cloth. Metre, Z yukarı. Export glTF Y-up.
-# Ölçüler: omuz 46 cm, düz genişlik 56 cm, boy 76 cm, kol 62 cm, yaka 4 cm.
+# Erkek gömleği: tek kumaş parçası askı çubuğunun üstünden cloth ile düşer.
+# Omuz çizgisi 46 cm, en 54 cm, düşen boy yaklaşık 76 cm. Metre, Z yukarı.
 import bpy
-import bmesh
 import math
+import os
 from mathutils import Vector
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
 scene.unit_settings.system = 'METRIC'
 scene.frame_start = 1
-scene.frame_end = 26
-scene.render.resolution_x = 900
-scene.render.resolution_y = 1200
-scene.render.engine = 'BLENDER_EEVEE'
+scene.frame_end = 40
 
-def mat(name, color, rough, metal=0.0, sheen=0.0):
-    m = bpy.data.materials.new(name)
-    m.use_nodes = True
-    bsdf = m.node_tree.nodes.get('Principled BSDF')
+def mat(name, color, rough, metal=0.0):
+    item = bpy.data.materials.new(name)
+    item.use_nodes = True
+    bsdf = item.node_tree.nodes.get('Principled BSDF')
     bsdf.inputs['Base Color'].default_value = (*color, 1)
     bsdf.inputs['Roughness'].default_value = rough
     bsdf.inputs['Metallic'].default_value = metal
-    if 'Sheen Weight' in bsdf.inputs:
-        bsdf.inputs['Sheen Weight'].default_value = sheen
-    return m
+    return item
 
-cotton = mat('Pamuk', (0.90, 0.88, 0.83), 0.78, sheen=0.35)
-collar_mat = mat('Yaka', (0.86, 0.84, 0.79), 0.7, sheen=0.2)
-button_mat = mat('Dugme', (0.95, 0.94, 0.92), 0.32)
-wood = mat('Askı', (0.42, 0.28, 0.16), 0.55)
-metal = mat('Kanca', (0.72, 0.73, 0.75), 0.28, metal=0.85)
+cotton = mat('Pamuk', (0.72, 0.78, 0.86), 0.86)
+collar_mat = mat('Yaka', (0.68, 0.74, 0.82), 0.74)
+button_mat = mat('Dugme', (0.93, 0.93, 0.92), 0.34)
+wood = mat('Aski', (0.34, 0.20, 0.11), 0.5)
+metal = mat('Kanca', (0.75, 0.76, 0.77), 0.22, metal=0.9)
 
-def link(obj):
-    bpy.context.scene.collection.objects.link(obj)
-    return obj
+def apply(obj):
+    bpy.context.view_layer.objects.active = obj
+    obj.select_set(True)
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    obj.select_set(False)
 
-def tube(name, rings):
-    mesh = bpy.data.meshes.new(name)
-    obj = bpy.data.objects.new(name, mesh)
-    link(obj)
-    bm = bmesh.new()
-    built = []
-    for ring in rings:
-        built.append([bm.verts.new(p) for p in ring])
-    bm.verts.ensure_lookup_table()
-    segs = len(built[0])
-    for a, b in zip(built, built[1:]):
-        for i in range(segs):
-            j = (i + 1) % segs
-            try:
-                bm.faces.new((a[i], a[j], b[j], b[i]))
-            except ValueError:
-                pass
-    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
-    bm.to_mesh(mesh)
-    bm.free()
-    mesh.update()
-    return obj
+bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=0.005, depth=0.46, location=(0, 0, 1.40))
+bar = bpy.context.active_object
+bar.rotation_euler = (0, math.pi / 2, 0)
+bar.name = 'Aski'
+apply(bar)
+bar.data.materials.append(wood)
+bpy.ops.mesh.primitive_cylinder_add(vertices=10, radius=0.008, depth=0.42, location=(0, 0, 1.40))
+hit = bpy.context.active_object
+hit.rotation_euler = (0, math.pi / 2, 0)
+hit.name = 'AskiCarpisma'
+apply(hit)
+bpy.ops.object.modifier_add(type='COLLISION')
+hit.collision.thickness_outer = 0.006
+hit.hide_render = True
+bpy.ops.mesh.primitive_torus_add(major_radius=0.018, minor_radius=0.0025, major_segments=18, minor_segments=8, location=(0, -0.012, 1.445))
+hook = bpy.context.active_object
+hook.rotation_euler = (math.pi / 2, 0, 0)
+hook.name = 'Kanca'
+apply(hook)
+hook.data.materials.append(metal)
 
-def ring(origin, axis, radius, oval, segments, twist=0.0):
-    axis = axis.normalized()
-    helper = Vector((0, 0, 1)) if abs(axis.z) < 0.9 else Vector((1, 0, 0))
-    side = axis.cross(helper).normalized()
-    up = side.cross(axis).normalized()
-    points = []
-    for i in range(segments):
-        ang = math.tau * i / segments + twist
-        points.append(origin + side * (math.cos(ang) * radius) + up * (math.sin(ang) * radius * oval))
-    return points
+bpy.ops.mesh.primitive_grid_add(x_subdivisions=48, y_subdivisions=96, size=1, location=(0, 0, 1.46))
+cloth_obj = bpy.context.active_object
+cloth_obj.name = 'Gomlek'
+cloth_obj.scale = (0.54, 1.52, 1)
+apply(cloth_obj)
+cloth_obj.data.materials.append(cotton)
+for vert in cloth_obj.data.vertices:
+    vert.co.z += 0.012 * math.sin(vert.co.x * 18.0) * math.sin(vert.co.y * 9.0)
 
-def body_rings():
-    segs = 36
-    steps = 32
-    rings = []
-    for s in range(steps + 1):
-        t = s / steps
-        z = 0.66 + 0.74 * t
-        width = 0.28 - 0.04 * abs(t - 0.62)
-        depth = 0.15 - 0.03 * (1 - t)
-        if t > 0.92:
-            neck = (t - 0.92) / 0.08
-            width = width * (1 - 0.42 * neck) 
-            depth = depth * (1 - 0.25 * neck)
-        rings.append(ring(Vector((0, 0, z)), Vector((0, 0, 1)), width, depth / width, segs))
-    return rings
+pins = cloth_obj.vertex_groups.new(name='PIN')
+indexes = [v.index for v in cloth_obj.data.vertices if abs(v.co.y) < 0.012 and 0.06 < abs(v.co.x) < 0.23]
+pins.add(indexes, 1.0, 'REPLACE')
+print('PIN', len(indexes))
 
-def sleeve_rings(sign):
-    segs = 22
-    steps = 24
-    shoulder = Vector((sign * 0.22, 0.03, 1.30))
-    cuff = Vector((sign * 0.30, 0.16, 0.72))
-    rings = []
-    for s in range(steps + 1):
-        t = s / steps
-        origin = shoulder.lerp(cuff, t)
-        radius = 0.085 * (1 - t) + 0.052 * t
-        rings.append(ring(origin, (cuff - shoulder), radius, 0.82, segs))
-    return rings
-
-def pin_group(obj, predicate):
+def sleeve(name, x):
+    bpy.ops.mesh.primitive_grid_add(x_subdivisions=16, y_subdivisions=40, size=1, location=(x, 0, 1.44))
+    obj = bpy.context.active_object
+    obj.name = name
+    obj.scale = (0.18, 0.62, 1)
+    apply(obj)
+    obj.data.materials.append(cotton)
     group = obj.vertex_groups.new(name='PIN')
-    mesh = obj.data
-    indexes = [v.index for v in mesh.vertices if predicate(v.co)]
-    if indexes:
-        group.add(indexes, 1.0, 'REPLACE')
-    return group
+    held = [v.index for v in obj.data.vertices if abs(v.co.y) < 0.012]
+    group.add(held, 1.0, 'REPLACE')
+    mod = obj.modifiers.new('Cloth', 'CLOTH')
+    mod.settings.quality = 5
+    mod.settings.mass = 0.18
+    mod.settings.tension_stiffness = 6
+    mod.settings.compression_stiffness = 5
+    mod.settings.shear_stiffness = 3
+    mod.settings.bending_stiffness = 0.02
+    mod.settings.pin_stiffness = 4
+    mod.settings.vertex_group_mass = 'PIN'
+    mod.collision_settings.use_collision = False
+    mod.point_cache.frame_start = 1
+    mod.point_cache.frame_end = scene.frame_end
+    print('SLEEVE', name, len(held))
+    return obj
 
-def add_cloth(obj, pin_name):
-    cloth = obj.modifiers.new('Cloth', 'CLOTH')
-    s = cloth.settings
-    s.quality = 6
-    s.mass = 0.25
-    s.tension_stiffness = 18
-    s.compression_stiffness = 16
-    s.shear_stiffness = 8
-    s.bending_stiffness = 0.4
-    s.pin_stiffness = 1
-    s.air_damping = 1
-    s.vertex_group_mass = pin_name
-    c = cloth.collision_settings
-    c.use_collision = True
-    c.use_self_collision = False
-    c.distance_min = 0.004
-    c.collision_quality = 4
-    cache = cloth.point_cache
-    cache.frame_start = 1
-    cache.frame_end = scene.frame_end
-    return cloth
+sleeve_l = sleeve('KolSol', 0.34)
+sleeve_r = sleeve('KolSag', -0.34)
 
-def collision_body():
-    bpy.ops.mesh.primitive_uv_sphere_add(segments=24, ring_count=16, radius=1, location=(0, 0, 1.12))
-    torso = bpy.context.active_object
-    torso.name = 'Manken'
-    torso.scale = (0.16, 0.10, 0.28)
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    bpy.ops.object.modifier_add(type='COLLISION')
-    torso.collision.thickness_outer = 0.006
-    torso.collision.cloth_friction = 0.35
-    torso.hide_render = True
-    return torso
-
-collision_body()
-shirt = tube('Gomlek', body_rings())
-shirt.data.materials.append(cotton)
-pin_group(shirt, lambda co: co.z > 1.34)
-add_cloth(shirt, 'PIN')
-left = tube('KolSol', sleeve_rings(1))
-right = tube('KolSag', sleeve_rings(-1))
-for sleeve, sign in ((left, 1), (right, -1)):
-    sleeve.data.materials.append(cotton)
-    pin_group(sleeve, lambda co, sign=sign: (co - Vector((sign * 0.22, 0.03, 1.30))).length < 0.09)
-    add_cloth(sleeve, 'PIN')
+modifier = cloth_obj.modifiers.new('Cloth', 'CLOTH')
+settings = modifier.settings
+settings.quality = 6
+settings.mass = 0.22
+settings.tension_stiffness = 6
+settings.compression_stiffness = 5
+settings.shear_stiffness = 3
+settings.bending_stiffness = 0.015
+settings.pin_stiffness = 4
+settings.air_damping = 1
+settings.vertex_group_mass = 'PIN'
+modifier.collision_settings.use_collision = True
+modifier.collision_settings.use_self_collision = False
+modifier.collision_settings.distance_min = 0.004
+modifier.point_cache.frame_start = 1
+modifier.point_cache.frame_end = scene.frame_end
 
 bpy.ops.ptcache.free_bake_all()
 bpy.ops.ptcache.bake_all(bake=True)
 scene.frame_set(scene.frame_end)
-
-for obj in (shirt, left, right):
+bpy.context.view_layer.objects.active = cloth_obj
+cloth_obj.select_set(True)
+bpy.ops.object.modifier_apply(modifier='Cloth')
+for obj in (sleeve_l, sleeve_r):
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
     bpy.ops.object.modifier_apply(modifier='Cloth')
+    bpy.ops.object.shade_smooth()
     obj.select_set(False)
+bpy.context.view_layer.objects.active = cloth_obj
+cloth_obj.select_set(True)
+bpy.ops.object.shade_smooth()
 
-# Yaka, manşet, düğme, askı. Simden sonra sabit parçalar.
-def collar():
-    bpy.ops.mesh.primitive_cylinder_add(vertices=28, radius=0.085, depth=0.04, location=(0, 0.01, 1.40), end_fill_type='NOTHING')
-    obj = bpy.context.active_object
-    obj.name = 'Yaka'
-    obj.scale = (1, 0.78, 1)
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    obj.data.materials.append(collar_mat)
-    return obj
+zs = [v.co.z for v in cloth_obj.data.vertices]
+print('DRAPE', min(zs), max(zs))
 
-collar()
+bpy.ops.mesh.primitive_cylinder_add(vertices=28, radius=0.072, depth=0.035, location=(0, 0, 1.43), end_fill_type='NOTHING')
+band = bpy.context.active_object
+band.name = 'Yaka'
+band.scale = (1.1, 0.62, 1)
+apply(band)
+band.data.materials.append(collar_mat)
 
-def buttons():
-    for i, z in enumerate((1.22, 1.12, 1.02, 0.92, 0.82, 0.74)):
-        bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=0.006, depth=0.002, location=(0, 0.155, z))
-        obj = bpy.context.active_object
-        obj.rotation_euler = (math.radians(90), 0, 0)
-        obj.name = f'Dugme_{i}'
-        obj.data.materials.append(button_mat)
+for index, z in enumerate((1.28, 1.16, 1.04, 0.92, 0.80)):
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.006, location=(0.012, 0.02, z))
+    button = bpy.context.active_object
+    button.name = f'Dugme_{index}'
+    apply(button)
+    button.data.materials.append(button_mat)
 
-buttons()
-
-bpy.ops.mesh.primitive_cylinder_add(vertices=16, radius=0.006, depth=0.48, location=(0, 0, 1.46))
-bar = bpy.context.active_object
-bar.rotation_euler = (0, math.radians(90), 0)
-bar.name = 'Aski'
-bar.data.materials.append(wood)
-bpy.ops.mesh.primitive_torus_add(major_radius=0.018, minor_radius=0.003, location=(0, -0.01, 1.50))
-hook = bpy.context.active_object
-hook.name = 'Kanca'
-hook.rotation_euler = (math.radians(90), 0, 0)
-hook.data.materials.append(metal)
-
-for obj in list(bpy.context.scene.objects):
-    if obj.name == 'Manken':
-        bpy.data.objects.remove(obj, do_unlink=True)
-        continue
+bpy.data.objects.remove(hit, do_unlink=True)
+for obj in scene.objects:
     obj.select_set(True)
-bpy.context.view_layer.objects.active = shirt
+bpy.context.view_layer.objects.active = cloth_obj
 bpy.ops.object.join()
 
-tex = bpy.data.textures.new('Dokuma', 'CLOUDS')
-tex.noise_scale = 0.015
-disp = shirt.modifiers.new('Dokuma', 'DISPLACE')
-disp.texture = tex
-disp.strength = 0.0011
-disp.mid_level = 0.5
-bpy.ops.object.modifier_apply(modifier='Dokuma')
-
 out = '/Users/erkanulker/mobilyatakip/public/models/wardrobe/library/gomlek.glb'
-bpy.ops.export_scene.gltf(
-    filepath=out,
-    export_format='GLB',
-    export_apply=True,
-    export_yup=True,
-    use_selection=False,
-)
+bpy.ops.export_scene.gltf(filepath=out, export_format='GLB', export_apply=True, export_yup=True, use_selection=False)
+
+scene.render.engine = 'BLENDER_EEVEE'
+scene.render.resolution_x = 800
+scene.render.resolution_y = 1100
+preview = '/Users/erkanulker/mobilyatakip/test-results/ultra-realism/stage-v3/shirt-sim-preview.png'
+scene.render.filepath = preview
+os.makedirs(os.path.dirname(preview), exist_ok=True)
+world = bpy.data.worlds.new('Studio')
+scene.world = world
+world.use_nodes = True
+world.node_tree.nodes['Background'].inputs[0].default_value = (0.86, 0.86, 0.84, 1)
+world.node_tree.nodes['Background'].inputs[1].default_value = 0.6
+bpy.ops.object.camera_add(location=(0.7, -1.35, 1.15))
+cam = bpy.context.active_object
+cam.rotation_euler = (Vector((0.0, 0.95, 1.05)) - cam.location).to_track_quat('-Z', 'Y').to_euler()
+scene.camera = cam
+bpy.ops.object.light_add(type='AREA', location=(0.5, -0.9, 1.7))
+lamp = bpy.context.active_object
+lamp.data.energy = 40
+lamp.data.size = 0.8
+bpy.ops.render.render(write_still=True)
 print('SHIRT_OK', out)
