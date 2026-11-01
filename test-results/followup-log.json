@@ -1,0 +1,27 @@
+[
+  {
+    "step": "225 sol tarafa bırakma",
+    "ok": true,
+    "detail": "Sol 300 cm · Ön 225 cm · Sağ 300 cm · Yükseklik 270 cm · Dolap yüksekliği 250 cm · Dolap 225 cm"
+  },
+  {
+    "step": "315 sol tarafa bırakma",
+    "ok": false,
+    "detail": "Sol 300 cm · Ön 315 cm · Sağ 300 cm · Yükseklik 270 cm · Dolap yüksekliği 250 cm · Dolap 225 cm"
+  },
+  {
+    "step": "tek tıkla seçim",
+    "ok": true,
+    "detail": "Çift kapılı V1"
+  },
+  {
+    "step": "tümüne uygula",
+    "ok": false,
+    "detail": "Aris AntrasitF298 · Melamin Kaplı Panel · Antrasit 3 kez"
+  },
+  {
+    "step": "füme path trace 2",
+    "ok": true,
+    "detail": "Render al"
+  }
+]

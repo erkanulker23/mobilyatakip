@@ -1,0 +1,74 @@
+[
+  {
+    "step": "giriş",
+    "ok": true,
+    "detail": "/dashboard",
+    "at": "2026-11-01T08:56:33.232Z"
+  },
+  {
+    "step": "katalog kartı",
+    "ok": true,
+    "detail": "25 kart",
+    "at": "2026-11-01T08:56:40.166Z"
+  },
+  {
+    "step": "25 modül görüntüsü",
+    "ok": true,
+    "detail": "25/25",
+    "at": "2026-11-01T08:58:38.669Z"
+  },
+  {
+    "step": "QA Denetim 270",
+    "ok": true,
+    "detail": "bırakıldı, bırakıldı, bırakıldı | Sol 300 cm · Ön 270 cm · Sağ 300 cm · Yükseklik 270 cm · Dolap yüksekliği 250 cm · Dolap 270 cm",
+    "at": "2026-11-01T08:58:42.643Z"
+  },
+  {
+    "step": "kayıt ve yenileme",
+    "ok": true,
+    "detail": "Proje güncellendi.",
+    "at": "2026-11-01T08:58:45.854Z"
+  },
+  {
+    "step": "çıkış sonrası aynı proje",
+    "ok": true,
+    "detail": "Nu8UagEpdd4F3NkHO86bnuYh",
+    "at": "2026-11-01T08:58:49.383Z"
+  },
+  {
+    "step": "QA Denetim 225",
+    "ok": false,
+    "detail": "bırakıldı, bırakıldı, bırakıldı | Sol 300 cm · Ön 225 cm · Sağ 300 cm · Yükseklik 270 cm · Dolap yüksekliği 250 cm · Dolap 135 cm",
+    "at": "2026-11-01T08:58:53.198Z"
+  },
+  {
+    "step": "QA Denetim 315",
+    "ok": false,
+    "detail": "bırakıldı, bırakıldı, bırakıldı, bırakıldı | Sol 300 cm · Ön 315 cm · Sağ 300 cm · Yükseklik 270 cm · Dolap yüksekliği 250 cm · Dolap 225 cm",
+    "at": "2026-11-01T08:58:57.650Z"
+  },
+  {
+    "step": "köşe yerleşimi",
+    "ok": true,
+    "detail": "Sol 300 cm · Ön 360 cm · Sağ 300 cm · Yükseklik 270 cm · Dolap yüksekliği 250 cm · Dolap 225 cm",
+    "at": "2026-11-01T08:59:01.532Z"
+  },
+  {
+    "step": "füme path trace",
+    "ok": true,
+    "detail": "Render al, 231 sn",
+    "at": "2026-11-01T09:02:57.006Z"
+  },
+  {
+    "step": "performans",
+    "ok": true,
+    "detail": "[{\"count\":1,\"ms\":1730,\"fps\":61,\"heapMb\":30},{\"count\":5,\"ms\":3866,\"fps\":61,\"heapMb\":34},{\"count\":10,\"ms\":4584,\"fps\":62,\"heapMb\":22},{\"count\":17,\"ms\":6066,\"fps\":61,\"heapMb\":26}]",
+    "at": "2026-11-01T09:03:14.907Z"
+  },
+  {
+    "step": "mobil 390",
+    "ok": true,
+    "detail": "pages/mobile-390.jpg",
+    "at": "2026-11-01T09:03:15.551Z"
+  }
+]

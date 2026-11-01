@@ -79,6 +79,8 @@
         .stage { position: relative; min-width: 0; min-height: 0; background: #eceae6; }
         #viewport { position: absolute; inset: 0; }
         #viewport canvas { display: block; }
+        #view-bar { position: absolute; left: 12px; bottom: 12px; z-index: 4; display: flex; flex-wrap: wrap; gap: 6px; max-width: min(420px, calc(100% - 24px)); }
+        #view-bar button { border: 1px solid var(--line); background: rgba(255,252,248,.92); border-radius: 999px; padding: 6px 10px; font-size: 12px; }
         #measure-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
         .measure { position: absolute; transform: translate(-50%, -50%); background: #1f6b4a; color: #fff; font-size: 11px; font-weight: 700; line-height: 1.2; padding: 2px 6px; border-radius: 999px; white-space: nowrap; }
         .btn.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
@@ -165,6 +167,15 @@
         </aside>
         <section class="stage">
             <div id="viewport"></div>
+            <div id="view-bar">
+                <button type="button" data-view="front">Ön</button>
+                <button type="button" data-view="left">Sol</button>
+                <button type="button" data-view="right">Sağ</button>
+                <button type="button" data-view="left45">Sol 45</button>
+                <button type="button" data-view="right45">Sağ 45</button>
+                <button type="button" data-view="top">Üst</button>
+                <button type="button" data-view="perspective">Perspektif</button>
+            </div>
             <div id="measure-layer" class="hidden"></div>
             <div id="selection-ui" class="hidden">
                 <div id="selection-name"></div>
@@ -291,6 +302,6 @@
         csrf: @json(csrf_token())
     };
 </script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=86"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=91"></script>
 </body>
 </html>

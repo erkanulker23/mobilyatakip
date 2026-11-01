@@ -1,0 +1,327 @@
+[
+  {
+    "id": "tek_v1",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": true,
+    "drawers": true,
+    "error": ""
+  },
+  {
+    "id": "tek_v2",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": true,
+    "drawers": false,
+    "error": ""
+  },
+  {
+    "id": "tek_v3",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": true,
+    "drawers": true,
+    "error": ""
+  },
+  {
+    "id": "tek_v4",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": true,
+    "drawers": true,
+    "error": ""
+  },
+  {
+    "id": "tek_v5",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": true,
+    "drawers": true,
+    "error": ""
+  },
+  {
+    "id": "tek_6",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": true,
+    "drawers": false,
+    "error": ""
+  },
+  {
+    "id": "tek_7",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": true,
+    "drawers": false,
+    "error": ""
+  },
+  {
+    "id": "tek_8",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": true,
+    "drawers": false,
+    "error": ""
+  },
+  {
+    "id": "tek_9",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": true,
+    "drawers": true,
+    "error": ""
+  },
+  {
+    "id": "tek_10",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": true,
+    "drawers": false,
+    "error": ""
+  },
+  {
+    "id": "cift_v1",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": true,
+    "drawers": true,
+    "error": ""
+  },
+  {
+    "id": "cift_v2",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": true,
+    "drawers": true,
+    "error": ""
+  },
+  {
+    "id": "cift_v3",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": true,
+    "drawers": true,
+    "error": ""
+  },
+  {
+    "id": "cift_v4",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": true,
+    "drawers": true,
+    "error": ""
+  },
+  {
+    "id": "cift_v5",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": true,
+    "drawers": true,
+    "error": ""
+  },
+  {
+    "id": "cift_6",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": true,
+    "drawers": true,
+    "error": ""
+  },
+  {
+    "id": "cift_7",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": true,
+    "drawers": true,
+    "error": ""
+  },
+  {
+    "id": "cift_8",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": true,
+    "drawers": true,
+    "error": ""
+  },
+  {
+    "id": "cift_9",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": true,
+    "drawers": true,
+    "error": ""
+  },
+  {
+    "id": "cift_10",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": true,
+    "drawers": true,
+    "error": ""
+  },
+  {
+    "id": "kose_1",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": false,
+    "drawers": false,
+    "error": ""
+  },
+  {
+    "id": "kose_2",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": false,
+    "drawers": false,
+    "error": ""
+  },
+  {
+    "id": "kose_3",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": false,
+    "drawers": true,
+    "error": ""
+  },
+  {
+    "id": "kose_4",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": false,
+    "drawers": false,
+    "error": ""
+  },
+  {
+    "id": "kose_5",
+    "shots": [
+      "front",
+      "right45",
+      "left45",
+      "open",
+      "closed"
+    ],
+    "door": false,
+    "drawers": false,
+    "error": ""
+  }
+]
