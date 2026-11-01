@@ -1,0 +1,202 @@
+[
+  {
+    "id": "cift_v1",
+    "preview": "realistic",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "cift_v2",
+    "preview": "realistic",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "cift_v3",
+    "preview": "realistic",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "cift_v4",
+    "preview": "realistic",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "cift_v5",
+    "preview": "realistic",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "tek_v1",
+    "preview": "realistic",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "tek_v2",
+    "preview": "realistic",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "tek_v3",
+    "preview": "realistic",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "tek_v4",
+    "preview": "realistic",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "tek_v5",
+    "preview": "realistic",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "cift_10",
+    "preview": "technical",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "cift_6",
+    "preview": "technical",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "cift_7",
+    "preview": "technical",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "cift_8",
+    "preview": "technical",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "cift_9",
+    "preview": "technical",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "kose_1",
+    "preview": "technical",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "kose_2",
+    "preview": "technical",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "kose_3",
+    "preview": "technical",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "kose_4",
+    "preview": "technical",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "kose_5",
+    "preview": "technical",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "tek_10",
+    "preview": "technical",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "tek_6",
+    "preview": "technical",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "tek_7",
+    "preview": "technical",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "tek_8",
+    "preview": "technical",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  },
+  {
+    "id": "tek_9",
+    "preview": "technical",
+    "model.glb": true,
+    "preview.png": true,
+    "model.dxf": true,
+    "module.json": true
+  }
+]

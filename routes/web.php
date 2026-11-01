@@ -87,22 +87,46 @@ Route::prefix('katalog')->middleware('throttle:60,1')->group(function () {
         ->name('catalog.category');
 });
 
-Route::prefix('tasarla')->middleware('throttle:60,1')->group(function () {
-    Route::get('/', [\App\Http\Controllers\PublicConfiguratorController::class, 'index'])->name('configurator.index');
-    Route::get('/malzemeler', [\App\Http\Controllers\PublicConfiguratorController::class, 'materials'])->name('configurator.materials');
-    Route::get('/model/{file}', [\App\Http\Controllers\PublicConfiguratorController::class, 'model'])
-        ->where('file', '[a-z0-9\\-]+\\.glb')
-        ->name('configurator.model');
-});
-
-Route::prefix('dolap')->middleware('throttle:60,1')->group(function () {
-    Route::get('/', [\App\Http\Controllers\PublicWardrobeController::class, 'index'])->name('wardrobe.index');
+Route::prefix('dolap')->group(function () {
+    Route::get('/', [\App\Http\Controllers\PublicWardrobeController::class, 'index'])
+        ->middleware('throttle:120,1,wardrobe-page')
+        ->name('wardrobe.index');
+    Route::get('/tasarla', [\App\Http\Controllers\PublicWardrobeController::class, 'design'])
+        ->middleware('throttle:120,1,wardrobe-design')
+        ->name('wardrobe.design');
+    Route::get('/modul', [\App\Http\Controllers\PublicWardrobeController::class, 'modulePreview'])
+        ->middleware('throttle:120,1,wardrobe-module')
+        ->name('wardrobe.module');
+    Route::get('/malzemeler', [\App\Http\Controllers\PublicWardrobeController::class, 'materials'])
+        ->middleware('throttle:120,1,wardrobe-materials')
+        ->name('wardrobe.materials');
     Route::post('/teklif', [\App\Http\Controllers\PublicWardrobeController::class, 'quote'])
-        ->middleware('throttle:8,1')
+        ->middleware('throttle:8,1,wardrobe-quote')
         ->name('wardrobe.quote');
+    Route::post('/proje', [\App\Http\Controllers\PublicWardrobeController::class, 'storeProject'])
+        ->middleware('throttle:30,1,wardrobe-store')
+        ->name('wardrobe.project.store');
+    Route::get('/projeler', [\App\Http\Controllers\PublicWardrobeController::class, 'projects'])
+        ->middleware('throttle:60,1,wardrobe-projects')
+        ->name('wardrobe.project.index');
+    Route::get('/proje/{token}', [\App\Http\Controllers\PublicWardrobeController::class, 'showProject'])
+        ->where('token', '[A-Za-z0-9]{24}')
+        ->middleware('throttle:120,1,wardrobe-show')
+        ->name('wardrobe.project.show');
+    Route::put('/proje/{token}', [\App\Http\Controllers\PublicWardrobeController::class, 'updateProject'])
+        ->where('token', '[A-Za-z0-9]{24}')
+        ->middleware('throttle:120,1,wardrobe-update')
+        ->name('wardrobe.project.update');
+    Route::delete('/proje/{token}', [\App\Http\Controllers\PublicWardrobeController::class, 'destroyProject'])
+        ->where('token', '[A-Za-z0-9]{24}')
+        ->middleware('throttle:30,1,wardrobe-delete')
+        ->name('wardrobe.project.destroy');
 });
 
 Route::get('/plan', [\App\Http\Controllers\PublicToolController::class, 'plan'])->name('tools.plan');
+Route::get('/dolap-uretim/uygulama/{path}', [\App\Http\Controllers\PublicToolController::class, 'cabinetApp'])
+    ->where('path', 'index\\.html|kitchen-layout\\.html')
+    ->name('tools.cabinet.app');
 Route::get('/dolap-uretim', [\App\Http\Controllers\PublicToolController::class, 'cabinet'])->name('tools.cabinet');
 
 Route::middleware(['auth'])->group(function () {

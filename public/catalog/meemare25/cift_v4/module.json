@@ -1,0 +1,290 @@
+{
+  "module": "CIFT_V4",
+  "width_mm": 900,
+  "height_mm": 2500,
+  "depth_mm": 600,
+  "front_direction": "negative Z",
+  "parts": [
+    {
+      "name": "SOL_YAN",
+      "center": [
+        9.0,
+        1250.0,
+        300.0
+      ],
+      "size": [
+        18.0,
+        2500.0,
+        600.0
+      ],
+      "material": "govde"
+    },
+    {
+      "name": "SAG_YAN",
+      "center": [
+        891.0,
+        1250.0,
+        300.0
+      ],
+      "size": [
+        18.0,
+        2500.0,
+        600.0
+      ],
+      "material": "govde"
+    },
+    {
+      "name": "UST_TABLA",
+      "center": [
+        450.0,
+        2491.0,
+        300.0
+      ],
+      "size": [
+        864.0,
+        18.0,
+        600.0
+      ],
+      "material": "govde"
+    },
+    {
+      "name": "ALT_TABLA",
+      "center": [
+        450.0,
+        99.0,
+        300.0
+      ],
+      "size": [
+        864.0,
+        18.0,
+        600.0
+      ],
+      "material": "govde"
+    },
+    {
+      "name": "ARKALIK",
+      "center": [
+        450.0,
+        1250.0,
+        596.0
+      ],
+      "size": [
+        900.0,
+        2500.0,
+        8.0
+      ],
+      "material": "arka"
+    },
+    {
+      "name": "BAZA",
+      "center": [
+        450.0,
+        45.0,
+        300.0
+      ],
+      "size": [
+        900.0,
+        90.0,
+        600.0
+      ],
+      "material": "govde"
+    },
+    {
+      "name": "DIKME_01",
+      "center": [
+        370.0,
+        1130.0,
+        300.0
+      ],
+      "size": [
+        18.0,
+        2040.0,
+        600.0
+      ],
+      "material": "govde"
+    },
+    {
+      "name": "RAF_01",
+      "center": [
+        450.0,
+        2150.0,
+        300.0
+      ],
+      "size": [
+        864.0,
+        18.0,
+        600.0
+      ],
+      "material": "raf"
+    },
+    {
+      "name": "ASKI_BORUSU_01",
+      "center": [
+        626.0,
+        1940.0,
+        220.0
+      ],
+      "size": [
+        464.0,
+        16.0,
+        16.0
+      ],
+      "material": "askilik"
+    },
+    {
+      "name": "RAF_02",
+      "center": [
+        194.0,
+        1860.0,
+        300.0
+      ],
+      "size": [
+        334.0,
+        18.0,
+        600.0
+      ],
+      "material": "raf"
+    },
+    {
+      "name": "RAF_03",
+      "center": [
+        194.0,
+        1520.0,
+        300.0
+      ],
+      "size": [
+        334.0,
+        18.0,
+        600.0
+      ],
+      "material": "raf"
+    },
+    {
+      "name": "RAF_04",
+      "center": [
+        194.0,
+        1190.0,
+        300.0
+      ],
+      "size": [
+        334.0,
+        18.0,
+        600.0
+      ],
+      "material": "raf"
+    },
+    {
+      "name": "RAF_05",
+      "center": [
+        194.0,
+        860.0,
+        300.0
+      ],
+      "size": [
+        334.0,
+        18.0,
+        600.0
+      ],
+      "material": "raf"
+    },
+    {
+      "name": "CEKMECE_ON_01",
+      "center": [
+        626.0,
+        665.0,
+        34.0
+      ],
+      "size": [
+        486.0,
+        258.0,
+        18.0
+      ],
+      "material": "cekmece"
+    },
+    {
+      "name": "CEKMECE_TABAN_01",
+      "center": [
+        626.0,
+        565.0,
+        190.0
+      ],
+      "size": [
+        449.0,
+        12.0,
+        330.0
+      ],
+      "material": "raf"
+    },
+    {
+      "name": "CEKMECE_ARKA_01",
+      "center": [
+        626.0,
+        665.0,
+        350.0
+      ],
+      "size": [
+        449.0,
+        228.0,
+        12.0
+      ],
+      "material": "raf"
+    },
+    {
+      "name": "CEKMECE_ON_02",
+      "center": [
+        626.0,
+        935.0,
+        34.0
+      ],
+      "size": [
+        486.0,
+        258.0,
+        18.0
+      ],
+      "material": "cekmece"
+    },
+    {
+      "name": "CEKMECE_TABAN_02",
+      "center": [
+        626.0,
+        835.0,
+        190.0
+      ],
+      "size": [
+        449.0,
+        12.0,
+        330.0
+      ],
+      "material": "raf"
+    },
+    {
+      "name": "CEKMECE_ARKA_02",
+      "center": [
+        626.0,
+        935.0,
+        350.0
+      ],
+      "size": [
+        449.0,
+        228.0,
+        12.0
+      ],
+      "material": "raf"
+    },
+    {
+      "name": "RAF_06",
+      "center": [
+        450.0,
+        160.0,
+        300.0
+      ],
+      "size": [
+        864.0,
+        18.0,
+        600.0
+      ],
+      "material": "raf"
+    }
+  ],
+  "note": "Konsept 3D geometri; CNC/kesim için üretim onayı ve toleranslar gereklidir. PNG yapay görsel olup CAD ile birebir geometri eşleştirmesi değildir."
+}

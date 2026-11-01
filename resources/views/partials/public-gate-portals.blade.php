@@ -17,13 +17,6 @@
             <strong>Kataloga göz at</strong>
             <span>Kastamonu Entegre renk ve kaplamalar</span>
         </a>
-        <a class="portal @if($activePortal === 'tasarla') is-active @endif" href="{{ url('/tasarla') }}">
-            <span class="portal-ico" aria-hidden="true">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 18V6l8-3 8 3v12l-8 3-8-3z"/><path d="M12 3v18M4 6l8 3 8-3"/></svg>
-            </span>
-            <strong>3D tasarımcıya git</strong>
-            <span>TV ünitesini sürükle-bırak ile kurun</span>
-        </a>
         <a class="portal @if($activePortal === 'dolap') is-active @endif" href="{{ url('/dolap') }}">
             <span class="portal-ico" aria-hidden="true">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 4h16v16H4z"/><path d="M12 4v16M4 10h8M12 14h8"/></svg>

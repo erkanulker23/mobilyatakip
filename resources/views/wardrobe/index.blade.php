@@ -7,125 +7,189 @@
     @include('partials.site-meta', [
         'company' => $company,
         'pageTitle' => '3D Dolap Tasarla',
-        'metaDescription' => 'Meemare 3D Studio ile kendi modüler dolabınızı tasarlayın. Ölçü, raf, çekmece, kapak ve renk canlı olarak değişir.',
+        'metaDescription' => 'Meemare hazır dolap modüllerini odanın duvarına dizin. Kapak, raf ve renk canlı değişir.',
     ])
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --ink: #17211c;
-            --muted: #5e6a64;
-            --line: #e4e1da;
-            --bg: #f3f1ec;
+            --ink: #1c1c1c;
+            --muted: #6d6a64;
+            --line: #e6e2da;
+            --bg: #f4f3f0;
             --panel: #fffcf8;
             --accent: #1f6b4a;
-            --accent-2: #e7f3ec;
             --danger: #9f2d2d;
-            --shadow: 0 10px 30px rgba(23, 33, 28, .08);
+            --shadow: 0 12px 32px rgba(28, 28, 28, .08);
         }
         * { box-sizing: border-box; }
         html, body { margin: 0; height: 100%; overflow: hidden; font-family: Montserrat, system-ui, sans-serif; color: var(--ink); background: var(--bg); }
         button, input, select { font-family: inherit; }
         button { cursor: pointer; }
-        #studio { display: grid; grid-template-rows: 58px 1fr 52px; height: 100%; }
-        header.bar, footer.bar { display: flex; align-items: center; gap: 10px; padding: 0 14px; background: var(--panel); border-color: var(--line); }
+        #studio { display: grid; grid-template-rows: 56px 1fr 48px; height: 100%; }
+        header.bar, footer.bar, .series {
+            display: flex; align-items: center; gap: 8px; padding: 0 14px; background: var(--panel);
+        }
         header.bar { border-bottom: 1px solid var(--line); }
+        .series { display: none; }
         footer.bar { border-top: 1px solid var(--line); justify-content: space-between; }
-        .brand { display: flex; flex-direction: column; line-height: 1.1; min-width: 0; }
+        .brand { display: flex; flex-direction: column; line-height: 1.1; text-decoration: none; color: inherit; }
         .brand strong { font-size: 13px; letter-spacing: .08em; }
         .brand span { font-size: 11px; color: var(--muted); }
-        .name-input { border: 0; background: transparent; font-weight: 600; font-size: 14px; width: 180px; }
+        .name-input { border: 0; background: transparent; font-weight: 600; font-size: 14px; width: 160px; }
         .name-input:focus { outline: none; }
         .grow { flex: 1; }
-        .btn, .btn-ghost, .btn-primary { border-radius: 8px; border: 1px solid var(--line); background: #fff; padding: 7px 10px; font-size: 12px; font-weight: 600; }
+        .btn, .btn-primary { border-radius: 8px; border: 1px solid var(--line); background: #fff; padding: 7px 10px; font-size: 12px; font-weight: 600; }
         .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
         .btn:disabled { opacity: .4; cursor: default; }
-        .btn-ghost { background: transparent; }
-        .workspace { display: grid; grid-template-columns: 300px 1fr 320px; min-height: 0; }
+        .series button { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+        .series button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
+        .seg { display: flex; gap: 6px; flex-wrap: wrap; }
+        .seg button { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 7px 10px; font-size: 12px; font-weight: 600; }
+        .seg button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
+        .workspace { display: grid; grid-template-columns: 280px 1fr 300px; min-height: 0; }
         aside { background: var(--panel); min-height: 0; display: flex; flex-direction: column; }
         aside.left { border-right: 1px solid var(--line); }
         aside.right { border-left: 1px solid var(--line); }
-        .side-head, .side-body { padding: 12px; }
-        .side-body { overflow: auto; min-height: 0; }
-        .search, .field input, .field select { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: #fff; font-size: 13px; }
-        .cats { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
-        .cat { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 4px 8px; font-size: 11px; }
-        .cat.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
-        .card { display: grid; grid-template-columns: 72px 1fr; gap: 8px; border: 1px solid var(--line); border-radius: 12px; padding: 8px; margin-bottom: 8px; background: #fff; }
-        .card[draggable="true"] { cursor: grab; }
-        .swatch-preview { height: 72px; border-radius: 8px; background: linear-gradient(#efe8dc, #d7c4a8); display: flex; align-items: flex-end; justify-content: center; font-size: 10px; color: #5c5146; }
-        .card h3 { margin: 0 0 2px; font-size: 13px; }
-        .card p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
-        .card .meta { margin-top: 4px; font-size: 11px; color: var(--ink); }
-        .stage { position: relative; min-width: 0; min-height: 0; background: radial-gradient(circle at 50% 40%, #f7f4ee, #ddd8ce 70%); }
+        .side-head { padding: 12px 14px 0; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+        .library-search { padding: 10px 12px 0; }
+        .library-search input { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: #fff; font-size: 13px; }
+        .side-body { padding: 12px; overflow: auto; min-height: 0; flex: 1; }
+        .side-foot { border-top: 1px solid var(--line); padding: 12px; flex: 0 0 auto; }
+        .side-foot .btn { width: 100%; }
+        .catalog { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .card { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 12px; background: #fff; padding: 6px; text-align: left; }
+        .card:hover { border-color: #c8c2b6; }
+        .card img { width: 100%; height: 168px; object-fit: contain; background: #fff; border-radius: 8px; }
+        .catalog-switch { display: flex; gap: 6px; margin: 0 0 8px; }
+        .catalog-switch button { flex: 1; border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 7px 6px; font-size: 12px; font-weight: 700; }
+        .catalog-switch button.is-on { background: #149152; color: #fff; border-color: #149152; }
+        .catalog-kicker { margin: 12px 0 6px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+        .card.is-broken { outline: 2px solid #c0392b; }
+        .card strong { display: block; margin-top: 6px; font-size: 12px; font-weight: 600; }
+        .card span, .set-card span { color: var(--muted); font-size: 11px; }
+        .sets { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+        .set-card { display: flex; align-items: center; gap: 10px; text-align: left; border: 1px solid var(--line); border-radius: 12px; background: #fff; padding: 8px; }
+        .set-card img { width: 64px; height: 64px; object-fit: contain; background: #f7f6f4; border-radius: 8px; flex: none; }
+        .set-card strong { display: block; font-size: 13px; }
+        .parts { margin: 0 0 12px; padding-left: 18px; font-size: 12px; }
+        .parts li { margin: 0 0 8px; }
+        .parts li.is-on { background: #e5f6ec; border: 2px solid #149152; border-radius: 8px; padding: 6px 8px; list-style-position: inside; }
+        .stage { position: relative; min-width: 0; min-height: 0; background: #eceae6; }
         #viewport { position: absolute; inset: 0; }
         #viewport canvas { display: block; }
-        .view-bar { position: absolute; left: 12px; top: 12px; display: flex; flex-wrap: wrap; gap: 6px; max-width: calc(100% - 24px); z-index: 2; }
+        #measure-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+        .measure { position: absolute; transform: translate(-50%, -50%); background: #1f6b4a; color: #fff; font-size: 11px; font-weight: 700; line-height: 1.2; padding: 2px 6px; border-radius: 999px; white-space: nowrap; }
+        .btn.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
+        #selection-ui, #height-handle { position: absolute; z-index: 3; }
+        #selection-ui { display: flex; flex-direction: column; align-items: center; gap: 6px; transform: translate(-50%, 10px); pointer-events: none; }
+        #selection-ui button { pointer-events: auto; }
+        #selection-ui .selection-actions { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; max-width: 280px; }
+        #selection-name { background: #149152; color: #fff; font-size: 11px; font-weight: 600; line-height: 1.2; padding: 3px 8px; border-radius: 999px; white-space: nowrap; pointer-events: auto; cursor: grab; touch-action: none; }
+        #selection-ui button { background: #2b2b2b; color: #fff; border: 0; border-radius: 7px; padding: 6px 9px; font-size: 12px; font-weight: 600; }
+        #selection-ui button.is-on { background: #149152; }
+        #hold-select { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 4; background: #1f6b4a; color: #fff; border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 600; pointer-events: none; }
+        .picked { display: inline-block; margin: 0 0 6px; background: #149152; color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; }
+        #height-handle {
+            width: 32px; height: 32px; border-radius: 50%; border: 1px solid #d5d0c6; background: #fff;
+            transform: translate(-50%, -50%); font-size: 16px; box-shadow: var(--shadow);
+        }
         .warn { position: absolute; left: 12px; right: 12px; bottom: 12px; background: #fff6f4; color: var(--danger); border: 1px solid #f0c8c4; border-radius: 10px; padding: 8px 10px; font-size: 12px; z-index: 2; }
-        .field { margin-bottom: 10px; }
+        .field { margin-bottom: 12px; }
         .field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
-        .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .colors { display: flex; flex-wrap: wrap; gap: 6px; }
-        .dot { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #d5d0c8; }
-        .dot.is-on { box-shadow: 0 0 0 2px var(--accent); }
-        .hint { font-size: 11px; color: var(--muted); margin: 0 0 8px; }
+        .field-key { margin-bottom: 14px; padding: 10px; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
+        .field-key > label { font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+        .field input, .field select { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: #fff; font-size: 13px; }
+        .swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+        .swatch { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #d5d0c8; }
+        .field-key .swatch { width: 36px; height: 36px; }
+        .swatch.is-on { box-shadow: 0 0 0 2px var(--accent); }
+        .decors { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; max-height: 168px; overflow: auto; }
+        .decor-kicker { grid-column: 1 / -1; margin: 4px 0 0; font-size: 11px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--muted); }
+        .decor { display: flex; gap: 6px; align-items: center; border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 4px; text-align: left; }
+        .decor.is-on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+        .decor img { width: 28px; height: 28px; object-fit: cover; border-radius: 4px; background: #eee; }
+        .decor b { display: block; font-size: 10px; font-weight: 600; line-height: 1.2; }
+        .decor span { display: block; font-size: 10px; color: var(--muted); }
+        .hint { font-size: 12px; color: var(--muted); margin: 0 0 8px; }
         .stat { font-size: 12px; color: var(--muted); }
         .stat b { color: var(--ink); }
-        .overlay { position: fixed; inset: 0; background: rgba(18, 24, 21, .55); z-index: 40; display: flex; align-items: center; justify-content: center; padding: 18px; }
-        .sheet { width: min(720px, 100%); background: var(--panel); border-radius: 16px; padding: 22px; box-shadow: var(--shadow); }
-        .choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .choice { text-align: left; border: 1px solid var(--line); background: #fff; border-radius: 12px; padding: 14px; }
-        .choice strong { display: block; margin-bottom: 4px; }
-        .choice span { color: var(--muted); font-size: 12px; }
+        h2 { margin: 0 0 8px; font-size: 16px; }
+        .overlay { position: fixed; inset: 0; background: rgba(18, 24, 21, .55); z-index: 80; display: flex; align-items: center; justify-content: center; padding: 18px; }
+        #config-modal .sheet { width: min(680px, 100%); }
+        .sheet { width: min(520px, 100%); max-height: min(86vh, 720px); overflow: auto; background: var(--panel); border-radius: 16px; padding: 22px; box-shadow: var(--shadow); }
+        .choice { display: block; width: 100%; text-align: left; border: 1px solid var(--line); background: #fff; border-radius: 12px; padding: 12px; margin-bottom: 8px; }
+        .choice span { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
         .hidden { display: none !important; }
-        .toast { position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 14px; border-radius: 999px; font-size: 12px; z-index: 50; }
+        .toast { position: fixed; bottom: 64px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 14px; border-radius: 999px; font-size: 12px; z-index: 50; }
+        .check { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 13px; font-weight: 600; }
+        .check input { width: auto; }
         .mobile-nav { display: none; }
-        .parts { font-size: 12px; border-top: 1px solid var(--line); margin-top: 8px; padding-top: 8px; }
-        .parts li { margin: 2px 0; }
         @media (max-width: 980px) {
+            #studio { grid-template-rows: 56px 1fr 52px; }
             .workspace { grid-template-columns: 1fr; }
-            aside { position: fixed; left: 0; right: 0; bottom: 52px; height: min(72vh, 640px); z-index: 15; transform: translateY(110%); transition: transform .2s ease; box-shadow: var(--shadow); }
+            aside { position: fixed; left: 0; right: 0; bottom: 52px; height: min(70vh, 620px); z-index: 15; transform: translateY(110%); transition: transform .2s ease; box-shadow: var(--shadow); }
             aside.is-open { transform: none; }
             .mobile-nav { display: flex; gap: 8px; }
-            .choices { grid-template-columns: 1fr; }
-            .name-input { width: 110px; }
+            .name-input { width: 96px; }
+            header.bar .extra { display: none; }
         }
     </style>
 </head>
 <body>
 <div id="studio">
     <header class="bar">
-        <a href="{{ route('login') }}" class="brand" style="text-decoration:none;color:inherit">
+        <a href="{{ route('login') }}" class="brand">
             <strong>MEEMARE</strong>
-            <span>3D Studio</span>
+            <span>Dolap planı</span>
         </a>
-        <input id="project-name" class="name-input" maxlength="80" aria-label="Proje adı">
+        <input id="project-name" class="name-input" maxlength="80" aria-label="Proje adı" value="Dolabım">
         <div class="grow"></div>
+        <button type="button" class="btn" id="btn-new">Yeni proje</button>
         <button type="button" class="btn" id="btn-undo" disabled>Geri</button>
         <button type="button" class="btn" id="btn-redo" disabled>İleri</button>
-        <button type="button" class="btn" id="btn-mode">Kolay mod</button>
+        <button type="button" class="btn" id="btn-saved">Kayıtlar</button>
         <button type="button" class="btn" id="btn-save">Kaydet</button>
         <button type="button" class="btn" id="btn-share">Paylaş</button>
-        <a class="btn" href="{{ url('/plan') }}">Oda planı</a>
-        <a class="btn" href="{{ url('/dolap-uretim') }}">Üretim dolabı</a>
-        <button type="button" class="btn" id="btn-shot">Görsel al</button>
+        <a class="btn extra" href="{{ url('/plan') }}">Oda planı</a>
+        <button type="button" class="btn" id="btn-measures">Ölçüler</button>
+        <button type="button" class="btn" id="btn-lights">Işıkları aç</button>
+        <button type="button" class="btn" id="btn-shot">Render al</button>
     </header>
     <div class="workspace">
         <aside class="left" id="library">
-            <div class="side-head">
-                <input id="module-search" class="search" placeholder="Modül ara" autocomplete="off">
-                <div class="cats" id="cats"></div>
-            </div>
-            <div class="side-body" id="module-list"></div>
+            <div class="side-head">Dolap modülleri</div>
+            <div class="library-search"><input id="module-search" type="search" placeholder="Modül ara" autocomplete="off"></div>
+            <div class="side-body" id="library-body"></div>
         </aside>
         <section class="stage">
             <div id="viewport"></div>
-            <div class="view-bar" id="view-bar"></div>
+            <div id="measure-layer" class="hidden"></div>
+            <div id="selection-ui" class="hidden">
+                <div id="selection-name"></div>
+                <div class="selection-actions" id="selection-doors">
+                    <button type="button" id="act-solid">Kapaklı</button>
+                    <button type="button" id="act-glass">Cam kapaklı</button>
+                    <button type="button" id="act-drawers" class="hidden">Çekmeceleri aç</button>
+                </div>
+                <div class="selection-actions">
+                    <button type="button" id="act-left">Sola</button>
+                    <button type="button" id="act-right">Sağa</button>
+                    <button type="button" id="act-config">Yapılandır</button>
+                    <button type="button" id="act-clone">Klonla</button>
+                    <button type="button" id="act-delete">Sil</button>
+                </div>
+            </div>
+            <button type="button" id="height-handle" class="hidden" aria-label="Yükseklik">↕</button>
+            <div id="hold-select" class="hidden"></div>
             <div id="warn" class="warn hidden"></div>
         </section>
         <aside class="right" id="inspector">
             <div class="side-body" id="inspector-body"></div>
+            <div class="side-foot">
+                <button type="button" class="btn" id="btn-production">Üretim listesi</button>
+            </div>
         </aside>
     </div>
     <footer class="bar">
@@ -138,35 +202,66 @@
     </footer>
 </div>
 
-<div id="welcome" class="overlay">
-    <div class="sheet">
-        <p class="hint" style="letter-spacing:.12em;text-transform:uppercase">meemare 3D Studio</p>
-        <h1 style="margin:0 0 6px;font-size:28px">Kendi dolabını tasarla</h1>
-        <p class="hint">Hayalindeki dolabı kendin tasarla. Ölçüyü gir, modülü yerleştir, rengi seç.</p>
-        <div class="choices">
-            <button type="button" class="choice" id="start-empty"><strong>Sıfırdan dolap tasarla</strong><span>Boş bir dolap ölçüsüyle başla.</span></button>
-            <button type="button" class="choice" id="start-template"><strong>Hazır modelden başla</strong><span>Askılık, raf veya çekmece ağırlıklı düzen.</span></button>
-            <button type="button" class="choice" id="start-saved"><strong>Kayıtlı tasarımı aç</strong><span>Bu tarayıcıda sakladığın dolaplar.</span></button>
+<div id="customer-modal" class="overlay hidden">
+    <form class="sheet" id="customer-form">
+        <h2>Kayıtlı projeler</h2>
+        <p class="hint">Daha önce kaydedilen projeler. Birine basınca açılır.</p>
+        <div id="resume-list"></div>
+        <div class="field" style="margin-top:10px"><label>Telefonla ara</label><input id="resume-phone" maxlength="40" inputmode="tel"></div>
+        <button type="button" class="btn" id="resume-search">Ara</button>
+        <h2 style="margin-top:18px">Yeni proje</h2>
+        <p class="hint">Dolabı tasarlamadan önce müşteri kayda geçer.</p>
+        <div class="field"><label>Ad</label><input name="customerName" required maxlength="120" autocomplete="name"></div>
+        <div class="field"><label>Proje adı</label><input name="projectName" required maxlength="80" value="Dolabım"></div>
+        <div class="field"><label>Sol duvar genişliği (cm)</label><input name="leftWall" type="number" required min="80" max="800" value="300" inputmode="numeric"></div>
+        <div class="field"><label>Ön duvar genişliği (cm)</label><input name="frontWall" type="number" required min="80" max="800" value="300" inputmode="numeric"></div>
+        <div class="field"><label>Sağ duvar genişliği (cm)</label><input name="rightWall" type="number" required min="80" max="800" value="300" inputmode="numeric"></div>
+        <div class="field"><label>Yükseklik (cm)</label><input name="roomHeight" type="number" required min="160" max="400" value="270" inputmode="numeric"></div>
+        <p class="hint">Dolaplar ön duvara dizilir. Yükseklik odanın yüksekliğidir.</p>
+        <div class="field"><label>Not</label><input name="note" maxlength="2000"></div>
+        <div id="customer-msg" class="hint"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button type="submit" class="btn-primary">Dolabı tasarla</button>
         </div>
-        <div id="template-list" class="hidden" style="margin-top:14px"></div>
-        <div id="saved-list" class="hidden" style="margin-top:14px"></div>
+    </form>
+</div>
+
+<div id="saved-modal" class="overlay hidden">
+    <div class="sheet">
+        <h2>Kayıtlı projeler</h2>
+        <div class="field"><label>Telefon</label><input id="saved-phone" maxlength="40" inputmode="tel"></div>
+        <button type="button" class="btn" id="saved-search">Ara</button>
+        <div id="saved-list" style="margin-top:8px"></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:8px">
+            <button type="button" class="btn" id="saved-close">Kapat</button>
+        </div>
     </div>
 </div>
 
-<div id="intro" class="overlay hidden">
+<div id="config-modal" class="overlay hidden">
     <div class="sheet">
-        <h2 style="margin-top:0" id="intro-title"></h2>
-        <p id="intro-body"></p>
-        <div style="display:flex;gap:8px;justify-content:flex-end">
-            <button type="button" class="btn" id="intro-skip">Kapat</button>
-            <button type="button" class="btn-primary" id="intro-next">Devam</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px">
+            <h2 id="config-title" style="margin:0">Yapılandır</h2>
+            <button type="button" class="btn" id="config-close">Kapat</button>
+        </div>
+        <div id="config-body"></div>
+    </div>
+</div>
+
+<div id="production-modal" class="overlay hidden">
+    <div class="sheet">
+        <h2>Üretim listesi</h2>
+        <p class="hint" id="production-meta"></p>
+        <ol class="parts" id="production"></ol>
+        <div style="display:flex;justify-content:flex-end">
+            <button type="button" class="btn" id="production-close">Kapat</button>
         </div>
     </div>
 </div>
 
 <div id="quote-modal" class="overlay hidden">
     <form class="sheet" id="quote-form">
-        <h2 style="margin-top:0">Fiyat teklifi</h2>
+        <h2>Fiyat teklifi</h2>
         <p class="hint">Bu bir hazır fiyat değildir. Tasarım atölyeye gider, size dönüş yapılır.</p>
         <div class="field"><label>Ad</label><input name="name" required maxlength="120"></div>
         <div class="field"><label>Telefon</label><input name="phone" required maxlength="40"></div>
@@ -184,16 +279,25 @@
 {
   "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+    "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+    "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.7.8/src/index.js",
+    "three-gpu-pathtracer": "https://cdn.jsdelivr.net/npm/three-gpu-pathtracer@0.0.23/src/index.js"
   }
 }
 </script>
 <script>
     window.WARDROBE = {
         quoteUrl: @json($quoteUrl),
+        materialsUrl: @json($materialsUrl),
+        projectStoreUrl: @json($projectStoreUrl),
+        projectIndexUrl: @json($projectIndexUrl),
+        projectBase: @json(url('/dolap')),
+        modelsUrl: @json(asset('models/wardrobe')),
+        photosUrl: @json(asset('images/wardrobe')),
         csrf: @json(csrf_token())
     };
 </script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=3"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=83"></script>
 </body>
 </html>

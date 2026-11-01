@@ -1,0 +1,225 @@
+{
+  "id": "tek_6",
+  "name": "45cm Tek Kapili V6",
+  "description": "Tam rafli",
+  "type": "single",
+  "dimensions_mm": {
+    "width": 450,
+    "depth": 600,
+    "height": 2500
+  },
+  "components": [
+    {
+      "name": "sol_yan",
+      "center_mm": [
+        9.0,
+        -300.0,
+        1250.0
+      ],
+      "dimensions_mm": [
+        18.0,
+        600.0,
+        2500.0
+      ],
+      "layer": "GOVDE"
+    },
+    {
+      "name": "sag_yan",
+      "center_mm": [
+        441.0,
+        -300.0,
+        1250.0
+      ],
+      "dimensions_mm": [
+        18.0,
+        600.0,
+        2500.0
+      ],
+      "layer": "GOVDE"
+    },
+    {
+      "name": "alt",
+      "center_mm": [
+        225.0,
+        -300.0,
+        9.0
+      ],
+      "dimensions_mm": [
+        414.0,
+        600.0,
+        18.0
+      ],
+      "layer": "GOVDE"
+    },
+    {
+      "name": "ust",
+      "center_mm": [
+        225.0,
+        -300.0,
+        2491.0
+      ],
+      "dimensions_mm": [
+        414.0,
+        600.0,
+        18.0
+      ],
+      "layer": "GOVDE"
+    },
+    {
+      "name": "arkalik",
+      "center_mm": [
+        225.0,
+        -4.0,
+        1250.0
+      ],
+      "dimensions_mm": [
+        414.0,
+        8.0,
+        2464.0
+      ],
+      "layer": "ARKALIK"
+    },
+    {
+      "name": "baza",
+      "center_mm": [
+        225.0,
+        -576.0,
+        65.0
+      ],
+      "dimensions_mm": [
+        414.0,
+        30.0,
+        130.0
+      ],
+      "layer": "BAZA"
+    },
+    {
+      "name": "raf",
+      "center_mm": [
+        225.0,
+        -291.0,
+        2135.0
+      ],
+      "dimensions_mm": [
+        414.0,
+        582.0,
+        18.0
+      ],
+      "layer": "RAFLAR"
+    },
+    {
+      "name": "raf",
+      "center_mm": [
+        225.0,
+        -291.0,
+        340.0
+      ],
+      "dimensions_mm": [
+        414.0,
+        582.0,
+        18.0
+      ],
+      "layer": "RAFLAR"
+    },
+    {
+      "name": "raf",
+      "center_mm": [
+        225.0,
+        -291.0,
+        640.0
+      ],
+      "dimensions_mm": [
+        414.0,
+        582.0,
+        18.0
+      ],
+      "layer": "RAFLAR"
+    },
+    {
+      "name": "raf",
+      "center_mm": [
+        225.0,
+        -291.0,
+        940.0
+      ],
+      "dimensions_mm": [
+        414.0,
+        582.0,
+        18.0
+      ],
+      "layer": "RAFLAR"
+    },
+    {
+      "name": "raf",
+      "center_mm": [
+        225.0,
+        -291.0,
+        1240.0
+      ],
+      "dimensions_mm": [
+        414.0,
+        582.0,
+        18.0
+      ],
+      "layer": "RAFLAR"
+    },
+    {
+      "name": "raf",
+      "center_mm": [
+        225.0,
+        -291.0,
+        1540.0
+      ],
+      "dimensions_mm": [
+        414.0,
+        582.0,
+        18.0
+      ],
+      "layer": "RAFLAR"
+    },
+    {
+      "name": "raf",
+      "center_mm": [
+        225.0,
+        -291.0,
+        1840.0
+      ],
+      "dimensions_mm": [
+        414.0,
+        582.0,
+        18.0
+      ],
+      "layer": "RAFLAR"
+    },
+    {
+      "name": "katli_tekstil",
+      "center_mm": [
+        170.0,
+        -300.0,
+        688.0
+      ],
+      "dimensions_mm": [
+        220.0,
+        180.0,
+        31.0
+      ],
+      "layer": "AKSESUAR"
+    },
+    {
+      "name": "katli_tekstil",
+      "center_mm": [
+        170.0,
+        -300.0,
+        725.0
+      ],
+      "dimensions_mm": [
+        220.0,
+        180.0,
+        31.0
+      ],
+      "layer": "AKSESUAR"
+    }
+  ],
+  "orientation": "Front is Y=-depth; Z is up; X is right",
+  "note": "Visual concept CAD only, not production-validated; accessories are symbolic geometry."
+}

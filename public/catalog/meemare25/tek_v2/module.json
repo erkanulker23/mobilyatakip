@@ -1,0 +1,192 @@
+{
+  "module": "TEK_V2",
+  "width_mm": 450,
+  "height_mm": 2500,
+  "depth_mm": 600,
+  "front_direction": "negative Z",
+  "parts": [
+    {
+      "name": "SOL_YAN",
+      "center": [
+        9.0,
+        1250.0,
+        300.0
+      ],
+      "size": [
+        18.0,
+        2500.0,
+        600.0
+      ],
+      "material": "govde"
+    },
+    {
+      "name": "SAG_YAN",
+      "center": [
+        441.0,
+        1250.0,
+        300.0
+      ],
+      "size": [
+        18.0,
+        2500.0,
+        600.0
+      ],
+      "material": "govde"
+    },
+    {
+      "name": "UST_TABLA",
+      "center": [
+        225.0,
+        2491.0,
+        300.0
+      ],
+      "size": [
+        414.0,
+        18.0,
+        600.0
+      ],
+      "material": "govde"
+    },
+    {
+      "name": "ALT_TABLA",
+      "center": [
+        225.0,
+        99.0,
+        300.0
+      ],
+      "size": [
+        414.0,
+        18.0,
+        600.0
+      ],
+      "material": "govde"
+    },
+    {
+      "name": "ARKALIK",
+      "center": [
+        225.0,
+        1250.0,
+        596.0
+      ],
+      "size": [
+        450.0,
+        2500.0,
+        8.0
+      ],
+      "material": "arka"
+    },
+    {
+      "name": "BAZA",
+      "center": [
+        225.0,
+        45.0,
+        300.0
+      ],
+      "size": [
+        450.0,
+        90.0,
+        600.0
+      ],
+      "material": "govde"
+    },
+    {
+      "name": "RAF_01",
+      "center": [
+        225.0,
+        2110.0,
+        300.0
+      ],
+      "size": [
+        414.0,
+        18.0,
+        600.0
+      ],
+      "material": "raf"
+    },
+    {
+      "name": "RAF_02",
+      "center": [
+        225.0,
+        1770.0,
+        300.0
+      ],
+      "size": [
+        414.0,
+        18.0,
+        600.0
+      ],
+      "material": "raf"
+    },
+    {
+      "name": "RAF_03",
+      "center": [
+        225.0,
+        1440.0,
+        300.0
+      ],
+      "size": [
+        414.0,
+        18.0,
+        600.0
+      ],
+      "material": "raf"
+    },
+    {
+      "name": "RAF_04",
+      "center": [
+        225.0,
+        1130.0,
+        300.0
+      ],
+      "size": [
+        414.0,
+        18.0,
+        600.0
+      ],
+      "material": "raf"
+    },
+    {
+      "name": "RAF_05",
+      "center": [
+        225.0,
+        830.0,
+        300.0
+      ],
+      "size": [
+        414.0,
+        18.0,
+        600.0
+      ],
+      "material": "raf"
+    },
+    {
+      "name": "ASKI_BORUSU_01",
+      "center": [
+        225.0,
+        760.0,
+        220.0
+      ],
+      "size": [
+        384.0,
+        16.0,
+        16.0
+      ],
+      "material": "askilik"
+    },
+    {
+      "name": "RAF_06",
+      "center": [
+        225.0,
+        160.0,
+        300.0
+      ],
+      "size": [
+        414.0,
+        18.0,
+        600.0
+      ],
+      "material": "raf"
+    }
+  ],
+  "note": "Konsept 3D geometri; CNC/kesim için üretim onayı ve toleranslar gereklidir. PNG yapay görsel olup CAD ile birebir geometri eşleştirmesi değildir."
+}

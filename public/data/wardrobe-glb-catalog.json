@@ -1,0 +1,1793 @@
+{
+  "modules": [
+    {
+      "id": "tek_v1",
+      "name": "45 cm V1",
+      "spec": "Askı, 3 raf, 2 çekmece",
+      "kind": "wardrobe",
+      "width": 45,
+      "shelves": 3,
+      "rails": 1,
+      "drawers": 2,
+      "photo": "tek_v1.png",
+      "pieces": [
+        {
+          "kind": "rail",
+          "x0": 0.0733,
+          "x1": 0.9267,
+          "z": 0.752
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.844
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.34
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.0489,
+          "x1": 0.9511,
+          "z0": 0.0744,
+          "z1": 0.2016
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.0489,
+          "x1": 0.9511,
+          "z0": 0.2064,
+          "z1": 0.3296
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.068
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 60
+    },
+    {
+      "id": "tek_v2",
+      "name": "45 cm V2",
+      "spec": "Askı, 6 raf",
+      "kind": "wardrobe",
+      "width": 45,
+      "shelves": 6,
+      "rails": 1,
+      "drawers": 0,
+      "photo": "tek_v2.png",
+      "pieces": [
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.844
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.708
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.576
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.452
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.332
+        },
+        {
+          "kind": "rail",
+          "x0": 0.0733,
+          "x1": 0.9267,
+          "z": 0.304
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.064
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 60
+    },
+    {
+      "id": "tek_v3",
+      "name": "45 cm V3",
+      "spec": "Askı, 3 raf, 2 çekmece",
+      "kind": "wardrobe",
+      "width": 45,
+      "shelves": 3,
+      "rails": 1,
+      "drawers": 2,
+      "photo": "tek_v3.png",
+      "pieces": [
+        {
+          "kind": "rail",
+          "x0": 0.0733,
+          "x1": 0.9267,
+          "z": 0.816
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.892
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.0489,
+          "x1": 0.9511,
+          "z0": 0.2064,
+          "z1": 0.3176
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.0489,
+          "x1": 0.9511,
+          "z0": 0.3224,
+          "z1": 0.4336
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.124
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.064
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 60
+    },
+    {
+      "id": "tek_v4",
+      "name": "45 cm V4",
+      "spec": "Askı, 5 raf, 3 çekmece",
+      "kind": "wardrobe",
+      "width": 45,
+      "shelves": 5,
+      "rails": 1,
+      "drawers": 3,
+      "photo": "tek_v4.png",
+      "pieces": [
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.872
+        },
+        {
+          "kind": "rail",
+          "x0": 0.0733,
+          "x1": 0.9267,
+          "z": 0.804
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.576
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.492
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.408
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.0489,
+          "x1": 0.9511,
+          "z0": 0.1984,
+          "z1": 0.2616
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.0489,
+          "x1": 0.9511,
+          "z0": 0.2664,
+          "z1": 0.3296
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.0489,
+          "x1": 0.9511,
+          "z0": 0.3344,
+          "z1": 0.3976
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.064
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 60
+    },
+    {
+      "id": "tek_v5",
+      "name": "45 cm V5",
+      "spec": "Askı, 4 raf, 2 çekmece",
+      "kind": "wardrobe",
+      "width": 45,
+      "shelves": 4,
+      "rails": 1,
+      "drawers": 2,
+      "photo": "tek_v5.png",
+      "pieces": [
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.896
+        },
+        {
+          "kind": "rail",
+          "x0": 0.0733,
+          "x1": 0.9267,
+          "z": 0.82
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.5
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.396
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.0489,
+          "x1": 0.9511,
+          "z0": 0.2064,
+          "z1": 0.2936
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.0489,
+          "x1": 0.9511,
+          "z0": 0.2984,
+          "z1": 0.3856
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.068
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 60
+    },
+    {
+      "id": "tek_6",
+      "name": "45 cm V6",
+      "spec": "7 raf",
+      "kind": "wardrobe",
+      "width": 45,
+      "shelves": 7,
+      "rails": 0,
+      "drawers": 0,
+      "photo": "tek_6.png",
+      "pieces": [
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.854
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.136
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.256
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.376
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.496
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.616
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.736
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 60
+    },
+    {
+      "id": "tek_7",
+      "name": "45 cm V7",
+      "spec": "2 askı, 2 raf",
+      "kind": "wardrobe",
+      "width": 45,
+      "shelves": 2,
+      "rails": 2,
+      "drawers": 0,
+      "photo": "tek_7.png",
+      "pieces": [
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.854
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.496
+        },
+        {
+          "kind": "rail",
+          "x0": 0.0778,
+          "x1": 0.9222,
+          "z": 0.784
+        },
+        {
+          "kind": "rail",
+          "x0": 0.0778,
+          "x1": 0.9222,
+          "z": 0.44
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 60
+    },
+    {
+      "id": "tek_8",
+      "name": "45 cm V8",
+      "spec": "8 raf, Ayakkabı",
+      "kind": "wardrobe",
+      "shoes": true,
+      "width": 45,
+      "shelves": 8,
+      "rails": 0,
+      "drawers": 0,
+      "photo": "tek_8.png",
+      "pieces": [
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.854
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.124
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.228
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.332
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.436
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.54
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.644
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.748
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 60
+    },
+    {
+      "id": "tek_9",
+      "name": "45 cm V9",
+      "spec": "Askı, 3 raf, 4 çekmece",
+      "kind": "wardrobe",
+      "width": 45,
+      "shelves": 3,
+      "rails": 1,
+      "drawers": 4,
+      "photo": "tek_9.png",
+      "pieces": [
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.854
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.0456,
+          "x1": 0.9544,
+          "z0": 0.1,
+          "z1": 0.182
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.0456,
+          "x1": 0.9544,
+          "z0": 0.184,
+          "z1": 0.266
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.0456,
+          "x1": 0.9544,
+          "z0": 0.268,
+          "z1": 0.35
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.0456,
+          "x1": 0.9544,
+          "z0": 0.352,
+          "z1": 0.434
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.476
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.596
+        },
+        {
+          "kind": "rail",
+          "x0": 0.0778,
+          "x1": 0.9222,
+          "z": 0.78
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 60
+    },
+    {
+      "id": "tek_10",
+      "name": "45 cm V10",
+      "spec": "Askı, 2 raf",
+      "kind": "wardrobe",
+      "width": 45,
+      "shelves": 2,
+      "rails": 1,
+      "drawers": 0,
+      "photo": "tek_10.png",
+      "pieces": [
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.854
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.16
+        },
+        {
+          "kind": "rail",
+          "x0": 0.0778,
+          "x1": 0.9222,
+          "z": 0.8
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 60
+    },
+    {
+      "id": "cift_v1",
+      "name": "90 cm V1",
+      "spec": "Askı, 4 raf, 3 çekmece",
+      "kind": "wardrobe",
+      "width": 90,
+      "shelves": 4,
+      "rails": 1,
+      "drawers": 3,
+      "photo": "cift_v1.png",
+      "pieces": [
+        {
+          "kind": "post",
+          "x": 0.5333,
+          "z0": 0.044,
+          "z1": 0.86
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.86
+        },
+        {
+          "kind": "rail",
+          "x0": 0.0467,
+          "x1": 0.5067,
+          "z": 0.78
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.5433,
+          "x1": 0.97,
+          "z": 0.696
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.5433,
+          "x1": 0.97,
+          "z": 0.576
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.5478,
+          "x1": 0.9656,
+          "z0": 0.2144,
+          "z1": 0.3176
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.5478,
+          "x1": 0.9656,
+          "z0": 0.3224,
+          "z1": 0.4256
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.5478,
+          "x1": 0.9656,
+          "z0": 0.4304,
+          "z1": 0.5336
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.064
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 60
+    },
+    {
+      "id": "cift_v2",
+      "name": "90 cm V2",
+      "spec": "Askı, 5 raf, 2 çekmece",
+      "kind": "wardrobe",
+      "width": 90,
+      "shelves": 5,
+      "rails": 1,
+      "drawers": 2,
+      "photo": "cift_v2.png",
+      "pieces": [
+        {
+          "kind": "post",
+          "x": 0.5222,
+          "z0": 0.044,
+          "z1": 0.86
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.868
+        },
+        {
+          "kind": "rail",
+          "x0": 0.0467,
+          "x1": 0.4956,
+          "z": 0.776
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.5322,
+          "x1": 0.97,
+          "z": 0.74
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.5322,
+          "x1": 0.97,
+          "z": 0.632
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.5322,
+          "x1": 0.97,
+          "z": 0.512
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.5367,
+          "x1": 0.9656,
+          "z0": 0.2344,
+          "z1": 0.3416
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.5367,
+          "x1": 0.9656,
+          "z0": 0.3464,
+          "z1": 0.4536
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.064
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 60
+    },
+    {
+      "id": "cift_v3",
+      "name": "90 cm V3",
+      "spec": "2 askı, 6 raf, 4 çekmece",
+      "kind": "wardrobe",
+      "width": 90,
+      "shelves": 6,
+      "rails": 2,
+      "drawers": 4,
+      "photo": "cift_v3.png",
+      "pieces": [
+        {
+          "kind": "post",
+          "x": 0.4111,
+          "z0": 0.044,
+          "z1": 0.86
+        },
+        {
+          "kind": "post",
+          "x": 0.7333,
+          "z0": 0.044,
+          "z1": 0.86
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.88
+        },
+        {
+          "kind": "rail",
+          "x0": 0.0467,
+          "x1": 0.3844,
+          "z": 0.776
+        },
+        {
+          "kind": "rail",
+          "x0": 0.0467,
+          "x1": 0.3844,
+          "z": 0.416
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.4211,
+          "x1": 0.7233,
+          "z": 0.724
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.4211,
+          "x1": 0.7233,
+          "z": 0.596
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.4211,
+          "x1": 0.7233,
+          "z": 0.468
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.4211,
+          "x1": 0.7233,
+          "z": 0.34
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.7478,
+          "x1": 0.9656,
+          "z0": 0.2064,
+          "z1": 0.3216
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.7478,
+          "x1": 0.9656,
+          "z0": 0.3264,
+          "z1": 0.4416
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.7478,
+          "x1": 0.9656,
+          "z0": 0.4464,
+          "z1": 0.5616
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.7478,
+          "x1": 0.9656,
+          "z0": 0.5664,
+          "z1": 0.6816
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.064
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 60
+    },
+    {
+      "id": "cift_v4",
+      "name": "90 cm V4",
+      "spec": "Askı, 6 raf, 2 çekmece",
+      "kind": "wardrobe",
+      "width": 90,
+      "shelves": 6,
+      "rails": 1,
+      "drawers": 2,
+      "photo": "cift_v4.png",
+      "pieces": [
+        {
+          "kind": "post",
+          "x": 0.4111,
+          "z0": 0.044,
+          "z1": 0.86
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.86
+        },
+        {
+          "kind": "rail",
+          "x0": 0.4378,
+          "x1": 0.9533,
+          "z": 0.776
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.03,
+          "x1": 0.4011,
+          "z": 0.744
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.03,
+          "x1": 0.4011,
+          "z": 0.608
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.03,
+          "x1": 0.4011,
+          "z": 0.476
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.03,
+          "x1": 0.4011,
+          "z": 0.344
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.4256,
+          "x1": 0.9656,
+          "z0": 0.2144,
+          "z1": 0.3176
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.4256,
+          "x1": 0.9656,
+          "z0": 0.3224,
+          "z1": 0.4256
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.064
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 60
+    },
+    {
+      "id": "cift_v5",
+      "name": "90 cm V5",
+      "spec": "3 askı, 4 raf, 2 çekmece",
+      "kind": "wardrobe",
+      "width": 90,
+      "shelves": 4,
+      "rails": 3,
+      "drawers": 2,
+      "photo": "cift_v5.png",
+      "pieces": [
+        {
+          "kind": "post",
+          "x": 0.35,
+          "z0": 0.044,
+          "z1": 0.86
+        },
+        {
+          "kind": "post",
+          "x": 0.6444,
+          "z0": 0.044,
+          "z1": 0.86
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.868
+        },
+        {
+          "kind": "rail",
+          "x0": 0.0467,
+          "x1": 0.3233,
+          "z": 0.784
+        },
+        {
+          "kind": "rail",
+          "x0": 0.6711,
+          "x1": 0.9533,
+          "z": 0.776
+        },
+        {
+          "kind": "rail",
+          "x0": 0.6711,
+          "x1": 0.9533,
+          "z": 0.436
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.36,
+          "x1": 0.6344,
+          "z": 0.708
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.36,
+          "x1": 0.6344,
+          "z": 0.576
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.3644,
+          "x1": 0.63,
+          "z0": 0.2304,
+          "z1": 0.3456
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.3644,
+          "x1": 0.63,
+          "z0": 0.3504,
+          "z1": 0.4656
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.064
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 60
+    },
+    {
+      "id": "cift_6",
+      "name": "90 cm V6",
+      "spec": "2 askı, 1 raf, 2 çekmece",
+      "kind": "wardrobe",
+      "width": 90,
+      "shelves": 1,
+      "rails": 2,
+      "drawers": 2,
+      "photo": "cift_6.png",
+      "pieces": [
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.854
+        },
+        {
+          "kind": "post",
+          "x": 0.5,
+          "z0": 0,
+          "z1": 0.86
+        },
+        {
+          "kind": "rail",
+          "x0": 0.0389,
+          "x1": 0.4722,
+          "z": 0.772
+        },
+        {
+          "kind": "rail",
+          "x0": 0.5278,
+          "x1": 0.9611,
+          "z": 0.772
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.5194,
+          "x1": 0.9772,
+          "z0": 0.112,
+          "z1": 0.192
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.5194,
+          "x1": 0.9772,
+          "z0": 0.194,
+          "z1": 0.274
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 60
+    },
+    {
+      "id": "cift_7",
+      "name": "90 cm V7",
+      "spec": "Askı, 7 raf, 4 çekmece",
+      "kind": "wardrobe",
+      "width": 90,
+      "shelves": 7,
+      "rails": 1,
+      "drawers": 4,
+      "photo": "cift_7.png",
+      "pieces": [
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.854
+        },
+        {
+          "kind": "post",
+          "x": 0.5,
+          "z0": 0,
+          "z1": 0.86
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.49,
+          "z": 0.16
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.49,
+          "z": 0.28
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.49,
+          "z": 0.4
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.49,
+          "z": 0.52
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.49,
+          "z": 0.64
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.49,
+          "z": 0.76
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.5128,
+          "x1": 0.9772,
+          "z0": 0.1,
+          "z1": 0.196
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.5128,
+          "x1": 0.9772,
+          "z0": 0.198,
+          "z1": 0.294
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.5128,
+          "x1": 0.9772,
+          "z0": 0.296,
+          "z1": 0.392
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.5128,
+          "x1": 0.9772,
+          "z0": 0.394,
+          "z1": 0.49
+        },
+        {
+          "kind": "rail",
+          "x0": 0.5333,
+          "x1": 0.9611,
+          "z": 0.76
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 60
+    },
+    {
+      "id": "cift_8",
+      "name": "90 cm V8",
+      "spec": "3 askı, 2 raf, 3 çekmece",
+      "kind": "wardrobe",
+      "width": 90,
+      "shelves": 2,
+      "rails": 3,
+      "drawers": 3,
+      "photo": "cift_8.png",
+      "pieces": [
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.854
+        },
+        {
+          "kind": "post",
+          "x": 0.5,
+          "z0": 0,
+          "z1": 0.86
+        },
+        {
+          "kind": "rail",
+          "x0": 0.0389,
+          "x1": 0.4722,
+          "z": 0.768
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.49,
+          "z": 0.448
+        },
+        {
+          "kind": "rail",
+          "x0": 0.0389,
+          "x1": 0.4722,
+          "z": 0.38
+        },
+        {
+          "kind": "rail",
+          "x0": 0.5333,
+          "x1": 0.9611,
+          "z": 0.768
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.5161,
+          "x1": 0.9772,
+          "z0": 0.112,
+          "z1": 0.196
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.5161,
+          "x1": 0.9772,
+          "z0": 0.198,
+          "z1": 0.282
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.5161,
+          "x1": 0.9772,
+          "z0": 0.284,
+          "z1": 0.368
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 60
+    },
+    {
+      "id": "cift_9",
+      "name": "90 cm V9",
+      "spec": "10 raf, 2 çekmece, Ayakkabı",
+      "kind": "wardrobe",
+      "shoes": true,
+      "width": 90,
+      "shelves": 10,
+      "rails": 0,
+      "drawers": 2,
+      "photo": "cift_9.png",
+      "pieces": [
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.854
+        },
+        {
+          "kind": "post",
+          "x": 0.5,
+          "z0": 0,
+          "z1": 0.86
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.49,
+          "z": 0.152
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.49,
+          "z": 0.28
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.49,
+          "z": 0.408
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.49,
+          "z": 0.536
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.49,
+          "z": 0.664
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.49,
+          "z": 0.792
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.51,
+          "x1": 0.98,
+          "z": 0.192
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.51,
+          "x1": 0.98,
+          "z": 0.412
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.51,
+          "x1": 0.98,
+          "z": 0.644
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.5161,
+          "x1": 0.9772,
+          "z0": 0.08,
+          "z1": 0.136
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.5161,
+          "x1": 0.9772,
+          "z0": 0.138,
+          "z1": 0.194
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 60
+    },
+    {
+      "id": "cift_10",
+      "name": "90 cm V10",
+      "spec": "3 askı, 2 raf, 2 çekmece",
+      "kind": "wardrobe",
+      "width": 90,
+      "shelves": 2,
+      "rails": 3,
+      "drawers": 2,
+      "photo": "cift_10.png",
+      "pieces": [
+        {
+          "kind": "shelf",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.854
+        },
+        {
+          "kind": "post",
+          "x": 0.5,
+          "z0": 0,
+          "z1": 0.86
+        },
+        {
+          "kind": "rail",
+          "x0": 0.0389,
+          "x1": 0.4722,
+          "z": 0.8
+        },
+        {
+          "kind": "rail",
+          "x0": 0.5333,
+          "x1": 0.9611,
+          "z": 0.8
+        },
+        {
+          "kind": "shelf",
+          "x0": 0.51,
+          "x1": 0.98,
+          "z": 0.392
+        },
+        {
+          "kind": "rail",
+          "x0": 0.5333,
+          "x1": 0.9611,
+          "z": 0.34
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.5161,
+          "x1": 0.9772,
+          "z0": 0.084,
+          "z1": 0.162
+        },
+        {
+          "kind": "drawer",
+          "x0": 0.5161,
+          "x1": 0.9772,
+          "z0": 0.164,
+          "z1": 0.242
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 60
+    },
+    {
+      "id": "kose_1",
+      "name": "90×90 köşe V1",
+      "spec": "5 raf",
+      "kind": "corner",
+      "width": 90,
+      "shelves": 10,
+      "rails": 0,
+      "drawers": 0,
+      "photo": "kose_1.png",
+      "pieces": [
+        {
+          "kind": "shelf",
+          "arm": "wing",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.172
+        },
+        {
+          "kind": "shelf",
+          "arm": "body",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.172
+        },
+        {
+          "kind": "shelf",
+          "arm": "wing",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.332
+        },
+        {
+          "kind": "shelf",
+          "arm": "body",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.332
+        },
+        {
+          "kind": "shelf",
+          "arm": "wing",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.492
+        },
+        {
+          "kind": "shelf",
+          "arm": "body",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.492
+        },
+        {
+          "kind": "shelf",
+          "arm": "wing",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.652
+        },
+        {
+          "kind": "shelf",
+          "arm": "body",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.652
+        },
+        {
+          "kind": "shelf",
+          "arm": "wing",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.82
+        },
+        {
+          "kind": "shelf",
+          "arm": "body",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.82
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 90
+    },
+    {
+      "id": "kose_2",
+      "name": "90×90 köşe V2",
+      "spec": "Askı, 3 raf",
+      "kind": "corner",
+      "width": 90,
+      "shelves": 6,
+      "rails": 1,
+      "drawers": 0,
+      "photo": "kose_2.png",
+      "pieces": [
+        {
+          "kind": "shelf",
+          "arm": "wing",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.18
+        },
+        {
+          "kind": "shelf",
+          "arm": "body",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.18
+        },
+        {
+          "kind": "shelf",
+          "arm": "wing",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.44
+        },
+        {
+          "kind": "shelf",
+          "arm": "body",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.44
+        },
+        {
+          "kind": "shelf",
+          "arm": "wing",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.82
+        },
+        {
+          "kind": "shelf",
+          "arm": "body",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.82
+        },
+        {
+          "kind": "rail",
+          "arm": "wing",
+          "x0": 0.0889,
+          "x1": 0.9556,
+          "z": 0.728
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 90
+    },
+    {
+      "id": "kose_3",
+      "name": "90×90 köşe V3",
+      "spec": "Askı, 4 raf, 2 çekmece",
+      "kind": "corner",
+      "width": 90,
+      "shelves": 8,
+      "rails": 1,
+      "drawers": 2,
+      "photo": "kose_3.png",
+      "pieces": [
+        {
+          "kind": "shelf",
+          "arm": "wing",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.136
+        },
+        {
+          "kind": "shelf",
+          "arm": "body",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.136
+        },
+        {
+          "kind": "shelf",
+          "arm": "wing",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.3
+        },
+        {
+          "kind": "shelf",
+          "arm": "body",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.3
+        },
+        {
+          "kind": "shelf",
+          "arm": "wing",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.48
+        },
+        {
+          "kind": "shelf",
+          "arm": "body",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.48
+        },
+        {
+          "kind": "shelf",
+          "arm": "wing",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.82
+        },
+        {
+          "kind": "shelf",
+          "arm": "body",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.82
+        },
+        {
+          "kind": "rail",
+          "arm": "wing",
+          "x0": 0.0889,
+          "x1": 0.9556,
+          "z": 0.728
+        },
+        {
+          "kind": "drawer",
+          "arm": "wing",
+          "x0": 0.0544,
+          "x1": 0.9456,
+          "z0": 0.068,
+          "z1": 0.13
+        },
+        {
+          "kind": "drawer",
+          "arm": "wing",
+          "x0": 0.0544,
+          "x1": 0.9456,
+          "z0": 0.132,
+          "z1": 0.194
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 90
+    },
+    {
+      "id": "kose_4",
+      "name": "90×90 köşe V4",
+      "spec": "6 raf, Ayakkabı",
+      "kind": "corner",
+      "shoes": true,
+      "width": 90,
+      "shelves": 12,
+      "rails": 0,
+      "drawers": 0,
+      "photo": "kose_4.png",
+      "pieces": [
+        {
+          "kind": "shelf",
+          "arm": "wing",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.136
+        },
+        {
+          "kind": "shelf",
+          "arm": "body",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.136
+        },
+        {
+          "kind": "shelf",
+          "arm": "wing",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.244
+        },
+        {
+          "kind": "shelf",
+          "arm": "body",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.244
+        },
+        {
+          "kind": "shelf",
+          "arm": "wing",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.352
+        },
+        {
+          "kind": "shelf",
+          "arm": "body",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.352
+        },
+        {
+          "kind": "shelf",
+          "arm": "wing",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.46
+        },
+        {
+          "kind": "shelf",
+          "arm": "body",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.46
+        },
+        {
+          "kind": "shelf",
+          "arm": "wing",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.568
+        },
+        {
+          "kind": "shelf",
+          "arm": "body",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.568
+        },
+        {
+          "kind": "shelf",
+          "arm": "wing",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.82
+        },
+        {
+          "kind": "shelf",
+          "arm": "body",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.82
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 90
+    },
+    {
+      "id": "kose_5",
+      "name": "90×90 köşe V5",
+      "spec": "Askı, 4 raf",
+      "kind": "corner",
+      "width": 90,
+      "shelves": 8,
+      "rails": 1,
+      "drawers": 0,
+      "photo": "kose_5.png",
+      "pieces": [
+        {
+          "kind": "shelf",
+          "arm": "wing",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.16
+        },
+        {
+          "kind": "shelf",
+          "arm": "body",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.16
+        },
+        {
+          "kind": "shelf",
+          "arm": "wing",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.36
+        },
+        {
+          "kind": "shelf",
+          "arm": "body",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.36
+        },
+        {
+          "kind": "shelf",
+          "arm": "wing",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.6
+        },
+        {
+          "kind": "shelf",
+          "arm": "body",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.6
+        },
+        {
+          "kind": "shelf",
+          "arm": "wing",
+          "x0": 0.04,
+          "x1": 0.96,
+          "z": 0.82
+        },
+        {
+          "kind": "shelf",
+          "arm": "body",
+          "x0": 0.02,
+          "x1": 0.98,
+          "z": 0.82
+        },
+        {
+          "kind": "rail",
+          "arm": "wing",
+          "x0": 0.0889,
+          "x1": 0.9556,
+          "z": 0.728
+        }
+      ],
+      "door": "solid",
+      "height": 250,
+      "depth": 90
+    }
+  ]
+}
