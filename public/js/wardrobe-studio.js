@@ -529,7 +529,6 @@ function buildSurfaceMaps(url) {
         ctx.drawImage(image, 0, 0, size, size);
         const src = ctx.getImageData(0, 0, size, size).data;
         const rough = new Uint8Array(size * size);
-        const norm = new Uint8Array(size * size * 4);
         const heightAt = (x, y) => {
             const i = ((y * size) + x) * 4;
             return src[i] * 0.25 + src[i + 1] * 0.65 + src[i + 2] * 0.1;
@@ -537,36 +536,20 @@ function buildSurfaceMaps(url) {
         for (let y = 0; y < size; y += 1) {
             for (let x = 0; x < size; x += 1) {
                 const h = heightAt(x, y);
-                rough[(y * size) + x] = Math.round(Math.min(230, Math.max(150, 188 + (h - 150) * 0.22)));
-                const dx = heightAt((x + 1) % size, y) - heightAt((x + size - 1) % size, y);
-                const dy = heightAt(x, (y + 1) % size) - heightAt(x, (y + size - 1) % size);
-                const nx = -dx * 0.22;
-                const ny = -dy * 0.22;
-                const nz = 1;
-                const len = Math.hypot(nx, ny, nz) || 1;
-                const o = (y * size + x) * 4;
-                norm[o] = (nx / len * 0.5 + 0.5) * 255;
-                norm[o + 1] = (ny / len * 0.5 + 0.5) * 255;
-                norm[o + 2] = (nz / len * 0.5 + 0.5) * 255;
-                norm[o + 3] = 255;
+                rough[(y * size) + x] = Math.round(Math.min(220, Math.max(160, 190 + (h - 150) * 0.12)));
             }
         }
         const roughness = new THREE.DataTexture(rough, size, size);
         roughness.colorSpace = THREE.NoColorSpace;
         roughness.wrapS = roughness.wrapT = THREE.RepeatWrapping;
         roughness.needsUpdate = true;
-        const normal = new THREE.DataTexture(norm, size, size);
-        normal.colorSpace = THREE.NoColorSpace;
-        normal.wrapS = normal.wrapT = THREE.RepeatWrapping;
-        normal.needsUpdate = true;
-        const pack = { roughness, normal };
+        const pack = { roughness, normal: null };
         surfaceMapCache.set(url, pack);
         matCache.forEach((mat) => {
             if (mat.userData.decorUrl !== url || mat.userData.finish === 'highgloss') return;
             mat.roughnessMap = roughness;
             mat.roughness = mat.userData.finish === 'gloss' ? 0.72 : 1;
-            mat.normalMap = normal;
-            mat.normalScale = new THREE.Vector2(0.22, 0.22);
+            mat.normalMap = null;
             mat.needsUpdate = true;
         });
     };
@@ -601,10 +584,10 @@ function material(key, source, opts = {}) {
         : new THREE.MeshStandardMaterial({
             color: item ? '#ffffff' : source,
             map: item && !flat ? textureFor(item.image) : null,
-            roughness: flat ? 0.78 : item ? (item.finish_hint === 'highgloss' ? 0.22 : item.finish_hint === 'gloss' ? 0.36 : 0.52) : (opts.metal ? 0.48 : 0.55),
-            metalness: opts.metal ? 0.55 : (item?.finish_hint === 'highgloss' ? 0.06 : 0),
-            specularIntensity: opts.metal ? 0.32 : 0.7,
-            envMapIntensity: opts.metal ? 0.08 : 0.3,
+            roughness: flat ? 0.78 : item ? (item.finish_hint === 'highgloss' ? 0.22 : item.finish_hint === 'gloss' ? 0.42 : 0.62) : (opts.metal ? 0.48 : 0.62),
+            metalness: opts.metal ? 0.55 : (item?.finish_hint === 'highgloss' ? 0.04 : 0),
+            specularIntensity: opts.metal ? 0.32 : 0.28,
+            envMapIntensity: opts.metal ? 0.08 : 0.16,
             side: opts.glass ? THREE.FrontSide : THREE.DoubleSide,
         });
     if (flat && item.image) {
@@ -619,8 +602,7 @@ function material(key, source, opts = {}) {
         if (pack && item.finish_hint !== 'highgloss') {
             mat.roughnessMap = pack.roughness;
             mat.roughness = item.finish_hint === 'gloss' ? 0.72 : 1;
-            mat.normalMap = pack.normal;
-            mat.normalScale = new THREE.Vector2(0.22, 0.22);
+            mat.normalMap = null;
         }
     }
     matCache.set(id, mat);
@@ -1002,6 +984,18 @@ function paintGlb(root, mod) {
         child.castShadow = true;
         child.receiveShadow = true;
         child.material = next;
+        const name = String(child.name || '').toLowerCase();
+        if (role === 'drawer' && /_on_/.test(name) && child.geometry?.attributes?.normal) {
+            const cap = extractFaces(child.geometry, (_nx, ny) => Math.abs(ny) > 0.72);
+            if (cap.taken && cap.left) {
+                child.geometry = cap.left;
+                const lip = new THREE.Mesh(cap.taken, edgeBandMaterial(drawerId));
+                lip.name = `${child.name}_BANT`;
+                lip.castShadow = true;
+                lip.receiveShadow = true;
+                added.push([child, lip]);
+            }
+        }
         if (role !== 'shelf' || !child.geometry?.attributes?.normal) return;
         const front = extractFaces(child.geometry, (_nx, _ny, nz) => nz > 0.72);
         if (!front.taken || !front.left) return;
@@ -2034,7 +2028,7 @@ let selectionWashMat = null;
 
 function selectionFrame(mod) {
     if (!selectionEdgeMat) {
-        selectionEdgeMat = new THREE.MeshBasicMaterial({ color: 0x149152, depthTest: false, depthWrite: false, transparent: true, opacity: 0.72 });
+        selectionEdgeMat = new THREE.MeshBasicMaterial({ color: 0x149152, depthTest: false, depthWrite: false, transparent: true, opacity: 0.38 });
         selectionWashMat = new THREE.MeshBasicMaterial({ color: 0x149152, depthTest: false, depthWrite: false, transparent: true, opacity: 0 });
     }
     const box = footprint(mod);
@@ -3119,8 +3113,8 @@ function setCameraView(mode) {
     const fov = mode === 'top' ? 42 : 30;
     camera.fov = fov;
     const half = (fov * Math.PI) / 360;
-    const dist = Math.max(size.y, size.x, 80) * 0.62 / Math.tan(half);
-    const yawOf = { front: 0, left: -0.55, right: 0.55, left45: -0.5, right45: 0.5, perspective: 0.42, top: 0 };
+    const dist = Math.max(size.y, size.x, 80) * 0.5 / Math.tan(half);
+    const yawOf = { front: 0, left: -0.62, right: 0.62, left45: -0.74, right45: 0.74, perspective: 0.62, top: 0 };
     let yaw = yawOf[mode] ?? 0.42;
     const openRight = wall - (center.x + size.x * 0.5);
     const openLeft = center.x - size.x * 0.5;
@@ -3190,7 +3184,7 @@ function resize() {
 function init3d() {
     const viewport = el('viewport');
     scene = new THREE.Scene();
-    scene.background = new THREE.Color('#e6e1d8');
+    scene.background = new THREE.Color('#e7e6e3');
     camera = new THREE.PerspectiveCamera(42, 1, 2, 4000);
     renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
@@ -3203,16 +3197,16 @@ function init3d() {
 
     const pmrem = new THREE.PMREMGenerator(renderer);
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.18).texture;
-    scene.environmentIntensity = 0.22;
+    scene.environmentIntensity = 0.18;
 
-    scene.add(new THREE.HemisphereLight(0xfff7f0, 0xe4d5c4, 0.95));
-    const key = new THREE.DirectionalLight(0xfff4ea, 0.5);
+    scene.add(new THREE.HemisphereLight(0xf4f2ee, 0xd8d4cc, 0.62));
+    const key = new THREE.DirectionalLight(0xfffaf6, 0.78);
     key.position.set(200, 280, 360);
     key.castShadow = true;
     key.shadow.mapSize.set(2048, 2048);
-    key.shadow.radius = 5;
-    key.shadow.bias = -0.00012;
-    key.shadow.normalBias = 0.35;
+    key.shadow.radius = 1.6;
+    key.shadow.bias = -0.00018;
+    key.shadow.normalBias = 0.12;
     key.shadow.camera.near = 10;
     key.shadow.camera.far = 900;
     key.shadow.camera.left = -160;
@@ -3221,17 +3215,17 @@ function init3d() {
     key.shadow.camera.bottom = -160;
     scene.add(key);
     scene.add(key.target);
-    key.shadow.intensity = 0.58;
+    key.shadow.intensity = 0.74;
     keyLight = key;
-    const cavity = new THREE.DirectionalLight(0xfff7ef, 0.38);
+    const cavity = new THREE.DirectionalLight(0xfff8f4, 0.2);
     cavity.position.set(180, 150, 420);
     scene.add(cavity);
     scene.add(cavity.target);
     cavityLight = cavity;
-    const fill = new THREE.DirectionalLight(0xfff8f2, 0.55);
+    const fill = new THREE.DirectionalLight(0xf7f6f4, 0.22);
     fill.position.set(40, 150, 280);
     scene.add(fill);
-    const bounce = new THREE.DirectionalLight(0xf3ebe3, 0.28);
+    const bounce = new THREE.DirectionalLight(0xe7e4de, 0.12);
     bounce.position.set(-160, 80, 60);
     scene.add(bounce);
 
@@ -4910,11 +4904,11 @@ async function takeRender() {
         toast('Dolaba göre kadraj ve ışık kuruldu. Render birkaç dakika sürebilir.');
         const { WebGLPathTracer, GradientEquirectTexture } = await import('three-gpu-pathtracer');
         const envTex = new GradientEquirectTexture();
-        envTex.topColor.set('#fff6ee');
-        envTex.bottomColor.set('#c9b59a');
+        envTex.topColor.set('#f6f5f3');
+        envTex.bottomColor.set('#d4cfc6');
         envTex.update();
         scene.environment = envTex;
-        scene.environmentIntensity = 1.05;
+        scene.environmentIntensity = 0.72;
         const tracer = new WebGLPathTracer(renderer);
         const tilesX = 2;
         const tilesY = 2;

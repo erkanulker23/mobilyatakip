@@ -1,0 +1,5 @@
+Kastamonu Entegre dekorları bu geçişte resmî katalogla doğrulanmadı.
+Stüdyodaki JPEG dosyaları temsili dijital dokudur.
+Kum Taşı, Vizon, Kaşmir, Latte ve beyaz arkalık ataması bu geçişte yeniden tıklanarak test edilmedi.
+Düz renkler (Latte, Lake Beyaz, Buz Gri) fotoğraf dokusu kullanmaz; ortalama düz boyadır.
+Desenli ahşap albedo JPEG kullanır. Bu geçişte albedo’dan üretilen normal kabartma kaldırıldı.

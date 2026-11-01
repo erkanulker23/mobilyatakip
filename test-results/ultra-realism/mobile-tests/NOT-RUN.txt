@@ -1,0 +1,2 @@
+Bu geçişte mobil Chrome, mobil Safari ve tablet ölçülmedi.
+FPS, RAM ve GPU ölçülmedi. Tahmin yazılmadı.

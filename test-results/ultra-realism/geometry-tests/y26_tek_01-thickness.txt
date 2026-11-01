@@ -1,0 +1,19 @@
+y26_tek_01 model.glb, ham ölçü, stüdyo ölçeğinden önce.
+İnce eksen milimetre. Bu geçişte kalınlık değiştirilmedi.
+
+000_GOVDE_SOL  18.00
+001_GOVDE_SAG  18.00
+002_GOVDE_UST  18.00
+003_GOVDE_ALT  18.00
+004_ARKALIK     8.00
+005_BAZA       38.00 derin, 100.00 yüksek
+006_RAF_1      18.00
+007_RAF_2      18.00
+008_RAF_3      18.00
+009_CEKMECE_ON_1  18.00 yüz, 145.00 yüksek
+010_CEKMECE_KUTU_1  kaynakta dolu kutu, 120.00 yüksek
+011_CEKMECE_ON_2  18.00
+012_CEKMECE_KUTU_2  kaynakta dolu kutu
+013_ASKILIK    18.00 x 18.00
+
+Stüdyo, dolu çekmece kutusunu 16 mm yan, 16 mm arka ve 8 mm tabanla değiştirir. Dış kutunun ölçüsü büyümez.

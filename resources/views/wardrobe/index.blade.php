@@ -347,6 +347,6 @@
         csrf: @json(csrf_token())
     };
 </script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=159"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=160"></script>
 </body>
 </html>
