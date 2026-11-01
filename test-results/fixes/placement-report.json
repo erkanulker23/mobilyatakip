@@ -1,0 +1,28 @@
+[
+  {
+    "test": "315 sürükle",
+    "ok": true,
+    "sum": "Sol 300 cm · Ön 315 cm · Sağ 300 cm · Yükseklik 270 cm · Dolap yüksekliği 250 cm · Dolap 315 cm"
+  },
+  {
+    "test": "315 kayıt",
+    "ok": true,
+    "token": "Kw9Yfsvdop0PY4UTvSehlAhK"
+  },
+  {
+    "test": "225 sürükle",
+    "ok": true,
+    "sum": "Sol 300 cm · Ön 225 cm · Sağ 300 cm · Yükseklik 270 cm · Dolap yüksekliği 250 cm · Dolap 225 cm"
+  },
+  {
+    "test": "270 sürükle",
+    "ok": true,
+    "sum": "Sol 300 cm · Ön 270 cm · Sağ 300 cm · Yükseklik 270 cm · Dolap yüksekliği 250 cm · Dolap 270 cm"
+  },
+  {
+    "test": "270 Ekle düğmesi sığmama",
+    "ok": true,
+    "sum": "Sol 300 cm · Ön 270 cm · Sağ 300 cm · Yükseklik 270 cm · Dolap yüksekliği 250 cm · Dolap 270 cm",
+    "toast": "Bu modül duvara sığmıyor."
+  }
+]

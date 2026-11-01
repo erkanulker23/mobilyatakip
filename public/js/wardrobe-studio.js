@@ -97,6 +97,7 @@ const pointer = new THREE.Vector2();
 let pointerDown = null;
 let pointerPress = null;
 let catalogDrag = null;
+let dropGuide = null;
 let catalogBound = false;
 let catalogMode = 'glb';
 const glbTemplates = new Map();
@@ -354,7 +355,16 @@ function layout(modules) {
                 if (best === null) return null;
                 at = best;
             }
-            if (mod.id === dragId) mod.offset = at;
+            const movable = mod.id === dragId || !state.modules.includes(mod);
+            if (movable) {
+                occupied.forEach((seg) => {
+                    if (at >= seg.end && at - seg.end < 30 && fits(seg.end, along)) at = seg.end;
+                    const before = seg.start - along;
+                    if (at > begin && at + along <= seg.start && seg.start - (at + along) < 30 && fits(before, along)) at = before;
+                });
+                if (at - begin < 30 && fits(begin, along)) at = begin;
+                mod.offset = at;
+            }
             occupied.push({ start: at, end: at + along });
             if (wall === 'front') spots.push({ mod, x: at, z: 0, rot: 0 });
             else if (wall === 'left') spots.push({ mod, x: 0, z: at + along, rot: Math.PI / 2 });
@@ -2423,11 +2433,12 @@ function renderLibrary() {
         const labels = { tek: 'Tek Kapılı', cift: 'Çift Kapılı', kose: 'Köşe' };
         body = ['tek', 'cift', 'kose'].map((key) => {
             const cards = glbCatalog.filter((item) => item.category === key && matches(item)).map((item) => `
-                <button type="button" class="card${glbFailed.has(item.id) ? ' is-broken' : ''}" data-glb="${item.id}">
+                <div class="card${glbFailed.has(item.id) ? ' is-broken' : ''}" data-glb="${item.id}">
                     <img src="${item.previewPath}" alt="">
                     <strong>${item.name}</strong>
                     <span>${Math.round(item.width * 100)} × ${Math.round(item.height * 100)} × ${Math.round(item.depth * 100)} cm</span>
-                </button>`).join('');
+                    <button type="button" class="card-add">Ekle</button>
+                </div>`).join('');
             return cards ? `<p class="catalog-kicker">${labels[key]}</p><div class="catalog">${cards}</div>` : '';
         }).join('');
     } else {
@@ -2451,23 +2462,33 @@ function renderLibrary() {
     host.querySelector('#catalog-cad').onclick = () => { catalogMode = 'cad'; renderLibrary(); };
     const bindCard = (button, kind, id) => {
         button.addEventListener('pointerdown', (event) => {
-            if (event.button !== 0) return;
+            if (event.button !== 0 || event.target.closest('.card-add')) return;
             button.dataset.skipClick = '';
+            const listed = glbCatalog.find((item) => item.id === id) || cadById(id);
             catalogDrag = {
                 kind,
                 id,
                 x: event.clientX,
                 y: event.clientY,
                 active: false,
+                width: Math.round(Number(listed?.width) > 3 ? listed.width : (listed?.width || 0.9) * 100),
                 name: button.querySelector('strong')?.textContent || 'Modül',
             };
+            noteDrop({ phase: 'down', id, x: Math.round(event.clientX), y: Math.round(event.clientY) });
         });
         button.addEventListener('click', (event) => {
+            if (event.target.closest('.card-add')) return;
             if (button.dataset.skipClick === '1') {
                 button.dataset.skipClick = '';
                 event.preventDefault();
                 return;
             }
+            if (kind === 'glb') addGlbModule(id);
+            else if (kind === 'cad') addCadModule(id);
+            else addProduct(id);
+        });
+        button.querySelector('.card-add')?.addEventListener('click', (event) => {
+            event.stopPropagation();
             if (kind === 'glb') addGlbModule(id);
             else if (kind === 'cad') addCadModule(id);
             else addProduct(id);
@@ -2953,6 +2974,42 @@ function moduleUnder(event) {
 const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const floorHit = new THREE.Vector3();
 const wallPoint = new THREE.Vector3();
+const dropLog = [];
+window.__wardrobeDropLog = dropLog;
+
+function noteDrop(entry) {
+    const row = { at: new Date().toISOString(), ...entry };
+    dropLog.push(row);
+    if (dropLog.length > 40) dropLog.shift();
+    console.info('[dolap-birak]', row);
+}
+
+function hideDropGuide() {
+    if (dropGuide) dropGuide.visible = false;
+}
+
+function showDropGuide(mod, pick, ok) {
+    if (!scene || !pick) return;
+    if (!dropGuide) {
+        dropGuide = new THREE.Mesh(
+            new THREE.BoxGeometry(1, 1, 1),
+            new THREE.MeshBasicMaterial({ color: 0x1f6b4a, transparent: true, opacity: 0.38, depthWrite: false })
+        );
+        dropGuide.name = 'drop-guide';
+        scene.add(dropGuide);
+    }
+    const along = alongSize(mod);
+    const depth = Math.max(30, Number(mod.glbDepth) || Number(state.depth) || 60);
+    const front = wallLimit();
+    const limit = pick.wall === 'front' ? front : sideLimit(pick.wall);
+    const at = Math.max(0, Math.min(Number(pick.offset) || 0, Math.max(0, limit - along)));
+    dropGuide.scale.set(pick.wall === 'front' ? along : depth, 8, pick.wall === 'front' ? depth : along);
+    if (pick.wall === 'front') dropGuide.position.set(at + along / 2, 4, depth / 2);
+    else if (pick.wall === 'left') dropGuide.position.set(depth / 2, 4, at + along / 2);
+    else dropGuide.position.set(front - depth / 2, 4, at + along / 2);
+    dropGuide.material.color.set(ok ? 0x1f6b4a : 0x9f2d2d);
+    dropGuide.visible = true;
+}
 
 function dragTarget(event, mod) {
     const rect = renderer.domElement.getBoundingClientRect();
@@ -2975,16 +3032,21 @@ function dragTarget(event, mod) {
         hits.push({ wall, offset: offsetOf(hit), distance: Math.hypot(dx, dy, dz), x: hit.x, y: hit.y, z: hit.z });
     };
     const inHeight = (p) => p.y >= -20 && p.y <= tall + 40;
+    const frontDepth = Math.max(30, Number(state.depth) || 60);
+    const sideNear = frontDepth + 70;
     consider('front', new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), (p) => inHeight(p) && p.x >= -40 && p.x <= front + 40, (p) => p.x - along / 2);
-    consider('left', new THREE.Plane(new THREE.Vector3(1, 0, 0), 0), (p) => inHeight(p) && p.z >= -40 && p.z <= sideLimit('left') + 40, (p) => p.z - along / 2);
-    consider('right', new THREE.Plane(new THREE.Vector3(-1, 0, 0), -front), (p) => inHeight(p) && p.z >= -40 && p.z <= sideLimit('right') + 40, (p) => p.z - along / 2);
+    consider('left', new THREE.Plane(new THREE.Vector3(1, 0, 0), 0), (p) => inHeight(p) && p.z >= sideNear && p.z <= sideLimit('left') + 40, (p) => p.z - along / 2);
+    consider('right', new THREE.Plane(new THREE.Vector3(-1, 0, 0), -front), (p) => inHeight(p) && p.z >= sideNear && p.z <= sideLimit('right') + 40, (p) => p.z - along / 2);
     if (hits.length) return hits.sort((a, b) => a.distance - b.distance)[0];
     if (!ray.intersectPlane(floorPlane, floorHit)) return null;
-    return [
-        { wall: 'front', dist: Math.abs(floorHit.z), offset: floorHit.x - along / 2 },
-        { wall: 'left', dist: Math.abs(floorHit.x), offset: floorHit.z - along / 2 },
-        { wall: 'right', dist: Math.abs(floorHit.x - front), offset: floorHit.z - along / 2 },
-    ].sort((a, b) => a.dist - b.dist)[0];
+    const choices = [{ wall: 'front', dist: Math.abs(floorHit.z), offset: floorHit.x - along / 2 }];
+    if (floorHit.z >= frontDepth) {
+        choices.push(
+            { wall: 'left', dist: Math.abs(floorHit.x), offset: floorHit.z - along / 2 },
+            { wall: 'right', dist: Math.abs(floorHit.x - front), offset: floorHit.z - along / 2 },
+        );
+    }
+    return choices.sort((a, b) => a.dist - b.dist)[0];
 }
 
 function dragModule(id, event) {
@@ -3161,65 +3223,58 @@ function ensureCatalogDrag() {
         ghost.style.left = `${event.clientX + 14}px`;
         ghost.style.top = `${event.clientY + 14}px`;
         ghost.textContent = catalogDrag.name;
+        const probe = { id: 'guide', kind: 'wardrobe', width: catalogDrag.width || 90, wall: 'front', offset: 0, glbDepth: 60 };
+        const pick = dragTarget(event, probe);
+        if (!pick) {
+            hideDropGuide();
+            return;
+        }
+        probe.wall = pick.wall;
+        probe.offset = pick.offset;
+        showDropGuide(probe, pick, Boolean(layout([...state.modules, probe])));
     });
     window.addEventListener('pointerup', (event) => {
         if (!catalogDrag) return;
         const drag = catalogDrag;
         catalogDrag = null;
         ghost.style.display = 'none';
-        if (!drag.active) return;
+        hideDropGuide();
+        const rect = el('viewport')?.getBoundingClientRect();
+        const inside = Boolean(rect && event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom);
+        noteDrop({
+            phase: 'up',
+            id: drag.id,
+            active: Boolean(drag.active),
+            inside,
+            x: Math.round(event.clientX),
+            y: Math.round(event.clientY),
+            view: rect ? [Math.round(rect.width), Math.round(rect.height)] : null,
+        });
+        if (!drag.active || !inside) return;
         const card = document.querySelector(`[data-${drag.kind}="${drag.id}"]`);
         if (card) card.dataset.skipClick = '1';
-        const rect = el('viewport')?.getBoundingClientRect();
-        if (!rect || event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) return;
         if (drag.kind === 'glb') addGlbModule(drag.id, event);
         else if (drag.kind === 'cad') addCadModule(drag.id, event);
         else addProduct(drag.id, event);
     });
 }
 
-function compactRun(modules) {
-    const leftCorner = modules.find((mod) => mod.kind === 'corner' && mod.cornerSide === 'left');
-    const rightCorner = modules.find((mod) => mod.kind === 'corner' && mod.cornerSide !== 'left');
-    const leftHold = leftCorner ? alongSize(leftCorner) : 0;
-    const rightHold = rightCorner ? alongSize(rightCorner) : 0;
-    const pack = (wall, begin) => {
-        let cursor = begin;
-        modules
-            .filter((mod) => mod.kind !== 'corner' && wallName(mod) === wall)
-            .sort((a, b) => Number(a.offset) - Number(b.offset) || String(a.id).localeCompare(String(b.id)))
-            .forEach((mod) => {
-                mod.offset = cursor;
-                cursor += alongSize(mod);
-            });
-    };
-    pack('front', leftHold);
-    pack('left', leftHold > 0 ? leftHold : 0);
-    pack('right', rightHold > 0 ? rightHold : 0);
-}
-
-function fitsWithCompact(extra) {
-    if (layout([...state.modules, extra])) return true;
-    const previous = state.modules.map((mod) => ({ id: mod.id, offset: mod.offset, wall: mod.wall }));
-    const extraOffset = extra.offset;
-    const extraWall = extra.wall;
-    compactRun([...state.modules, extra]);
-    if (layout([...state.modules, extra])) return true;
-    state.modules.forEach((mod) => {
-        const saved = previous.find((item) => item.id === mod.id);
-        if (saved) {
-            mod.offset = saved.offset;
-            mod.wall = saved.wall;
-        }
-    });
-    extra.offset = extraOffset;
-    extra.wall = extraWall;
-    return false;
-}
-
 function placeDropped(mod, dropEvent) {
     if (!dropEvent) return true;
     const pick = dragTarget(dropEvent, mod);
+    noteDrop({
+        id: mod.glb || mod.product || mod.id,
+        width: alongSize(mod),
+        clientX: Math.round(dropEvent.clientX || 0),
+        clientY: Math.round(dropEvent.clientY || 0),
+        wall: pick?.wall || '',
+        offset: pick ? Math.round(pick.offset * 10) / 10 : null,
+        hitX: pick ? Math.round(pick.x * 10) / 10 : null,
+        hitZ: pick ? Math.round(pick.z * 10) / 10 : null,
+        front: wallLimit(),
+        left: sideLimit('left'),
+        existing: state.modules.map((item) => ({ id: item.glb || item.name, wall: item.wall, offset: Math.round(Number(item.offset) || 0), width: alongSize(item) })),
+    });
     if (!pick) {
         toast('Duvarın üzerine bırak.');
         return false;
@@ -3244,47 +3299,52 @@ function placeDropped(mod, dropEvent) {
 async function addGlbModule(id, dropEvent) {
     const item = glbCatalog.find((entry) => entry.id === id);
     if (!item) return;
+    noteDrop({ phase: 'load', id, cached: glbTemplates.has(item.id) });
     try {
         await ensureGlb(item);
-    } catch {
-        toast(`${item.name} modeli açılamadı.`);
-        renderLibrary();
-        return;
-    }
-    const mod = createModule(item.category === 'tek' ? 'tek-raf' : 'cift-raf');
-    mod.glb = item.id;
-    mod.glbWidth = item.width;
-    mod.glbDepth = Math.round(item.depth * 100);
-    mod.glbHeight = Math.round(item.height * 100);
-    mod.name = item.name;
-    mod.spec = item.spec;
-    mod.width = Math.round(item.width * 100);
-    mod.height = mod.glbHeight;
-    mod.door = 'none';
-    mod.kind = item.category === 'kose' ? 'corner' : 'wardrobe';
-    mod.wall = 'front';
-    mod.offset = 10000;
-    if (dropEvent) {
-        if (!placeDropped(mod, dropEvent)) return;
-    } else if (mod.kind === 'corner') {
-        const hasLeft = state.modules.some((entry) => entry.kind === 'corner' && entry.cornerSide === 'left');
-        const hasRight = state.modules.some((entry) => entry.kind === 'corner' && entry.cornerSide !== 'left');
-        if (hasLeft && hasRight) {
-            toast('İki köşe de dolu.');
+        const mod = createModule(item.category === 'tek' ? 'tek-raf' : 'cift-raf');
+        mod.glb = item.id;
+        mod.glbWidth = item.width;
+        mod.glbDepth = Math.round(item.depth * 100);
+        mod.glbHeight = Math.round(item.height * 100);
+        mod.name = item.name;
+        mod.spec = item.spec;
+        mod.width = Math.round(item.width * 100);
+        mod.height = mod.glbHeight;
+        mod.door = 'none';
+        mod.kind = item.category === 'kose' ? 'corner' : 'wardrobe';
+        mod.wall = 'front';
+        mod.offset = 10000;
+        if (dropEvent) {
+            if (!placeDropped(mod, dropEvent)) return;
+        } else if (mod.kind === 'corner') {
+            const hasLeft = state.modules.some((entry) => entry.kind === 'corner' && entry.cornerSide === 'left');
+            const hasRight = state.modules.some((entry) => entry.kind === 'corner' && entry.cornerSide !== 'left');
+            if (hasLeft && hasRight) {
+                toast('İki köşe de dolu.');
+                return;
+            }
+            mod.cornerSide = hasLeft ? 'right' : 'left';
+        }
+        if (!layout([...state.modules, mod])) {
+            const run = state.modules.filter((entry) => entry.wall === mod.wall && entry.kind !== 'corner').reduce((sum, entry) => sum + alongSize(entry), 0);
+            const room = (mod.wall === 'front' ? wallLimit() : sideLimit(mod.wall)) - run;
+            noteDrop({ id: mod.glb || mod.name, result: 'rejected', wall: mod.wall, offset: mod.offset, free: room });
+            toast(room >= alongSize(mod)
+                ? 'Bu noktada bitişik boşluk yok. Karttaki Ekle, sıranın sonuna koyar.'
+                : 'Bu modül duvara sığmıyor.');
             return;
         }
-        mod.cornerSide = hasLeft ? 'right' : 'left';
+        noteDrop({ id: mod.glb || mod.name, result: 'accepted', wall: mod.wall, offset: Math.round(Number(mod.offset) || 0), count: state.modules.length + 1 });
+        commit(() => {
+            state.modules.push(mod);
+            selectedId = mod.id;
+        });
+        el('library').classList.remove('is-open');
+        el('inspector').classList.add('is-open');
+    } catch (error) {
+        noteDrop({ phase: 'error', id, message: String(error?.stack || error).slice(0, 500) });
     }
-    if (!fitsWithCompact(mod)) {
-        toast('Bu modül duvara sığmıyor.');
-        return;
-    }
-    commit(() => {
-        state.modules.push(mod);
-        selectedId = mod.id;
-    });
-    el('library').classList.remove('is-open');
-    el('inspector').classList.add('is-open');
 }
 
 function addCadModule(id, dropEvent) {
@@ -3318,10 +3378,16 @@ function addCadModule(id, dropEvent) {
     if (dropEvent) {
         if (!placeDropped(mod, dropEvent)) return;
     }
-    if (!fitsWithCompact(mod)) {
-        toast('Bu modül duvara sığmıyor.');
+    if (!layout([...state.modules, mod])) {
+        const run = state.modules.filter((item) => item.wall === mod.wall && item.kind !== 'corner').reduce((sum, item) => sum + alongSize(item), 0);
+        const room = (mod.wall === 'front' ? wallLimit() : sideLimit(mod.wall)) - run;
+        noteDrop({ id: mod.glb || mod.name, result: 'rejected', wall: mod.wall, offset: mod.offset, free: room });
+        toast(room >= alongSize(mod)
+            ? 'Bu noktada bitişik boşluk yok. Karttaki Ekle, sıranın sonuna koyar.'
+            : 'Bu modül duvara sığmıyor.');
         return;
     }
+    noteDrop({ id: mod.glb || mod.name, result: 'accepted', wall: mod.wall, offset: Math.round(Number(mod.offset) || 0), count: state.modules.length + 1 });
     commit(() => {
         state.modules.push(mod);
         selectedId = mod.id;
@@ -3338,7 +3404,7 @@ function addProduct(productId, dropEvent) {
     }
     const mod = createModule(productId);
     if (dropEvent && !placeDropped(mod, dropEvent)) return;
-    if (!fitsWithCompact(mod)) {
+    if (!layout([...state.modules, mod])) {
         toast('Bu modül duvarın dışında kalıyor.');
         return;
     }

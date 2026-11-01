@@ -1,0 +1,233 @@
+[
+  {
+    "at": "2026-11-01T09:48:31.676Z",
+    "phase": "down",
+    "id": "cift_v1",
+    "x": 32,
+    "y": 1569
+  },
+  {
+    "at": "2026-11-01T09:48:31.679Z",
+    "phase": "up",
+    "id": "cift_v1",
+    "active": true,
+    "inside": true,
+    "x": 469,
+    "y": 383,
+    "view": [
+      860,
+      653
+    ]
+  },
+  {
+    "at": "2026-11-01T09:48:31.679Z",
+    "phase": "load",
+    "id": "cift_v1",
+    "cached": true
+  },
+  {
+    "at": "2026-11-01T09:48:31.679Z",
+    "id": "cift_v1",
+    "width": 90,
+    "clientX": 469,
+    "clientY": 383,
+    "wall": "front",
+    "offset": -321,
+    "hitX": null,
+    "hitZ": null,
+    "front": 315,
+    "left": 300,
+    "existing": []
+  },
+  {
+    "at": "2026-11-01T09:48:31.679Z",
+    "id": "cift_v1",
+    "result": "accepted",
+    "wall": "front",
+    "offset": 0,
+    "count": 1
+  },
+  {
+    "at": "2026-11-01T09:48:31.736Z",
+    "phase": "down",
+    "id": "tek_v2",
+    "x": 164,
+    "y": 270
+  },
+  {
+    "at": "2026-11-01T09:48:31.736Z",
+    "phase": "up",
+    "id": "tek_v2",
+    "active": true,
+    "inside": true,
+    "x": 469,
+    "y": 383,
+    "view": [
+      860,
+      653
+    ]
+  },
+  {
+    "at": "2026-11-01T09:48:31.736Z",
+    "phase": "load",
+    "id": "tek_v2",
+    "cached": true
+  },
+  {
+    "at": "2026-11-01T09:48:31.736Z",
+    "id": "tek_v2",
+    "width": 45,
+    "clientX": 469,
+    "clientY": 383,
+    "wall": "front",
+    "offset": -298.5,
+    "hitX": null,
+    "hitZ": null,
+    "front": 315,
+    "left": 300,
+    "existing": [
+      {
+        "id": "cift_v1",
+        "wall": "front",
+        "offset": 0,
+        "width": 90
+      }
+    ]
+  },
+  {
+    "at": "2026-11-01T09:48:31.737Z",
+    "id": "tek_v2",
+    "result": "accepted",
+    "wall": "front",
+    "offset": 0,
+    "count": 2
+  },
+  {
+    "at": "2026-11-01T09:48:31.815Z",
+    "phase": "down",
+    "id": "cift_v4",
+    "x": 164,
+    "y": 1824
+  },
+  {
+    "at": "2026-11-01T09:48:31.815Z",
+    "phase": "up",
+    "id": "cift_v4",
+    "active": true,
+    "inside": true,
+    "x": 469,
+    "y": 383,
+    "view": [
+      860,
+      653
+    ]
+  },
+  {
+    "at": "2026-11-01T09:48:31.815Z",
+    "phase": "load",
+    "id": "cift_v4",
+    "cached": true
+  },
+  {
+    "at": "2026-11-01T09:48:31.815Z",
+    "id": "cift_v4",
+    "width": 90,
+    "clientX": 469,
+    "clientY": 383,
+    "wall": "front",
+    "offset": -321,
+    "hitX": null,
+    "hitZ": null,
+    "front": 315,
+    "left": 300,
+    "existing": [
+      {
+        "id": "cift_v1",
+        "wall": "front",
+        "offset": 0,
+        "width": 90
+      },
+      {
+        "id": "tek_v2",
+        "wall": "front",
+        "offset": 0,
+        "width": 45
+      }
+    ]
+  },
+  {
+    "at": "2026-11-01T09:48:31.816Z",
+    "id": "cift_v4",
+    "result": "accepted",
+    "wall": "front",
+    "offset": 0,
+    "count": 3
+  },
+  {
+    "at": "2026-11-01T09:48:31.845Z",
+    "phase": "down",
+    "id": "cift_v5",
+    "x": 32,
+    "y": 2079
+  },
+  {
+    "at": "2026-11-01T09:48:31.846Z",
+    "phase": "up",
+    "id": "cift_v5",
+    "active": true,
+    "inside": true,
+    "x": 469,
+    "y": 383,
+    "view": [
+      860,
+      653
+    ]
+  },
+  {
+    "at": "2026-11-01T09:48:31.846Z",
+    "phase": "load",
+    "id": "cift_v5",
+    "cached": true
+  },
+  {
+    "at": "2026-11-01T09:48:31.846Z",
+    "id": "cift_v5",
+    "width": 90,
+    "clientX": 469,
+    "clientY": 383,
+    "wall": "front",
+    "offset": -321,
+    "hitX": null,
+    "hitZ": null,
+    "front": 315,
+    "left": 300,
+    "existing": [
+      {
+        "id": "cift_v1",
+        "wall": "front",
+        "offset": 0,
+        "width": 90
+      },
+      {
+        "id": "tek_v2",
+        "wall": "front",
+        "offset": 0,
+        "width": 45
+      },
+      {
+        "id": "cift_v4",
+        "wall": "front",
+        "offset": 0,
+        "width": 90
+      }
+    ]
+  },
+  {
+    "at": "2026-11-01T09:48:31.846Z",
+    "id": "cift_v5",
+    "result": "accepted",
+    "wall": "front",
+    "offset": 0,
+    "count": 4
+  }
+]

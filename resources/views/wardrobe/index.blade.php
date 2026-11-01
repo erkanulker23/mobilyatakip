@@ -60,6 +60,7 @@
         .side-foot .btn { width: 100%; }
         .catalog { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .card { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 12px; background: #fff; padding: 6px; text-align: left; cursor: grab; touch-action: none; }
+        .card-add { align-self: flex-start; margin-top: 6px; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer; }
         .card:hover { border-color: #c8c2b6; }
         .card img { width: 100%; height: 168px; object-fit: contain; background: #fff; border-radius: 8px; }
         .catalog-switch { display: flex; gap: 6px; margin: 0 0 8px; }
@@ -302,6 +303,6 @@
         csrf: @json(csrf_token())
     };
 </script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=91"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=99"></script>
 </body>
 </html>
