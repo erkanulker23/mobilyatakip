@@ -1,0 +1,8 @@
+Wood 094 renk, normal (OpenGL) ve roughness haritaları ambientCG CC0 1.0 kaynağındandır.
+https://ambientcg.com/view?id=Wood094
+
+Paket displacement haritası da aynı taramadandır. Paneller tek yüz olduğu için displacement uygulanmadı; mikro detay düşük ölçekli normal haritadadır.
+
+y26_cift_01 bu taramayı temsili kaplama olarak kullanır. Kastamonu Entegre’nin resmî dekor taraması değildir. Seçilen dekorun ortalama rengi taramayı boyar.
+
+Eski wood094-normal.jpg ve wood094-roughness.jpg diğer modüllerde durur. y26_cift_01 renkli seti wood094-color.jpg, wood094-normal-gl.jpg ve wood094-roughness-gl.jpg dosyalarıdır.

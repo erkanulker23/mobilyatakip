@@ -1,0 +1,3 @@
+Bu klasördeki GLB dosyaları Meemare stüdyosunda Blender ile modellenmiştir.
+Fotogrametri veya hazır tarama değildir. Kumaş kıvrımları elle yerleştirilmiş geometridir.
+Eski Grab3D prosedürel gömlek, ceket ve topuklu ayakkabı modelleri burada yoktur.

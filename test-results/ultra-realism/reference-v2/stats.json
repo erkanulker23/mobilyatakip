@@ -1,0 +1,49 @@
+{
+  "fps": 61,
+  "glassPath": {
+    "ms": 15729,
+    "samples": 40,
+    "passes": 10,
+    "bounces": 4,
+    "transmissiveBounces": 5,
+    "denoised": true,
+    "width": 900,
+    "height": 900,
+    "heap": 35508594
+  },
+  "slow": {
+    "ms": 12886,
+    "samples": 32,
+    "passes": 8,
+    "bounces": 6,
+    "transmissiveBounces": 8,
+    "denoised": false,
+    "width": 1000,
+    "height": 1000,
+    "heap": 44568309
+  },
+  "fast": {
+    "ms": 10653,
+    "samples": 32,
+    "passes": 8,
+    "bounces": 4,
+    "transmissiveBounces": 5,
+    "denoised": true,
+    "width": 1000,
+    "height": 1000,
+    "heap": 56069911
+  },
+  "final": {
+    "ms": 24644,
+    "samples": 64,
+    "passes": 16,
+    "bounces": 4,
+    "transmissiveBounces": 5,
+    "denoised": true,
+    "width": 1050,
+    "height": 1100,
+    "heap": 75259120
+  },
+  "angles": "DIFFERENT",
+  "save": "{\"toast\":\"Önce müşteri bilgisi gerekli.\",\"url\":\"\"}"
+}
