@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Company;
 use App\Models\WardrobeProject;
 use App\Models\WardrobeQuote;
+use App\Services\AuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -51,14 +52,21 @@ class PublicWardrobeController extends Controller
 
     public function destroyProject(string $token): JsonResponse
     {
-        $this->findProject($token)->delete();
+        $this->findProject($token, 'delete')->delete();
+
+        return response()->json(['ok' => true, 'message' => 'Proje silindi.']);
+    }
+
+    public function destroyProjectById(string $project): JsonResponse
+    {
+        $this->findProjectById($project, 'delete')->delete();
 
         return response()->json(['ok' => true, 'message' => 'Proje silindi.']);
     }
 
     public function storeProject(Request $request): JsonResponse
     {
-        if (! Schema::hasTable('wardrobe_projects')) {
+        if (! Schema::hasTable('wardrobe_projects') || ! Schema::hasColumn('wardrobe_projects', 'userId')) {
             return response()->json([
                 'ok' => false,
                 'message' => 'Proje kaydı henüz hazır değil.',
@@ -68,6 +76,7 @@ class PublicWardrobeController extends Controller
         $data = $this->projectPayload($request);
         $project = WardrobeProject::create([
             'token' => Str::random(24),
+            'userId' => (string) $request->user()->id,
             'customerName' => $data['customerName'],
             'phone' => $data['phone'],
             'projectName' => $data['projectName'],
@@ -77,6 +86,7 @@ class PublicWardrobeController extends Controller
 
         return response()->json([
             'ok' => true,
+            'id' => $project->id,
             'token' => $project->token,
             'message' => 'Proje kaydedildi.',
         ]);
@@ -84,7 +94,53 @@ class PublicWardrobeController extends Controller
 
     public function updateProject(Request $request, string $token): JsonResponse
     {
-        $project = $this->findProject($token);
+        return $this->updateOwned($request, $this->findProject($token, 'update'));
+    }
+
+    public function updateProjectById(Request $request, string $project): JsonResponse
+    {
+        return $this->updateOwned($request, $this->findProjectById($project, 'update'));
+    }
+
+    public function showProject(string $token): JsonResponse
+    {
+        return $this->projectResponse($this->findProject($token, 'view'));
+    }
+
+    public function showProjectById(string $project): JsonResponse
+    {
+        return $this->projectResponse($this->findProjectById($project, 'view'));
+    }
+
+    public function projects(Request $request): JsonResponse
+    {
+        if (! Schema::hasTable('wardrobe_projects') || ! Schema::hasColumn('wardrobe_projects', 'userId')) {
+            return response()->json(['ok' => true, 'projects' => []]);
+        }
+
+        $actor = $request->user();
+        $projects = WardrobeProject::query()
+            ->where(function ($query) use ($actor) {
+                $query->where('userId', (string) $actor->id);
+                if ($actor->isAdmin()) {
+                    $query->orWhereNull('userId');
+                }
+            })
+            ->latest('updatedAt')
+            ->limit(20)
+            ->get(['id', 'projectName', 'updatedAt'])
+            ->map(fn (WardrobeProject $project) => [
+                'id' => $project->id,
+                'projectName' => $project->projectName,
+                'updatedAt' => optional($project->updatedAt)->toIso8601String(),
+            ])
+            ->values();
+
+        return response()->json(['ok' => true, 'projects' => $projects]);
+    }
+
+    private function updateOwned(Request $request, WardrobeProject $project): JsonResponse
+    {
         $data = $this->projectPayload($request);
         $project->update([
             'customerName' => $data['customerName'],
@@ -96,17 +152,17 @@ class PublicWardrobeController extends Controller
 
         return response()->json([
             'ok' => true,
+            'id' => $project->id,
             'token' => $project->token,
             'message' => 'Proje güncellendi.',
         ]);
     }
 
-    public function showProject(string $token): JsonResponse
+    private function projectResponse(WardrobeProject $project): JsonResponse
     {
-        $project = $this->findProject($token);
-
         return response()->json([
             'ok' => true,
+            'id' => $project->id,
             'token' => $project->token,
             'customerName' => $project->customerName,
             'phone' => $project->phone,
@@ -117,48 +173,55 @@ class PublicWardrobeController extends Controller
         ]);
     }
 
-    public function projects(Request $request): JsonResponse
-    {
-        if (! Schema::hasTable('wardrobe_projects')) {
-            return response()->json(['ok' => true, 'projects' => []]);
-        }
-
-        $phone = trim((string) $request->query('phone', ''));
-        $digits = preg_replace('/\D+/', '', $phone) ?? '';
-        $projects = WardrobeProject::query()
-            ->latest('updatedAt')
-            ->limit(200)
-            ->get();
-
-        if (strlen($digits) >= 10) {
-            $needle = substr($digits, -10);
-            $projects = $projects->filter(function (WardrobeProject $project) use ($needle) {
-                $stored = preg_replace('/\D+/', '', (string) $project->phone) ?? '';
-
-                return $stored !== '' && str_ends_with($stored, $needle);
-            });
-        }
-
-        $projects = $projects->take(20)
-            ->map(fn (WardrobeProject $project) => [
-                'token' => $project->token,
-                'customerName' => $project->customerName,
-                'phone' => $project->phone,
-                'projectName' => $project->projectName,
-                'updatedAt' => optional($project->updatedAt)->toIso8601String(),
-            ])
-            ->values();
-
-        return response()->json(['ok' => true, 'projects' => $projects]);
-    }
-
-    private function findProject(string $token): WardrobeProject
+    private function findProject(string $token, string $ability): WardrobeProject
     {
         if (! preg_match('/^[A-Za-z0-9]{24}$/', $token) || ! Schema::hasTable('wardrobe_projects')) {
-            abort(404);
+            $this->missingProject();
         }
 
-        return WardrobeProject::query()->where('token', $token)->firstOrFail();
+        $project = WardrobeProject::query()->where('token', $token)->first();
+        if (! $project) {
+            $this->missingProject();
+        }
+
+        return $this->authorizeProject($project, $ability);
+    }
+
+    private function findProjectById(string $id, string $ability): WardrobeProject
+    {
+        if (! Schema::hasTable('wardrobe_projects')) {
+            $this->missingProject();
+        }
+
+        $project = WardrobeProject::query()->where('id', $id)->first();
+        if (! $project) {
+            $this->missingProject();
+        }
+
+        return $this->authorizeProject($project, $ability);
+    }
+
+    private function authorizeProject(WardrobeProject $project, string $ability): WardrobeProject
+    {
+        $user = request()->user();
+        if (! $user || ! $user->can($ability, $project)) {
+            if ($user) {
+                app(AuditService::class)->logAction('wardrobe_project', (string) $project->id, 'denied', [
+                    'ability' => $ability,
+                ]);
+            }
+            $this->missingProject();
+        }
+
+        return $project;
+    }
+
+    private function missingProject(): never
+    {
+        abort(response()->json([
+            'ok' => false,
+            'message' => 'Proje bulunamadı.',
+        ], 404));
     }
 
     private function projectPayload(Request $request): array

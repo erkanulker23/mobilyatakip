@@ -59,8 +59,7 @@
         <h1>Kayıtlı projeler</h1>
         <p class="hint">Bir karta basınca proje açılır. Yeni oda alttaki formdan başlar.</p>
         <div class="row">
-            <input id="phone" inputmode="tel" placeholder="Telefonla ara" aria-label="Telefon">
-            <button type="button" class="btn" id="search">Ara</button>
+            <button type="button" class="btn" id="search">Listeyi yenile</button>
         </div>
         <div id="list"></div>
     </section>
@@ -254,12 +253,10 @@ document.getElementById('tool-window').onclick = () => { tool = 'window'; docume
 document.getElementById('create').addEventListener('input', draw);
 draw();
 
-async function load(phone) {
+async function load() {
     const box = document.getElementById('list');
     box.textContent = 'Aranıyor…';
-    const digits = String(phone || '').replace(/\D/g, '');
-    const query = digits.length >= 10 ? `?phone=${encodeURIComponent(phone)}` : '';
-    const response = await fetch(`${indexUrl}${query}`, { headers: { Accept: 'application/json' } });
+    const response = await fetch(indexUrl, { headers: { Accept: 'application/json' } });
     const data = await response.json();
     const projects = data.projects || [];
     box.innerHTML = projects.length ? '' : '<p class="hint">Kayıtlı proje yok.</p>';
@@ -271,31 +268,24 @@ async function load(phone) {
         open.className = 'open';
         const name = document.createElement('strong');
         name.textContent = item.projectName || 'Proje';
-        const who = document.createElement('span');
-        who.textContent = item.customerName || '';
         const when = document.createElement('span');
         when.textContent = item.updatedAt ? new Date(item.updatedAt).toLocaleString('tr-TR') : '';
-        open.append(name, who, when);
-        if (item.phone) {
-            const phone = document.createElement('span');
-            phone.textContent = item.phone;
-            open.insertBefore(phone, when);
-        }
-        open.onclick = () => { location.href = `${designUrl}?proje=${item.token}`; };
+        open.append(name, when);
+        open.onclick = () => { location.href = `${designUrl}?kayit=${item.id}`; };
         const remove = document.createElement('button');
         remove.type = 'button';
         remove.className = 'btn danger';
         remove.textContent = 'Sil';
         remove.onclick = async () => {
             if (!confirm(`${item.projectName} silinsin mi?`)) return;
-            const result = await fetch(`/dolap/proje/${item.token}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrf, Accept: 'application/json' } });
-            if (result.ok) load(document.getElementById('phone').value);
+            const result = await fetch(`/dolap/proje/kayit/${item.id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrf, Accept: 'application/json' } });
+            if (result.ok) load();
         };
         row.append(open, remove);
         box.append(row);
     });
 }
-document.getElementById('search').onclick = () => load(document.getElementById('phone').value);
+document.getElementById('search').onclick = () => load();
 document.getElementById('create').addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = new FormData(event.target);
@@ -337,7 +327,7 @@ document.getElementById('create').addEventListener('submit', async (event) => {
     if (!response.ok || !data?.token) { msg.textContent = data?.message || 'Proje kaydı yazılamadı.'; return; }
     location.href = `${designUrl}?proje=${data.token}`;
 });
-load('');
+load();
 </script>
 </body>
 </html>

@@ -6366,7 +6366,7 @@ function bindChrome() {
         el('quote-modal').classList.remove('hidden');
     };
     el('saved-search').onclick = () => searchProjects(el('saved-phone').value, el('saved-list'), () => el('saved-modal').classList.add('hidden'));
-    el('resume-search').onclick = () => searchProjects(el('resume-phone').value, el('resume-list'), () => el('customer-modal').classList.add('hidden'));
+    el('resume-search').onclick = () => searchProjects('', el('resume-list'), () => el('customer-modal').classList.add('hidden'));
     el('customer-form').addEventListener('submit', async (event) => {
         event.preventDefault();
         const form = new FormData(event.target);
@@ -6626,9 +6626,12 @@ async function createProject() {
     }
 }
 
-async function openProject(token) {
+async function openProject(key) {
+    const path = String(key).includes('-')
+        ? `${window.WARDROBE.projectBase}/proje/kayit/${key}`
+        : `${window.WARDROBE.projectBase}/proje/${key}`;
     try {
-        const response = await fetch(`${window.WARDROBE.projectBase}/proje/${token}`, { headers: { Accept: 'application/json' } });
+        const response = await fetch(path, { headers: { Accept: 'application/json' } });
         if (!response.ok) return false;
         const data = await response.json();
         if (!data.design?.modules || data.design.modules.some((mod) => !mod.kind)) return false;
@@ -6653,26 +6656,24 @@ async function openProject(token) {
     }
 }
 
-async function searchProjects(phone, box, onOpen) {
-    const digits = String(phone || '').replace(/\D/g, '');
+async function searchProjects(_phone, box, onOpen) {
     box.innerHTML = '<p class="hint">Aranıyor…</p>';
     try {
-        const query = digits.length >= 10 ? `?phone=${encodeURIComponent(phone)}` : '';
-        const response = await fetch(`${window.WARDROBE.projectIndexUrl}${query}`, { headers: { Accept: 'application/json' } });
+        const response = await fetch(window.WARDROBE.projectIndexUrl, { headers: { Accept: 'application/json' } });
         const data = await response.json();
         const projects = data.projects || [];
         box.innerHTML = projects.length
-            ? projects.map((item) => `<button type="button" class="choice" data-token="${item.token}"><strong>${item.projectName}</strong><span>${item.customerName} · ${item.phone}${item.updatedAt ? ` · ${new Date(item.updatedAt).toLocaleString('tr-TR')}` : ''}</span></button>`).join('')
-            : `<p class="hint">${digits.length >= 10 ? 'Bu telefona kayıtlı proje yok.' : 'Kayıtlı proje yok.'}</p>`;
-        box.querySelectorAll('[data-token]').forEach((button) => {
+            ? projects.map((item) => `<button type="button" class="choice" data-id="${item.id}"><strong>${item.projectName}</strong><span>${item.updatedAt ? new Date(item.updatedAt).toLocaleString('tr-TR') : ''}</span></button>`).join('')
+            : '<p class="hint">Kayıtlı proje yok.</p>';
+        box.querySelectorAll('[data-id]').forEach((button) => {
             button.onclick = async () => {
-                const ok = await openProject(button.dataset.token);
+                const ok = await openProject(button.dataset.id);
                 if (ok) onOpen();
                 else toast('Proje açılamadı.');
             };
         });
     } catch {
-        box.innerHTML = '<p class="hint">Arama yapılamadı.</p>';
+        box.innerHTML = '<p class="hint">Liste alınamadı.</p>';
     }
 }
 
@@ -6756,8 +6757,10 @@ async function boot() {
     } catch (error) {
         console.warn(error);
     }
-    const token = new URLSearchParams(location.search).get('proje');
-    if (token && await openProject(token)) {
+    const params = new URLSearchParams(location.search);
+    const recordId = params.get('kayit');
+    const token = params.get('proje');
+    if ((recordId && await openProject(recordId)) || (token && await openProject(token))) {
         el('customer-modal').classList.add('hidden');
         return;
     }

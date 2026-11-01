@@ -8,6 +8,7 @@ class WardrobeProject extends BaseModel
 
     protected $fillable = [
         'token',
+        'userId',
         'customerName',
         'phone',
         'projectName',

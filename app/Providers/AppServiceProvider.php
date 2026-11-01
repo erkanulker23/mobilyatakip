@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Http\Controllers\SaleController;
 use App\Models\AuditLog;
+use App\Models\WardrobeProject;
+use App\Policies\WardrobeProjectPolicy;
 use App\Support\ActivityMessage;
 use App\Support\ProductionCommandGuard;
 use App\Support\UserLastLogin;
@@ -12,6 +14,7 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -31,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::policy(WardrobeProject::class, WardrobeProjectPolicy::class);
         ProductionCommandGuard::register();
 
         $this->registerFallbackRoutes();

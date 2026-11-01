@@ -109,6 +109,18 @@ Route::prefix('dolap')->middleware('auth')->group(function () {
     Route::get('/projeler', [\App\Http\Controllers\PublicWardrobeController::class, 'projects'])
         ->middleware('throttle:60,1,wardrobe-projects')
         ->name('wardrobe.project.index');
+    Route::get('/proje/kayit/{project}', [\App\Http\Controllers\PublicWardrobeController::class, 'showProjectById'])
+        ->whereUuid('project')
+        ->middleware('throttle:120,1,wardrobe-show')
+        ->name('wardrobe.project.show-id');
+    Route::put('/proje/kayit/{project}', [\App\Http\Controllers\PublicWardrobeController::class, 'updateProjectById'])
+        ->whereUuid('project')
+        ->middleware('throttle:120,1,wardrobe-update')
+        ->name('wardrobe.project.update-id');
+    Route::delete('/proje/kayit/{project}', [\App\Http\Controllers\PublicWardrobeController::class, 'destroyProjectById'])
+        ->whereUuid('project')
+        ->middleware('throttle:30,1,wardrobe-delete')
+        ->name('wardrobe.project.destroy-id');
     Route::get('/proje/{token}', [\App\Http\Controllers\PublicWardrobeController::class, 'showProject'])
         ->where('token', '[A-Za-z0-9]{24}')
         ->middleware('throttle:120,1,wardrobe-show')

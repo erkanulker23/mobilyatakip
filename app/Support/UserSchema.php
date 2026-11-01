@@ -23,12 +23,22 @@ final class UserSchema
             return self::$idIsUuid = true;
         }
 
-        $row = DB::selectOne(
-            'SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?',
-            [DB::getDatabaseName(), 'users', 'id']
-        );
+        try {
+            $row = DB::selectOne(
+                'SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+                [DB::getDatabaseName(), 'users', 'id']
+            );
+        } catch (\Throwable) {
+            $row = null;
+        }
 
-        return self::$idIsUuid = ! in_array($row->DATA_TYPE ?? '', ['bigint', 'int', 'mediumint', 'smallint', 'tinyint'], true);
+        if ($row !== null) {
+            return self::$idIsUuid = ! in_array($row->DATA_TYPE ?? '', ['bigint', 'int', 'mediumint', 'smallint', 'tinyint'], true);
+        }
+
+        $type = strtolower((string) Schema::getColumnType('users', 'id'));
+
+        return self::$idIsUuid = ! in_array($type, ['bigint', 'integer', 'int', 'mediumint', 'smallint', 'tinyint'], true);
     }
 
     public static function createdAtColumn(): ?string

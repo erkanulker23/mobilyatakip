@@ -1,0 +1,7 @@
+
+   PASS  Tests\Feature\WardrobeProjectAccessTest
+  ✓ owner can manage a project and another user cannot                   0.24s  
+
+  Tests:    1 passed (56 assertions)
+  Duration: 0.31s
+

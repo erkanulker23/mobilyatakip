@@ -279,8 +279,8 @@
         <h2>Kayıtlı projeler</h2>
         <p class="hint">Daha önce kaydedilen projeler. Birine basınca açılır.</p>
         <div id="resume-list"></div>
-        <div class="field" style="margin-top:10px"><label>Telefonla ara</label><input id="resume-phone" maxlength="40" inputmode="tel"></div>
-        <button type="button" class="btn" id="resume-search">Ara</button>
+        <div class="field" style="margin-top:10px"><p class="hint">Yalnızca bu hesaba ait projeler listelenir.</p></div>
+        <button type="button" class="btn" id="resume-search">Listeyi yenile</button>
         <h2 style="margin-top:18px">Yeni proje</h2>
         <p class="hint">Dolabı tasarlamadan önce müşteri kayda geçer.</p>
         <div class="field"><label>Ad</label><input name="customerName" required maxlength="120" autocomplete="name"></div>
@@ -370,6 +370,6 @@
         csrf: @json(csrf_token())
     };
 </script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=189"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=190"></script>
 </body>
 </html>
