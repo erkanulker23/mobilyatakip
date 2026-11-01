@@ -1864,24 +1864,44 @@ function mountGlbDrawers(model, mod) {
     model.traverse((child) => {
         if (child.isMesh && /cekmece/.test(String(child.name || '').toLocaleLowerCase('tr'))) meshes.push(child);
     });
-    const ranked = meshes.map((mesh) => {
-        if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
-        const box = mesh.geometry.boundingBox;
-        return { mesh, y: box ? (box.min.y + box.max.y) / 2 : 0 };
-    }).sort((a, b) => a.y - b.y);
-    const clusters = [];
-    ranked.forEach((item) => {
-        const last = clusters[clusters.length - 1];
-        if (!last || Math.abs(item.y - last.y) > 0.12) clusters.push({ y: item.y, meshes: [item.mesh] });
-        else last.meshes.push(item.mesh);
+    const groups = new Map();
+    meshes.forEach((mesh) => {
+        const match = String(mesh.name || '').match(/_(\d+)$/);
+        const key = match ? match[1] : '';
+        if (!key) return;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(mesh);
     });
-    clusters.forEach((cluster) => {
+    groups.forEach((parts) => {
+        const named = (pattern) => parts.some((mesh) => pattern.test(String(mesh.name || '').toLocaleLowerCase('tr')));
+        if (!named(/_on_/) || !named(/taban/) || !named(/arka/)) return;
         const group = new THREE.Group();
         group.name = 'drawer-slide';
         model.add(group);
-        cluster.meshes.forEach((mesh) => group.attach(mesh));
+        parts.forEach((mesh) => group.attach(mesh));
+        const box = new THREE.Box3();
+        parts.forEach((mesh) => {
+            if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+            if (mesh.geometry.boundingBox) box.union(mesh.geometry.boundingBox);
+        });
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        if (size.x > 0.04 && size.y > 0.04 && size.z > 0.05) {
+            const sideT = 0.012;
+            const sideH = Math.max(0.04, size.y - 0.006);
+            const sideD = Math.max(0.05, size.z - 0.012);
+            const shell = material('glb-body', carcassOf(mod));
+            const side = new THREE.BoxGeometry(sideT, sideH, sideD);
+            const left = new THREE.Mesh(side, shell);
+            left.name = 'DRAWER_YAN_SOL';
+            left.position.set(box.min.x + sideT / 2, center.y, center.z);
+            const right = new THREE.Mesh(side, shell);
+            right.name = 'DRAWER_YAN_SAG';
+            right.position.set(box.max.x - sideT / 2, center.y, center.z);
+            group.add(left, right);
+        }
         group.userData.slide = mod;
-        group.userData.travel = 0.32;
+        group.userData.travel = Math.min(0.26, Math.max(0.1, size.z * 0.62));
         slides.push(group);
     });
 }
