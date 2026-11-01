@@ -1,3 +1,4 @@
-Bu klasördeki GLB dosyaları Meemare stüdyosunda Blender ile modellenmiştir.
+gomlek.glb Blender cloth simülasyonudur: omuz 46 cm, gövde boyu 76 cm, kol 62 cm.
+Diğer GLB dosyaları basit modellerdir ve profesyonel kıyafet olarak sunulmaz.
 Fotogrametri veya hazır tarama değildir. Kumaş kıvrımları elle yerleştirilmiş geometridir.
 Eski Grab3D prosedürel gömlek, ceket ve topuklu ayakkabı modelleri burada yoktur.

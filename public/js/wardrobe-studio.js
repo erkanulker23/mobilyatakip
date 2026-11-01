@@ -606,7 +606,7 @@ function material(key, source, opts = {}) {
     const plain = opts.metal || opts.glass || (typeof source === 'string' && source.startsWith('#'));
     const item = plain ? null : decor(source);
     const flat = Boolean(item && isPlainDecor(item));
-    const id = `${key}|${item ? item.id : source}|${opts.glass ? 1 : 0}|${opts.metal ? 1 : 0}|${opts.transmission ?? ''}|${opts.attenuation ?? ''}|${opts.representative ? 1 : 0}`;
+    const id = `${key}|${item ? item.id : source}|${opts.glass ? 1 : 0}|${opts.metal ? 1 : 0}|${opts.transmission ?? ''}|${opts.attenuation ?? ''}|${opts.representative ? woodStudyMode() : 'plain'}`;
     if (matCache.has(id)) return matCache.get(id);
     // Volume attenuation (thickness > 0) makes three-gpu-pathtracer 0.0.23 return black
     // for a pane a few millimeters thick. Thickness 0 and an infinite attenuation
@@ -767,7 +767,73 @@ function tintMaterial(mat, url, scale = 1) {
     apply(null);
 }
 
+function woodStudyMode() {
+    const mode = window.__woodMode;
+    if (mode === 'catalog' || mode === 'mismatch' || mode === 'oak') return mode;
+    return 'wood094';
+}
+
+let oakMaps = null;
+
+function ensureOakMaps() {
+    if (oakMaps) return oakMaps;
+    const loader = new THREE.TextureLoader();
+    const repeat = 2 / 1.83;
+    const load = (url, color) => {
+        const tex = loader.load(url, () => {
+            oakMaps.ready += 1;
+            window.__oakReady = oakMaps.ready >= 3;
+        });
+        tex.colorSpace = color ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(repeat, repeat);
+        tex.anisotropy = 8;
+        return tex;
+    };
+    oakMaps = {
+        ready: 0,
+        color: load('/textures/wardrobe/oak-veneer-color.jpg', true),
+        normal: load('/textures/wardrobe/oak-veneer-normal.jpg', false),
+        rough: load('/textures/wardrobe/oak-veneer-roughness.jpg', false),
+    };
+    window.__oakReady = false;
+    return oakMaps;
+}
+
 function applyRepresentativeWood(mat, imageUrl) {
+    const mode = woodStudyMode();
+    mat.userData.externalPbr = true;
+    mat.userData.woodMode = mode;
+    mat.userData.matchedWood = false;
+    mat.userData.representativeWood = false;
+    if (mode === 'catalog') {
+        mat.normalMap = null;
+        mat.roughnessMap = null;
+        mat.aoMap = null;
+        mat.roughness = 0.72;
+        mat.metalness = 0;
+        mat.needsUpdate = true;
+        return;
+    }
+    if (mode === 'mismatch') {
+        applyWoodPbr(mat);
+        return;
+    }
+    if (mode === 'oak') {
+        const oak = ensureOakMaps();
+        mat.map = oak.color;
+        mat.color.set('#ffffff');
+        mat.normalMap = oak.normal;
+        mat.normalScale = new THREE.Vector2(0.18, 0.18);
+        mat.roughnessMap = oak.rough;
+        mat.roughness = 0.84;
+        mat.metalness = 0;
+        mat.envMapIntensity = 0.2;
+        mat.aoMap = null;
+        mat.userData.decorNote = imageUrl || '';
+        mat.needsUpdate = true;
+        return;
+    }
     const scan = ensureWoodScan();
     mat.map = scan.color;
     mat.normalMap = scan.normal;
@@ -777,9 +843,8 @@ function applyRepresentativeWood(mat, imageUrl) {
     mat.metalness = 0;
     mat.envMapIntensity = 0.24;
     mat.aoMap = null;
-    mat.userData.externalPbr = true;
-    mat.userData.representativeWood = true;
     mat.color.set('#ffffff');
+    mat.userData.representativeWood = true;
     tintMaterial(mat, imageUrl, 1);
     mat.needsUpdate = true;
 }
@@ -1153,12 +1218,12 @@ function extractFaces(geometry, predicate) {
 function edgeBandMaterial(sourceId, opts = {}) {
     const base = material('edge-band', sourceId, opts);
     const next = base.clone();
+    next.metalness = 0;
+    next.aoMap = null;
     next.map = null;
     next.roughness = 0.82;
     next.roughnessMap = null;
     next.normalMap = null;
-    next.aoMap = null;
-    next.metalness = 0;
     const tintUrl = base.userData.tintUrl;
     if (tintUrl) tintMaterial(next, tintUrl, 0.9);
     else {
@@ -1801,6 +1866,7 @@ function addCabinetLeds(parent, w, h, d, mod, shelves) {
             rail.castShadow = true;
             parent.add(rail);
             const glow = new THREE.Mesh(new THREE.BoxGeometry(0.28, height - 1.4, 0.28), strip);
+            glow.name = 'LED_GLOW';
             glow.position.set(x, y, z + 0.7);
             parent.add(glow);
         });
@@ -1815,6 +1881,7 @@ function addCabinetLeds(parent, w, h, d, mod, shelves) {
         rail.castShadow = true;
         parent.add(rail);
         const glow = new THREE.Mesh(new THREE.BoxGeometry(width - 1.4, 0.45, Math.max(8, d * 0.55)), strip);
+        glow.name = 'LED_GLOW';
         glow.position.set(w / 2, y - 1.7, d * 0.42);
         parent.add(glow);
     });
@@ -1826,6 +1893,12 @@ function placeModel(parent, template, opts) {
     if (!template) return false;
     const obj = template.clone(true);
     obj.rotation.set(opts.rx || 0, opts.yaw || 0, 0);
+    if (opts.name) {
+        obj.name = opts.name;
+        obj.traverse((child) => {
+            if (child.isMesh) child.name = opts.name;
+        });
+    }
     obj.updateMatrixWorld(true);
     const raw = new THREE.Box3().setFromObject(obj);
     const size = raw.getSize(new THREE.Vector3());
@@ -2778,8 +2851,10 @@ function dressGlb(wrap, model, mod) {
     });
     shelves.sort((a, b) => a.y - b.y);
     if (rail && propTemplates.shirt) {
-        [-0.16, 0.02].forEach((offset, index) => {
+        const spots = window.__shirtOnly ? [0] : [-0.08];
+        spots.forEach((offset) => {
             placeModel(wrap, propTemplates.shirt, {
+                name: 'GOMLEK',
                 x: rail.x + offset,
                 y: rail.y + 0.012,
                 z: rail.z,
@@ -2787,10 +2862,11 @@ function dressGlb(wrap, model, mod) {
                 maxH: 0.72,
                 maxD: 0.18,
                 anchor: 'top',
-                yaw: index ? -0.08 : 0.12,
+                yaw: 0.08,
             });
         });
     }
+    if (window.__shirtOnly) return;
     if (rail && propTemplates.blazer) {
         placeModel(wrap, propTemplates.blazer, {
             x: rail.x + 0.16,
@@ -3000,6 +3076,7 @@ function addGlbLeds(wrap, model, mod) {
             rail.castShadow = true;
             host.add(rail);
             const glow = new THREE.Mesh(new THREE.BoxGeometry(0.007, height - 0.04, 0.008), strip);
+            glow.name = 'LED_GLOW';
             glow.position.set(x + inward * 0.011, center.y, center.z + 0.006);
             host.add(glow);
         });
@@ -3022,6 +3099,7 @@ function addGlbLeds(wrap, model, mod) {
                 new THREE.BoxGeometry(Math.max(0.04, width - 0.012), 0.006, Math.max(0.05, shelf.d * 0.62)),
                 strip
             );
+            glow.name = 'LED_GLOW';
             glow.position.set(shelf.x, y - 0.004, shelf.z + shelf.d * 0.08);
             host.add(glow);
         });
@@ -3648,20 +3726,50 @@ function focusPart(pattern) {
     return new THREE.Box3().setFromObject(meshes[Math.floor(meshes.length / 2)]);
 }
 
+function clearReflectCard() {
+    const old = scene?.getObjectByName('STUDIO_YANSIMA');
+    if (!old) return;
+    scene.remove(old);
+    old.geometry?.dispose();
+    old.material?.dispose();
+}
+
+function placeReflectCard(center, frontZ) {
+    clearReflectCard();
+    const card = new THREE.Mesh(
+        new THREE.PlaneGeometry(70, 42),
+        new THREE.MeshStandardMaterial({
+            color: '#fffaf6',
+            emissive: '#fff1dc',
+            emissiveIntensity: 6,
+            roughness: 1,
+            metalness: 0,
+        })
+    );
+    card.name = 'STUDIO_YANSIMA';
+    card.position.set(center.x - 32, center.y + 8, frontZ + 24);
+    card.lookAt(center.x, center.y, center.z);
+    scene.add(card);
+}
+
 function setCameraView(mode) {
     if (!camera || !controls) return;
-    if (mode === 'shelf' || mode === 'drawer' || mode === 'grain' || mode === 'glass') {
+    clearReflectCard();
+    if (mode === 'shelf' || mode === 'drawer' || mode === 'grain' || mode === 'glass' || mode === 'shirt' || mode === 'shirt-side') {
         const part = mode === 'shelf'
             ? (focusPart(/raf_sag/) || focusPart(/raf/))
-            : focusPart(mode === 'drawer' ? /cekmece_on|_on_/ : mode === 'glass' ? /^cam$/ : /kapak/);
+            : mode === 'shirt' || mode === 'shirt-side'
+                ? focusPart(/gomlek/)
+                : focusPart(mode === 'drawer' ? /cekmece_on|_on_/ : mode === 'glass' ? /^cam$/ : /kapak/);
         if (part) {
             const center = part.getCenter(new THREE.Vector3());
             const size = part.getSize(new THREE.Vector3());
             if (mode === 'glass') {
                 const root = new THREE.Box3().setFromObject(cabinetRoot);
-                camera.fov = 22;
-                controls.target.set(center.x, center.y, center.z);
-                camera.position.set(center.x + 14, center.y + 3, root.max.z + 30);
+                camera.fov = 32;
+                controls.target.set(center.x - 1, center.y, center.z);
+                camera.position.set(center.x + 24, center.y + 1, root.max.z + 14);
+                placeReflectCard(center, root.max.z);
             } else if (mode === 'drawer') {
                 const root = new THREE.Box3().setFromObject(cabinetRoot);
                 const aim = part.getCenter(new THREE.Vector3());
@@ -3671,6 +3779,11 @@ function setCameraView(mode) {
                 cabinetRoot.traverse((obj) => {
                     if (obj.material === selectionEdgeMat || obj.material === selectionWashMat) obj.visible = false;
                 });
+            } else if (mode === 'shirt' || mode === 'shirt-side') {
+                camera.fov = 26;
+                controls.target.copy(center);
+                const side = mode === 'shirt-side' ? size.x * 1.15 + 18 : size.x * 0.35;
+                camera.position.set(center.x + side, center.y + size.y * 0.08, center.z + Math.max(36, size.z + 28));
             } else if (mode === 'shelf') {
                 camera.fov = 26;
                 controls.target.copy(center);
@@ -5208,6 +5321,30 @@ function openSaved() {
     searchProjects(el('saved-phone').value, el('saved-list'), () => el('saved-modal').classList.add('hidden'));
 }
 
+function studioReflectEnvironment() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    const sky = ctx.createLinearGradient(0, 0, 0, 512);
+    sky.addColorStop(0, '#fbf9f6');
+    sky.addColorStop(0.42, '#e4ddd4');
+    sky.addColorStop(1, '#b7b0a6');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, 1024, 512);
+    ctx.fillStyle = '#fffdf8';
+    ctx.fillRect(70, 36, 190, 150);
+    ctx.fillStyle = '#f4f0e8';
+    ctx.fillRect(760, 64, 150, 230);
+    ctx.fillStyle = '#d9d3c8';
+    ctx.fillRect(400, 350, 280, 100);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.mapping = THREE.EquirectangularReflectionMapping;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.needsUpdate = true;
+    return tex;
+}
+
 function cabinetRenderBox() {
     const box = new THREE.Box3();
     let found = false;
@@ -5446,10 +5583,19 @@ async function takeRender() {
         const envMap = scene.environment;
         const env = scene.environmentIntensity;
         const background = scene.background;
-        const shot = { pos: camera.position.clone(), target: controls.target.clone(), fov: camera.fov, near: camera.near, far: camera.far };
+        const shot = {
+            pos: camera.position.clone(),
+            target: controls.target.clone(),
+            fov: camera.fov,
+            near: camera.near,
+            far: camera.far,
+            aspect: camera.aspect,
+        };
     let key = null;
     let floorShot = null;
     let backdrop = null;
+    let ledMat = null;
+    let ledSaved = null;
     button.disabled = true;
     try {
         showMeasures = false;
@@ -5470,17 +5616,44 @@ async function takeRender() {
             room.floor.position.set(reach / 2 - 60, -1, deep / 2 - 30);
         }
         const subjectSize = subject.getSize(new THREE.Vector3());
-        const aspect = THREE.MathUtils.clamp(subjectSize.x / Math.max(subjectSize.y, 1), 0.82, 1.7);
+        const keepFrame = window.__traceKeepCamera === true;
         const maxEdge = Number(window.__ultraMax) > 400 ? Number(window.__ultraMax) : 1600;
-        const capW = Math.min(maxEdge, aspect >= 1 ? 1600 : Math.round(1280 * aspect));
-        const capH = aspect >= 1 ? Math.round(capW / aspect) : Math.min(maxEdge, 1280);
+        let capW;
+        let capH;
+        if (keepFrame) {
+            const aspect = Math.max(0.25, shot.aspect || 1);
+            if (aspect >= 1) {
+                capW = Math.min(maxEdge, 1400);
+                capH = Math.max(2, Math.round(capW / aspect));
+            } else {
+                capH = Math.min(maxEdge, 1400);
+                capW = Math.max(2, Math.round(capH * aspect));
+            }
+        } else {
+            const aspect = THREE.MathUtils.clamp(subjectSize.x / Math.max(subjectSize.y, 1), 0.82, 1.7);
+            capW = Math.min(maxEdge, aspect >= 1 ? 1600 : Math.round(1280 * aspect));
+            capH = aspect >= 1 ? Math.round(capW / aspect) : Math.min(maxEdge, 1280);
+        }
         renderer.setPixelRatio(1);
         renderer.setSize(capW, capH, false);
-        camera.aspect = capW / capH;
         backdrop = renderBackdrop(subject);
-        frameRenderCamera(camera, subject);
-        key = studioKeyLight(camera, subject);
-        controls.target.copy(subject.getCenter(new THREE.Vector3()));
+        if (keepFrame) {
+            camera.aspect = shot.aspect;
+            camera.fov = shot.fov;
+            camera.near = shot.near;
+            camera.far = shot.far;
+            camera.position.copy(shot.pos);
+            camera.up.set(0, 1, 0);
+            camera.lookAt(shot.target);
+            camera.updateProjectionMatrix();
+            camera.updateMatrixWorld(true);
+            controls.target.copy(shot.target);
+        } else {
+            camera.aspect = capW / capH;
+            frameRenderCamera(camera, subject);
+            controls.target.copy(subject.getCenter(new THREE.Vector3()));
+        }
+        if (window.__traceKey !== false) key = studioKeyLight(camera, subject);
         scene.background = new THREE.Color('#f4f1ec');
         renderer.toneMappingExposure = 1;
         prepareTraceTextures();
@@ -5510,12 +5683,29 @@ async function takeRender() {
                 }
             });
         });
-        const envTex = new GradientEquirectTexture();
-        envTex.topColor.set('#fbfaf8');
-        envTex.bottomColor.set('#d5cfc6');
-        envTex.update();
+        const ledMode = window.__traceLeds || 'scene';
+        scene.traverse((obj) => {
+            if (obj.isMesh && obj.name === 'LED_GLOW' && obj.material) ledMat = obj.material;
+        });
+        if (ledMat) ledSaved = { intensity: ledMat.emissiveIntensity, color: ledMat.emissive.clone() };
+        if (ledMat && ledMode === 'off') {
+            ledMat.emissive.set('#000000');
+            ledMat.emissiveIntensity = 0;
+        } else if (ledMat && ledMode === 'soft') {
+            ledMat.emissive.set('#ffe6c2');
+            ledMat.emissiveIntensity = 0.42;
+        }
+        let envTex;
+        if (window.__traceEnv === 'room') envTex = studioReflectEnvironment();
+        else {
+            const gradient = new GradientEquirectTexture();
+            gradient.topColor.set('#fbfaf8');
+            gradient.bottomColor.set('#d5cfc6');
+            gradient.update();
+            envTex = gradient;
+        }
         scene.environment = envTex;
-        scene.environmentIntensity = 0.7;
+        scene.environmentIntensity = window.__traceEnv === 'room' ? 0.9 : 0.7;
         const tracer = new WebGLPathTracer(renderer);
         const tilesX = 2;
         const tilesY = 2;
@@ -5544,13 +5734,16 @@ async function takeRender() {
         }
         button.textContent = 'Netleştiriliyor';
         await new Promise((resolve) => requestAnimationFrame(resolve));
-        if (!window.__skipDenoise) {
+        const denoiseMode = window.__denoiseMode || (window.__skipDenoise ? 'off' : 'gpu');
+        if (denoiseMode === 'cpu') {
+            denoiseRender(renderer.domElement);
+        } else if (denoiseMode === 'gpu') {
             try {
                 const { DenoiseMaterial } = await import('three-gpu-pathtracer');
                 const { FullScreenQuad } = await import('three/addons/postprocessing/Pass.js');
                 const denoise = new DenoiseMaterial();
                 denoise.uniforms.map.value = tracer.target.texture;
-                denoise.uniforms.sigma.value = 1.6;
+                denoise.uniforms.sigma.value = Number(window.__denoiseSigma) > 0 ? Number(window.__denoiseSigma) : 1.6;
                 denoise.uniforms.kSigma.value = 1.5;
                 denoise.uniforms.threshold.value = 0.07;
                 const quad = new FullScreenQuad(denoise);
@@ -5570,7 +5763,11 @@ async function takeRender() {
             passes,
             bounces: tracer.bounces,
             transmissiveBounces: tracer.transmissiveBounces,
-            denoised: !window.__skipDenoise,
+            denoised: denoiseMode,
+            denoiseSigma: !window.__skipDenoise ? (Number(window.__denoiseSigma) > 0 ? Number(window.__denoiseSigma) : 1.6) : 0,
+            ledMode,
+            keepFrame,
+            env: window.__traceEnv === 'room' ? 'room' : 'gradient',
             width: capW,
             height: capH,
             bvhMs,
@@ -5599,6 +5796,10 @@ async function takeRender() {
         toast('Işık izleme açılamadı, mevcut görüntü kaydedildi.');
     } finally {
         if (key) scene.remove(key);
+        if (ledMat && ledSaved) {
+            ledMat.emissive.copy(ledSaved.color);
+            ledMat.emissiveIntensity = ledSaved.intensity;
+        }
         if (floorShot && room.floor) {
             room.floor.geometry.dispose();
             room.floor.geometry = floorShot.geometry;
@@ -6069,5 +6270,12 @@ async function boot() {
     render();
     frameCamera();
 }
+
+window.__setCameraView = (mode) => setCameraView(mode);
+window.__rebuildCabinet = () => {
+    matCache.clear();
+    rebuild();
+    snapDoors();
+};
 
 boot();
