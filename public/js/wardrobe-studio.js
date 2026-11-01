@@ -18,9 +18,9 @@ const ALUMINUM = [
     { id: 'al-gold', name: 'Gold', color: '#c6a56a' },
 ];
 const GLASS = [
-    { id: 'cam-seffaf', name: 'Şeffaf', color: '#e7eef2', transmission: 0.86 },
-    { id: 'cam-fum', name: 'Füme', color: '#6e6a66', transmission: 0.88 },
-    { id: 'cam-bronz', name: 'Bronz', color: '#a56b3c', transmission: 0.42 },
+    { id: 'cam-seffaf', name: 'Şeffaf', color: '#f4f7f8', transmission: 0.94, roughness: 0.04 },
+    { id: 'cam-fum', name: 'Füme', color: '#9c9792', transmission: 0.8, roughness: 0.055 },
+    { id: 'cam-bronz', name: 'Bronz', color: '#c49562', transmission: 0.72, roughness: 0.06 },
     { id: 'cam-gri', name: 'Gri', color: '#9aa1a6', transmission: 0.5 },
     { id: 'cam-antrasit', name: 'Antrasit', color: '#3e4246', transmission: 0.28 },
     { id: 'cam-mavi', name: 'Mavi', color: '#7f9aaf', transmission: 0.48 },
@@ -521,7 +521,7 @@ function buildSurfaceMaps(url) {
     surfaceMapCache.set(url, null);
     const image = new Image();
     image.onload = () => {
-        const size = 512;
+        const size = 128;
         const canvas = document.createElement('canvas');
         canvas.width = size;
         canvas.height = size;
@@ -529,27 +529,72 @@ function buildSurfaceMaps(url) {
         ctx.drawImage(image, 0, 0, size, size);
         const src = ctx.getImageData(0, 0, size, size).data;
         const rough = new Uint8Array(size * size);
+        const norm = new Uint8Array(size * size * 4);
+        const ao = new Uint8Array(size * size);
+        const height = new Float32Array(size * size);
         const heightAt = (x, y) => {
             const i = ((y * size) + x) * 4;
             return src[i] * 0.25 + src[i + 1] * 0.65 + src[i + 2] * 0.1;
         };
         for (let y = 0; y < size; y += 1) {
+            for (let x = 0; x < size; x += 1) height[(y * size) + x] = heightAt(x, y);
+        }
+        const blur = new Float32Array(size * size);
+        const radius = 2;
+        for (let y = 0; y < size; y += 1) {
             for (let x = 0; x < size; x += 1) {
-                const h = heightAt(x, y);
-                rough[(y * size) + x] = Math.round(Math.min(220, Math.max(160, 190 + (h - 150) * 0.12)));
+                let sum = 0;
+                let count = 0;
+                for (let oy = -radius; oy <= radius; oy += 2) {
+                    for (let ox = -radius; ox <= radius; ox += 2) {
+                        sum += height[(((y + oy + size) % size) * size) + ((x + ox + size) % size)];
+                        count += 1;
+                    }
+                }
+                blur[(y * size) + x] = sum / count;
+            }
+        }
+        for (let y = 0; y < size; y += 1) {
+            for (let x = 0; x < size; x += 1) {
+                const i = (y * size) + x;
+                const fine = height[i] - blur[i];
+                rough[i] = Math.round(Math.min(215, Math.max(165, 188 + fine * 0.08)));
+                const dx = (height[i] - blur[i]) - (height[(y * size) + ((x + size - 1) % size)] - blur[(y * size) + ((x + size - 1) % size)]);
+                const dy = (height[i] - blur[i]) - (height[(((y + size - 1) % size) * size) + x] - blur[(((y + size - 1) % size) * size) + x]);
+                const nx = -dx * 0.035;
+                const ny = -dy * 0.035;
+                const nz = 1;
+                const len = Math.hypot(nx, ny, nz) || 1;
+                const o = i * 4;
+                norm[o] = (nx / len * 0.5 + 0.5) * 255;
+                norm[o + 1] = (ny / len * 0.5 + 0.5) * 255;
+                norm[o + 2] = (nz / len * 0.5 + 0.5) * 255;
+                norm[o + 3] = 255;
+                ao[i] = Math.round(Math.min(255, Math.max(214, 242 + fine * 0.12)));
             }
         }
         const roughness = new THREE.DataTexture(rough, size, size);
         roughness.colorSpace = THREE.NoColorSpace;
         roughness.wrapS = roughness.wrapT = THREE.RepeatWrapping;
         roughness.needsUpdate = true;
-        const pack = { roughness, normal: null };
+        const normal = new THREE.DataTexture(norm, size, size);
+        normal.colorSpace = THREE.NoColorSpace;
+        normal.wrapS = normal.wrapT = THREE.RepeatWrapping;
+        normal.needsUpdate = true;
+        const ambient = new THREE.DataTexture(ao, size, size);
+        ambient.colorSpace = THREE.NoColorSpace;
+        ambient.wrapS = ambient.wrapT = THREE.RepeatWrapping;
+        ambient.needsUpdate = true;
+        const pack = { roughness, normal, ao: ambient };
         surfaceMapCache.set(url, pack);
         matCache.forEach((mat) => {
             if (mat.userData.decorUrl !== url || mat.userData.finish === 'highgloss') return;
             mat.roughnessMap = roughness;
             mat.roughness = mat.userData.finish === 'gloss' ? 0.72 : 1;
-            mat.normalMap = null;
+            mat.normalMap = normal;
+            mat.normalScale = new THREE.Vector2(0.08, 0.08);
+            mat.aoMap = ambient;
+            mat.aoMapIntensity = 0.22;
             mat.needsUpdate = true;
         });
     };
@@ -569,26 +614,38 @@ function material(key, source, opts = {}) {
     const mat = opts.glass
         ? new THREE.MeshPhysicalMaterial({
             color: source,
-            roughness: 0.3,
+            roughness: opts.roughness ?? 0.05,
             metalness: 0,
-            specularIntensity: 0.16,
-            transmission: opts.transmission ?? 1,
+            specularIntensity: 1,
+            transmission: opts.transmission ?? 0.92,
             thickness: 0,
             transparent: false,
             opacity: 1,
             depthWrite: true,
-            ior: 1.5,
+            ior: 1.52,
             attenuationDistance: Infinity,
-            envMapIntensity: 0.12,
+            envMapIntensity: 1,
+            clearcoat: 0.12,
+            clearcoatRoughness: 0.08,
+        })
+        : item && !flat
+        ? new THREE.MeshStandardMaterial({
+            color: '#ffffff',
+            map: textureFor(item.image),
+            roughness: item.finish_hint === 'highgloss' ? 0.22 : item.finish_hint === 'gloss' ? 0.42 : 0.62,
+            metalness: item.finish_hint === 'highgloss' ? 0.04 : 0,
+            specularIntensity: 0.28,
+            envMapIntensity: 0.16,
+            side: THREE.DoubleSide,
         })
         : new THREE.MeshStandardMaterial({
             color: item ? '#ffffff' : source,
-            map: item && !flat ? textureFor(item.image) : null,
-            roughness: flat ? 0.78 : item ? (item.finish_hint === 'highgloss' ? 0.22 : item.finish_hint === 'gloss' ? 0.42 : 0.62) : (opts.metal ? 0.48 : 0.62),
-            metalness: opts.metal ? 0.55 : (item?.finish_hint === 'highgloss' ? 0.04 : 0),
-            specularIntensity: opts.metal ? 0.32 : 0.28,
-            envMapIntensity: opts.metal ? 0.08 : 0.16,
-            side: opts.glass ? THREE.FrontSide : THREE.DoubleSide,
+            map: null,
+            roughness: flat ? 0.78 : (opts.metal ? 0.48 : 0.62),
+            metalness: opts.metal ? 0.55 : 0,
+            specularIntensity: opts.metal ? 0.32 : 0.2,
+            envMapIntensity: opts.metal ? 0.08 : 0.12,
+            side: THREE.DoubleSide,
         });
     if (flat && item.image) {
         mat.userData.flatUrl = item.image;
@@ -602,11 +659,31 @@ function material(key, source, opts = {}) {
         if (pack && item.finish_hint !== 'highgloss') {
             mat.roughnessMap = pack.roughness;
             mat.roughness = item.finish_hint === 'gloss' ? 0.72 : 1;
-            mat.normalMap = null;
+            mat.normalMap = pack.normal;
+            mat.normalScale = new THREE.Vector2(0.08, 0.08);
+            mat.aoMap = pack.ao;
+            mat.aoMapIntensity = 0.22;
         }
     }
     matCache.set(id, mat);
     return mat;
+}
+
+function beveledBoard(parent, w, h, d, x, y, z, mat) {
+    const box = new THREE.Box3(new THREE.Vector3(-w / 2, -h / 2, -d / 2), new THREE.Vector3(w / 2, h / 2, d / 2));
+    const geometry = chamferBoxGeometry(box, Math.min(0.12, d * 0.22, w * 0.04, h * 0.04)) || new THREE.BoxGeometry(w, h, d);
+    assignPanelUv(geometry);
+    ['uv', 'uv2'].forEach((name) => {
+        const uv = geometry.attributes[name];
+        if (!uv) return;
+        for (let i = 0; i < uv.count; i += 1) uv.setXY(i, uv.getX(i) / 100, uv.getY(i) / 100);
+    });
+    const mesh = new THREE.Mesh(geometry, mat);
+    mesh.position.set(x, y, z);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    parent.add(mesh);
+    return mesh;
 }
 
 function panel(parent, w, h, d, x, y, z, mat) {
@@ -633,6 +710,7 @@ function scaleBoxUv(geometry, w, h, d) {
         }
     }
     uv.needsUpdate = true;
+    geometry.setAttribute('uv2', uv.clone());
 }
 
 function assignPanelUv(geometry) {
@@ -659,6 +737,7 @@ function assignPanelUv(geometry) {
         uv.setXY(i, u, v);
     }
     geometry.setAttribute('uv', uv);
+    geometry.setAttribute('uv2', uv.clone());
 }
 
 function carcassOf(mod) {
@@ -951,14 +1030,15 @@ function extractFaces(geometry, predicate) {
 
 function edgeBandMaterial(sourceId) {
     const next = material('edge-band', sourceId).clone();
-    next.roughness = 0.86;
+    next.roughness = 0.5;
     next.roughnessMap = null;
     next.normalMap = null;
-    next.userData.flatDark = 0.9;
+    next.aoMap = null;
+    next.userData.flatDark = 0.96;
     if (next.userData.flatUrl) {
         const known = flatColorCache.get(next.userData.flatUrl);
-        if (known) next.color.copy(known).multiplyScalar(0.9);
-    } else next.color.multiplyScalar(0.9);
+        if (known) next.color.copy(known).multiplyScalar(0.96);
+    } else next.color.multiplyScalar(0.96);
     return next;
 }
 
@@ -985,6 +1065,20 @@ function paintGlb(root, mod) {
         child.receiveShadow = true;
         child.material = next;
         const name = String(child.name || '').toLowerCase();
+        if (role === 'metal' && /askilik|boru|rail/.test(name)) {
+            child.material = alumFrameMaterial(alum);
+        }
+        if (role === 'carcass' && /govde|dikme/.test(name) && child.geometry?.attributes?.normal) {
+            const front = extractFaces(child.geometry, (_nx, _ny, nz) => nz > 0.72);
+            if (front.taken && front.left) {
+                child.geometry = front.left;
+                const lip = new THREE.Mesh(front.taken, edgeBandMaterial(carcassOf(mod)));
+                lip.name = `${child.name}_BANT`;
+                lip.castShadow = true;
+                lip.receiveShadow = true;
+                added.push([child, lip]);
+            }
+        }
         if (role === 'drawer' && /_on_/.test(name) && child.geometry?.attributes?.normal) {
             const cap = extractFaces(child.geometry, (_nx, ny) => Math.abs(ny) > 0.72);
             if (cap.taken && cap.left) {
@@ -1444,16 +1538,12 @@ const alumFrameCache = new Map();
 function alumFrameMaterial(alum) {
     const key = alum?.id || 'al-gumus';
     if (alumFrameCache.has(key)) return alumFrameCache.get(key);
-    const mat = new THREE.MeshPhysicalMaterial({
-        color: alum?.color || '#d7dbe0',
-        metalness: 0.58,
-        roughness: 0.32,
-        anisotropy: 0.7,
-        anisotropyRotation: Math.PI / 2,
-        clearcoat: 0.35,
-        clearcoatRoughness: 0.28,
-        envMapIntensity: 1.35,
-        specularIntensity: 0.85,
+    // MeshPhysical clearcoat/anisotropy paints metal black in three-gpu-pathtracer 0.0.23.
+    const mat = new THREE.MeshStandardMaterial({
+        color: alum?.color || '#c5c9ce',
+        metalness: 0.84,
+        roughness: 0.28,
+        envMapIntensity: 0.72,
     });
     alumFrameCache.set(key, mat);
     return mat;
@@ -1561,10 +1651,6 @@ function addCabinetLeds(parent, w, h, d, mod, shelves) {
             glow.position.set(x, y, z + 0.7);
             parent.add(glow);
         });
-        if (!on) return;
-        const light = new THREE.PointLight(0xffe6c0, 2.2, Math.max(50, w * 0.9), 2);
-        light.position.set(w / 2, (floor + top) / 2, d * 0.48);
-        parent.add(light);
         return;
     }
     const spots = [h - T - 2.2, ...(shelves || [])];
@@ -1578,10 +1664,6 @@ function addCabinetLeds(parent, w, h, d, mod, shelves) {
         const glow = new THREE.Mesh(new THREE.BoxGeometry(width - 1.4, 0.45, Math.max(8, d * 0.55)), strip);
         glow.position.set(w / 2, y - 1.7, d * 0.42);
         parent.add(glow);
-        if (!on) return;
-        const light = new THREE.PointLight(0xffe0a8, 1.6, 55, 2);
-        light.position.set(w / 2, y - 5, d * 0.42);
-        parent.add(light);
     });
 }
 
@@ -1688,14 +1770,22 @@ function fillShoeProps(parent, w, d, shoes, wide) {
     });
 }
 
-function foldPile(parent, x, y, z, width, seed) {
+function foldPile() {
+    return;
+}
+
+function foldPileUnused(parent, x, y, z, width, seed) {
     const depth = Math.min(18, Math.max(10, width * 0.75));
     for (let i = 0; i < 3; i += 1) {
         panel(parent, width, 2.2, depth, x + (i % 2) * 0.4, y + 1.4 + i * 2.4, z, clothMaterial(CLOTH[(seed + i * 2) % CLOTH.length]));
     }
 }
 
-function hangSpan(parent, x0, x1, y, z, keys, maxH) {
+function hangSpan() {
+    return;
+}
+
+function hangSpanUnused(parent, x0, x1, y, z, keys, maxH) {
     const span = Math.max(8, x1 - x0);
     keys.forEach((key, index) => {
         const x = x0 + span * (index + 0.5) / keys.length;
@@ -1712,7 +1802,11 @@ function hangSpan(parent, x0, x1, y, z, keys, maxH) {
     });
 }
 
-function hangPants(parent, w, d, pants) {
+function hangPants() {
+    return;
+}
+
+function hangPantsUnused(parent, w, d, pants) {
     pants.forEach((item, row) => {
         const x0 = T + (w - 2 * T) * item.from;
         const x1 = T + (w - 2 * T) * item.to;
@@ -1850,6 +1944,8 @@ function addDressing(parent, w, h, d, mod, plan) {
 }
 
 async function loadProps() {
+    propTemplates = null;
+    return;
     const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
     const loader = new GLTFLoader();
     const base = String(window.WARDROBE.modelsUrl || '').replace(/\/$/, '');
@@ -1865,10 +1961,29 @@ async function loadProps() {
     await Promise.all(Object.entries(files).map(async ([key, file]) => {
         try {
             const gltf = await loader.loadAsync(`${base}/${file}`);
+            const cloth = key === 'shirt' || key === 'jacket' || key === 'sweater' || key === 'tee';
             gltf.scene.traverse((child) => {
                 if (!child.isMesh) return;
                 child.castShadow = true;
                 child.receiveShadow = true;
+                const src = child.material;
+                if (!src) return;
+                if (cloth) {
+                    child.material = new THREE.MeshPhysicalMaterial({
+                        map: src.map || null,
+                        color: src.color ? src.color.clone() : new THREE.Color('#ffffff'),
+                        roughness: 0.84,
+                        metalness: 0,
+                        sheen: 0.65,
+                        sheenColor: new THREE.Color('#efeae2'),
+                        sheenRoughness: 0.42,
+                        envMapIntensity: 0.18,
+                    });
+                } else if (key === 'heels') {
+                    src.roughness = 0.42;
+                    src.metalness = 0;
+                    src.envMapIntensity = 0.35;
+                }
             });
             loaded[key] = gltf.scene;
         } catch (error) {
@@ -1893,12 +2008,23 @@ function addHingedDoor(parent, x, y, w, h, d, hinge, style, mod, preview) {
         panel(leaf, w, bar, 1.45, 0, -h / 2 + bar / 2, 0.72, frame);
         panel(leaf, bar, h, 1.45, -w / 2 + bar / 2, 0, 0.72, frame);
         panel(leaf, bar, h, 1.45, w / 2 - bar / 2, 0, 0.72, frame);
-        const glassOpts = { glass: true, transmission: glass.transmission, attenuation: glass.attenuation };
+        const glassOpts = { glass: true, transmission: glass.transmission, roughness: glass.roughness, attenuation: glass.attenuation };
         const pane = panel(leaf, Math.max(1, w - bar * 2), Math.max(1, h - bar * 2), 0.6, 0, 0, DOOR_T * 0.55, material(`glass-${glass.id}`, glass.color, glassOpts));
+        if (pane) pane.name = 'CAM';
         if (pane) pane.castShadow = false;
     } else {
-        panel(leaf, w - 0.35, h - 0.35, DOOR_T, 0, 0, DOOR_T / 2, material('door', doorOf(mod)));
+        const board = beveledBoard(leaf, w - 0.35, h - 0.35, DOOR_T, 0, 0, DOOR_T / 2, material('door', doorOf(mod)));
+        if (board) board.name = 'KAPAK';
     }
+    const hingeMat = alumFrameMaterial(aluminumOf(mod));
+    const knuckle = new THREE.CylinderGeometry(0.42, 0.42, 2.4, 12);
+    knuckle.rotateX(Math.PI / 2);
+    [-0.34, 0.34].forEach((t) => {
+        const cup = new THREE.Mesh(knuckle, hingeMat);
+        cup.name = 'MENTESE';
+        cup.position.set(hinge === 'right' ? w / 2 - 1.15 : -w / 2 + 1.15, h * t, -0.15);
+        leaf.add(cup);
+    });
     if (hasKulp(mod)) {
         const handle = new THREE.Mesh(
             new THREE.BoxGeometry(1.15, Math.min(18, h * 0.16), 1.35),
@@ -2280,6 +2406,87 @@ function chamferBoxGeometry(box, bevel) {
     return geometry;
 }
 
+function fitReferenceInterior(root) {
+    const meshes = [];
+    root.traverse((child) => {
+        if (child.isMesh) meshes.push(child);
+    });
+    const bounds = (mesh) => {
+        if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+        return mesh.geometry.boundingBox;
+    };
+    const nameOf = (mesh) => String(mesh.name || '').toLowerCase();
+    const dividers = meshes.filter((mesh) => /dikme/.test(nameOf(mesh)));
+    const drawers = meshes.filter((mesh) => /cekmece/.test(nameOf(mesh)));
+    const shelves = meshes.filter((mesh) => /raf/.test(nameOf(mesh)));
+    const replaceBox = (mesh, box) => {
+        const w = box.max.x - box.min.x;
+        const h = box.max.y - box.min.y;
+        const d = box.max.z - box.min.z;
+        if (w < 0.004 || h < 0.004 || d < 0.004) return;
+        const geometry = new THREE.BoxGeometry(w, h, d);
+        geometry.translate((box.min.x + box.max.x) / 2, (box.min.y + box.max.y) / 2, (box.min.z + box.max.z) / 2);
+        geometry.computeBoundingBox();
+        mesh.geometry = geometry;
+    };
+    dividers.forEach((mesh) => {
+        const box = bounds(mesh).clone();
+        let y0 = box.min.y;
+        let y1 = box.max.y;
+        drawers.forEach((drawer) => {
+            const other = bounds(drawer);
+            const overlapX = other.max.x > box.min.x + 0.004 && other.min.x < box.max.x - 0.004;
+            if (!overlapX || other.max.y <= y0 || other.min.y >= y1) return;
+            y0 = Math.max(y0, other.max.y + 0.002);
+        });
+        shelves.forEach((shelf) => {
+            const other = bounds(shelf);
+            const crosses = other.min.x < box.min.x - 0.01 && other.max.x > box.max.x + 0.01;
+            if (!crosses) return;
+            const mid = (y0 + y1) / 2;
+            if (other.max.y <= mid && other.max.y > y0) y0 = other.max.y;
+            if (other.min.y >= mid && other.min.y < y1) y1 = other.min.y;
+        });
+        if (y1 - y0 < 0.08) return;
+        if (Math.abs(y0 - box.min.y) < 0.001 && Math.abs(y1 - box.max.y) < 0.001) return;
+        box.min.y = y0;
+        box.max.y = y1;
+        replaceBox(mesh, box);
+    });
+    meshes.filter((mesh) => /askilik|boru/.test(nameOf(mesh))).forEach((mesh) => {
+        const box = bounds(mesh);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        let axis = 'x';
+        let length = size.x;
+        if (size.y > length) { axis = 'y'; length = size.y; }
+        if (size.z > length) { axis = 'z'; length = size.z; }
+        let a0 = axis === 'x' ? box.min.x : axis === 'y' ? box.min.y : box.min.z;
+        let a1 = axis === 'x' ? box.max.x : axis === 'y' ? box.max.y : box.max.z;
+        dividers.forEach((divider) => {
+            const other = bounds(divider);
+            const d0 = axis === 'x' ? other.min.x : axis === 'y' ? other.min.y : other.min.z;
+            const d1 = axis === 'x' ? other.max.x : axis === 'y' ? other.max.y : other.max.z;
+            if (d1 <= a0 + 0.002 || d0 >= a1 - 0.002) return;
+            const keepLeft = (d0 - a0) >= (a1 - d1);
+            if (keepLeft) a1 = d0 - 0.012;
+            else a0 = d1 + 0.012;
+        });
+        length = a1 - a0;
+        if (length < 0.12) return;
+        const geometry = new THREE.CylinderGeometry(0.0125, 0.0125, length, 28);
+        if (axis === 'x') geometry.rotateZ(Math.PI / 2);
+        if (axis === 'z') geometry.rotateX(Math.PI / 2);
+        geometry.translate(
+            axis === 'x' ? (a0 + a1) / 2 : center.x,
+            axis === 'y' ? (a0 + a1) / 2 : center.y,
+            axis === 'z' ? (a0 + a1) / 2 : center.z
+        );
+        geometry.computeBoundingBox();
+        mesh.geometry = geometry;
+    });
+}
+
 function bakeGlb(template, mirror, widthMeters) {
     const clone = template.clone(true);
     clone.updateMatrixWorld(true);
@@ -2308,6 +2515,7 @@ function bakeGlb(template, mirror, widthMeters) {
     });
     drop.forEach((child) => child.parent?.remove(child));
     orientGlbToFront(clone);
+    fitReferenceInterior(clone);
     clone.traverse((child) => {
         if (child.isMesh) return;
         child.position.set(0, 0, 0);
@@ -2320,7 +2528,10 @@ function bakeGlb(template, mirror, widthMeters) {
     clone.traverse((child) => {
         if (!child.isMesh) return;
         if (axisBox(child.geometry)) {
-            const beveled = chamferBoxGeometry(child.geometry.boundingBox, 0.0008);
+            const part = String(child.name || '').toLowerCase();
+            if (/askilik|boru/.test(part)) return;
+            const bevel = /raf|cekmece_on|_on_/.test(part) ? 0.0012 : 0.0008;
+            const beveled = chamferBoxGeometry(child.geometry.boundingBox, bevel);
             if (beveled) child.geometry = beveled;
         } else if (!child.geometry.getAttribute('normal')) {
             const flat = child.geometry.index ? child.geometry.toNonIndexed() : child.geometry;
@@ -2349,7 +2560,11 @@ function placeGlb(template, mod) {
     return wrap;
 }
 
-function dressGlb(wrap, model, mod) {
+function dressGlb() {
+    return;
+}
+
+function dressGlbUnused(wrap, model, mod) {
     if (mod?.props === false || !propTemplates) return;
     const shelves = [];
     let rail = null;
@@ -2500,11 +2715,6 @@ function addGlbLeds(wrap, model, mod) {
             glow.position.set(x + inward * 0.011, center.y, center.z + 0.006);
             host.add(glow);
         });
-        if (on) {
-            const light = new THREE.PointLight(0xffe6c0, 1.8, Math.max(0.4, size.x * 0.9), 2);
-            light.position.set(center.x, center.y, center.z);
-            host.add(light);
-        }
     } else {
         const spots = shelves.slice();
         if (!spots.length) {
@@ -2526,10 +2736,6 @@ function addGlbLeds(wrap, model, mod) {
             );
             glow.position.set(shelf.x, y - 0.004, shelf.z + shelf.d * 0.08);
             host.add(glow);
-            if (!on) return;
-            const light = new THREE.PointLight(0xffe0a8, 1.15, 0.55, 2);
-            light.position.set(shelf.x, y - 0.04, shelf.z);
-            host.add(light);
         });
     }
     if (host.children.length) wrap.add(host);
@@ -2602,14 +2808,17 @@ function hollowDrawerBox(group, kutu, mod) {
     bottom.name = 'CEKMECE_TABAN';
     bottom.position.set((x0 + x1) / 2, y0 + bottomT / 2, z0 + backT + (depth - backT) / 2);
     const alum = aluminumOf(mod);
-    const railMat = material(`drawer-rail-${alum.id}`, alum.color, { metal: true });
-    const railGeo = new THREE.BoxGeometry(0.012, 0.008, Math.max(0.08, depth - 0.03));
+    const railMat = alumFrameMaterial(alum);
+    const railH = 0.013;
+    const railT = 0.008;
+    const railGeo = new THREE.BoxGeometry(railT, railH, Math.max(0.08, depth - 0.04));
+    const railY = y0 + railH / 2 + 0.004;
     const railL = new THREE.Mesh(railGeo, railMat);
     railL.name = 'CEKMECE_RAY_SOL';
-    railL.position.set(x0 + sideT + 0.008, y0 + bottomT + 0.004, midZ);
+    railL.position.set(x0 - railT / 2 - 0.001, railY, midZ);
     const railR = new THREE.Mesh(railGeo, railMat);
     railR.name = 'CEKMECE_RAY_SAG';
-    railR.position.set(x1 - sideT - 0.008, y0 + bottomT + 0.004, midZ);
+    railR.position.set(x1 + railT / 2 + 0.001, railY, midZ);
     [left, right, back, bottom, railL, railR].forEach((mesh) => {
         mesh.castShadow = true;
         mesh.receiveShadow = true;
@@ -2681,6 +2890,25 @@ function mountGlbDrawers(model, mod) {
         group.userData.slide = mod;
         group.userData.rest = 0.02;
         group.userData.travel = Math.min(0.42, Math.max(0.28, size.z * 0.72));
+        const kutu = parts.find((mesh) => /kutu/.test(String(mesh.name || '').toLowerCase()));
+        const socket = kutu?.geometry?.boundingBox;
+        if (socket) {
+            const fixedGeo = new THREE.BoxGeometry(0.008, 0.013, Math.max(0.12, (socket.max.z - socket.min.z) * 0.86));
+            const fixedMat = alumFrameMaterial(aluminumOf(mod));
+            const fy = socket.min.y + 0.01;
+            const fz = (socket.min.z + socket.max.z) / 2;
+            const fixedL = new THREE.Mesh(fixedGeo, fixedMat);
+            fixedL.name = 'GOVDE_RAY_SOL';
+            fixedL.position.set(socket.min.x - 0.014, fy, fz);
+            const fixedR = new THREE.Mesh(fixedGeo, fixedMat);
+            fixedR.name = 'GOVDE_RAY_SAG';
+            fixedR.position.set(socket.max.x + 0.014, fy, fz);
+            [fixedL, fixedR].forEach((mesh) => {
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                model.add(mesh);
+            });
+        }
         slides.push(group);
     });
 }
@@ -2820,10 +3048,10 @@ function addCornerLeaf(parent, w, h, style, mod, hinge) {
         panel(parent, w, bar, 1.45, 0, -h / 2 + bar / 2, 0.72, frame);
         panel(parent, bar, h, 1.45, -w / 2 + bar / 2, 0, 0.72, frame);
         panel(parent, bar, h, 1.45, w / 2 - bar / 2, 0, 0.72, frame);
-        const pane = panel(parent, Math.max(1, w - bar * 2), Math.max(1, h - bar * 2), 0.6, 0, 0, DOOR_T * 0.55, material(`glass-${glass.id}`, glass.color, { glass: true, transmission: glass.transmission, attenuation: glass.attenuation }));
+        const pane = panel(parent, Math.max(1, w - bar * 2), Math.max(1, h - bar * 2), 0.6, 0, 0, DOOR_T * 0.55, material(`glass-${glass.id}`, glass.color, { glass: true, transmission: glass.transmission, roughness: glass.roughness, attenuation: glass.attenuation }));
         if (pane) pane.castShadow = false;
     } else {
-        panel(parent, w - 0.35, h - 0.35, DOOR_T, 0, 0, DOOR_T / 2, material('door', doorOf(mod)));
+        beveledBoard(parent, w - 0.35, h - 0.35, DOOR_T, 0, 0, DOOR_T / 2, material('door', doorOf(mod)));
     }
     if (hasKulp(mod)) {
         const handle = new THREE.Mesh(
@@ -3102,8 +3330,39 @@ function frameCamera() {
     setCameraView('perspective');
 }
 
+function focusPart(pattern) {
+    const meshes = [];
+    cabinetRoot?.traverse((obj) => {
+        if (!obj.isMesh) return;
+        const name = String(obj.name || '').toLowerCase();
+        if (!pattern.test(name) || /bant|_alt|led|kulp|ray/.test(name)) return;
+        meshes.push(obj);
+    });
+    if (!meshes.length) return null;
+    meshes.sort((a, b) => a.getWorldPosition(new THREE.Vector3()).y - b.getWorldPosition(new THREE.Vector3()).y);
+    return new THREE.Box3().setFromObject(meshes[Math.floor(meshes.length / 2)]);
+}
+
 function setCameraView(mode) {
     if (!camera || !controls) return;
+    if (mode === 'shelf' || mode === 'drawer' || mode === 'grain' || mode === 'glass') {
+        const part = focusPart(mode === 'shelf' ? /raf/ : mode === 'drawer' ? /cekmece_on|_on_/ : mode === 'glass' ? /^cam$/ : /kapak/);
+        if (part) {
+            const center = part.getCenter(new THREE.Vector3());
+            const size = part.getSize(new THREE.Vector3());
+            const macro = mode === 'grain' || mode === 'glass';
+            camera.fov = macro ? 20 : 28;
+            const dist = macro ? (mode === 'grain' ? 18 : 36) : Math.max(28, Math.max(size.x, size.y) * 3.2);
+            controls.target.copy(center);
+            camera.position.set(center.x + (macro ? 0 : size.x * 0.28), center.y + (macro ? 0 : Math.max(6, size.y)), center.z + dist);
+            camera.near = 0.4;
+            camera.far = 4000;
+            camera.updateProjectionMatrix();
+            controls.update();
+            aimCabinetShadow(center, size);
+            return;
+        }
+    }
     const box = new THREE.Box3();
     if (cabinetRoot && cabinetRoot.children.length) box.setFromObject(cabinetRoot);
     if (box.isEmpty()) box.set(new THREE.Vector3(0, 0, 0), new THREE.Vector3(wallLimit(), roomHeightLimit(), 60));
@@ -3118,13 +3377,13 @@ function setCameraView(mode) {
     let yaw = yawOf[mode] ?? 0.42;
     const openRight = wall - (center.x + size.x * 0.5);
     const openLeft = center.x - size.x * 0.5;
-    if (mode === 'perspective' || mode === 'right45' || mode === 'left45') {
-        const want = mode === 'left45' ? -1 : 1;
-        const room = want > 0 ? openRight : openLeft;
-        yaw = (room > 70 ? want : (openRight >= openLeft ? 1 : -1)) * Math.abs(yaw);
+    if (mode === 'perspective') {
+        const room = openRight;
+        yaw = (room > 70 ? 1 : (openRight >= openLeft ? 1 : -1)) * Math.abs(yaw);
     }
+    const margin = mode === 'left45' || mode === 'right45' ? 6 : 28;
     let x = center.x + Math.sin(yaw) * dist * (mode === 'top' ? 0 : 1);
-    x = Math.min(wall - 28, Math.max(28, x));
+    x = Math.min(wall - margin, Math.max(margin, x));
     const dx = x - center.x;
     const forward = Math.sqrt(Math.max(dist * dist - dx * dx, (size.z + 70) ** 2));
     const y = mode === 'top' ? center.y + dist : Math.min(162, center.y + size.y * 0.02);
@@ -3187,7 +3446,7 @@ function init3d() {
     scene.background = new THREE.Color('#e7e6e3');
     camera = new THREE.PerspectiveCamera(42, 1, 2, 4000);
     renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.98;
@@ -3203,7 +3462,7 @@ function init3d() {
     const key = new THREE.DirectionalLight(0xfffaf6, 0.78);
     key.position.set(200, 280, 360);
     key.castShadow = true;
-    key.shadow.mapSize.set(2048, 2048);
+    key.shadow.mapSize.set(1024, 1024);
     key.shadow.radius = 1.6;
     key.shadow.bias = -0.00018;
     key.shadow.normalBias = 0.12;
@@ -4887,8 +5146,9 @@ async function takeRender() {
         }
         const subjectSize = subject.getSize(new THREE.Vector3());
         const aspect = THREE.MathUtils.clamp(subjectSize.x / Math.max(subjectSize.y, 1), 0.82, 1.7);
-        const capW = aspect >= 1 ? 1920 : Math.round(1440 * aspect);
-        const capH = aspect >= 1 ? Math.round(1920 / aspect) : 1440;
+        const maxEdge = Number(window.__ultraMax) > 400 ? Number(window.__ultraMax) : 1600;
+        const capW = Math.min(maxEdge, aspect >= 1 ? 1600 : Math.round(1280 * aspect));
+        const capH = aspect >= 1 ? Math.round(capW / aspect) : Math.min(maxEdge, 1280);
         renderer.setPixelRatio(1);
         renderer.setSize(capW, capH, false);
         camera.aspect = capW / capH;
@@ -4912,7 +5172,7 @@ async function takeRender() {
         const tracer = new WebGLPathTracer(renderer);
         const tilesX = 2;
         const tilesY = 2;
-        const passes = 80;
+        const passes = Number(window.__ultraPasses) > 4 ? Number(window.__ultraPasses) : 48;
         tracer.tiles.set(tilesX, tilesY);
         tracer.bounces = 6;
         tracer.transmissiveBounces = 8;
@@ -4935,13 +5195,22 @@ async function takeRender() {
         button.textContent = 'Netleştiriliyor';
         await new Promise((resolve) => requestAnimationFrame(resolve));
         const href = denoiseRender(renderer.domElement).toDataURL('image/png');
+        const elapsed = Math.round(performance.now() - started);
+        window.__renderStats = {
+            ms: elapsed,
+            samples: tracer.samples,
+            passes,
+            width: capW,
+            height: capH,
+            heap: performance.memory ? performance.memory.usedJSHeapSize : null,
+        };
         renderer.setPixelRatio(ratio);
         renderer.setSize(size.x, size.y, false);
         const link = document.createElement('a');
         link.href = href;
         link.download = `${state.name || 'dolap'}-render.png`;
         link.click();
-        toast('Render indirildi.');
+        toast(`Render indirildi. ${(elapsed / 1000).toFixed(0)} sn, ${capW}×${capH}, ${passes} geçiş.`);
         try { tracer.dispose(); } catch { /* eski sürüm dispose hatası görüntüyü bozmaz */ }
     } catch (error) {
         console.error(error);

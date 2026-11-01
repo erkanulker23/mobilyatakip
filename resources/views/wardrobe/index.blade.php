@@ -206,6 +206,10 @@
                 <button type="button" data-view="right45">Sağ 45</button>
                 <button type="button" data-view="top">Üst</button>
                 <button type="button" data-view="perspective">Perspektif</button>
+                <button type="button" data-view="shelf">Raf</button>
+                <button type="button" data-view="drawer">Çekmece</button>
+                <button type="button" data-view="grain">Ahşap</button>
+                <button type="button" data-view="glass">Cam</button>
             </div>
             <div id="measure-layer" class="hidden"></div>
             <div id="selection-ui" class="hidden">
@@ -347,6 +351,6 @@
         csrf: @json(csrf_token())
     };
 </script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=160"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=165"></script>
 </body>
 </html>
