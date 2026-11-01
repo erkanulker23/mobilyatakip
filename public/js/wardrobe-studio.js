@@ -19,13 +19,13 @@ const ALUMINUM = [
 ];
 const GLASS = [
     { id: 'cam-seffaf', name: 'Şeffaf', color: '#e7eef2', transmission: 0.86 },
-    { id: 'cam-fum', name: 'Füme', color: '#1c1917', transmission: 0.04, opacity: 0.78 },
+    { id: 'cam-fum', name: 'Füme', color: '#4a4744', transmission: 0.58, opacity: 0.9 },
     { id: 'cam-bronz', name: 'Bronz', color: '#a56b3c', transmission: 0.42 },
     { id: 'cam-gri', name: 'Gri', color: '#9aa1a6', transmission: 0.5 },
     { id: 'cam-antrasit', name: 'Antrasit', color: '#3e4246', transmission: 0.28 },
     { id: 'cam-mavi', name: 'Mavi', color: '#7f9aaf', transmission: 0.48 },
     { id: 'cam-yesil', name: 'Yeşil', color: '#7d947c', transmission: 0.48 },
-    { id: 'cam-siyah', name: 'Siyah', color: '#1a1a1a', transmission: 0.12 },
+    { id: 'cam-siyah', name: 'Siyah', color: '#2a2a2a', transmission: 0.28 },
 ];
 const PLINTH = 8;
 const WALL_X = 520;
