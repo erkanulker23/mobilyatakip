@@ -28,6 +28,14 @@ return Application::configure(basePath: dirname(__DIR__))
                 | Request::HEADER_X_FORWARDED_PROTO
         );
 
+        $middleware->redirectUsersTo(function () {
+            $user = auth()->user();
+            if ($user && $user->isWorkshop() && ! $user->isAdmin()) {
+                return \App\Support\WorkshopUser::homeUrl($user);
+            }
+
+            return route('wardrobe.index');
+        });
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureUserRole::class,
         ]);

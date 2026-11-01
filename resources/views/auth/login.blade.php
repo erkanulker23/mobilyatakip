@@ -33,7 +33,7 @@
         <div class="panel-inner rise rise-4">
             <div class="panel-head">
                 <h2>Üye girişi</h2>
-                <p>Panele erişmek için e-posta ve şifrenizle giriş yapın.</p>
+                <p>Üye alanına girmek için e-posta ve şifrenizle giriş yapın.</p>
             </div>
 
             @if(session('success'))

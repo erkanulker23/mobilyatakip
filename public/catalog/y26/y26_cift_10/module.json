@@ -1,0 +1,140 @@
+{
+  "id": "Y26_CIFT_10",
+  "name": "Ayakkabılık ve askılık kombinasyonu",
+  "width_mm": 900,
+  "height_mm": 2500,
+  "depth_mm": 600,
+  "unit": "mm",
+  "glb_unit": "m",
+  "glb_up_axis": "Y",
+  "glb_front": "-Z",
+  "parts": [
+    {
+      "name": "GOVDE_SOL",
+      "layer": "GOVDE",
+      "x_mm": 0,
+      "y_mm": 0,
+      "z_mm": 0,
+      "width_mm": 18,
+      "height_mm": 2500,
+      "depth_mm": 600
+    },
+    {
+      "name": "GOVDE_SAG",
+      "layer": "GOVDE",
+      "x_mm": 882,
+      "y_mm": 0,
+      "z_mm": 0,
+      "width_mm": 18,
+      "height_mm": 2500,
+      "depth_mm": 600
+    },
+    {
+      "name": "GOVDE_UST",
+      "layer": "GOVDE",
+      "x_mm": 18,
+      "y_mm": 2482,
+      "z_mm": 0,
+      "width_mm": 864,
+      "height_mm": 18,
+      "depth_mm": 600
+    },
+    {
+      "name": "GOVDE_ALT",
+      "layer": "GOVDE",
+      "x_mm": 18,
+      "y_mm": 100,
+      "z_mm": 0,
+      "width_mm": 864,
+      "height_mm": 18,
+      "depth_mm": 600
+    },
+    {
+      "name": "ARKALIK",
+      "layer": "ARKALIK",
+      "x_mm": 18,
+      "y_mm": 118,
+      "z_mm": 592,
+      "width_mm": 864,
+      "height_mm": 2364,
+      "depth_mm": 8
+    },
+    {
+      "name": "BAZA",
+      "layer": "BAZA",
+      "x_mm": 18,
+      "y_mm": 0,
+      "z_mm": 0,
+      "width_mm": 864,
+      "height_mm": 100,
+      "depth_mm": 38
+    },
+    {
+      "name": "IC_DIKME",
+      "layer": "DIKME",
+      "x_mm": 270,
+      "y_mm": 118,
+      "z_mm": 0,
+      "width_mm": 18,
+      "height_mm": 2000,
+      "depth_mm": 588
+    },
+    {
+      "name": "RAF_1",
+      "layer": "RAF",
+      "x_mm": 18,
+      "y_mm": 300,
+      "z_mm": 0,
+      "width_mm": 864,
+      "height_mm": 18,
+      "depth_mm": 588
+    },
+    {
+      "name": "RAF_2",
+      "layer": "RAF",
+      "x_mm": 18,
+      "y_mm": 620,
+      "z_mm": 0,
+      "width_mm": 864,
+      "height_mm": 18,
+      "depth_mm": 588
+    },
+    {
+      "name": "RAF_3",
+      "layer": "RAF",
+      "x_mm": 18,
+      "y_mm": 960,
+      "z_mm": 0,
+      "width_mm": 864,
+      "height_mm": 18,
+      "depth_mm": 588
+    },
+    {
+      "name": "RAF_4",
+      "layer": "RAF",
+      "x_mm": 18,
+      "y_mm": 1330,
+      "z_mm": 0,
+      "width_mm": 864,
+      "height_mm": 18,
+      "depth_mm": 588
+    },
+    {
+      "name": "RAF_5",
+      "layer": "RAF",
+      "x_mm": 18,
+      "y_mm": 2110,
+      "z_mm": 0,
+      "width_mm": 864,
+      "height_mm": 18,
+      "depth_mm": 588
+    },
+    {
+      "name": "ASKILIK_1",
+      "layer": "ASKILIK",
+      "height_mm": 1940
+    }
+  ],
+  "catalog_png_is_concept": true,
+  "production_ready": false
+}

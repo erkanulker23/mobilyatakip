@@ -49,7 +49,7 @@ class AuthController extends Controller
             return redirect(WorkshopUser::homeUrl($user));
         }
 
-        return redirect()->intended(route('dashboard'));
+        return redirect()->intended(route('wardrobe.index'));
     }
 
     public function logout(Request $request)

@@ -48,7 +48,7 @@
         .seg { display: flex; gap: 6px; flex-wrap: wrap; }
         .seg button { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 7px 10px; font-size: 12px; font-weight: 600; }
         .seg button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
-        .workspace { display: grid; grid-template-columns: 280px 1fr 300px; min-height: 0; }
+        .workspace { display: grid; grid-template-columns: 220px minmax(0, 1fr) 248px; min-height: 0; }
         aside { background: var(--panel); min-height: 0; display: flex; flex-direction: column; }
         aside.left { border-right: 1px solid var(--line); }
         aside.right { border-left: 1px solid var(--line); }
@@ -63,6 +63,10 @@
         .card-add { align-self: flex-start; margin-top: 6px; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer; }
         .card:hover { border-color: #c8c2b6; }
         .card img { width: 100%; height: 168px; object-fit: contain; background: #fff; border-radius: 8px; }
+        .card-zoom { position: fixed; z-index: 40; width: min(440px, 48vw); padding: 10px; background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 18px 48px rgba(28, 28, 28, .18); pointer-events: none; }
+        .card-zoom img { display: block; width: 100%; height: min(72vh, 760px); object-fit: contain; background: #f7f5f2; border-radius: 12px; }
+        .card-zoom strong { display: block; margin-top: 8px; font-size: 14px; }
+        .card-zoom span { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
         .catalog-switch { display: flex; gap: 6px; margin: 0 0 8px; }
         .catalog-switch button { flex: 1; border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 7px 6px; font-size: 12px; font-weight: 700; }
         .catalog-switch button.is-on { background: #149152; color: #fff; border-color: #149152; }
@@ -177,7 +181,7 @@
         <button type="button" class="btn" id="btn-share">Paylaş</button>
         <a class="btn extra" href="{{ url('/plan') }}">Oda planı</a>
         <button type="button" class="btn" id="btn-measures">Ölçüler</button>
-        <button type="button" class="btn" id="btn-lights">Işıkları aç</button>
+        <button type="button" class="btn is-on" id="btn-lights">Işıkları kapat</button>
         <button type="button" class="btn" id="btn-shot">Render al</button>
     </header>
     <div class="workspace">
@@ -187,6 +191,11 @@
             <div class="library-search"><input id="module-search" type="search" placeholder="Modül ara" autocomplete="off"></div>
             <div class="side-body" id="library-body"></div>
         </aside>
+        <div id="card-zoom" class="card-zoom hidden" aria-hidden="true">
+            <img alt="">
+            <strong></strong>
+            <span></span>
+        </div>
         <section class="stage">
             <div id="viewport"></div>
             <div id="view-bar">
@@ -338,6 +347,6 @@
         csrf: @json(csrf_token())
     };
 </script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=108"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=159"></script>
 </body>
 </html>

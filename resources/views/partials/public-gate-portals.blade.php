@@ -31,6 +31,13 @@
             <strong>Oda planı</strong>
             <span>Duvar ve odayı 2D/3D çizin</span>
         </a>
+        <a class="portal @if($activePortal === 'muhasebe') is-active @endif" href="{{ route('dashboard') }}">
+            <span class="portal-ico" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+            </span>
+            <strong>Muhasebe</strong>
+            <span>Kasa, satış ve tahsilat paneli</span>
+        </a>
         <a class="portal @if($activePortal === 'uretim') is-active @endif" href="{{ url('/dolap-uretim') }}">
             <span class="portal-ico" aria-hidden="true">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h16v12H4z"/><path d="M8 7V5h8v2M4 12h16"/></svg>

@@ -19,7 +19,7 @@ const ALUMINUM = [
 ];
 const GLASS = [
     { id: 'cam-seffaf', name: 'Şeffaf', color: '#e7eef2', transmission: 0.86 },
-    { id: 'cam-fum', name: 'Füme', color: '#454340', transmission: 0.84 },
+    { id: 'cam-fum', name: 'Füme', color: '#6e6a66', transmission: 0.88 },
     { id: 'cam-bronz', name: 'Bronz', color: '#a56b3c', transmission: 0.42 },
     { id: 'cam-gri', name: 'Gri', color: '#9aa1a6', transmission: 0.5 },
     { id: 'cam-antrasit', name: 'Antrasit', color: '#3e4246', transmission: 0.28 },
@@ -77,6 +77,8 @@ let toastTimer = 0;
 let heightDrag = null;
 
 let renderer;
+let keyLight;
+let cavityLight;
 let scene;
 let camera;
 let controls;
@@ -99,12 +101,11 @@ let pointerPress = null;
 let catalogDrag = null;
 let dropGuide = null;
 let catalogBound = false;
-let catalogMode = 'glb';
 const glbTemplates = new Map();
 const glbFailed = new Set();
 let glbCatalog = [];
 let showMeasures = false;
-let lightsOn = false;
+let lightsOn = true;
 let hideAllDoors = false;
 let addDoor = 'solid';
 let addInteriorKind = 'tek-aski';
@@ -217,7 +218,7 @@ function createModule(productId) {
         interiorId: state.interiorId,
         backId: state.backId || state.interiorId,
         shelfId: state.shelfId || state.interiorId,
-        drawerColorId: solidDoorColor() || state.doorColorId,
+        drawerColorId: state.doorColorId || solidDoorColor(),
         aluminumId: state.aluminumId,
         glassId: state.glassId,
         height: state.height,
@@ -226,6 +227,7 @@ function createModule(productId) {
         upper: 0,
         kulp: state.kulp !== false,
         led: state.led !== false,
+        ledStyle: 'shelf',
     };
 }
 
@@ -459,15 +461,123 @@ function textureFor(url) {
     });
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(2, 2);
+    tex.repeat.set(1, 1);
     tex.anisotropy = 8;
     texCache.set(url, tex);
+    buildSurfaceMaps(url);
     return tex;
+}
+
+const surfaceMapCache = new Map();
+const flatColorCache = new Map();
+
+function loadFlatColor(url) {
+    if (!url || flatColorCache.get(url)) return flatColorCache.get(url);
+    if (flatColorCache.has(url)) return null;
+    flatColorCache.set(url, null);
+    const image = new Image();
+    image.onload = () => {
+        const size = 32;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(image, 0, 0, size, size);
+        const data = ctx.getImageData(0, 0, size, size).data;
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        const count = data.length / 4;
+        for (let i = 0; i < data.length; i += 4) {
+            r += data[i];
+            g += data[i + 1];
+            b += data[i + 2];
+        }
+        const color = new THREE.Color(r / count / 255, g / count / 255, b / count / 255);
+        flatColorCache.set(url, color);
+        const apply = (mat) => {
+            if (!mat?.userData || mat.userData.flatUrl !== url) return;
+            mat.color.copy(color);
+            if (mat.userData.flatDark) mat.color.multiplyScalar(mat.userData.flatDark);
+            mat.map = null;
+            mat.normalMap = null;
+            mat.roughnessMap = null;
+            mat.roughness = mat.userData.flatDark ? 0.86 : 0.78;
+            mat.needsUpdate = true;
+        };
+        matCache.forEach(apply);
+        scene?.traverse((obj) => {
+            if (!obj.isMesh) return;
+            const list = Array.isArray(obj.material) ? obj.material : [obj.material];
+            list.forEach(apply);
+        });
+    };
+    image.src = url;
+    return null;
+}
+
+function buildSurfaceMaps(url) {
+    if (!url || surfaceMapCache.has(url)) return surfaceMapCache.get(url) || null;
+    surfaceMapCache.set(url, null);
+    const image = new Image();
+    image.onload = () => {
+        const size = 512;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(image, 0, 0, size, size);
+        const src = ctx.getImageData(0, 0, size, size).data;
+        const rough = new Uint8Array(size * size);
+        const norm = new Uint8Array(size * size * 4);
+        const heightAt = (x, y) => {
+            const i = ((y * size) + x) * 4;
+            return src[i] * 0.25 + src[i + 1] * 0.65 + src[i + 2] * 0.1;
+        };
+        for (let y = 0; y < size; y += 1) {
+            for (let x = 0; x < size; x += 1) {
+                const h = heightAt(x, y);
+                rough[(y * size) + x] = Math.round(Math.min(230, Math.max(150, 188 + (h - 150) * 0.22)));
+                const dx = heightAt((x + 1) % size, y) - heightAt((x + size - 1) % size, y);
+                const dy = heightAt(x, (y + 1) % size) - heightAt(x, (y + size - 1) % size);
+                const nx = -dx * 0.22;
+                const ny = -dy * 0.22;
+                const nz = 1;
+                const len = Math.hypot(nx, ny, nz) || 1;
+                const o = (y * size + x) * 4;
+                norm[o] = (nx / len * 0.5 + 0.5) * 255;
+                norm[o + 1] = (ny / len * 0.5 + 0.5) * 255;
+                norm[o + 2] = (nz / len * 0.5 + 0.5) * 255;
+                norm[o + 3] = 255;
+            }
+        }
+        const roughness = new THREE.DataTexture(rough, size, size);
+        roughness.colorSpace = THREE.NoColorSpace;
+        roughness.wrapS = roughness.wrapT = THREE.RepeatWrapping;
+        roughness.needsUpdate = true;
+        const normal = new THREE.DataTexture(norm, size, size);
+        normal.colorSpace = THREE.NoColorSpace;
+        normal.wrapS = normal.wrapT = THREE.RepeatWrapping;
+        normal.needsUpdate = true;
+        const pack = { roughness, normal };
+        surfaceMapCache.set(url, pack);
+        matCache.forEach((mat) => {
+            if (mat.userData.decorUrl !== url || mat.userData.finish === 'highgloss') return;
+            mat.roughnessMap = roughness;
+            mat.roughness = mat.userData.finish === 'gloss' ? 0.72 : 1;
+            mat.normalMap = normal;
+            mat.normalScale = new THREE.Vector2(0.22, 0.22);
+            mat.needsUpdate = true;
+        });
+    };
+    image.src = url;
+    return null;
 }
 
 function material(key, source, opts = {}) {
     const plain = opts.metal || opts.glass || (typeof source === 'string' && source.startsWith('#'));
     const item = plain ? null : decor(source);
+    const flat = Boolean(item && isPlainDecor(item));
     const id = `${key}|${item ? item.id : source}|${opts.glass ? 1 : 0}|${opts.metal ? 1 : 0}|${opts.transmission ?? ''}|${opts.attenuation ?? ''}`;
     if (matCache.has(id)) return matCache.get(id);
     // Volume attenuation (thickness > 0) makes three-gpu-pathtracer 0.0.23 return black
@@ -476,8 +586,9 @@ function material(key, source, opts = {}) {
     const mat = opts.glass
         ? new THREE.MeshPhysicalMaterial({
             color: source,
-            roughness: 0.08,
+            roughness: 0.3,
             metalness: 0,
+            specularIntensity: 0.16,
             transmission: opts.transmission ?? 1,
             thickness: 0,
             transparent: false,
@@ -485,25 +596,87 @@ function material(key, source, opts = {}) {
             depthWrite: true,
             ior: 1.5,
             attenuationDistance: Infinity,
+            envMapIntensity: 0.12,
         })
         : new THREE.MeshStandardMaterial({
             color: item ? '#ffffff' : source,
-            map: item ? textureFor(item.image) : null,
-            roughness: item ? finishRoughness(item.finish_hint) : (opts.metal ? 0.35 : 0.62),
-            metalness: opts.metal ? 0.72 : (item?.finish_hint === 'highgloss' ? 0.12 : 0.02),
+            map: item && !flat ? textureFor(item.image) : null,
+            roughness: flat ? 0.78 : item ? (item.finish_hint === 'highgloss' ? 0.22 : item.finish_hint === 'gloss' ? 0.36 : 0.52) : (opts.metal ? 0.48 : 0.55),
+            metalness: opts.metal ? 0.55 : (item?.finish_hint === 'highgloss' ? 0.06 : 0),
+            specularIntensity: opts.metal ? 0.32 : 0.7,
+            envMapIntensity: opts.metal ? 0.08 : 0.3,
+            side: opts.glass ? THREE.FrontSide : THREE.DoubleSide,
         });
+    if (flat && item.image) {
+        mat.userData.flatUrl = item.image;
+        const known = flatColorCache.get(item.image);
+        if (known) mat.color.copy(known);
+        else loadFlatColor(item.image);
+    } else if (item?.image) {
+        mat.userData.decorUrl = item.image;
+        mat.userData.finish = item.finish_hint || 'matte';
+        const pack = surfaceMapCache.get(item.image);
+        if (pack && item.finish_hint !== 'highgloss') {
+            mat.roughnessMap = pack.roughness;
+            mat.roughness = item.finish_hint === 'gloss' ? 0.72 : 1;
+            mat.normalMap = pack.normal;
+            mat.normalScale = new THREE.Vector2(0.22, 0.22);
+        }
+    }
     matCache.set(id, mat);
     return mat;
 }
 
 function panel(parent, w, h, d, x, y, z, mat) {
     if (w <= 0.2 || h <= 0.2 || d <= 0.2) return null;
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    const geometry = new THREE.BoxGeometry(w, h, d);
+    scaleBoxUv(geometry, w, h, d);
+    const mesh = new THREE.Mesh(geometry, mat);
     mesh.position.set(x, y, z);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     parent.add(mesh);
     return mesh;
+}
+
+function scaleBoxUv(geometry, w, h, d) {
+    const uv = geometry.attributes.uv;
+    if (!uv) return;
+    const uScale = [d, d, w, w, w, w];
+    const vScale = [h, h, d, d, h, h];
+    for (let face = 0; face < 6; face += 1) {
+        for (let i = 0; i < 4; i += 1) {
+            const index = face * 4 + i;
+            uv.setXY(index, uv.getX(index) * uScale[face] / 100, uv.getY(index) * vScale[face] / 100);
+        }
+    }
+    uv.needsUpdate = true;
+}
+
+function assignPanelUv(geometry) {
+    const position = geometry.attributes.position;
+    const normal = geometry.attributes.normal;
+    if (!position || !normal) return;
+    const uv = new THREE.BufferAttribute(new Float32Array(position.count * 2), 2);
+    for (let i = 0; i < position.count; i += 1) {
+        const nx = Math.abs(normal.getX(i));
+        const ny = Math.abs(normal.getY(i));
+        const nz = Math.abs(normal.getZ(i));
+        let u;
+        let v;
+        if (nx >= ny && nx >= nz) {
+            u = position.getZ(i);
+            v = position.getY(i);
+        } else if (ny >= nx && ny >= nz) {
+            u = position.getX(i);
+            v = position.getZ(i);
+        } else {
+            u = position.getX(i);
+            v = position.getY(i);
+        }
+        uv.setXY(i, u, v);
+    }
+    geometry.setAttribute('uv', uv);
 }
 
 function carcassOf(mod) {
@@ -740,13 +913,13 @@ function glbDrawerCount(mod) {
 }
 
 function glbAccessoryName(name) {
-    const n = String(name || '').toLocaleLowerCase('tr');
+    const n = String(name || '').toLowerCase();
     if (/askilik|boru|rail/.test(n)) return false;
     return /aski|kiyafet|ayakkabi|valiz|tekstil|canta|bavul/.test(n);
 }
 
 function glbPartRole(name) {
-    const n = String(name || '').toLocaleLowerCase('tr');
+    const n = String(name || '').toLowerCase();
     if (/aski|boru|rail/.test(n)) return 'metal';
     if (/cekmece/.test(n)) return 'drawer';
     if (/raf|shelf/.test(n)) return 'shelf';
@@ -754,8 +927,62 @@ function glbPartRole(name) {
     return 'carcass';
 }
 
+function extractFaces(geometry, predicate) {
+    const pos = geometry.attributes.position;
+    const nor = geometry.attributes.normal;
+    const uv = geometry.attributes.uv;
+    if (!pos || !nor) return { taken: null, left: geometry };
+    const taken = [];
+    const left = [];
+    for (let i = 0; i < pos.count; i += 3) {
+        let nx = 0;
+        let ny = 0;
+        let nz = 0;
+        for (let k = 0; k < 3; k += 1) {
+            nx += nor.getX(i + k);
+            ny += nor.getY(i + k);
+            nz += nor.getZ(i + k);
+        }
+        (predicate(nx / 3, ny / 3, nz / 3) ? taken : left).push(i);
+    }
+    const build = (indices) => {
+        if (!indices.length) return null;
+        const p = [];
+        const n = [];
+        const u = [];
+        indices.forEach((index) => {
+            for (let k = 0; k < 3; k += 1) {
+                p.push(pos.getX(index + k), pos.getY(index + k), pos.getZ(index + k));
+                n.push(nor.getX(index + k), nor.getY(index + k), nor.getZ(index + k));
+                if (uv) u.push(uv.getX(index + k), uv.getY(index + k));
+            }
+        });
+        const next = new THREE.BufferGeometry();
+        next.setAttribute('position', new THREE.Float32BufferAttribute(p, 3));
+        next.setAttribute('normal', new THREE.Float32BufferAttribute(n, 3));
+        if (u.length) next.setAttribute('uv', new THREE.Float32BufferAttribute(u, 2));
+        next.computeBoundingBox();
+        return next;
+    };
+    return { taken: build(taken), left: build(left) };
+}
+
+function edgeBandMaterial(sourceId) {
+    const next = material('edge-band', sourceId).clone();
+    next.roughness = 0.86;
+    next.roughnessMap = null;
+    next.normalMap = null;
+    next.userData.flatDark = 0.9;
+    if (next.userData.flatUrl) {
+        const known = flatColorCache.get(next.userData.flatUrl);
+        if (known) next.color.copy(known).multiplyScalar(0.9);
+    } else next.color.multiplyScalar(0.9);
+    return next;
+}
+
 function paintGlb(root, mod) {
     const drawerId = drawerOf(mod);
+    const added = [];
     root.traverse((child) => {
         if (!child.isMesh) return;
         const role = glbPartRole(child.name);
@@ -771,8 +998,28 @@ function paintGlb(root, mod) {
                         : material('glb-body', carcassOf(mod));
         const next = source.clone();
         next.vertexColors = false;
+        if (role === 'back') next.roughness = Math.min(0.9, (next.roughness || 0.62) + 0.18);
+        child.castShadow = true;
+        child.receiveShadow = true;
         child.material = next;
+        if (role !== 'shelf' || !child.geometry?.attributes?.normal) return;
+        const front = extractFaces(child.geometry, (_nx, _ny, nz) => nz > 0.72);
+        if (!front.taken || !front.left) return;
+        const under = extractFaces(front.left, (_nx, ny) => ny < -0.72);
+        child.geometry = under.left || front.left;
+        const lip = new THREE.Mesh(front.taken, edgeBandMaterial(shelfOf(mod)));
+        lip.name = `${child.name}_BANT`;
+        lip.castShadow = true;
+        lip.receiveShadow = true;
+        added.push([child, lip]);
+        if (!under.taken) return;
+        const sole = new THREE.Mesh(under.taken, edgeBandMaterial(shelfOf(mod)));
+        sole.name = `${child.name}_ALT`;
+        sole.castShadow = true;
+        sole.receiveShadow = true;
+        added.push([child, sole]);
     });
+    added.forEach(([parent, mesh]) => parent.add(mesh));
 }
 
 function moduleDrawerCount(mod) {
@@ -1192,10 +1439,35 @@ function ledMaterial(on) {
     const key = on ? 'led-on' : 'led-dim';
     if (clothCache.has(key)) return clothCache.get(key);
     const mat = on
-        ? new THREE.MeshStandardMaterial({ color: '#fff4d2', emissive: '#ffe2a0', emissiveIntensity: 8, roughness: 0.3 })
-        : new THREE.MeshStandardMaterial({ color: '#ffe7bf', emissive: '#ffd27a', emissiveIntensity: 2.4, roughness: 0.4 });
+        ? new THREE.MeshStandardMaterial({ color: '#fff6df', emissive: '#ffe3a4', emissiveIntensity: 4.2, roughness: 0.32 })
+        : new THREE.MeshStandardMaterial({ color: '#d9d3c8', emissive: '#000000', emissiveIntensity: 0, roughness: 0.55 });
     clothCache.set(key, mat);
     return mat;
+}
+
+const alumFrameCache = new Map();
+
+function alumFrameMaterial(alum) {
+    const key = alum?.id || 'al-gumus';
+    if (alumFrameCache.has(key)) return alumFrameCache.get(key);
+    const mat = new THREE.MeshPhysicalMaterial({
+        color: alum?.color || '#d7dbe0',
+        metalness: 0.58,
+        roughness: 0.32,
+        anisotropy: 0.7,
+        anisotropyRotation: Math.PI / 2,
+        clearcoat: 0.35,
+        clearcoatRoughness: 0.28,
+        envMapIntensity: 1.35,
+        specularIntensity: 0.85,
+    });
+    alumFrameCache.set(key, mat);
+    return mat;
+}
+
+function ledStyleOf(mod) {
+    if (!mod || mod.led === false || mod.kind === 'end') return 'off';
+    return mod.ledStyle === 'side' ? 'side' : 'shelf';
 }
 
 function addGarment(parent, x, railY, z, kind, seed) {
@@ -1275,20 +1547,46 @@ function addBasket(parent, w, d, y) {
 }
 
 function addCabinetLeds(parent, w, h, d, mod, shelves) {
-    if (mod?.led === false || mod.kind === 'end') return;
+    const style = ledStyleOf(mod);
+    if (style === 'off') return;
     const on = lightsOn === true;
-    const mat = ledMaterial(on);
-    const spots = [h - T - 1.6, ...(shelves || []).map((y) => y - 1.8)];
-    const floor = plinthOf(mod) + 6;
-    const width = Math.max(8, w - 2 * T - 6);
+    const strip = ledMaterial(on);
+    const channel = alumFrameMaterial(aluminumOf(mod));
+    const floor = plinthOf(mod) + 4;
+    const top = h - T - 2;
+    if (style === 'side') {
+        const height = Math.max(24, top - floor);
+        const y = floor + height / 2;
+        const z = d * 0.58;
+        [T + 0.7, w - T - 0.7].forEach((x) => {
+            const rail = new THREE.Mesh(new THREE.BoxGeometry(1.2, height, 1.6), channel);
+            rail.position.set(x, y, z);
+            rail.castShadow = true;
+            parent.add(rail);
+            const glow = new THREE.Mesh(new THREE.BoxGeometry(0.28, height - 1.4, 0.28), strip);
+            glow.position.set(x, y, z + 0.7);
+            parent.add(glow);
+        });
+        if (!on) return;
+        const light = new THREE.PointLight(0xffe6c0, 2.2, Math.max(50, w * 0.9), 2);
+        light.position.set(w / 2, (floor + top) / 2, d * 0.48);
+        parent.add(light);
+        return;
+    }
+    const spots = [h - T - 2.2, ...(shelves || [])];
+    const width = Math.max(8, w - 2 * T - 8);
     spots.forEach((y) => {
         if (y < floor || y > h - 1) return;
-        const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, 1.15, 2.2), mat);
-        mesh.position.set(w / 2, y, d - 7);
-        parent.add(mesh);
+        const rail = new THREE.Mesh(new THREE.BoxGeometry(width, 1.15, 1.8), channel);
+        rail.position.set(w / 2, y - 1.15, T + 2.4);
+        rail.castShadow = true;
+        parent.add(rail);
+        const glow = new THREE.Mesh(new THREE.BoxGeometry(width - 1.4, 0.45, Math.max(8, d * 0.55)), strip);
+        glow.position.set(w / 2, y - 1.7, d * 0.42);
+        parent.add(glow);
         if (!on) return;
-        const light = new THREE.PointLight(0xffe0a8, 8, 90, 2);
-        light.position.set(w / 2, y - 4, d * 0.55);
+        const light = new THREE.PointLight(0xffe0a8, 1.6, 55, 2);
+        light.position.set(w / 2, y - 5, d * 0.42);
         parent.add(light);
     });
 }
@@ -1563,6 +1861,7 @@ async function loadProps() {
     const base = String(window.WARDROBE.modelsUrl || '').replace(/\/$/, '');
     const files = {
         shirt: 'gomlek.glb',
+        jacket: 'jacket.glb',
         sweater: 'kazak.glb',
         tee: 't-shirt.glb',
         heels: 'heels.glb',
@@ -1583,6 +1882,7 @@ async function loadProps() {
         }
     }));
     propTemplates = loaded;
+    if (state.modules.some((item) => item.glb)) render();
 }
 
 function addHingedDoor(parent, x, y, w, h, d, hinge, style, mod, preview) {
@@ -1593,23 +1893,24 @@ function addHingedDoor(parent, x, y, w, h, d, hinge, style, mod, preview) {
     if (style === 'glass') {
         const alum = aluminumOf(mod);
         const glass = glassOf(mod);
-        const frame = material(`alum-${alum.id}`, alum.color, { metal: true });
-        const bar = 3.2;
-        panel(leaf, w, bar, DOOR_T, 0, h / 2 - bar / 2, DOOR_T / 2, frame);
-        panel(leaf, w, bar, DOOR_T, 0, -h / 2 + bar / 2, DOOR_T / 2, frame);
-        panel(leaf, bar, h, DOOR_T, -w / 2 + bar / 2, 0, DOOR_T / 2, frame);
-        panel(leaf, bar, h, DOOR_T, w / 2 - bar / 2, 0, DOOR_T / 2, frame);
+        const frame = alumFrameMaterial(alum);
+        const bar = 2.05;
+        panel(leaf, w, bar, 1.45, 0, h / 2 - bar / 2, 0.72, frame);
+        panel(leaf, w, bar, 1.45, 0, -h / 2 + bar / 2, 0.72, frame);
+        panel(leaf, bar, h, 1.45, -w / 2 + bar / 2, 0, 0.72, frame);
+        panel(leaf, bar, h, 1.45, w / 2 - bar / 2, 0, 0.72, frame);
         const glassOpts = { glass: true, transmission: glass.transmission, attenuation: glass.attenuation };
-        panel(leaf, Math.max(1, w - bar * 2), Math.max(1, h - bar * 2), 0.6, 0, 0, DOOR_T * 0.55, material(`glass-${glass.id}`, glass.color, glassOpts));
+        const pane = panel(leaf, Math.max(1, w - bar * 2), Math.max(1, h - bar * 2), 0.6, 0, 0, DOOR_T * 0.55, material(`glass-${glass.id}`, glass.color, glassOpts));
+        if (pane) pane.castShadow = false;
     } else {
         panel(leaf, w - 0.35, h - 0.35, DOOR_T, 0, 0, DOOR_T / 2, material('door', doorOf(mod)));
     }
     if (hasKulp(mod)) {
         const handle = new THREE.Mesh(
-            new THREE.BoxGeometry(1.1, Math.min(14, h * 0.18), 1.3),
-            material(`handle-${aluminumOf(mod).id}`, aluminumOf(mod).color, { metal: true })
+            new THREE.BoxGeometry(1.15, Math.min(18, h * 0.16), 1.35),
+            alumFrameMaterial(aluminumOf(mod))
         );
-        handle.position.set(hinge === 'right' ? -w / 2 + 3.5 : w / 2 - 3.5, 0, DOOR_T + 0.7);
+        handle.position.set(hinge === 'right' ? -w / 2 + 3.2 : w / 2 - 3.2, 0, 1.55);
         leaf.add(handle);
     }
     pivot.add(leaf);
@@ -1667,12 +1968,6 @@ function addUpperCabinet(parent, w, d, mod, preview) {
 }
 
 function addDoors(parent, w, h, d, mod, preview) {
-    if (mod.door === 'glass' && !preview) {
-        // Scene units are centimeters, so a physical 1/r^2 light needs a large candela value.
-        const fill = new THREE.PointLight(0xfff4e8, 48000, Math.max(w, d) * 1.6, 2);
-        fill.position.set(w / 2, h * 0.62, d * 0.42);
-        parent.add(fill);
-    }
     if (mod.door === 'panjur') {
         addTambour(parent, w, h, d, mod, preview);
         return;
@@ -1740,7 +2035,7 @@ let selectionWashMat = null;
 function selectionFrame(mod) {
     if (!selectionEdgeMat) {
         selectionEdgeMat = new THREE.MeshBasicMaterial({ color: 0x149152, depthTest: false, depthWrite: false, transparent: true, opacity: 0.72 });
-        selectionWashMat = new THREE.MeshBasicMaterial({ color: 0x149152, depthTest: false, depthWrite: false, transparent: true, opacity: 0.05 });
+        selectionWashMat = new THREE.MeshBasicMaterial({ color: 0x149152, depthTest: false, depthWrite: false, transparent: true, opacity: 0 });
     }
     const box = footprint(mod);
     if (mod.kind === 'corner') {
@@ -1780,6 +2075,89 @@ function selectionFrame(mod) {
     return group;
 }
 
+function flipWinding(geometry) {
+    const index = geometry.index;
+    if (!index) return;
+    for (let i = 0; i < index.count; i += 3) {
+        const first = index.getX(i);
+        index.setX(i, index.getX(i + 1));
+        index.setX(i + 1, first);
+    }
+    index.needsUpdate = true;
+}
+
+function rewritePositions(root, mutator) {
+    root.traverse((child) => {
+        if (!child.isMesh) return;
+        const position = child.geometry.attributes.position;
+        const normal = child.geometry.attributes.normal;
+        for (let i = 0; i < position.count; i += 1) {
+            const next = mutator(
+                position.getX(i),
+                position.getY(i),
+                position.getZ(i),
+                normal ? normal.getX(i) : 0,
+                normal ? normal.getY(i) : 0,
+                normal ? normal.getZ(i) : 0,
+            );
+            position.setXYZ(i, next.x, next.y, next.z);
+            if (normal) normal.setXYZ(i, next.nx, next.ny, next.nz);
+        }
+        position.needsUpdate = true;
+        if (normal) normal.needsUpdate = true;
+        flipWinding(child.geometry);
+        child.geometry.computeBoundingBox();
+        child.geometry.computeBoundingSphere();
+    });
+}
+
+function geometryBounds(root) {
+    const box = new THREE.Box3();
+    root.traverse((child) => {
+        if (!child.isMesh || !child.geometry.boundingBox) return;
+        box.union(child.geometry.boundingBox);
+    });
+    return box;
+}
+
+function orientGlbToFront(root) {
+    root.traverse((child) => {
+        if (child.isMesh) child.geometry.computeBoundingBox();
+    });
+    let box = geometryBounds(root);
+    const size = box.getSize(new THREE.Vector3());
+    if (size.z > 20 && size.y < size.z * 0.5) {
+        rewritePositions(root, (x, y, z, nx, ny, nz) => ({
+            x: x / 1000,
+            y: z / 1000,
+            z: y / 1000,
+            nx,
+            ny: nz,
+            nz: ny,
+        }));
+        box = geometryBounds(root);
+    }
+    const depth = box.max.z - box.min.z;
+    if (depth < 0.05) return;
+    let backZ = null;
+    root.traverse((child) => {
+        if (!child.isMesh || !/arkalik|back/i.test(String(child.name || ''))) return;
+        const panel = child.geometry.boundingBox;
+        if (!panel || panel.max.z - panel.min.z > depth * 0.2) return;
+        backZ = (panel.min.z + panel.max.z) / 2;
+    });
+    if (backZ == null || backZ < box.min.z + depth * 0.5) return;
+    const limit = box.min.z + box.max.z;
+    rewritePositions(root, (x, y, z, nx, ny, nz) => ({
+        x,
+        y,
+        z: limit - z,
+        nx,
+        ny,
+        nz: -nz,
+    }));
+}
+
 function mirrorModuleX(root, widthMeters) {
     root.traverse((child) => {
         if (!child.isMesh) return;
@@ -1806,6 +2184,107 @@ function mirrorModuleX(root, widthMeters) {
 }
 
 const bakedGlb = new Map();
+
+function aimCabinetShadow(center, size) {
+    if (!keyLight || !center) return;
+    const span = size || new THREE.Vector3(160, 250, 60);
+    keyLight.position.set(center.x + span.x * 0.12, center.y + Math.max(span.y * 0.55, 120), center.z + Math.max(span.z + 160, 200));
+    keyLight.target.position.copy(center);
+    keyLight.target.updateMatrixWorld();
+    const cam = keyLight.shadow.camera;
+    cam.left = -Math.max(span.x, 90) * 0.62 - 36;
+    cam.right = Math.max(span.x, 90) * 0.62 + 36;
+    cam.top = Math.max(span.y, 90) * 0.62 + 24;
+    cam.bottom = -Math.max(span.y, 90) * 0.62 - 24;
+    cam.updateProjectionMatrix();
+    if (!cavityLight) return;
+    cavityLight.position.set(center.x - span.x * 0.2, center.y + span.y * 0.42, center.z + Math.max(span.z + 180, 220));
+    cavityLight.target.position.set(center.x, center.y, center.z - 20);
+    cavityLight.target.updateMatrixWorld();
+}
+
+function axisBox(geometry) {
+    geometry.computeBoundingBox();
+    const box = geometry.boundingBox;
+    if (!box) return false;
+    const position = geometry.attributes.position;
+    const eps = 1e-4;
+    for (let i = 0; i < position.count; i += 1) {
+        const x = position.getX(i);
+        const y = position.getY(i);
+        const z = position.getZ(i);
+        const on = Math.abs(x - box.min.x) < eps || Math.abs(x - box.max.x) < eps
+            || Math.abs(y - box.min.y) < eps || Math.abs(y - box.max.y) < eps
+            || Math.abs(z - box.min.z) < eps || Math.abs(z - box.max.z) < eps;
+        if (!on) return false;
+    }
+    return true;
+}
+
+function chamferBoxGeometry(box, bevel) {
+    const x0 = box.min.x;
+    const x1 = box.max.x;
+    const y0 = box.min.y;
+    const y1 = box.max.y;
+    const z0 = box.min.z;
+    const z1 = box.max.z;
+    const b = Math.min(bevel, (x1 - x0) * 0.2, (y1 - y0) * 0.2, (z1 - z0) * 0.2);
+    if (!(b > 0.00005)) return null;
+    const xi0 = x0 + b;
+    const xi1 = x1 - b;
+    const yi0 = y0 + b;
+    const yi1 = y1 - b;
+    const zi0 = z0 + b;
+    const zi1 = z1 - b;
+    const positions = [];
+    const normals = [];
+    const quad = (a, b2, c, d, n) => {
+        [a, b2, c, a, c, d].forEach((v) => {
+            positions.push(v[0], v[1], v[2]);
+            normals.push(n[0], n[1], n[2]);
+        });
+    };
+    const tri = (a, b2, c, n) => {
+        [a, b2, c].forEach((v) => {
+            positions.push(v[0], v[1], v[2]);
+            normals.push(n[0], n[1], n[2]);
+        });
+    };
+    const norm = (x, y, z) => {
+        const len = Math.hypot(x, y, z) || 1;
+        return [x / len, y / len, z / len];
+    };
+    quad([x1, yi0, zi1], [x1, yi1, zi1], [x1, yi1, zi0], [x1, yi0, zi0], [1, 0, 0]);
+    quad([x0, yi0, zi0], [x0, yi1, zi0], [x0, yi1, zi1], [x0, yi0, zi1], [-1, 0, 0]);
+    quad([xi0, y1, zi1], [xi1, y1, zi1], [xi1, y1, zi0], [xi0, y1, zi0], [0, 1, 0]);
+    quad([xi0, y0, zi0], [xi1, y0, zi0], [xi1, y0, zi1], [xi0, y0, zi1], [0, -1, 0]);
+    quad([xi0, yi0, z1], [xi1, yi0, z1], [xi1, yi1, z1], [xi0, yi1, z1], [0, 0, 1]);
+    quad([xi1, yi0, z0], [xi0, yi0, z0], [xi0, yi1, z0], [xi1, yi1, z0], [0, 0, -1]);
+    quad([xi0, y1, zi1], [xi0, yi1, z1], [xi1, yi1, z1], [xi1, y1, zi1], norm(0, 1, 1));
+    quad([xi1, y1, zi0], [xi1, yi1, z0], [xi0, yi1, z0], [xi0, y1, zi0], norm(0, 1, -1));
+    quad([xi0, y0, zi0], [xi0, yi0, z0], [xi1, yi0, z0], [xi1, y0, zi0], norm(0, -1, -1));
+    quad([xi1, y0, zi1], [xi1, yi0, z1], [xi0, yi0, z1], [xi0, y0, zi1], norm(0, -1, 1));
+    quad([xi1, yi0, z1], [x1, yi0, zi1], [x1, yi1, zi1], [xi1, yi1, z1], norm(1, 0, 1));
+    quad([xi1, yi1, z0], [x1, yi1, zi0], [x1, yi0, zi0], [xi1, yi0, z0], norm(1, 0, -1));
+    quad([xi0, yi1, z1], [x0, yi1, zi1], [x0, yi0, zi1], [xi0, yi0, z1], norm(-1, 0, 1));
+    quad([xi0, yi0, z0], [x0, yi0, zi0], [x0, yi1, zi0], [xi0, yi1, z0], norm(-1, 0, -1));
+    quad([x1, yi1, zi1], [xi1, y1, zi1], [xi1, y1, zi0], [x1, yi1, zi0], norm(1, 1, 0));
+    quad([x0, yi1, zi0], [xi0, y1, zi0], [xi0, y1, zi1], [x0, yi1, zi1], norm(-1, 1, 0));
+    quad([x1, yi0, zi0], [xi1, y0, zi0], [xi1, y0, zi1], [x1, yi0, zi1], norm(1, -1, 0));
+    quad([x0, yi0, zi1], [xi0, y0, zi1], [xi0, y0, zi0], [x0, yi0, zi0], norm(-1, -1, 0));
+    tri([x1, yi1, zi1], [xi1, y1, zi1], [xi1, yi1, z1], norm(1, 1, 1));
+    tri([x1, yi1, zi0], [xi1, yi1, z0], [xi1, y1, zi0], norm(1, 1, -1));
+    tri([x1, yi0, zi1], [xi1, yi0, z1], [xi1, y0, zi1], norm(1, -1, 1));
+    tri([x1, yi0, zi0], [xi1, y0, zi0], [xi1, yi0, z0], norm(1, -1, -1));
+    tri([x0, yi1, zi1], [xi0, yi1, z1], [xi0, y1, zi1], norm(-1, 1, 1));
+    tri([x0, yi1, zi0], [xi0, y1, zi0], [xi0, yi1, z0], norm(-1, 1, -1));
+    tri([x0, yi0, zi1], [xi0, y0, zi1], [xi0, yi0, z1], norm(-1, -1, 1));
+    tri([x0, yi0, zi0], [xi0, yi0, z0], [xi0, y0, zi0], norm(-1, -1, -1));
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+    return geometry;
+}
 
 function bakeGlb(template, mirror, widthMeters) {
     const clone = template.clone(true);
@@ -1834,6 +2313,7 @@ function bakeGlb(template, mirror, widthMeters) {
         if (child.isMesh && glbAccessoryName(child.name)) drop.push(child);
     });
     drop.forEach((child) => child.parent?.remove(child));
+    orientGlbToFront(clone);
     clone.traverse((child) => {
         if (child.isMesh) return;
         child.position.set(0, 0, 0);
@@ -1843,6 +2323,20 @@ function bakeGlb(template, mirror, widthMeters) {
         child.matrixAutoUpdate = true;
     });
     if (mirror) mirrorModuleX(clone, widthMeters);
+    clone.traverse((child) => {
+        if (!child.isMesh) return;
+        if (axisBox(child.geometry)) {
+            const beveled = chamferBoxGeometry(child.geometry.boundingBox, 0.0008);
+            if (beveled) child.geometry = beveled;
+        } else if (!child.geometry.getAttribute('normal')) {
+            const flat = child.geometry.index ? child.geometry.toNonIndexed() : child.geometry;
+            flat.computeVertexNormals();
+            child.geometry = flat;
+        }
+        assignPanelUv(child.geometry);
+        child.geometry.computeBoundingBox();
+        child.geometry.computeBoundingSphere();
+    });
     return clone;
 }
 
@@ -1856,7 +2350,278 @@ function placeGlb(template, mod) {
     paintGlb(model, mod);
     mountGlbDrawers(model, mod);
     wrap.add(model);
+    dressGlb(wrap, model, mod);
+    addGlbLeds(wrap, model, mod);
     return wrap;
+}
+
+function dressGlb(wrap, model, mod) {
+    if (mod?.props === false || !propTemplates) return;
+    const shelves = [];
+    let rail = null;
+    model.updateMatrixWorld(true);
+    model.traverse((child) => {
+        if (!child.isMesh || !child.geometry) return;
+        const name = String(child.name || '').toLowerCase();
+        if (!child.geometry.boundingBox) child.geometry.computeBoundingBox();
+        const bounds = child.geometry.boundingBox;
+        if (!bounds) return;
+        const center = bounds.getCenter(new THREE.Vector3());
+        const size = bounds.getSize(new THREE.Vector3());
+        if (/raf/.test(name) && !/arkalik|bant|_alt/.test(name)) {
+            shelves.push({
+                x: center.x,
+                y: center.y,
+                z: center.z,
+                w: size.x,
+                d: size.z,
+                h: size.y,
+            });
+        }
+        if (/askilik/.test(name)) {
+            rail = {
+                x: center.x,
+                y: center.y,
+                z: center.z,
+                w: Math.max(size.x, size.z),
+            };
+        }
+    });
+    shelves.sort((a, b) => b.y - a.y);
+    const host = new THREE.Group();
+    host.name = 'dolap-aksesuar';
+    if (rail && propTemplates.shirt) {
+        const hanging = [
+            { key: 'shirt', x: rail.x - rail.w * 0.16, maxW: Math.min(0.32, rail.w * 0.78) },
+            { key: 'jacket', x: rail.x + rail.w * 0.16, maxW: Math.min(0.3, rail.w * 0.72) },
+        ];
+        hanging.forEach((item, index) => {
+            if (!propTemplates[item.key]) return;
+            placeModel(host, propTemplates[item.key], {
+                x: item.x,
+                y: rail.y + 0.01,
+                z: rail.z + 0.02,
+                maxW: item.maxW,
+                maxH: 0.95,
+                maxD: 0.24,
+                anchor: 'top',
+                yaw: (index - 0.5) * 0.08,
+            });
+        });
+    }
+    const top = shelves[0];
+    if (top && propTemplates.box) {
+        placeModel(host, propTemplates.box, {
+            x: top.x,
+            y: top.y + top.h / 2 + 0.002,
+            z: top.z,
+            maxW: Math.min(0.32, top.w * 0.62),
+            maxH: 0.16,
+            maxD: Math.min(0.34, top.d * 0.5),
+            anchor: 'bottom',
+        });
+    }
+    const fold = shelves.find((shelf) => !top || shelf.y < top.y - 0.08) || null;
+    if (fold && propTemplates.tee) {
+        for (let i = 0; i < 3; i += 1) {
+            placeModel(host, propTemplates.tee, {
+                x: fold.x - fold.w * 0.12,
+                y: fold.y + fold.h / 2 + 0.002 + i * 0.012,
+                z: fold.z,
+                maxW: Math.min(0.28, fold.w * 0.55),
+                maxH: 0.04,
+                maxD: Math.min(0.26, fold.d * 0.42),
+                anchor: 'bottom',
+                yaw: i * 0.04,
+            });
+        }
+    }
+    if (fold && propTemplates.sweater) {
+        placeModel(host, propTemplates.sweater, {
+            x: fold.x + fold.w * 0.16,
+            y: fold.y + fold.h / 2 + 0.002,
+            z: fold.z,
+            maxW: Math.min(0.18, fold.w * 0.4),
+            maxH: 0.1,
+            maxD: Math.min(0.2, fold.d * 0.35),
+            anchor: 'bottom',
+        });
+    }
+    const shoeShelf = shelves.length ? shelves[shelves.length - 1] : null;
+    if (shoeShelf && shoeShelf !== fold && shoeShelf !== top && propTemplates.heels) {
+        placeModel(host, propTemplates.heels, {
+            x: shoeShelf.x,
+            y: shoeShelf.y + shoeShelf.h / 2 + 0.002,
+            z: shoeShelf.z,
+            maxW: 0.18,
+            maxH: 0.12,
+            maxD: 0.26,
+            anchor: 'bottom',
+            yaw: 0.15,
+        });
+    }
+    if (host.children.length) wrap.add(host);
+}
+
+function addGlbLeds(wrap, model, mod) {
+    const style = ledStyleOf(mod);
+    if (style === 'off') return;
+    const shelves = [];
+    const box = new THREE.Box3();
+    let sized = false;
+    model.updateMatrixWorld(true);
+    model.traverse((child) => {
+        if (!child.isMesh || !child.geometry) return;
+        const name = String(child.name || '').toLowerCase();
+        if (!child.geometry.boundingBox) child.geometry.computeBoundingBox();
+        const bounds = child.geometry.boundingBox;
+        if (!bounds) return;
+        if (/govde|arkalik|baza/.test(name)) {
+            box.union(bounds);
+            sized = true;
+        }
+        if (/raf/.test(name) && !/arkalik|bant|_alt/.test(name)) {
+            const center = bounds.getCenter(new THREE.Vector3());
+            const size = bounds.getSize(new THREE.Vector3());
+            shelves.push({ x: center.x, y: center.y, z: center.z, w: size.x, d: size.z, h: size.y });
+        }
+    });
+    if (!sized) return;
+    const host = new THREE.Group();
+    host.name = 'dolap-led';
+    const on = lightsOn === true;
+    const strip = ledMaterial(on);
+    const channel = alumFrameMaterial(aluminumOf(mod));
+    if (style === 'side') {
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        const height = Math.max(0.45, size.y - 0.16);
+        [box.min.x + 0.028, box.max.x - 0.028].forEach((x) => {
+            const inward = x < center.x ? 1 : -1;
+            const rail = new THREE.Mesh(new THREE.BoxGeometry(0.012, height, 0.016), channel);
+            rail.position.set(x, center.y, center.z);
+            rail.castShadow = true;
+            host.add(rail);
+            const glow = new THREE.Mesh(new THREE.BoxGeometry(0.007, height - 0.04, 0.008), strip);
+            glow.position.set(x + inward * 0.011, center.y, center.z + 0.006);
+            host.add(glow);
+        });
+        if (on) {
+            const light = new THREE.PointLight(0xffe6c0, 1.8, Math.max(0.4, size.x * 0.9), 2);
+            light.position.set(center.x, center.y, center.z);
+            host.add(light);
+        }
+    } else {
+        const spots = shelves.slice();
+        if (!spots.length) {
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            spots.push({ x: center.x, y: box.max.y - 0.02, z: center.z, w: size.x - 0.06, d: size.z, h: 0.018 });
+        }
+        spots.forEach((shelf) => {
+            const width = Math.max(0.08, shelf.w - 0.03);
+            const y = shelf.y - shelf.h / 2 - 0.007;
+            const z = shelf.z - shelf.d / 2 + 0.018;
+            const rail = new THREE.Mesh(new THREE.BoxGeometry(width, 0.012, 0.018), channel);
+            rail.position.set(shelf.x, y, z);
+            rail.castShadow = true;
+            host.add(rail);
+            const glow = new THREE.Mesh(
+                new THREE.BoxGeometry(Math.max(0.04, width - 0.012), 0.006, Math.max(0.05, shelf.d * 0.62)),
+                strip
+            );
+            glow.position.set(shelf.x, y - 0.004, shelf.z + shelf.d * 0.08);
+            host.add(glow);
+            if (!on) return;
+            const light = new THREE.PointLight(0xffe0a8, 1.15, 0.55, 2);
+            light.position.set(shelf.x, y - 0.04, shelf.z);
+            host.add(light);
+        });
+    }
+    if (host.children.length) wrap.add(host);
+}
+
+function shiftGeometryY(mesh, dy) {
+    const geometry = mesh.geometry.clone();
+    const position = geometry.attributes.position;
+    for (let i = 0; i < position.count; i += 1) position.setY(i, position.getY(i) + dy);
+    position.needsUpdate = true;
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    mesh.geometry = geometry;
+}
+
+function separateDrawerFronts(meshes) {
+    const fronts = meshes.filter((mesh) => /_on_/.test(String(mesh.name || '').toLocaleLowerCase('tr')));
+    const gap = 0.003;
+    for (let pass = 0; pass < fronts.length; pass += 1) {
+        const ordered = fronts.map((mesh) => {
+            if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+            return mesh;
+        }).sort((a, b) => a.geometry.boundingBox.min.y - b.geometry.boundingBox.min.y);
+        let moved = false;
+        for (let i = 0; i < ordered.length - 1; i += 1) {
+            const lower = ordered[i].geometry.boundingBox;
+            const upper = ordered[i + 1].geometry.boundingBox;
+            const space = upper.min.y - lower.max.y;
+            if (space >= gap) continue;
+            const need = (gap - space) / 2;
+            shiftGeometryY(ordered[i], -need);
+            shiftGeometryY(ordered[i + 1], need);
+            moved = true;
+        }
+        if (!moved) break;
+    }
+}
+
+function hollowDrawerBox(group, kutu, mod) {
+    if (!kutu.geometry.boundingBox) kutu.geometry.computeBoundingBox();
+    const box = kutu.geometry.boundingBox;
+    const x0 = box.min.x;
+    const x1 = box.max.x;
+    const y0 = box.min.y;
+    const y1 = box.max.y;
+    const z0 = box.min.z;
+    const z1 = box.max.z;
+    const sideT = 0.016;
+    const backT = 0.016;
+    const bottomT = 0.008;
+    const height = y1 - y0;
+    const depth = z1 - z0;
+    const innerW = Math.max(0.04, (x1 - x0) - sideT * 2);
+    const shell = material('drawer-box', carcassOf(mod)).clone();
+    shell.roughness = Math.max(0.72, shell.roughness || 0.72);
+    shell.metalness = 0;
+    const midY = (y0 + y1) / 2;
+    const midZ = (z0 + z1) / 2;
+    const sideGeo = new THREE.BoxGeometry(sideT, height, depth);
+    const left = new THREE.Mesh(sideGeo, shell);
+    left.name = 'CEKMECE_YAN_SOL';
+    left.position.set(x0 + sideT / 2, midY, midZ);
+    const right = new THREE.Mesh(sideGeo, shell);
+    right.name = 'CEKMECE_YAN_SAG';
+    right.position.set(x1 - sideT / 2, midY, midZ);
+    const back = new THREE.Mesh(new THREE.BoxGeometry(innerW, Math.max(0.03, height - bottomT), backT), shell);
+    back.name = 'CEKMECE_ARKA';
+    back.position.set((x0 + x1) / 2, y0 + bottomT + (height - bottomT) / 2, z0 + backT / 2);
+    const bottom = new THREE.Mesh(new THREE.BoxGeometry(innerW, bottomT, Math.max(0.04, depth - backT)), shell);
+    bottom.name = 'CEKMECE_TABAN';
+    bottom.position.set((x0 + x1) / 2, y0 + bottomT / 2, z0 + backT + (depth - backT) / 2);
+    const alum = aluminumOf(mod);
+    const railMat = material(`drawer-rail-${alum.id}`, alum.color, { metal: true });
+    const railGeo = new THREE.BoxGeometry(0.012, 0.008, Math.max(0.08, depth - 0.03));
+    const railL = new THREE.Mesh(railGeo, railMat);
+    railL.name = 'CEKMECE_RAY_SOL';
+    railL.position.set(x0 + sideT + 0.008, y0 + bottomT + 0.004, midZ);
+    const railR = new THREE.Mesh(railGeo, railMat);
+    railR.name = 'CEKMECE_RAY_SAG';
+    railR.position.set(x1 - sideT - 0.008, y0 + bottomT + 0.004, midZ);
+    [left, right, back, bottom, railL, railR].forEach((mesh) => {
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        group.add(mesh);
+    });
+    kutu.removeFromParent();
 }
 
 function mountGlbDrawers(model, mod) {
@@ -1864,6 +2629,7 @@ function mountGlbDrawers(model, mod) {
     model.traverse((child) => {
         if (child.isMesh && /cekmece/.test(String(child.name || '').toLocaleLowerCase('tr'))) meshes.push(child);
     });
+    separateDrawerFronts(meshes);
     const groups = new Map();
     meshes.forEach((mesh) => {
         const match = String(mesh.name || '').match(/_(\d+)$/);
@@ -1874,7 +2640,9 @@ function mountGlbDrawers(model, mod) {
     });
     groups.forEach((parts) => {
         const named = (pattern) => parts.some((mesh) => pattern.test(String(mesh.name || '').toLocaleLowerCase('tr')));
-        if (!named(/_on_/) || !named(/taban/) || !named(/arka/)) return;
+        const legacy = named(/_on_/) && named(/taban/) && named(/arka/);
+        const boxed = named(/_on_/) && named(/kutu/);
+        if (!legacy && !boxed) return;
         const group = new THREE.Group();
         group.name = 'drawer-slide';
         model.add(group);
@@ -1886,7 +2654,11 @@ function mountGlbDrawers(model, mod) {
         });
         const size = box.getSize(new THREE.Vector3());
         const center = box.getCenter(new THREE.Vector3());
-        if (size.x > 0.04 && size.y > 0.04 && size.z > 0.05) {
+        if (boxed) {
+            const kutu = parts.find((mesh) => /kutu/.test(String(mesh.name || '').toLocaleLowerCase('tr')));
+            if (kutu) hollowDrawerBox(group, kutu, mod);
+        }
+        if (legacy && size.x > 0.04 && size.y > 0.04 && size.z > 0.05) {
             const sideT = 0.012;
             const sideH = Math.max(0.04, size.y - 0.006);
             const sideD = Math.max(0.05, size.z - 0.012);
@@ -1900,8 +2672,21 @@ function mountGlbDrawers(model, mod) {
             right.position.set(box.max.x - sideT / 2, center.y, center.z);
             group.add(left, right);
         }
+        const front = parts.find((mesh) => /_on_/.test(String(mesh.name || '').toLowerCase()));
+        if (front?.geometry.boundingBox) {
+            const face = front.geometry.boundingBox;
+            const pull = new THREE.Mesh(
+                new THREE.BoxGeometry(Math.min(0.14, (face.max.x - face.min.x) * 0.42), 0.012, 0.016),
+                alumFrameMaterial(aluminumOf(mod))
+            );
+            pull.name = 'CEKMECE_KULP';
+            pull.castShadow = true;
+            pull.position.set((face.min.x + face.max.x) / 2, (face.min.y + face.max.y) / 2, face.max.z + 0.01);
+            group.add(pull);
+        }
         group.userData.slide = mod;
-        group.userData.travel = Math.min(0.26, Math.max(0.1, size.z * 0.62));
+        group.userData.rest = 0.02;
+        group.userData.travel = Math.min(0.42, Math.max(0.28, size.z * 0.72));
         slides.push(group);
     });
 }
@@ -2035,22 +2820,23 @@ function addCornerLeaf(parent, w, h, style, mod, hinge) {
     if (style === 'glass') {
         const alum = aluminumOf(mod);
         const glass = glassOf(mod);
-        const frame = material(`alum-${alum.id}`, alum.color, { metal: true });
-        const bar = 3.2;
-        panel(parent, w, bar, DOOR_T, 0, h / 2 - bar / 2, DOOR_T / 2, frame);
-        panel(parent, w, bar, DOOR_T, 0, -h / 2 + bar / 2, DOOR_T / 2, frame);
-        panel(parent, bar, h, DOOR_T, -w / 2 + bar / 2, 0, DOOR_T / 2, frame);
-        panel(parent, bar, h, DOOR_T, w / 2 - bar / 2, 0, DOOR_T / 2, frame);
-        panel(parent, Math.max(1, w - bar * 2), Math.max(1, h - bar * 2), 0.6, 0, 0, DOOR_T * 0.55, material(`glass-${glass.id}`, glass.color, { glass: true, transmission: glass.transmission, attenuation: glass.attenuation }));
+        const frame = alumFrameMaterial(alum);
+        const bar = 2.05;
+        panel(parent, w, bar, 1.45, 0, h / 2 - bar / 2, 0.72, frame);
+        panel(parent, w, bar, 1.45, 0, -h / 2 + bar / 2, 0.72, frame);
+        panel(parent, bar, h, 1.45, -w / 2 + bar / 2, 0, 0.72, frame);
+        panel(parent, bar, h, 1.45, w / 2 - bar / 2, 0, 0.72, frame);
+        const pane = panel(parent, Math.max(1, w - bar * 2), Math.max(1, h - bar * 2), 0.6, 0, 0, DOOR_T * 0.55, material(`glass-${glass.id}`, glass.color, { glass: true, transmission: glass.transmission, attenuation: glass.attenuation }));
+        if (pane) pane.castShadow = false;
     } else {
         panel(parent, w - 0.35, h - 0.35, DOOR_T, 0, 0, DOOR_T / 2, material('door', doorOf(mod)));
     }
     if (hasKulp(mod)) {
         const handle = new THREE.Mesh(
-            new THREE.BoxGeometry(1.1, Math.min(14, h * 0.18), 1.3),
-            material(`handle-${aluminumOf(mod).id}`, aluminumOf(mod).color, { metal: true })
+            new THREE.BoxGeometry(1.15, Math.min(18, h * 0.16), 1.35),
+            alumFrameMaterial(aluminumOf(mod))
         );
-        handle.position.set(hinge === 'right' ? -w / 2 + 3.5 : w / 2 - 3.5, 0, DOOR_T + 0.7);
+        handle.position.set(hinge === 'right' ? -w / 2 + 3.2 : w / 2 - 3.2, 0, 1.55);
         parent.add(handle);
     }
 }
@@ -2073,7 +2859,11 @@ function buildModule(mod, preview) {
                 missing.position.set(box.w / 2, box.h / 2, box.d / 2);
                 group.add(missing);
             } else {
-                group.add(placeGlb(template, mod));
+                try {
+                    group.add(placeGlb(template, mod));
+                } catch (error) {
+                    console.error(error);
+                }
                 const box = footprint(mod);
                 if (mod.door && mod.door !== 'none' && (preview || !doorsAreHidden(mod))) {
                     addDoors(group, box.w, box.h, box.d, mod, preview);
@@ -2243,7 +3033,7 @@ function doorAngle(pivot) {
         : pivot.userData.kind === 'corner-door'
             ? (pivot.userData.sign || 1)
             : (pivot.userData.hinge === 'left' ? -1 : 1);
-    return sign * open * (pivot.userData.kind === 'accordion' ? 1.25 : 1.15);
+    return sign * open * (pivot.userData.kind === 'accordion' ? 1.25 : 1.45);
 }
 
 function snapDoors() {
@@ -2257,7 +3047,7 @@ function snapDoors() {
     });
     slides.forEach((group) => {
         const open = group.userData.slide?.drawersOpen > 0.5 ? 1 : 0;
-        const amount = open * (group.userData.travel || 28);
+        const amount = (group.userData.rest || 0) + open * (group.userData.travel || 28);
         if (group.userData.axis === 'x') group.position.x = amount;
         else group.position.z = amount;
     });
@@ -2274,7 +3064,7 @@ function paintDoors(dt) {
     });
     slides.forEach((group) => {
         const open = group.userData.slide?.drawersOpen > 0.5 ? 1 : 0;
-        const amount = open * (group.userData.travel || 28);
+        const amount = (group.userData.rest || 0) + open * (group.userData.travel || 28);
         if (group.userData.axis === 'x') group.position.x = THREE.MathUtils.damp(group.position.x, amount, 8, dt);
         else group.position.z = THREE.MathUtils.damp(group.position.z, amount, 8, dt);
     });
@@ -2325,25 +3115,35 @@ function setCameraView(mode) {
     if (box.isEmpty()) box.set(new THREE.Vector3(0, 0, 0), new THREE.Vector3(wallLimit(), roomHeightLimit(), 60));
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
-    const radius = Math.max(size.x, size.y, size.z, 90);
-    const dist = radius * 1.45;
-    const eyes = {
-        front: new THREE.Vector3(center.x, center.y + size.y * 0.02, center.z + dist),
-        left: new THREE.Vector3(center.x - dist, center.y, center.z),
-        right: new THREE.Vector3(center.x + dist, center.y, center.z),
-        left45: new THREE.Vector3(center.x - dist * 0.72, center.y + dist * 0.18, center.z + dist * 0.72),
-        right45: new THREE.Vector3(center.x + dist * 0.72, center.y + dist * 0.18, center.z + dist * 0.72),
-        top: new THREE.Vector3(center.x, center.y + dist, center.z + 0.2),
-        perspective: new THREE.Vector3(center.x + dist * 0.42, center.y + dist * 0.34, center.z + dist * 0.9),
-    };
+    const wall = wallLimit();
+    const fov = mode === 'top' ? 42 : 30;
+    camera.fov = fov;
+    const half = (fov * Math.PI) / 360;
+    const dist = Math.max(size.y, size.x, 80) * 0.62 / Math.tan(half);
+    const yawOf = { front: 0, left: -0.55, right: 0.55, left45: -0.5, right45: 0.5, perspective: 0.42, top: 0 };
+    let yaw = yawOf[mode] ?? 0.42;
+    const openRight = wall - (center.x + size.x * 0.5);
+    const openLeft = center.x - size.x * 0.5;
+    if (mode === 'perspective' || mode === 'right45' || mode === 'left45') {
+        const want = mode === 'left45' ? -1 : 1;
+        const room = want > 0 ? openRight : openLeft;
+        yaw = (room > 70 ? want : (openRight >= openLeft ? 1 : -1)) * Math.abs(yaw);
+    }
+    let x = center.x + Math.sin(yaw) * dist * (mode === 'top' ? 0 : 1);
+    x = Math.min(wall - 28, Math.max(28, x));
+    const dx = x - center.x;
+    const forward = Math.sqrt(Math.max(dist * dist - dx * dx, (size.z + 70) ** 2));
+    const y = mode === 'top' ? center.y + dist : Math.min(162, center.y + size.y * 0.02);
+    const z = mode === 'top' ? center.z + 1 : center.z + forward;
     controls.minPolarAngle = mode === 'top' ? 0 : 0.08;
     controls.maxPolarAngle = mode === 'top' ? Math.PI : Math.PI / 2 - 0.02;
     controls.target.copy(center);
-    camera.position.copy(eyes[mode] || eyes.perspective);
+    camera.position.set(x, y, z);
     camera.near = 1;
     camera.far = Math.max(4000, dist * 8);
     camera.updateProjectionMatrix();
     controls.update();
+    aimCabinetShadow(center, size);
 }
 
 function tick() {
@@ -2390,36 +3190,50 @@ function resize() {
 function init3d() {
     const viewport = el('viewport');
     scene = new THREE.Scene();
-    scene.background = new THREE.Color('#e6e4e0');
-    camera = new THREE.PerspectiveCamera(48, 1, 2, 4000);
+    scene.background = new THREE.Color('#e6e1d8');
+    camera = new THREE.PerspectiveCamera(42, 1, 2, 4000);
     renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.08;
+    renderer.toneMappingExposure = 0.98;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     viewport.appendChild(renderer.domElement);
 
     const pmrem = new THREE.PMREMGenerator(renderer);
-    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    scene.environmentIntensity = 0.7;
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.18).texture;
+    scene.environmentIntensity = 0.22;
 
-    scene.add(new THREE.HemisphereLight(0xfff8f0, 0xb7b2aa, 0.45));
-    const key = new THREE.DirectionalLight(0xfff7ee, 1.25);
-    key.position.set(180, 340, 220);
+    scene.add(new THREE.HemisphereLight(0xfff7f0, 0xe4d5c4, 0.95));
+    const key = new THREE.DirectionalLight(0xfff4ea, 0.5);
+    key.position.set(200, 280, 360);
     key.castShadow = true;
     key.shadow.mapSize.set(2048, 2048);
-    key.shadow.camera.near = 20;
+    key.shadow.radius = 5;
+    key.shadow.bias = -0.00012;
+    key.shadow.normalBias = 0.35;
+    key.shadow.camera.near = 10;
     key.shadow.camera.far = 900;
-    key.shadow.camera.left = -400;
-    key.shadow.camera.right = 400;
-    key.shadow.camera.top = 400;
-    key.shadow.camera.bottom = -400;
+    key.shadow.camera.left = -160;
+    key.shadow.camera.right = 160;
+    key.shadow.camera.top = 160;
+    key.shadow.camera.bottom = -160;
     scene.add(key);
-    const fill = new THREE.DirectionalLight(0xe7eef8, 0.35);
-    fill.position.set(-120, 160, 80);
+    scene.add(key.target);
+    key.shadow.intensity = 0.58;
+    keyLight = key;
+    const cavity = new THREE.DirectionalLight(0xfff7ef, 0.38);
+    cavity.position.set(180, 150, 420);
+    scene.add(cavity);
+    scene.add(cavity.target);
+    cavityLight = cavity;
+    const fill = new THREE.DirectionalLight(0xfff8f2, 0.55);
+    fill.position.set(40, 150, 280);
     scene.add(fill);
+    const bounce = new THREE.DirectionalLight(0xf3ebe3, 0.28);
+    bounce.position.set(-160, 80, 60);
+    scene.add(bounce);
 
     const floor = new THREE.Mesh(
         new THREE.BoxGeometry(WALL_X + 160, 2, WALL_Z + 160),
@@ -2652,39 +3466,18 @@ function renderLibrary() {
     const host = el('library-body');
     const query = foldText(el('module-search')?.value || '');
     const matches = (item) => !query || foldText(`${item.name} ${item.spec} ${item.width} ${item.category || ''}`).includes(query);
-    const switcher = `<div class="catalog-switch"><button type="button" id="catalog-glb" class="${catalogMode === 'glb' ? 'is-on' : ''}">Yeni katalog</button><button type="button" id="catalog-cad" class="${catalogMode === 'cad' ? 'is-on' : ''}">Eski modüller</button></div>`;
-    let body = '';
-    if (catalogMode === 'glb') {
-        const labels = { tek: 'Tek Kapılı', cift: 'Çift Kapılı', kose: 'Köşe' };
-        body = ['tek', 'cift', 'kose'].map((key) => {
-            const cards = glbCatalog.filter((item) => item.category === key && matches(item)).map((item) => `
-                <div class="card${glbFailed.has(item.id) ? ' is-broken' : ''}" data-glb="${item.id}">
-                    <img src="${item.previewPath}" alt="">
-                    <strong>${item.name}</strong>
-                    <span>${Math.round(item.width * 100)} × ${Math.round(item.height * 100)} × ${Math.round(item.depth * 100)} cm</span>
-                    <button type="button" class="card-add">Ekle</button>
-                </div>`).join('');
-            return cards ? `<p class="catalog-kicker">${labels[key]}</p><div class="catalog">${cards}</div>` : '';
-        }).join('');
-    } else {
-        const cards = cadModules.length
-            ? cadModules.filter(matches).map((item) => `
-                <button type="button" class="card" data-cad="${item.id}">
-                    <img src="/images/wardrobe/modules/${item.photo}" alt="">
-                    <strong>${item.name}</strong>
-                    <span>${item.spec} · ${item.width} cm</span>
-                </button>`).join('')
-            : PRODUCTS.filter((item) => item.photo && matches(item)).map((item) => `
-                <button type="button" class="card" data-product="${item.id}">
-                    <img src="${catalogPhoto(item.photo)}" alt="">
-                    <strong>${item.name}</strong>
-                    <span>${item.spec} · ${item.width} cm</span>
-                </button>`).join('');
-        body = cards ? `<div class="catalog">${cards}</div>` : '';
-    }
-    host.innerHTML = `${switcher}${body ? `<p class="hint">Modülü sahneye sürükle. Basınca da eklenir.</p>${body}` : '<p class="hint">Eşleşen modül yok.</p>'}`;
-    host.querySelector('#catalog-glb').onclick = () => { catalogMode = 'glb'; renderLibrary(); };
-    host.querySelector('#catalog-cad').onclick = () => { catalogMode = 'cad'; renderLibrary(); };
+    const labels = { 'y26-tek': 'Yeni tek kapılı', 'y26-cift': 'Yeni çift kapılı', tek: 'Tek Kapılı', cift: 'Çift Kapılı', kose: 'Köşe' };
+    const body = ['y26-tek', 'y26-cift', 'tek', 'cift', 'kose'].map((key) => {
+        const cards = glbCatalog.filter((item) => item.category === key && matches(item)).map((item) => `
+            <div class="card${glbFailed.has(item.id) ? ' is-broken' : ''}" data-glb="${item.id}">
+                <img src="${item.previewPath}" alt="">
+                <strong>${item.name}</strong>
+                <span>${String(item.spec || '').startsWith('Y26') ? `${item.spec} · ` : ''}${Math.round(item.width * 100)} × ${Math.round(item.height * 100)} × ${Math.round(item.depth * 100)} cm</span>
+                <button type="button" class="card-add">Ekle</button>
+            </div>`).join('');
+        return cards ? `<p class="catalog-kicker">${labels[key]}</p><div class="catalog">${cards}</div>` : '';
+    }).join('');
+    host.innerHTML = body ? `<p class="hint">Modülü sahneye sürükle. Basınca da eklenir.</p>${body}` : '<p class="hint">Eşleşen modül yok.</p>';
     const bindCard = (button, kind, id) => {
         button.addEventListener('pointerdown', (event) => {
             if (event.button !== 0 || event.target.closest('.card-add')) return;
@@ -2723,6 +3516,48 @@ function renderLibrary() {
     host.querySelectorAll('[data-cad]').forEach((button) => bindCard(button, 'cad', button.dataset.cad));
     host.querySelectorAll('[data-product]').forEach((button) => bindCard(button, 'product', button.dataset.product));
     ensureCatalogDrag();
+    bindCardZoom();
+}
+
+function bindCardZoom() {
+    const host = el('library-body');
+    const zoom = el('card-zoom');
+    if (!host || !zoom || host.dataset.zoom === '1') return;
+    host.dataset.zoom = '1';
+    const hide = () => zoom.classList.add('hidden');
+    const show = (card) => {
+        const source = card.querySelector('img');
+        if (!source?.src) return;
+        const image = zoom.querySelector('img');
+        image.src = source.currentSrc || source.src;
+        image.alt = card.querySelector('strong')?.textContent || '';
+        zoom.querySelector('strong').textContent = card.querySelector('strong')?.textContent || '';
+        zoom.querySelector('span').textContent = card.querySelector('span')?.textContent || '';
+        zoom.classList.remove('hidden');
+        const rect = card.getBoundingClientRect();
+        const width = zoom.offsetWidth;
+        const height = zoom.offsetHeight;
+        let left = rect.right + 14;
+        if (left + width > window.innerWidth - 12) left = Math.max(12, rect.left - width - 14);
+        let top = rect.top + rect.height / 2 - height / 2;
+        top = Math.min(Math.max(12, top), Math.max(12, window.innerHeight - height - 12));
+        zoom.style.left = `${left}px`;
+        zoom.style.top = `${top}px`;
+    };
+    host.addEventListener('pointerover', (event) => {
+        if (window.matchMedia('(hover: none)').matches) return;
+        const card = event.target.closest?.('.card');
+        if (!card || !host.contains(card)) return;
+        show(card);
+    });
+    host.addEventListener('pointerout', (event) => {
+        const card = event.target.closest?.('.card');
+        if (!card) return;
+        if (event.relatedTarget?.closest?.('.card') === card) return;
+        hide();
+    });
+    host.addEventListener('pointerdown', hide);
+    host.addEventListener('scroll', hide, { passive: true });
 }
 
 function decorLabel(id) {
@@ -2809,11 +3644,29 @@ function swingPicker(mod) {
     return `<div class="field field-key"><label>Kapak açılışı</label><div class="seg">${options.map(([id, name]) => `<button type="button" data-swing="${id}" class="${id === swing ? 'is-on' : ''}">${name}</button>`).join('')}</div><button type="button" class="btn" id="mod-open" style="width:100%;margin-top:8px">${openLabel}</button>${doorTools(mod)}</div>`;
 }
 
+function doorsAreOpen() {
+    const doors = state.modules.filter((mod) => mod.kind !== 'end' && mod.door !== 'none');
+    return doors.length > 0 && doors.every((mod) => (mod.open || 0) > 0.5);
+}
+
+function allDoorButton() {
+    if (!state.modules.some((mod) => mod.kind !== 'end' && mod.door !== 'none')) return '';
+    const label = doorsAreOpen() ? 'Tüm kapakları kapat' : 'Tüm kapakları aç';
+    return `<button type="button" class="btn" id="mod-doors-all" style="width:100%;margin-top:8px">${label}</button>`;
+}
+
+function ledPicker(mod) {
+    if (!mod || mod.kind === 'end') return '';
+    const style = ledStyleOf(mod);
+    const options = [['shelf', 'Raflarda LED'], ['side', 'Yanlarda boydan LED'], ['off', 'LED kapalı']];
+    return `<div class="field field-key"><label>LED</label><div class="seg">${options.map(([id, name]) => `<button type="button" data-led="${id}" class="${id === style ? 'is-on' : ''}">${name}</button>`).join('')}</div></div>`;
+}
+
 function doorTools(mod) {
-    if (!mod || mod.kind === 'end' || mod.door === 'none') return '';
+    if (!mod || mod.kind === 'end' || mod.door === 'none') return allDoorButton();
     const one = hiddenDoorIds.has(mod.id) ? 'Kapakları göster' : 'Kapakları gösterme';
     const all = hideAllDoors ? 'Tüm kapakları göster' : 'Tüm dolapların kapaklarını gösterme';
-    return `<button type="button" class="btn" id="mod-hide-door" style="width:100%;margin-top:8px">${one}</button><button type="button" class="btn" id="mod-hide-all" style="width:100%;margin-top:8px">${all}</button>`;
+    return `<button type="button" class="btn" id="mod-hide-door" style="width:100%;margin-top:8px">${one}</button><button type="button" class="btn" id="mod-hide-all" style="width:100%;margin-top:8px">${all}</button>${allDoorButton()}`;
 }
 
 function renderProduction() {
@@ -2842,14 +3695,20 @@ function moduleConfigHtml(mod) {
             <button type="button" class="btn" id="mod-drawers" style="width:100%">${mod.drawersOpen > 0.5 ? 'Çekmeceleri kapat' : 'Çekmeceleri aç'}</button>
         </div>`
         : '';
+    const listed = glbCatalog.find((entry) => entry.id === mod.glb);
+    const boardNote = listed?.boardMm
+        ? `<p class="hint">Raf, yan panel ve çekmece önü ${listed.boardMm} mm. Arkalık ${listed.backMm} mm. Çekmece kutusu: yan ve arka 16 mm, taban 8 mm. Dekor görseli temsili dijital dokudur.</p>`
+        : '';
     return `
         <p class="picked">Seçili dolap</p>
         <h2>${mod.name}</h2>
         <p class="hint">${mod.width} cm. Yerini sahnede sürükleyerek değiştir. Kapak sağda seçilir.</p>
+        ${boardNote}
         ${mod.kind === 'end' ? '' : `<div class="field field-key"><label>Kapak</label><div class="seg"><button type="button" data-door="solid" class="${mod.door === 'solid' ? 'is-on' : ''}">Kapaklı</button><button type="button" data-door="glass" class="${mod.door === 'glass' ? 'is-on' : ''}">Cam kapaklı</button></div></div>`}
         ${mod.glb ? '' : `<div class="field"><label>Genişlik (cm)</label><input id="mod-w" type="number" min="30" max="200" value="${mod.width}"></div>`}
         ${shelfField}
         ${drawerField}
+        ${ledPicker(mod)}
         ${swingPicker(mod)}
         ${!swingPicker(mod) ? doorTools(mod) : ''}
         ${decorPicker(mod.carcassId, 'carcass', 'Gövde rengi', true)}
@@ -2862,7 +3721,6 @@ function moduleConfigHtml(mod) {
         <label class="check"><input id="mod-plinth" type="checkbox" ${mod.plinth === false ? '' : 'checked'}> Bu dolapta baza olsun</label>
         <label class="check"><input id="mod-plinth-hidden" type="checkbox" ${mod.plinthHidden ? 'checked' : ''} ${mod.plinth === false ? 'disabled' : ''}> Gizli baza olsun</label>
         <label class="check"><input id="mod-kulp" type="checkbox" ${mod.kulp === false ? '' : 'checked'}> Bu dolapta kulp olsun</label>
-        <label class="check"><input id="mod-led" type="checkbox" ${mod.led === false ? '' : 'checked'}> Bu dolapta LED olsun</label>
         ${mod.glb ? '' : `<div class="field"><label>Bu dolabın yüksekliği (cm)</label><input id="mod-h" type="number" min="${mod.dxf === 'ust' ? 40 : H_MIN}" max="${H_MAX}" value="${moduleHeight(mod)}"></div>`}
         ${mod.kind !== 'end' && !mod.glb ? `<button type="button" class="btn" id="mod-upper" style="width:100%;margin-bottom:12px">${upperHeight(mod) ? 'Üst dolabı kaldır' : 'Üst dolap ekle'}</button>` : ''}
         ${mod.kind !== 'end' && (mod.door === 'panjur' || mod.door === 'accordion') ? `<div class="field"><button type="button" class="btn" id="mod-open">${mod.open > 0.5 ? 'Kapağı kapat' : 'Kapağı aç'}</button></div>` : ''}
@@ -2928,8 +3786,9 @@ function bindModuleConfig(root, mod) {
     const hiddenKick = root.querySelector('#mod-plinth-hidden');
     if (hiddenKick) hiddenKick.addEventListener('change', (event) => commit(() => { mod.plinthHidden = event.target.checked; }));
     root.querySelector('#mod-kulp').addEventListener('change', (event) => commit(() => { mod.kulp = event.target.checked; }));
-    root.querySelector('#mod-led').addEventListener('change', (event) => commit(() => {
-        mod.led = event.target.checked;
+    bindSwatch(root, 'led', (id) => commit(() => {
+        mod.ledStyle = id === 'off' ? 'off' : id;
+        mod.led = id !== 'off';
         if (mod.led) lightsOn = true;
         syncLightsButton();
     }));
@@ -2972,7 +3831,18 @@ function bindModuleConfig(root, mod) {
         commit(() => { mod.upper = Math.min(48, fit); });
     };
     const drawers = root.querySelector('#mod-drawers');
-    if (drawers) drawers.onclick = () => commit(() => { mod.drawersOpen = mod.drawersOpen > 0.5 ? 0 : 1; });
+    if (drawers) drawers.onclick = () => commit(() => {
+        mod.drawersOpen = mod.drawersOpen > 0.5 ? 0 : 1;
+        if (mod.drawersOpen > 0.5) mod.open = 1;
+    });
+    const allDoors = root.querySelector('#mod-doors-all');
+    if (allDoors) allDoors.onclick = () => commit(() => {
+        const open = doorsAreOpen() ? 0 : 1;
+        state.modules.forEach((item) => {
+            if (item.kind === 'end' || item.door === 'none') return;
+            item.open = open;
+        });
+    });
     root.querySelector('#mod-left').onclick = () => moveModule(mod.id, -1);
     root.querySelector('#mod-right').onclick = () => moveModule(mod.id, 1);
 }
@@ -2985,7 +3855,7 @@ function renderInspector() {
     if (!mod) {
         config.classList.add('hidden');
         body.innerHTML = `
-            <p class="hint">Dolap seçili değil. Burada seçili renkler yeni eklenen dolaba yazılır.</p>
+            <p class="hint">Dolap seçili değil. Burada seçili renkler yeni eklenen dolaba yazılır. Dekor görselleri temsili dijital dokudur, resmî Kastamonu taraması değildir.</p>
             <div class="field"><label>Sol duvar genişliği (cm)</label><input id="wall-left" type="number" min="80" max="800" value="${sideLimit('left')}"></div>
             <div class="field"><label>Ön duvar genişliği (cm)</label><input id="wall-front" type="number" min="80" max="800" value="${wallLimit()}"></div>
             <div class="field"><label>Sağ duvar genişliği (cm)</label><input id="wall-right" type="number" min="80" max="800" value="${sideLimit('right')}"></div>
@@ -3000,7 +3870,8 @@ function renderInspector() {
             <label class="check"><input id="cab-plinth" type="checkbox" ${state.plinth === false ? '' : 'checked'}> Baza olsun</label>
             <label class="check"><input id="cab-plinth-hidden" type="checkbox" ${state.plinthHidden ? 'checked' : ''}> Gizli baza olsun</label>
             <label class="check"><input id="cab-kulp" type="checkbox" ${state.kulp === false ? '' : 'checked'}> Kulp olsun</label>
-            <label class="check"><input id="cab-led" type="checkbox" ${state.led === false ? '' : 'checked'}> LED olsun</label>
+            <label class="check"><input id="cab-led" type="checkbox" ${state.led === false ? '' : 'checked'}> Yeni dolapta LED olsun</label>
+            ${allDoorButton()}
             <div class="field"><label>Tüm dolapların yüksekliği (cm)</label><input id="cab-h" type="number" min="${H_MIN}" max="${H_MAX}" value="${state.height}"></div>
             <div class="field"><label>Derinlik (cm)</label><input id="cab-d" type="number" min="40" max="70" value="${state.depth}"></div>`;
         body.querySelector('#wall-left').addEventListener('change', (event) => commit(() => {
@@ -3034,10 +3905,21 @@ function renderInspector() {
         }));
         body.querySelector('#cab-led').addEventListener('change', (event) => commit(() => {
             state.led = event.target.checked;
-            state.modules.forEach((item) => { item.led = state.led; });
+            state.modules.forEach((item) => {
+                item.led = state.led;
+                if (state.led && item.ledStyle === 'off') item.ledStyle = 'shelf';
+            });
             if (state.led) lightsOn = true;
             syncLightsButton();
         }));
+        const allDoors = body.querySelector('#mod-doors-all');
+        if (allDoors) allDoors.onclick = () => commit(() => {
+            const open = doorsAreOpen() ? 0 : 1;
+            state.modules.forEach((item) => {
+                if (item.kind === 'end' || item.door === 'none') return;
+                item.open = open;
+            });
+        });
         body.querySelector('#cab-h').addEventListener('change', (event) => commit(() => {
             state.height = clamp(Number(event.target.value), H_MIN, H_MAX);
             state.modules.forEach((item) => { item.height = state.height; });
@@ -3158,7 +4040,11 @@ function render() {
 
 function addSet(setId) {
     const set = SETS.find((item) => item.id === setId);
-    const mods = set.parts.map((id) => createModule(id));
+    const mods = set.parts.map((id) => {
+        const mod = createModule(id);
+        preferCatalogWood(mod);
+        return mod;
+    });
     if (mods.some((mod) => mod.kind === 'corner') && state.modules.some((mod) => mod.kind === 'corner')) {
         toast('Köşe dolap bir kez konur.');
         return;
@@ -3389,6 +4275,7 @@ function addCabinet(target) {
         return;
     }
     const mod = createModule(corner ? 'kose-raf' : 'tek-raf');
+    preferCatalogWood(mod);
     mod.kind = corner ? 'corner' : 'wardrobe';
     mod.width = recipe?.kind === 'corner' ? recipe.width : width;
     mod.door = corner ? 'solid' : addDoor;
@@ -3529,7 +4416,7 @@ async function addGlbModule(id, dropEvent) {
     noteDrop({ phase: 'load', id, cached: glbTemplates.has(item.id) });
     try {
         await ensureGlb(item);
-        const mod = createModule(item.category === 'tek' ? 'tek-raf' : 'cift-raf');
+        const mod = createModule(item.category === 'tek' || item.category === 'y26-tek' ? 'tek-raf' : 'cift-raf');
         mod.glb = item.id;
         mod.glbWidth = item.width;
         mod.glbDepth = Math.round(item.depth * 100);
@@ -3538,7 +4425,9 @@ async function addGlbModule(id, dropEvent) {
         mod.spec = item.spec;
         mod.width = Math.round(item.width * 100);
         mod.height = mod.glbHeight;
-        mod.door = item.category === 'kose' ? 'solid' : 'none';
+        mod.door = 'solid';
+        preferCatalogWood(mod);
+        mod.open = 1;
         mod.kind = item.category === 'kose' ? 'corner' : 'wardrobe';
         mod.wall = 'front';
         mod.offset = 10000;
@@ -3567,6 +4456,8 @@ async function addGlbModule(id, dropEvent) {
             state.modules.push(mod);
             selectedId = mod.id;
         });
+        frameCamera();
+        snapDoors();
         el('library').classList.remove('is-open');
         if (!window.matchMedia('(max-width: 900px)').matches) el('inspector').classList.add('is-open');
     } catch (error) {
@@ -3578,6 +4469,7 @@ function addCadModule(id, dropEvent) {
     const item = cadById(id);
     if (!item) return;
     const mod = createModule(item.width > 70 ? 'cift-raf' : 'tek-raf');
+    preferCatalogWood(mod);
     mod.cad = item.id;
     mod.name = item.name;
     mod.width = item.width;
@@ -3630,6 +4522,7 @@ function addProduct(productId, dropEvent) {
         return;
     }
     const mod = createModule(productId);
+    preferCatalogWood(mod);
     if (dropEvent && !placeDropped(mod, dropEvent)) return;
     if (!layout([...state.modules, mod])) {
         toast('Bu modül duvarın dışında kalıyor.');
@@ -4241,23 +5134,35 @@ function applyColorsToAll(source) {
     });
 }
 
+function catalogWoodId() {
+    return materials.find((item) => item.group === 'melamin-kapli-panel' && item.code === 'A402')?.id || '';
+}
+
 function solidDoorColor() {
-    const group = 'melamin-kapli-panel';
-    const vizon = materials.find((item) => item.group === group && (item.code === 'D122' || item.name === 'Vizon' || item.name === 'Vizon(Mink)'));
-    const sand = materials.find((item) => item.group === group && (item.code === 'D140' || item.name === 'Kumtaşı'));
-    return (vizon || sand)?.id || '';
+    return catalogWoodId();
+}
+
+function preferCatalogWood(mod) {
+    const wood = catalogWoodId();
+    if (!wood || !mod) return;
+    const lake = materials.find((item) => item.group === 'melamin-kapli-panel' && item.code === 'D129')?.id || '';
+    const current = mod.carcassId || '';
+    if (current && current !== lake) return;
+    mod.carcassId = wood;
+    mod.doorColorId = wood;
+    mod.interiorId = wood;
+    mod.backId = wood;
+    mod.shelfId = wood;
+    mod.drawerColorId = wood;
 }
 
 function applyDefaultColors() {
-    const lake = materials.find((item) => item.group === 'melamin-kapli-panel' && item.code === 'D129') || materials[0];
-    const plain = solidDoorColor();
-    const white = materials.find((item) => item.group === 'melamin-kapli-panel' && item.code === 'D152') || lake;
-    const bronze = materials.find((item) => item.group === 'melamin-kapli-panel' && item.code === 'D145') || lake;
-    if (!decorExists(state.carcassId)) state.carcassId = lake?.id || '';
-    if (!decorExists(state.doorColorId)) state.doorColorId = plain || lake?.id || '';
-    if (!decorExists(state.interiorId)) state.interiorId = white?.id || '';
-    if (!decorExists(state.backId)) state.backId = state.interiorId;
-    if (!decorExists(state.shelfId)) state.shelfId = bronze?.id || state.interiorId;
+    const oak = materials.find((item) => item.id === catalogWoodId()) || materials[0];
+    if (!decorExists(state.carcassId)) state.carcassId = oak?.id || '';
+    if (!decorExists(state.doorColorId)) state.doorColorId = oak?.id || '';
+    if (!decorExists(state.interiorId)) state.interiorId = oak?.id || '';
+    if (!decorExists(state.backId)) state.backId = oak?.id || '';
+    if (!decorExists(state.shelfId)) state.shelfId = oak?.id || '';
     if (!ALUMINUM.some((item) => item.id === state.aluminumId)) state.aluminumId = 'al-gumus';
     if (!GLASS.some((item) => item.id === state.glassId)) state.glassId = 'cam-fum';
     if (typeof state.plinth !== 'boolean') state.plinth = true;
@@ -4329,10 +5234,10 @@ function startNewProject() {
     selectedId = null;
     history = [];
     future = [];
-    lightsOn = false;
+    lightsOn = true;
     showMeasures = false;
-    el('btn-lights').classList.remove('is-on');
-    el('btn-lights').textContent = 'Işıkları aç';
+    el('btn-lights').classList.add('is-on');
+    el('btn-lights').textContent = 'Işıkları kapat';
     el('btn-measures').classList.remove('is-on');
     el('measure-layer').classList.add('hidden');
     window.history.replaceState(null, '', location.pathname);
@@ -4425,9 +5330,15 @@ async function searchProjects(phone, box, onOpen) {
 }
 
 async function loadGlbCatalog() {
-    const response = await fetch('/data/wardrobe-glb-modules.json', { headers: { Accept: 'application/json' } });
-    const data = await response.json();
-    glbCatalog = Array.isArray(data.modules) ? data.modules : [];
+    const headers = { Accept: 'application/json' };
+    const [base, extra] = await Promise.all([
+        fetch('/data/wardrobe-glb-modules.json', { headers }).then((response) => response.json()),
+        fetch('/data/wardrobe-y26-modules.json', { headers }).then((response) => (response.ok ? response.json() : { modules: [] })),
+    ]);
+    const older = Array.isArray(base.modules) ? base.modules : [];
+    const newer = Array.isArray(extra.modules) ? extra.modules : [];
+    const seen = new Set(older.map((item) => item.id));
+    glbCatalog = [...newer.filter((item) => item?.id && !seen.has(item.id)), ...older];
 }
 
 async function preloadModuleGlbs() {
@@ -4484,11 +5395,6 @@ async function boot() {
                 glbFailed.add(item.id);
             }
         }));
-    } catch (error) {
-        console.warn(error);
-    }
-    try {
-        await loadCadModules();
     } catch (error) {
         console.warn(error);
     }
