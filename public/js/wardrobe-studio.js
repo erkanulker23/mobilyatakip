@@ -385,6 +385,7 @@ function layout(modules) {
             const wanted = Number(mod.offset);
             let at = Number.isFinite(wanted) ? wanted : begin;
             at = Math.max(begin, Math.min(at, Math.max(begin, limit - along)));
+            if (Math.abs(at - wanted) > 0.05) mod.offset = at;
             if (!fits(at, along)) {
                 if (!dragId) {
                     let best = null;
@@ -409,6 +410,7 @@ function layout(modules) {
                 mod.offset = at;
             }
             occupied.push({ start: at, end: at + along });
+            if (!dragId || mod.id === dragId) mod.offset = at;
             const nudge = depthNudge(mod);
             if (wall === 'front') spots.push({ mod, x: at, z: nudge, rot: 0 });
             else if (wall === 'left') spots.push({ mod, x: nudge, z: at + along, rot: Math.PI / 2 });
@@ -423,13 +425,59 @@ function layout(modules) {
         }
         return occupied;
     };
-    const frontOcc = pack('front', leftHold, front - rightHold);
-    if (!frontOcc) return null;
-    const depth = Math.max(30, Number(state.depth) || 60);
-    const covers = (segments, start, end) => segments.some((seg) => seg.start < end - 0.1 && seg.end > start + 0.1);
-    const leftBegin = leftHold > 0 ? leftHold : (covers(frontOcc, 0, depth) ? depth : 0);
-    const rightBegin = rightHold > 0 ? rightHold : (covers(frontOcc, front - depth, front) ? depth : 0);
-    if (!pack('left', leftBegin, leftLen) || !pack('right', rightBegin, rightLen)) return null;
+    const savedOffsets = modules.map((mod) => mod.offset);
+    const revert = () => {
+        modules.forEach((mod, index) => { mod.offset = savedOffsets[index]; });
+        return null;
+    };
+    const runOf = (wall) => modules.filter((mod) => mod.kind !== 'corner' && wallName(mod) === wall);
+    const bodies = (list) => list.filter((mod) => mod.kind !== 'end');
+    const nearest = (list) => bodies(list).reduce((best, mod) => (!best || (Number(mod.offset) || 0) < (Number(best.offset) || 0) ? mod : best), null);
+    const farthest = (list) => bodies(list).reduce((best, mod) => {
+        if (!best) return mod;
+        const end = (Number(mod.offset) || 0) + alongSize(mod);
+        const bestEnd = (Number(best.offset) || 0) + alongSize(best);
+        return end > bestEnd ? mod : best;
+    }, null);
+    const reach = (mod) => {
+        if (!mod) return 0;
+        const body = Math.max(30, Number(mod.glbDepth) || Number(state.depth) || 60);
+        return body + depthNudge(mod);
+    };
+    const used = (list) => list.reduce((sum, mod) => sum + alongSize(mod), 0);
+    const frontList = runOf('front');
+    const leftList = runOf('left');
+    const rightList = runOf('right');
+    const leftCab = nearest(leftList);
+    const rightCab = nearest(rightList);
+    const frontLeftCab = nearest(frontList);
+    const frontRightCab = farthest(frontList);
+    const leftDepth = reach(leftCab);
+    const rightDepth = reach(rightCab);
+    const frontLeftDepth = reach(frontLeftCab);
+    const frontRightDepth = reach(frontRightCab);
+    const leftMeets = !leftCorner && leftCab && frontLeftCab
+        && (Number(leftCab.offset) || 0) <= frontLeftDepth + 0.6
+        && (Number(frontLeftCab.offset) || 0) <= leftDepth + 0.6;
+    const rightGap = frontRightCab ? front - ((Number(frontRightCab.offset) || 0) + alongSize(frontRightCab)) : Infinity;
+    const rightMeets = !rightCorner && rightCab && frontRightCab
+        && (Number(rightCab.offset) || 0) <= frontRightDepth + 0.6
+        && rightGap <= rightDepth + 0.6;
+    const frontSpan = front - leftHold - rightHold;
+    const frontUsed = used(frontList);
+    const wantLeft = leftMeets && used(leftList) <= leftLen - frontLeftDepth + 0.05 ? leftDepth : 0;
+    const wantRight = rightMeets && used(rightList) <= rightLen - frontRightDepth + 0.05 ? rightDepth : 0;
+    let frontBegin = leftHold;
+    let frontLimit = front - rightHold;
+    if (wantLeft && wantRight && frontUsed + wantLeft + wantRight <= frontSpan + 0.05) {
+        frontBegin += wantLeft;
+        frontLimit -= wantRight;
+    } else if (wantLeft && frontUsed + wantLeft <= frontSpan + 0.05) frontBegin += wantLeft;
+    else if (wantRight && frontUsed + wantRight <= frontSpan + 0.05) frontLimit -= wantRight;
+    const leftBegin = leftHold > 0 ? leftHold : (wantLeft ? frontLeftDepth : 0);
+    const rightBegin = rightHold > 0 ? rightHold : (wantRight ? frontRightDepth : 0);
+    if (!pack('front', frontBegin, frontLimit)) return revert();
+    if (!pack('left', leftBegin, leftLen) || !pack('right', rightBegin, rightLen)) return revert();
     return spots;
 }
 
@@ -1581,19 +1629,25 @@ function fillStyledInterior(mod, zone, plan) {
     }
 }
 
+function addRoundTube(parent, length, radius, x, y, z, mat, axis = 'x') {
+    const geo = new THREE.CylinderGeometry(radius, radius, Math.max(radius * 2, length), 24);
+    if (axis === 'x') geo.rotateZ(Math.PI / 2);
+    if (axis === 'z') geo.rotateX(Math.PI / 2);
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.name = 'ASKILIK_BORU';
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.position.set(x, y, z);
+    parent.add(mesh);
+    return mesh;
+}
+
 function addShelfBoard(parent, w, d, y, mat) {
     panel(parent, w - 2 * T - 0.4, 1.8, d - BACK - 2, w / 2, y, BACK + (d - BACK) / 2, mat);
 }
 
 function addRailBar(parent, w, d, y) {
-    const rail = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.8, 0.8, Math.max(8, w - 2 * T - 4), 12),
-        material('rail', '#b9b3aa', { metal: true })
-    );
-    rail.rotation.z = Math.PI / 2;
-    rail.position.set(w / 2, y, d * 0.46);
-    rail.castShadow = true;
-    parent.add(rail);
+    addRoundTube(parent, Math.max(8, w - 2 * T - 4), 1.25, w / 2, y, d * 0.46, alumFrameMaterial(aluminumOf(null)));
 }
 
 function addTrouserRack(parent, w, d, y) {
@@ -1648,14 +1702,7 @@ function addHalfShelf(parent, w, d, y, side, mat) {
 function addHalfRail(parent, w, d, y, side) {
     const span = Math.max(8, (w - 3 * T) / 2 - 2);
     const x = side === 'left' ? T + 1 + span / 2 : w - T - 1 - span / 2;
-    const rail = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.7, 0.7, span, 10),
-        material('rail', '#b9b3aa', { metal: true })
-    );
-    rail.rotation.z = Math.PI / 2;
-    rail.position.set(x, y, d * 0.46);
-    rail.castShadow = true;
-    parent.add(rail);
+    addRoundTube(parent, span, 1.25, x, y, d * 0.46, alumFrameMaterial(aluminumOf(null)));
 }
 
 function addPantsBar(parent, w, d, pants) {
@@ -1717,8 +1764,8 @@ function drawCadPieces(parent, w, h, d, mod, pieces, preview) {
             const x1 = w * piece.x1;
             const span = Math.max(8, x1 - x0);
             const rail = new THREE.Mesh(
-                new THREE.CylinderGeometry(piece.kind === 'pants' ? 0.45 : 0.75, piece.kind === 'pants' ? 0.45 : 0.75, span, 10),
-                metal
+                new THREE.CylinderGeometry(piece.kind === 'pants' ? 0.45 : 1.25, piece.kind === 'pants' ? 0.45 : 1.25, span, 24),
+                piece.kind === 'pants' ? metal : alumFrameMaterial(aluminumOf(mod))
             );
             rail.rotation.z = Math.PI / 2;
             rail.position.set((x0 + x1) / 2, cadY(mod, h, piece.z), d * 0.46);
@@ -1837,7 +1884,7 @@ function ledMaterial(on) {
     const key = on ? 'led-on' : 'led-dim';
     if (clothCache.has(key)) return clothCache.get(key);
     const mat = on
-        ? new THREE.MeshStandardMaterial({ color: '#fff6df', emissive: '#ffe3a4', emissiveIntensity: 4.2, roughness: 0.32 })
+        ? new THREE.MeshStandardMaterial({ color: '#fff4d2', emissive: '#ffe7b0', emissiveIntensity: 3.2, roughness: 0.42 })
         : new THREE.MeshStandardMaterial({ color: '#d9d3c8', emissive: '#000000', emissiveIntensity: 0, roughness: 0.55 });
     clothCache.set(key, mat);
     return mat;
@@ -1860,8 +1907,8 @@ function alumFrameMaterial(alum) {
 }
 
 function ledStyleOf(mod) {
-    if (!mod || mod.led === false || mod.kind === 'end') return 'off';
-    return mod.ledStyle === 'side' ? 'side' : 'shelf';
+    if (!mod || mod.led === false || mod.kind === 'end' || mod.ledStyle === 'off') return 'off';
+    return 'line';
 }
 
 function addGarment(parent, x, railY, z, kind, seed) {
@@ -1940,42 +1987,52 @@ function addBasket(parent, w, d, y) {
     parent.add(mesh);
 }
 
+function addLedLine(parent, size, at, glowSize, glowAt, channel, strip) {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(size.x, size.y, size.z), channel);
+    rail.name = 'LED_PROFIL';
+    rail.position.set(at.x, at.y, at.z);
+    rail.castShadow = false;
+    parent.add(rail);
+    const glow = new THREE.Mesh(new THREE.BoxGeometry(glowSize.x, glowSize.y, glowSize.z), strip);
+    glow.name = 'LED_GLOW';
+    glow.position.set(glowAt.x, glowAt.y, glowAt.z);
+    glow.castShadow = false;
+    parent.add(glow);
+}
+
 function addCabinetLeds(parent, w, h, d, mod, shelves) {
-    const style = ledStyleOf(mod);
-    if (style === 'off') return;
-    const on = lightsOn === true;
-    const strip = ledMaterial(on);
+    if (ledStyleOf(mod) === 'off') return;
+    const strip = ledMaterial(lightsOn === true);
     const channel = alumFrameMaterial(aluminumOf(mod));
-    const floor = plinthOf(mod) + 4;
-    const top = h - T - 2;
-    if (style === 'side') {
-        const height = Math.max(24, top - floor);
-        const y = floor + height / 2;
-        const z = d * 0.58;
-        [T + 0.7, w - T - 0.7].forEach((x) => {
-            const rail = new THREE.Mesh(new THREE.BoxGeometry(1.2, height, 1.6), channel);
-            rail.position.set(x, y, z);
-            rail.castShadow = true;
-            parent.add(rail);
-            const glow = new THREE.Mesh(new THREE.BoxGeometry(0.28, height - 1.4, 0.28), strip);
-            glow.name = 'LED_GLOW';
-            glow.position.set(x, y, z + 0.7);
-            parent.add(glow);
-        });
-        return;
-    }
-    const spots = [h - T - 2.2, ...(shelves || [])];
-    const width = Math.max(8, w - 2 * T - 8);
-    spots.forEach((y) => {
-        if (y < floor || y > h - 1) return;
-        const rail = new THREE.Mesh(new THREE.BoxGeometry(width, 1.15, 1.8), channel);
-        rail.position.set(w / 2, y - 1.15, T + 2.4);
-        rail.castShadow = true;
-        parent.add(rail);
-        const glow = new THREE.Mesh(new THREE.BoxGeometry(width - 1.4, 0.45, Math.max(8, d * 0.55)), strip);
-        glow.name = 'LED_GLOW';
-        glow.position.set(w / 2, y - 1.7, d * 0.42);
-        parent.add(glow);
+    const floor = plinthOf(mod) + 6;
+    const top = h - T - 4;
+    const height = Math.max(24, top - floor);
+    const y = floor + height / 2;
+    const rear = BACK + 0.9;
+    [T + 0.45, w - T - 0.45].forEach((x) => {
+        const inward = x < w / 2 ? 0.28 : -0.28;
+        addLedLine(
+            parent,
+            { x: 0.8, y: height, z: 0.6 },
+            { x, y, z: rear },
+            { x: 0.22, y: height - 1.2, z: 0.18 },
+            { x: x + inward, y, z: rear + 0.35 },
+            channel,
+            strip
+        );
+    });
+    const width = Math.max(8, w - 2 * T - 3);
+    (shelves || []).forEach((shelfY) => {
+        if (shelfY < floor || shelfY > h - 1) return;
+        addLedLine(
+            parent,
+            { x: width, y: 0.28, z: 0.45 },
+            { x: w / 2, y: shelfY + 1.05, z: rear },
+            { x: width - 1.2, y: 0.14, z: 0.12 },
+            { x: w / 2, y: shelfY + 1.05, z: rear + 0.28 },
+            channel,
+            strip
+        );
     });
 }
 
@@ -2968,13 +3025,47 @@ function placeGlb(template, mod) {
     });
     paintGlb(model, mod);
     mountGlbDrawers(model, mod);
+    roundGlbRails(model, mod);
     wrap.add(model);
-    dressGlb(wrap, model, mod);
     addGlbLeds(wrap, model, mod);
     return wrap;
 }
 
-function dressGlb(wrap, model, mod) {
+function roundGlbRails(model, mod) {
+    const alum = alumFrameMaterial(aluminumOf(mod));
+    const rails = [];
+    model.traverse((child) => {
+        if (!child.isMesh || !child.geometry) return;
+        const name = String(child.name || '').toLowerCase();
+        if (!/askilik|boru|rail/.test(name) || /burc|soket|raf/.test(name)) return;
+        rails.push(child);
+    });
+    rails.forEach((mesh) => {
+        if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+        const bounds = mesh.geometry.boundingBox;
+        if (!bounds) return;
+        const size = bounds.getSize(new THREE.Vector3());
+        const center = bounds.getCenter(new THREE.Vector3());
+        const length = Math.max(size.x, size.y, size.z);
+        if (length < 0.08) return;
+        mesh.visible = false;
+        const alongZ = size.z >= size.x && size.z >= size.y;
+        const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.0125, 0.0125, length, 24), alum);
+        tube.name = 'ASKILIK_BORU';
+        tube.castShadow = true;
+        tube.receiveShadow = true;
+        if (alongZ) tube.rotateX(Math.PI / 2);
+        else tube.rotateZ(Math.PI / 2);
+        tube.position.copy(center).applyMatrix4(mesh.matrix);
+        mesh.parent.add(tube);
+    });
+}
+
+function dressGlb() {
+    return;
+}
+
+function dressGlbRemoved(wrap, model, mod) {
     if (mod?.glb !== 'y26_cift_01' || mod?.props === false || !propTemplates) return;
     const shelves = [];
     let rail = null;
@@ -3181,10 +3272,12 @@ function dressGlbUnused(wrap, model, mod) {
 }
 
 function addGlbLeds(wrap, model, mod) {
-    const style = ledStyleOf(mod);
-    if (style === 'off') return;
+    if (ledStyleOf(mod) === 'off') return;
     const shelves = [];
     const box = new THREE.Box3();
+    let backFace = null;
+    let leftFace = null;
+    let rightFace = null;
     let sized = false;
     model.updateMatrixWorld(true);
     model.traverse((child) => {
@@ -3193,61 +3286,52 @@ function addGlbLeds(wrap, model, mod) {
         if (!child.geometry.boundingBox) child.geometry.computeBoundingBox();
         const bounds = child.geometry.boundingBox;
         if (!bounds) return;
-        if (/govde|arkalik|baza/.test(name)) {
+        if (/govde|arkalik|baza/.test(name) && !/bant|_alt/.test(name)) {
             box.union(bounds);
             sized = true;
         }
-        if (/raf/.test(name) && !/arkalik|bant|_alt/.test(name)) {
+        if (/arkalik/.test(name) && !/bant/.test(name)) backFace = bounds.max.z;
+        if (/govde_sol|left_outer/.test(name)) leftFace = bounds.max.x;
+        if (/govde_sag|right_outer/.test(name)) rightFace = bounds.min.x;
+        if (/raf|shelf/.test(name) && !/bant|_alt|arkalik/.test(name)) {
             const center = bounds.getCenter(new THREE.Vector3());
             const size = bounds.getSize(new THREE.Vector3());
-            shelves.push({ x: center.x, y: center.y, z: center.z, w: size.x, d: size.z, h: size.y });
+            if (size.y < 0.05) shelves.push({ x: center.x, y: center.y, w: Math.max(size.x, size.z) });
         }
     });
-    if (!sized) return;
+    if (!sized || backFace == null) return;
     const host = new THREE.Group();
     host.name = 'dolap-led';
-    const on = lightsOn === true;
-    const strip = ledMaterial(on);
+    const strip = ledMaterial(lightsOn === true);
     const channel = alumFrameMaterial(aluminumOf(mod));
-    if (style === 'side') {
-        const size = box.getSize(new THREE.Vector3());
-        const center = box.getCenter(new THREE.Vector3());
-        const height = Math.max(0.45, size.y - 0.16);
-        [box.min.x + 0.028, box.max.x - 0.028].forEach((x) => {
-            const inward = x < center.x ? 1 : -1;
-            const rail = new THREE.Mesh(new THREE.BoxGeometry(0.012, height, 0.016), channel);
-            rail.position.set(x, center.y, center.z);
-            rail.castShadow = true;
-            host.add(rail);
-            const glow = new THREE.Mesh(new THREE.BoxGeometry(0.007, height - 0.04, 0.008), strip);
-            glow.name = 'LED_GLOW';
-            glow.position.set(x + inward * 0.011, center.y, center.z + 0.006);
-            host.add(glow);
-        });
-    } else {
-        const spots = shelves.slice();
-        if (!spots.length) {
-            const center = box.getCenter(new THREE.Vector3());
-            const size = box.getSize(new THREE.Vector3());
-            spots.push({ x: center.x, y: box.max.y - 0.02, z: center.z, w: size.x - 0.06, d: size.z, h: 0.018 });
-        }
-        spots.forEach((shelf) => {
-            const width = Math.max(0.08, shelf.w - 0.03);
-            const y = shelf.y - shelf.h / 2 - 0.007;
-            const z = shelf.z - shelf.d / 2 + 0.018;
-            const rail = new THREE.Mesh(new THREE.BoxGeometry(width, 0.012, 0.018), channel);
-            rail.position.set(shelf.x, y, z);
-            rail.castShadow = true;
-            host.add(rail);
-            const glow = new THREE.Mesh(
-                new THREE.BoxGeometry(Math.max(0.04, width - 0.012), 0.006, Math.max(0.05, shelf.d * 0.62)),
-                strip
-            );
-            glow.name = 'LED_GLOW';
-            glow.position.set(shelf.x, y - 0.004, shelf.z + shelf.d * 0.08);
-            host.add(glow);
-        });
-    }
+    const rear = backFace + 0.008;
+    const height = Math.max(0.4, box.max.y - box.min.y - 0.18);
+    const y = (box.min.y + box.max.y) / 2;
+    [[leftFace, 1], [rightFace, -1]].forEach(([face, inward]) => {
+        if (face == null) return;
+        addLedLine(
+            host,
+            { x: 0.008, y: height, z: 0.006 },
+            { x: face + inward * 0.006, y, z: rear },
+            { x: 0.005, y: height - 0.02, z: 0.005 },
+            { x: face + inward * 0.012, y, z: rear + 0.008 },
+            channel,
+            strip
+        );
+    });
+    shelves.forEach((shelf) => {
+        const width = Math.max(0.08, shelf.w - 0.03);
+        const lineY = shelf.y + 0.01;
+        addLedLine(
+            host,
+            { x: width, y: 0.003, z: 0.004 },
+            { x: shelf.x, y: lineY, z: rear },
+            { x: width - 0.01, y: 0.0016, z: 0.0016 },
+            { x: shelf.x, y: lineY, z: rear + 0.003 },
+            channel,
+            strip
+        );
+    });
     if (host.children.length) wrap.add(host);
 }
 
@@ -3994,10 +4078,28 @@ function updateHud() {
     el('selection-name').textContent = allCabinetsSelected ? 'Tüm dolaplar' : mod.name;
     ui.classList.toggle('hidden', under.behind);
     handle.classList.toggle('hidden', top.behind);
-    ui.style.left = `${under.x}px`;
-    ui.style.top = `${under.y}px`;
-    handle.style.left = `${top.x}px`;
-    handle.style.top = `${top.y}px`;
+    placeHud(ui, under.x, under.y);
+    placeHud(handle, top.x, top.y);
+}
+
+function placeHud(node, x, y) {
+    const stage = node.offsetParent || node.parentElement;
+    if (!stage) return;
+    node.style.left = `${x}px`;
+    node.style.top = `${y}px`;
+    const bounds = stage.getBoundingClientRect();
+    const box = node.getBoundingClientRect();
+    let limit = bounds.bottom - 8;
+    [el('view-bar'), el('plan-switch')].forEach((bar) => {
+        if (!bar || getComputedStyle(bar).display === 'none') return;
+        limit = Math.min(limit, bar.getBoundingClientRect().top - 8);
+    });
+    if (box.bottom > limit) y -= box.bottom - limit;
+    if (box.top < bounds.top + 8) y += bounds.top + 8 - box.top;
+    if (box.left < bounds.left + 8) x += bounds.left + 8 - box.left;
+    if (box.right > bounds.right - 8) x -= box.right - (bounds.right - 8);
+    node.style.left = `${x}px`;
+    node.style.top = `${y}px`;
 }
 
 function frameCamera() {
@@ -4207,7 +4309,7 @@ function planChrome() {
         const overlap = Math.min(box.right, rect.right) - Math.max(box.left, rect.left);
         if (overlap < 8) return;
         const mid = (box.top + box.bottom) / 2;
-        if (mid < rect.top + rect.height * 0.5) top = Math.max(top, box.bottom - rect.top + 34);
+        if (mid < rect.top + rect.height * 0.5) top = Math.max(top, box.bottom - rect.top + 58);
         else bottom = Math.max(bottom, rect.bottom - box.top + 18);
     });
     return { top, bottom };
@@ -4219,7 +4321,7 @@ function planMetrics() {
     const front = wallLimit();
     const right = sideLimit('right');
     const chrome = planChrome();
-    const padX = 72;
+    const padX = 96;
     const width = canvas?.clientWidth || 600;
     const height = canvas?.clientHeight || 400;
     const span = Math.max(left, right, 80);
@@ -4258,6 +4360,140 @@ function modulePlanRect(mod, room) {
     return { x: room.x0 + at * room.scale, z: room.z0 + nudge * room.scale, w: along * room.scale, d: depth * room.scale };
 }
 
+function planWrap(ctx, text, width, lines) {
+    const words = String(text || 'Dolap').split(/\s+/).filter(Boolean);
+    const out = [];
+    let line = '';
+    words.forEach((word) => {
+        const next = line ? `${line} ${word}` : word;
+        if (ctx.measureText(next).width <= width) line = next;
+        else {
+            if (line) out.push(line);
+            line = ctx.measureText(word).width <= width ? word : planEllipsis(ctx, word, width);
+        }
+    });
+    if (line) out.push(line);
+    if (out.length > lines) {
+        out.length = lines;
+        out[lines - 1] = planEllipsis(ctx, out[lines - 1], width);
+    }
+    return out;
+}
+
+function planEllipsis(ctx, text, width) {
+    const value = String(text || '');
+    if (width < 8) return '';
+    if (ctx.measureText(value).width <= width) return value;
+    let cut = value;
+    while (cut.length > 1 && ctx.measureText(`${cut}…`).width > width) cut = cut.slice(0, -1);
+    return `${cut}…`;
+}
+
+function planDimension(ctx, x1, z1, x2, z2, label) {
+    const dx = x2 - x1;
+    const dz = z2 - z1;
+    const len = Math.hypot(dx, dz) || 1;
+    const px = (-dz / len) * 4.5;
+    const pz = (dx / len) * 4.5;
+    ctx.save();
+    ctx.strokeStyle = '#8d877e';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x1, z1);
+    ctx.lineTo(x2, z2);
+    ctx.moveTo(x1 - px, z1 - pz);
+    ctx.lineTo(x1 + px, z1 + pz);
+    ctx.moveTo(x2 - px, z2 - pz);
+    ctx.lineTo(x2 + px, z2 + pz);
+    ctx.stroke();
+    ctx.font = '11px Montserrat, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const midX = (x1 + x2) / 2;
+    const midZ = (z1 + z2) / 2;
+    const wide = ctx.measureText(label).width + 10;
+    ctx.translate(midX, midZ);
+    if (Math.abs(dz) > Math.abs(dx)) ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = '#f3f1ec';
+    ctx.fillRect(-wide / 2, -7, wide, 14);
+    ctx.fillStyle = '#5e5953';
+    ctx.fillText(label, 0, 0);
+    ctx.restore();
+}
+
+function drawPlanModule(ctx, mod, room) {
+    const rect = modulePlanRect(mod, room);
+    const x = rect.x;
+    const z = rect.z;
+    const w = Math.max(2, rect.w);
+    const d = Math.max(2, rect.d);
+    const selected = mod.id === selectedId;
+    const wall = wallName(mod);
+    ctx.fillStyle = selected ? 'rgba(31,107,74,0.13)' : '#fbfaf6';
+    ctx.fillRect(x, z, w, d);
+    ctx.strokeStyle = selected ? '#1f6b4a' : '#3a3834';
+    ctx.lineWidth = selected ? 1.6 : 1;
+    ctx.strokeRect(x + 0.5, z + 0.5, Math.max(0, w - 1), Math.max(0, d - 1));
+    const inset = Math.min(5, w * 0.14, d * 0.14);
+    if (w > 22 && d > 22) {
+        ctx.strokeStyle = selected ? 'rgba(31,107,74,0.28)' : 'rgba(58,56,52,0.16)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + inset, z + inset, w - inset * 2, d - inset * 2);
+    }
+    ctx.strokeStyle = selected ? '#1f6b4a' : '#242220';
+    ctx.lineWidth = 2.25;
+    ctx.beginPath();
+    if (mod.kind === 'corner') {
+        if (mod.cornerSide !== 'right') {
+            ctx.moveTo(x, z + d);
+            ctx.lineTo(x + w, z + d);
+            ctx.moveTo(x + w, z);
+            ctx.lineTo(x + w, z + d);
+        } else {
+            ctx.moveTo(x, z + d);
+            ctx.lineTo(x + w, z + d);
+            ctx.moveTo(x, z);
+            ctx.lineTo(x, z + d);
+        }
+    } else if (wall === 'left') {
+        ctx.moveTo(x + w, z);
+        ctx.lineTo(x + w, z + d);
+    } else if (wall === 'right') {
+        ctx.moveTo(x, z);
+        ctx.lineTo(x, z + d);
+    } else {
+        ctx.moveTo(x, z + d);
+        ctx.lineTo(x + w, z + d);
+    }
+    ctx.stroke();
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x + 5, z + 4, Math.max(0, w - 10), Math.max(0, d - 8));
+    ctx.clip();
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    const along = Math.round(alongSize(mod));
+    const depth = Math.round(mod.kind === 'corner' ? along : (Number(mod.glbDepth) || Number(state.depth) || 60));
+    if (d >= 34 && w >= 36) {
+        ctx.fillStyle = selected ? '#1f6b4a' : '#2c2a28';
+        ctx.font = '600 11px Montserrat, sans-serif';
+        const roomForName = d >= 48 ? 2 : 1;
+        planWrap(ctx, mod.name || 'Dolap', w - 14, roomForName).forEach((line, index) => {
+            ctx.fillText(line, x + 7, z + 6 + index * 13);
+        });
+        if (d >= 48) {
+            ctx.fillStyle = selected ? '#1f6b4a' : '#6f6a63';
+            ctx.font = '10px Montserrat, sans-serif';
+            ctx.fillText(`${along} × ${depth}`, x + 7, z + 6 + roomForName * 13);
+        }
+    } else if (Math.max(w, d) > 24) {
+        ctx.fillStyle = selected ? '#1f6b4a' : '#3a3834';
+        ctx.font = '10px Montserrat, sans-serif';
+        ctx.fillText(planEllipsis(ctx, String(along), Math.max(12, Math.min(w, d) - 8)), x + 4, z + 4);
+    }
+    ctx.restore();
+}
+
 function drawPlan() {
     const canvas = el('plan-canvas');
     if (!canvas || planMode !== '2d') return;
@@ -4268,76 +4504,135 @@ function drawPlan() {
     const ctx = canvas.getContext('2d');
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.clearRect(0, 0, room.width, room.height);
-    ctx.fillStyle = '#f4f3f0';
+    ctx.fillStyle = '#f3f1ec';
     ctx.fillRect(0, 0, room.width, room.height);
-    ctx.lineCap = 'butt';
-    ctx.strokeStyle = '#1c1c1c';
-    ctx.lineWidth = 8;
-    ['left', 'front', 'right'].forEach((id) => {
-        const wall = room[id];
-        ctx.beginPath();
-        ctx.moveTo(wall.x1, wall.z1);
-        ctx.lineTo(wall.x2, wall.z2);
-        ctx.stroke();
-    });
-    ensureSketch().openings.forEach((item) => {
+    const x0 = room.left.x1;
+    const z0 = room.front.z1;
+    const x1 = room.right.x1;
+    const zL = room.left.z2;
+    const zR = room.right.z2;
+    const span = Math.max(zL, zR);
+    const step = 50 * room.scale;
+    if (step >= 16) {
+        ctx.fillStyle = 'rgba(42,40,38,0.045)';
+        for (let x = x0; x <= x1 + 0.5; x += step) {
+            for (let z = z0; z <= span + 0.5; z += step) ctx.fillRect(x, z, 1.25, 1.25);
+        }
+    }
+    const thickness = 13;
+    const openings = ensureSketch().openings;
+    ctx.beginPath();
+    ctx.moveTo(x0 - thickness, z0 - thickness);
+    ctx.lineTo(x1 + thickness, z0 - thickness);
+    ctx.lineTo(x1 + thickness, zR);
+    ctx.lineTo(x1, zR);
+    ctx.lineTo(x1, z0);
+    ctx.lineTo(x0, z0);
+    ctx.lineTo(x0, zL);
+    ctx.lineTo(x0 - thickness, zL);
+    ctx.closePath();
+    openings.forEach((item) => {
         const wall = room[item.wallId];
         if (!wall) return;
-        const horizontal = wall.z1 === wall.z2;
-        const t = (Number(item.offset) || 0) / wall.length;
-        const span = (Number(item.width) || 0) / wall.length;
-        const x = wall.x1 + (wall.x2 - wall.x1) * t;
-        const z = wall.z1 + (wall.z2 - wall.z1) * t;
-        const len = (horizontal ? wall.x2 - wall.x1 : wall.z2 - wall.z1) * span;
-        ctx.strokeStyle = item.kind === 'door' ? '#1f6b4a' : '#3d6f9f';
-        ctx.lineWidth = 10;
+        const at = Math.max(0, Number(item.offset) || 0) * room.scale;
+        const width = Math.max(20, Number(item.width) || 0) * room.scale;
+        if (item.wallId === 'front') ctx.rect(x0 + at, z0 - thickness, width, thickness);
+        else if (item.wallId === 'left') ctx.rect(x0 - thickness, z0 + at, thickness, width);
+        else ctx.rect(x1, z0 + at, thickness, width);
+    });
+    ctx.fillStyle = '#e5e0d7';
+    ctx.fill('evenodd');
+    ctx.strokeStyle = '#2c2a27';
+    ctx.lineWidth = 1;
+    ctx.lineJoin = 'miter';
+    ctx.stroke();
+    openings.forEach((item) => {
+        const wall = room[item.wallId];
+        if (!wall || item.kind !== 'window') return;
+        const at = Math.max(0, Number(item.offset) || 0) * room.scale;
+        const width = Math.max(20, Number(item.width) || 0) * room.scale;
+        ctx.strokeStyle = '#6d8ea8';
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        if (horizontal) { ctx.moveTo(x, z); ctx.lineTo(x + len, z); }
-        else { ctx.moveTo(x, z); ctx.lineTo(x, z + len); }
+        if (item.wallId === 'front') {
+            ctx.moveTo(x0 + at, z0 - thickness * 0.35);
+            ctx.lineTo(x0 + at + width, z0 - thickness * 0.35);
+            ctx.moveTo(x0 + at, z0 - thickness * 0.7);
+            ctx.lineTo(x0 + at + width, z0 - thickness * 0.7);
+        } else {
+            const x = item.wallId === 'left' ? x0 - thickness * 0.35 : x1 + thickness * 0.35;
+            const x2 = item.wallId === 'left' ? x0 - thickness * 0.7 : x1 + thickness * 0.7;
+            ctx.moveTo(x, z0 + at);
+            ctx.lineTo(x, z0 + at + width);
+            ctx.moveTo(x2, z0 + at);
+            ctx.lineTo(x2, z0 + at + width);
+        }
         ctx.stroke();
-        ctx.fillStyle = item.kind === 'door' ? '#1f6b4a' : '#3d6f9f';
-        ctx.font = '12px Montserrat, sans-serif';
-        const label = item.kind === 'door' ? 'Kapı' : 'Pencere';
-        ctx.textAlign = horizontal || item.wallId === 'right' ? 'left' : 'right';
-        if (horizontal) {
-            let labelY = z - 10;
-            const tools = el('plan-tools')?.getBoundingClientRect();
-            const board = canvas.getBoundingClientRect();
-            if (tools && board.top + labelY < tools.bottom + 6 && board.left + x < tools.right + 8) labelY = z + 18;
-            ctx.fillText(label, x, labelY);
-        } else ctx.fillText(label, x + (item.wallId === 'left' ? -10 : 10), z + 14);
-        ctx.textAlign = 'left';
     });
-    state.modules.forEach((mod) => {
-        const rect = modulePlanRect(mod, room);
-        ctx.fillStyle = mod.id === selectedId ? 'rgba(31,107,74,.28)' : 'rgba(28,28,28,.12)';
-        ctx.strokeStyle = mod.id === selectedId ? '#1f6b4a' : '#1c1c1c';
+    state.modules.forEach((mod) => drawPlanModule(ctx, mod, room));
+    openings.forEach((item) => {
+        if (item.kind !== 'door') return;
+        const wall = room[item.wallId];
+        if (!wall) return;
+        const at = Math.max(0, Number(item.offset) || 0) * room.scale;
+        const width = Math.max(20, Number(item.width) || 0) * room.scale;
+        ctx.strokeStyle = '#3c463f';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        if (item.wallId === 'front') {
+            ctx.moveTo(x0 + at, z0);
+            ctx.lineTo(x0 + at, z0 + width);
+            ctx.moveTo(x0 + at, z0);
+            ctx.arc(x0 + at, z0, width, 0, Math.PI / 2, false);
+        } else if (item.wallId === 'left') {
+            ctx.moveTo(x0, z0 + at);
+            ctx.lineTo(x0 + width, z0 + at);
+            ctx.moveTo(x0, z0 + at);
+            ctx.arc(x0, z0 + at, width, Math.PI / 2, 0, true);
+        } else {
+            ctx.moveTo(x1, z0 + at);
+            ctx.lineTo(x1 - width, z0 + at);
+            ctx.moveTo(x1, z0 + at);
+            ctx.arc(x1, z0 + at, width, Math.PI / 2, Math.PI, false);
+        }
+        ctx.stroke();
+    });
+    const gap = 18;
+    ctx.strokeStyle = '#b7b1a8';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x0, z0 - thickness);
+    ctx.lineTo(x0, z0 - thickness - gap);
+    ctx.moveTo(x1, z0 - thickness);
+    ctx.lineTo(x1, z0 - thickness - gap);
+    ctx.moveTo(x0 - thickness, z0);
+    ctx.lineTo(x0 - thickness - gap, z0);
+    ctx.moveTo(x0 - thickness, zL);
+    ctx.lineTo(x0 - thickness - gap, zL);
+    ctx.moveTo(x1 + thickness, z0);
+    ctx.lineTo(x1 + thickness + gap, z0);
+    ctx.moveTo(x1 + thickness, zR);
+    ctx.lineTo(x1 + thickness + gap, zR);
+    ctx.stroke();
+    planDimension(ctx, x0, z0 - thickness - gap, x1, z0 - thickness - gap, `${room.front.length} cm`);
+    planDimension(ctx, x0 - thickness - gap, z0, x0 - thickness - gap, zL, `${room.left.length} cm`);
+    planDimension(ctx, x1 + thickness + gap, z0, x1 + thickness + gap, zR, `${room.right.length} cm`);
+    [
+        [room.left.x2, room.left.z2],
+        [room.front.x2, room.front.z2],
+        [room.right.x2, room.right.z2],
+    ].forEach(([x, z]) => {
+        ctx.beginPath();
+        ctx.fillStyle = '#fbfaf6';
+        ctx.strokeStyle = '#1f6b4a';
         ctx.lineWidth = 1.5;
-        ctx.fillRect(rect.x, rect.z, Math.max(2, rect.w), Math.max(2, rect.d));
-        ctx.strokeRect(rect.x, rect.z, Math.max(2, rect.w), Math.max(2, rect.d));
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(rect.x + 3, rect.z + 2, Math.max(0, rect.w - 6), Math.max(0, rect.d - 4));
-        ctx.clip();
-        ctx.fillStyle = '#1c1c1c';
-        ctx.font = '12px Montserrat, sans-serif';
-        ctx.fillText(String(mod.name || 'Dolap'), rect.x + 4, rect.z + 16);
-        ctx.restore();
-    });
-    ctx.fillStyle = '#1f6b4a';
-    ctx.font = '12px Montserrat, sans-serif';
-    const grips = [
-        { x: room.left.x2, z: room.left.z2, label: `${room.left.length} cm`, lx: room.left.x1 - 8, lz: (room.left.z1 + room.left.z2) / 2 },
-        { x: room.front.x2, z: room.front.z2, label: `${room.front.length} cm`, lx: (room.front.x1 + room.front.x2) / 2, lz: room.front.z1 - 16 },
-        { x: room.right.x2, z: room.right.z2, label: `${room.right.length} cm`, lx: room.right.x1 + 12, lz: (room.right.z1 + room.right.z2) / 2 },
-    ];
-    grips.forEach((grip) => {
-        ctx.beginPath();
-        ctx.arc(grip.x, grip.z, 7, 0, Math.PI * 2);
+        ctx.arc(x, z, 5.5, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = '#6d6a64';
-        ctx.fillText(grip.label, grip.lx, grip.lz);
+        ctx.stroke();
+        ctx.beginPath();
         ctx.fillStyle = '#1f6b4a';
+        ctx.arc(x, z, 2, 0, Math.PI * 2);
+        ctx.fill();
     });
 }
 
@@ -5127,7 +5422,7 @@ function allDoorButton() {
 function ledPicker(mod) {
     if (!mod || mod.kind === 'end') return '';
     const style = ledStyleOf(mod);
-    const options = [['shelf', 'Raflarda LED'], ['side', 'Yanlarda boydan LED'], ['off', 'LED kapalı']];
+    const options = [['line', 'İnce çizgi LED'], ['off', 'LED kapalı']];
     return `<div class="field field-key"><label>LED</label><div class="seg">${options.map(([id, name]) => `<button type="button" data-led="${id}" class="${id === style ? 'is-on' : ''}">${name}</button>`).join('')}</div></div>`;
 }
 

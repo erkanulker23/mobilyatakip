@@ -96,7 +96,7 @@
         #view-bar button, #plan-switch button { border: 1px solid var(--line); background: rgba(255,252,248,.94); border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 700; }
         #plan-switch { position: absolute; top: 12px; right: 12px; z-index: 5; display: flex; gap: 6px; }
         #plan-switch button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
-        #plan-board { position: absolute; inset: 0; z-index: 3; background: #f4f3f0; }
+        #plan-board { position: absolute; inset: 0; z-index: 3; background: #f3f1ec; }
         #plan-board.hidden { display: none; }
         #plan-canvas { width: 100%; height: 100%; display: block; touch-action: none; }
         #plan-tools { position: absolute; left: 12px; top: 12px; display: flex; gap: 6px; }
@@ -173,7 +173,9 @@
             .mobile-nav .btn { padding: 8px 4px; font-size: 11px; }
             footer.bar { display: block; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
             footer.bar .stat, footer.bar #btn-quote { display: none; }
-            #view-bar { top: auto; bottom: calc(58px + env(safe-area-inset-bottom)); left: 8px; right: 8px; max-width: none; flex-wrap: nowrap; overflow-x: auto; }
+            #view-bar { top: auto; bottom: calc(58px + env(safe-area-inset-bottom)); left: 8px; right: 8px; max-width: none; flex-wrap: nowrap; overflow-x: auto; gap: 4px; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent); }
+            #view-bar::-webkit-scrollbar { display: none; }
+            #view-bar button { padding: 6px 8px; font-size: 11px; }
             #plan-switch { top: auto; left: auto; right: 8px; bottom: calc(116px + env(safe-area-inset-bottom)); }
             body.plan-2d #plan-switch { bottom: calc(58px + env(safe-area-inset-bottom)); }
             .name-input { width: min(42vw, 180px); }
@@ -386,6 +388,6 @@
         csrf: @json(csrf_token())
     };
 </script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=204"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=214"></script>
 </body>
 </html>
