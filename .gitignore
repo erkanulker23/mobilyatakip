@@ -13,6 +13,9 @@
 /.zed
 /auth.json
 /node_modules
+/tools/openplan3d/node_modules
+/tools/openplan3d/.svelte-kit
+/tools/openplan3d/build
 /public/hot
 /public/storage
 /storage/*.key

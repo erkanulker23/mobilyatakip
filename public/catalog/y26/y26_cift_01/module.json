@@ -73,10 +73,10 @@
       "name": "IC_DIKME",
       "layer": "DIKME",
       "x_mm": 550,
-      "y_mm": 118,
+      "y_mm": 468,
       "z_mm": 0,
       "width_mm": 18,
-      "height_mm": 2000,
+      "height_mm": 1650,
       "depth_mm": 588
     },
     {

@@ -96,6 +96,13 @@
         #view-bar button, #plan-switch button { border: 1px solid var(--line); background: rgba(255,252,248,.94); border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 700; }
         #plan-switch { position: absolute; top: 12px; right: 12px; z-index: 5; display: flex; gap: 6px; }
         #plan-switch button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
+        #plan-board { position: absolute; inset: 0; z-index: 3; background: #f4f3f0; }
+        #plan-board.hidden { display: none; }
+        #plan-canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+        #plan-tools { position: absolute; left: 12px; top: 12px; display: flex; gap: 6px; }
+        #plan-tools button { border: 1px solid var(--line); background: rgba(255,252,248,.94); border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 700; }
+        #plan-tools button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
+        body.plan-2d #view-bar, body.plan-2d #selection-ui, body.plan-2d #height-handle { display: none; }
         #measure-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
         .measure { position: absolute; transform: translate(-50%, -50%); background: #1f6b4a; color: #fff; font-size: 11px; font-weight: 700; line-height: 1.2; padding: 2px 6px; border-radius: 999px; white-space: nowrap; }
         .btn.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
@@ -152,7 +159,7 @@
             #viewport { min-height: 0; }
             aside {
                 position: fixed; left: 0; right: 0; bottom: calc(72px + env(safe-area-inset-bottom));
-                height: min(62dvh, 560px); z-index: 20; transform: translateY(120%);
+                height: min(42dvh, 380px); z-index: 20; transform: translateY(120%);
                 transition: transform .2s ease; border-radius: 16px 16px 0 0; box-shadow: var(--shadow);
             }
             aside.is-open { transform: none; }
@@ -166,8 +173,9 @@
             .mobile-nav .btn { padding: 8px 4px; font-size: 11px; }
             footer.bar { display: block; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
             footer.bar .stat, footer.bar #btn-quote { display: none; }
-            #view-bar { top: 8px; bottom: auto; left: 8px; max-width: calc(100% - 16px); }
-            #plan-switch { top: 86px; right: 8px; }
+            #view-bar { top: auto; bottom: calc(58px + env(safe-area-inset-bottom)); left: 8px; right: 8px; max-width: none; flex-wrap: nowrap; overflow-x: auto; }
+            #plan-switch { top: auto; left: auto; right: 8px; bottom: calc(116px + env(safe-area-inset-bottom)); }
+            body.plan-2d #plan-switch { bottom: calc(58px + env(safe-area-inset-bottom)); }
             .name-input { width: min(42vw, 180px); }
             body[data-sheet="material"] #inspector-body > :not([data-picker]) { display: none; }
             body[data-sheet="doors"] #inspector-body > :not(:has([data-door], [data-swing], #mod-open)) { display: none; }
@@ -209,6 +217,14 @@
         </div>
         <section class="stage">
             <div id="viewport"></div>
+            <div id="plan-board" class="hidden">
+                <canvas id="plan-canvas"></canvas>
+                <div id="plan-tools">
+                    <button type="button" data-plan-tool="move" class="is-on">Taşı</button>
+                    <button type="button" data-plan-tool="door">Kapı</button>
+                    <button type="button" data-plan-tool="window">Pencere</button>
+                </div>
+            </div>
             <div id="plan-switch">
                 <button type="button" id="btn-modules">Modüller</button>
                 <button type="button" data-plan="2d">2B</button>
@@ -288,8 +304,8 @@
         <div class="field"><label>Sol duvar genişliği (cm)</label><input name="leftWall" type="number" required min="80" max="800" value="300" inputmode="numeric"></div>
         <div class="field"><label>Ön duvar genişliği (cm)</label><input name="frontWall" type="number" required min="80" max="800" value="300" inputmode="numeric"></div>
         <div class="field"><label>Sağ duvar genişliği (cm)</label><input name="rightWall" type="number" required min="80" max="800" value="300" inputmode="numeric"></div>
-        <div class="field"><label>Yükseklik (cm)</label><input name="roomHeight" type="number" required min="160" max="400" value="270" inputmode="numeric"></div>
-        <p class="hint">Dolaplar ön duvara dizilir. Yükseklik odanın yüksekliğidir.</p>
+        <div class="field"><label>Oda yüksekliği (cm)</label><input name="roomHeight" type="number" required min="160" max="320" value="320" inputmode="numeric"></div>
+        <p class="hint">Standart oda yüksekliği 320 cm. 160 ile 320 arasında değiştirilebilir. Dolaplar duvara dizilir.</p>
         <div class="field"><label>Not</label><input name="note" maxlength="2000"></div>
         <div id="customer-msg" class="hint"></div>
         <div style="display:flex;gap:8px;justify-content:flex-end">
@@ -370,6 +386,6 @@
         csrf: @json(csrf_token())
     };
 </script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=190"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=204"></script>
 </body>
 </html>

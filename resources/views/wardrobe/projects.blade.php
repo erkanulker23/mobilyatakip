@@ -77,7 +77,7 @@
                 <div class="field"><label>Ön duvar (cm)</label><input name="frontWall" type="number" min="80" max="800" value="300"></div>
                 <div class="field"><label>Sağ duvar (cm)</label><input name="rightWall" type="number" min="80" max="800" value="300"></div>
             </div>
-            <div class="field"><label>Yükseklik (cm)</label><input name="roomHeight" type="number" min="160" max="400" value="270" required></div>
+            <div class="field"><label>Oda yüksekliği (cm)</label><input name="roomHeight" type="number" min="160" max="320" value="320" required></div>
             <div id="draw-fields" class="is-hidden">
                 <p class="hint">Duvarın ucundaki noktayı çekerek uzat. Kapı veya pencereyi duvarın üzerine bırak. Bir daha basınca kalkar.</p>
                 <div class="row">
@@ -298,8 +298,8 @@ document.getElementById('create').addEventListener('submit', async (event) => {
         msg.textContent = 'Duvar genişlikleri 80 ile 800 cm arasında olmalı.';
         return;
     }
-    if (!Number.isFinite(roomH) || roomH < 160 || roomH > 400) {
-        msg.textContent = 'Yükseklik 160 ile 400 cm arasında olmalı.';
+    if (!Number.isFinite(roomH) || roomH < 160 || roomH > 320) {
+        msg.textContent = 'Oda yüksekliği 160 ile 320 cm arasında olmalı.';
         return;
     }
     const name = String(form.get('projectName') || 'Dolabım');

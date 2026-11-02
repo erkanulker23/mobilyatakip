@@ -7,6 +7,10 @@ const BACK = 0.8;
 const DOOR_T = 1.8;
 const H_MIN = 160;
 const H_MAX = 270;
+const ROOM_H_MIN = 160;
+const ROOM_H_MAX = 320;
+const ROOM_H_STD = 320;
+const PASS_RATIO = 0.82;
 const ALUMINUM = [
     { id: 'al-gumus', name: 'Gümüş', color: '#d5d8dc' },
     { id: 'al-inox', name: 'Inox', color: '#b7bcc2' },
@@ -149,8 +153,9 @@ function blankState() {
         wallWidth: 300,
         leftWall: 300,
         rightWall: 300,
-        roomHeight: 270,
+        roomHeight: ROOM_H_STD,
         modules: [],
+        roomSketch: { openings: [] },
     };
 }
 
@@ -301,7 +306,7 @@ function sideLimit(side) {
 
 function roomHeightLimit() {
     const height = Number(state.roomHeight);
-    return Number.isFinite(height) && height >= 160 ? Math.min(400, height) : 270;
+    return Number.isFinite(height) && height >= ROOM_H_MIN ? Math.min(ROOM_H_MAX, height) : ROOM_H_STD;
 }
 
 function roomDepthLimit() {
@@ -381,22 +386,26 @@ function layout(modules) {
             let at = Number.isFinite(wanted) ? wanted : begin;
             at = Math.max(begin, Math.min(at, Math.max(begin, limit - along)));
             if (!fits(at, along)) {
-                let best = null;
-                for (let cursor = begin; cursor + along <= limit + 0.05; cursor += 1) {
-                    if (!fits(cursor, along)) continue;
-                    if (best === null || Math.abs(cursor - at) < Math.abs(best - at)) best = cursor;
+                if (!dragId) {
+                    let best = null;
+                    for (let cursor = begin; cursor + along <= limit + 0.05; cursor += 1) {
+                        if (!fits(cursor, along)) continue;
+                        if (best === null || Math.abs(cursor - at) < Math.abs(best - at)) best = cursor;
+                    }
+                    if (best === null) return null;
+                    at = best;
                 }
-                if (best === null) return null;
-                at = best;
             }
             const movable = mod.id === dragId || !state.modules.includes(mod);
-            if (movable) {
+            if (movable && !dragId) {
                 occupied.forEach((seg) => {
-                    if (at >= seg.end && at - seg.end < 30 && fits(seg.end, along)) at = seg.end;
+                    if (at >= seg.end && at - seg.end < 4 && fits(seg.end, along)) at = seg.end;
                     const before = seg.start - along;
-                    if (at > begin && at + along <= seg.start && seg.start - (at + along) < 30 && fits(before, along)) at = before;
+                    if (at > begin && at + along <= seg.start && seg.start - (at + along) < 4 && fits(before, along)) at = before;
                 });
-                if (at - begin < 30 && fits(begin, along)) at = begin;
+                if (at - begin < 4 && fits(begin, along)) at = begin;
+                mod.offset = at;
+            } else if (mod.id === dragId) {
                 mod.offset = at;
             }
             occupied.push({ start: at, end: at + along });
@@ -2491,7 +2500,7 @@ function selectionFrame(mod) {
         selectionWashMat = new THREE.MeshBasicMaterial({ color: 0x149152, depthTest: false, depthWrite: false, transparent: true, opacity: 0 });
     }
     const box = footprint(mod);
-    if (mod.kind === 'corner' || sideCornerWall(mod)) return cornerSelection(mod, box);
+    if (mod.kind === 'corner') return cornerSelection(mod, box);
     const group = new THREE.Group();
     const w = box.w + 1.2;
     const h = box.h + 1.2;
@@ -2739,8 +2748,8 @@ function chamferBoxGeometry(box, bevel) {
         const len = Math.hypot(x, y, z) || 1;
         return [x / len, y / len, z / len];
     };
-    quad([x1, yi0, zi1], [x1, yi1, zi1], [x1, yi1, zi0], [x1, yi0, zi0], [1, 0, 0]);
-    quad([x0, yi0, zi0], [x0, yi1, zi0], [x0, yi1, zi1], [x0, yi0, zi1], [-1, 0, 0]);
+    quad([x1, yi0, zi0], [x1, yi1, zi0], [x1, yi1, zi1], [x1, yi0, zi1], [1, 0, 0]);
+    quad([x0, yi0, zi1], [x0, yi1, zi1], [x0, yi1, zi0], [x0, yi0, zi0], [-1, 0, 0]);
     quad([xi0, y1, zi1], [xi1, y1, zi1], [xi1, y1, zi0], [xi0, y1, zi0], [0, 1, 0]);
     quad([xi0, y0, zi0], [xi1, y0, zi0], [xi1, y0, zi1], [xi0, y0, zi1], [0, -1, 0]);
     quad([xi0, yi0, z1], [xi1, yi0, z1], [xi1, yi1, z1], [xi0, yi1, z1], [0, 0, 1]);
@@ -2954,6 +2963,9 @@ function placeGlb(template, mod) {
     const sz = mod.kind === 'corner' ? 100 * (returnCm / nativeW) : 100;
     wrap.scale.set(sx, sy, sz);
     const model = bakedGlb.get(key).clone(true);
+    model.traverse((child) => {
+        if (child.isMesh && child.geometry) child.geometry = child.geometry.clone();
+    });
     paintGlb(model, mod);
     mountGlbDrawers(model, mod);
     wrap.add(model);
@@ -3690,8 +3702,8 @@ function buildModule(mod, preview) {
     group.name = `mod-${mod.id}`;
     group.userData.moduleId = mod.id;
     if (mod.glb) {
-        const cornerWall = sideCornerWall(mod);
-        const cornerId = (mod.kind === 'corner' || cornerWall) ? cornerModelId(mod) : '';
+        const cornerWall = '';
+        const cornerId = mod.kind === 'corner' ? cornerModelId(mod) : '';
         const cornerTemplate = cornerId ? glbTemplates.get(cornerId) : null;
         if (cornerId && !cornerTemplate && !glbFailed.has(cornerId) && !preview) {
             const item = glbCatalog.find((entry) => entry.id === cornerId);
@@ -3873,12 +3885,12 @@ function clearGroup(group) {
 
 function rebuild() {
     if (!cabinetRoot) return;
+    const spots = layout(state.modules);
+    if (!spots) return;
     doorPivots.length = 0;
     slides.length = 0;
     clearMeasures();
     clearGroup(cabinetRoot);
-    const spots = layout(state.modules);
-    if (!spots) return;
     spots.forEach((spot) => {
         const group = buildModule(spot.mod, false);
         group.position.set(spot.x, 0, spot.z);
@@ -3887,6 +3899,27 @@ function rebuild() {
     });
     snapDoors();
     syncGuides(spots);
+}
+
+function shiftCabinets() {
+    if (!cabinetRoot) return false;
+    const spots = layout(state.modules);
+    if (!spots) return false;
+    const groups = new Map();
+    for (const child of cabinetRoot.children) {
+        const id = child.userData?.moduleId;
+        if (!id || groups.has(id)) return false;
+        groups.set(id, child);
+    }
+    if (groups.size !== spots.length) return false;
+    for (const spot of spots) {
+        const group = groups.get(spot.mod.id);
+        if (!group) return false;
+        group.position.set(spot.x, 0, spot.z);
+        group.rotation.y = spot.rot;
+    }
+    syncGuides(spots);
+    return true;
 }
 
 function doorAngle(pivot) {
@@ -4151,6 +4184,323 @@ function resize() {
     }
     camera?.updateProjectionMatrix();
     renderer?.setSize(width, height, true);
+    if (planMode === '2d') drawPlan();
+}
+
+let planTool = 'move';
+let planPointer = null;
+
+function ensureSketch() {
+    if (!state.roomSketch || !Array.isArray(state.roomSketch.openings)) state.roomSketch = { openings: [] };
+    return state.roomSketch;
+}
+
+function planChrome() {
+    const canvas = el('plan-canvas');
+    const rect = canvas?.getBoundingClientRect();
+    let top = 56;
+    let bottom = 36;
+    if (!rect || rect.height < 1) return { top, bottom };
+    [el('plan-tools'), el('plan-switch')].forEach((node) => {
+        if (!node || getComputedStyle(node).display === 'none') return;
+        const box = node.getBoundingClientRect();
+        const overlap = Math.min(box.right, rect.right) - Math.max(box.left, rect.left);
+        if (overlap < 8) return;
+        const mid = (box.top + box.bottom) / 2;
+        if (mid < rect.top + rect.height * 0.5) top = Math.max(top, box.bottom - rect.top + 34);
+        else bottom = Math.max(bottom, rect.bottom - box.top + 18);
+    });
+    return { top, bottom };
+}
+
+function planMetrics() {
+    const canvas = el('plan-canvas');
+    const left = sideLimit('left');
+    const front = wallLimit();
+    const right = sideLimit('right');
+    const chrome = planChrome();
+    const padX = 72;
+    const width = canvas?.clientWidth || 600;
+    const height = canvas?.clientHeight || 400;
+    const span = Math.max(left, right, 80);
+    const scale = Math.min((width - padX * 2) / front, (height - chrome.top - chrome.bottom) / span);
+    const x0 = (width - front * scale) / 2;
+    const z0 = chrome.top;
+    return {
+        scale, x0, z0, width, height,
+        left: { id: 'left', x1: x0, z1: z0, x2: x0, z2: z0 + left * scale, length: left },
+        front: { id: 'front', x1: x0, z1: z0, x2: x0 + front * scale, z2: z0, length: front },
+        right: { id: 'right', x1: x0 + front * scale, z1: z0, x2: x0 + front * scale, z2: z0 + right * scale, length: right },
+    };
+}
+
+function planPoint(event) {
+    const canvas = el('plan-canvas');
+    const rect = canvas.getBoundingClientRect();
+    return {
+        x: (event.clientX - rect.left) * (canvas.clientWidth / rect.width),
+        z: (event.clientY - rect.top) * (canvas.clientHeight / rect.height),
+    };
+}
+
+function modulePlanRect(mod, room) {
+    const along = alongSize(mod);
+    const depth = mod.kind === 'corner' ? along : Math.max(30, Number(mod.glbDepth) || Number(state.depth) || 60);
+    const nudge = depthNudge(mod);
+    const at = Math.max(0, Number(mod.offset) || 0);
+    if (mod.kind === 'corner') {
+        const x = mod.cornerSide === 'left' ? 0 : wallLimit() - along;
+        return { x: room.x0 + x * room.scale, z: room.z0 + nudge * room.scale, w: along * room.scale, d: along * room.scale };
+    }
+    const wall = wallName(mod);
+    if (wall === 'left') return { x: room.x0 + nudge * room.scale, z: room.z0 + at * room.scale, w: depth * room.scale, d: along * room.scale };
+    if (wall === 'right') return { x: room.x0 + (wallLimit() - depth - nudge) * room.scale, z: room.z0 + at * room.scale, w: depth * room.scale, d: along * room.scale };
+    return { x: room.x0 + at * room.scale, z: room.z0 + nudge * room.scale, w: along * room.scale, d: depth * room.scale };
+}
+
+function drawPlan() {
+    const canvas = el('plan-canvas');
+    if (!canvas || planMode !== '2d') return;
+    const room = planMetrics();
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.max(1, Math.round(room.width * ratio));
+    canvas.height = Math.max(1, Math.round(room.height * ratio));
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.clearRect(0, 0, room.width, room.height);
+    ctx.fillStyle = '#f4f3f0';
+    ctx.fillRect(0, 0, room.width, room.height);
+    ctx.lineCap = 'butt';
+    ctx.strokeStyle = '#1c1c1c';
+    ctx.lineWidth = 8;
+    ['left', 'front', 'right'].forEach((id) => {
+        const wall = room[id];
+        ctx.beginPath();
+        ctx.moveTo(wall.x1, wall.z1);
+        ctx.lineTo(wall.x2, wall.z2);
+        ctx.stroke();
+    });
+    ensureSketch().openings.forEach((item) => {
+        const wall = room[item.wallId];
+        if (!wall) return;
+        const horizontal = wall.z1 === wall.z2;
+        const t = (Number(item.offset) || 0) / wall.length;
+        const span = (Number(item.width) || 0) / wall.length;
+        const x = wall.x1 + (wall.x2 - wall.x1) * t;
+        const z = wall.z1 + (wall.z2 - wall.z1) * t;
+        const len = (horizontal ? wall.x2 - wall.x1 : wall.z2 - wall.z1) * span;
+        ctx.strokeStyle = item.kind === 'door' ? '#1f6b4a' : '#3d6f9f';
+        ctx.lineWidth = 10;
+        ctx.beginPath();
+        if (horizontal) { ctx.moveTo(x, z); ctx.lineTo(x + len, z); }
+        else { ctx.moveTo(x, z); ctx.lineTo(x, z + len); }
+        ctx.stroke();
+        ctx.fillStyle = item.kind === 'door' ? '#1f6b4a' : '#3d6f9f';
+        ctx.font = '12px Montserrat, sans-serif';
+        const label = item.kind === 'door' ? 'Kapı' : 'Pencere';
+        ctx.textAlign = horizontal || item.wallId === 'right' ? 'left' : 'right';
+        if (horizontal) {
+            let labelY = z - 10;
+            const tools = el('plan-tools')?.getBoundingClientRect();
+            const board = canvas.getBoundingClientRect();
+            if (tools && board.top + labelY < tools.bottom + 6 && board.left + x < tools.right + 8) labelY = z + 18;
+            ctx.fillText(label, x, labelY);
+        } else ctx.fillText(label, x + (item.wallId === 'left' ? -10 : 10), z + 14);
+        ctx.textAlign = 'left';
+    });
+    state.modules.forEach((mod) => {
+        const rect = modulePlanRect(mod, room);
+        ctx.fillStyle = mod.id === selectedId ? 'rgba(31,107,74,.28)' : 'rgba(28,28,28,.12)';
+        ctx.strokeStyle = mod.id === selectedId ? '#1f6b4a' : '#1c1c1c';
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(rect.x, rect.z, Math.max(2, rect.w), Math.max(2, rect.d));
+        ctx.strokeRect(rect.x, rect.z, Math.max(2, rect.w), Math.max(2, rect.d));
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(rect.x + 3, rect.z + 2, Math.max(0, rect.w - 6), Math.max(0, rect.d - 4));
+        ctx.clip();
+        ctx.fillStyle = '#1c1c1c';
+        ctx.font = '12px Montserrat, sans-serif';
+        ctx.fillText(String(mod.name || 'Dolap'), rect.x + 4, rect.z + 16);
+        ctx.restore();
+    });
+    ctx.fillStyle = '#1f6b4a';
+    ctx.font = '12px Montserrat, sans-serif';
+    const grips = [
+        { x: room.left.x2, z: room.left.z2, label: `${room.left.length} cm`, lx: room.left.x1 - 8, lz: (room.left.z1 + room.left.z2) / 2 },
+        { x: room.front.x2, z: room.front.z2, label: `${room.front.length} cm`, lx: (room.front.x1 + room.front.x2) / 2, lz: room.front.z1 - 16 },
+        { x: room.right.x2, z: room.right.z2, label: `${room.right.length} cm`, lx: room.right.x1 + 12, lz: (room.right.z1 + room.right.z2) / 2 },
+    ];
+    grips.forEach((grip) => {
+        ctx.beginPath();
+        ctx.arc(grip.x, grip.z, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#6d6a64';
+        ctx.fillText(grip.label, grip.lx, grip.lz);
+        ctx.fillStyle = '#1f6b4a';
+    });
+}
+
+function planGrip(point, room) {
+    const grips = [
+        { id: 'left', x: room.left.x2, z: room.left.z2 },
+        { id: 'front', x: room.front.x2, z: room.front.z2 },
+        { id: 'right', x: room.right.x2, z: room.right.z2 },
+    ];
+    return grips.find((grip) => Math.hypot(point.x - grip.x, point.z - grip.z) < 16) || null;
+}
+
+function planWallPick(point, room, mod) {
+    const along = alongSize(mod);
+    const scale = room.scale || 1;
+    const choices = [
+        { wall: 'front', dist: Math.abs(point.z - room.front.z1), offset: (point.x - room.x0) / scale - along / 2 },
+        { wall: 'left', dist: Math.abs(point.x - room.left.x1), offset: (point.z - room.z0) / scale - along / 2 },
+        { wall: 'right', dist: Math.abs(point.x - room.right.x1), offset: (point.z - room.z0) / scale - along / 2 },
+    ].sort((a, b) => a.dist - b.dist);
+    const current = choices.find((item) => item.wall === wallName(mod)) || choices[0];
+    return choices[0].wall !== current.wall && choices[0].dist + 18 < current.dist ? choices[0] : current;
+}
+
+function planWallHit(point, room) {
+    let best = null;
+    ['left', 'front', 'right'].forEach((id) => {
+        const wall = room[id];
+        const dx = wall.x2 - wall.x1;
+        const dz = wall.z2 - wall.z1;
+        const len2 = dx * dx + dz * dz || 1;
+        let t = ((point.x - wall.x1) * dx + (point.z - wall.z1) * dz) / len2;
+        t = Math.max(0, Math.min(1, t));
+        const px = wall.x1 + dx * t;
+        const pz = wall.z1 + dz * t;
+        const dist = Math.hypot(point.x - px, point.z - pz);
+        if (!best || dist < best.dist) best = { wall, t, dist };
+    });
+    return best && best.dist < 28 ? best : null;
+}
+
+function planModuleHit(point, room) {
+    const hits = state.modules.map((mod) => ({ mod, rect: modulePlanRect(mod, room) })).reverse();
+    return hits.find(({ rect }) => point.x >= rect.x && point.x <= rect.x + rect.w && point.z >= rect.z && point.z <= rect.z + rect.d)?.mod || null;
+}
+
+function paintPlan() {
+    renderSummary();
+    drawPlan();
+}
+
+function refreshPlan() {
+    rebuild();
+    fitRoom();
+    renderSummary();
+    drawPlan();
+}
+
+function toggleOpening(wall, t) {
+    const width = planTool === 'door' ? 90 : 120;
+    const offset = Math.round(Math.max(0, Math.min(wall.length - width, t * wall.length - width / 2)));
+    const sketch = ensureSketch();
+    const index = sketch.openings.findIndex((item) => item.wallId === wall.id && Math.abs((Number(item.offset) || 0) - offset) < Math.max(width, Number(item.width) || 0) * 0.7);
+    if (index >= 0) sketch.openings.splice(index, 1);
+    else {
+        sketch.openings.push({
+            id: `o${Date.now()}`,
+            wallId: wall.id,
+            kind: planTool,
+            offset,
+            width,
+            height: planTool === 'door' ? 210 : 120,
+            sill: planTool === 'door' ? 0 : 90,
+        });
+    }
+}
+
+function bindPlanBoard() {
+    const canvas = el('plan-canvas');
+    if (!canvas || canvas.dataset.bound) return;
+    canvas.dataset.bound = '1';
+    canvas.addEventListener('pointerdown', (event) => {
+        const point = planPoint(event);
+        const room = planMetrics();
+        const grip = planGrip(point, room);
+        if (grip) {
+            snapshot();
+            planPointer = { kind: 'grip', id: grip.id, x: point.x, z: point.z, cm: grip.id === 'front' ? wallLimit() : sideLimit(grip.id), scale: room.scale };
+            canvas.setPointerCapture(event.pointerId);
+            return;
+        }
+        if (planTool === 'door' || planTool === 'window') {
+            const hit = planWallHit(point, room);
+            if (!hit) return;
+            snapshot();
+            toggleOpening(hit.wall, hit.t);
+            refreshPlan();
+            scheduleSave();
+            return;
+        }
+        const mod = planModuleHit(point, room);
+        if (!mod || mod.kind === 'corner' || mod.kind === 'end') {
+            if (mod) {
+                selectedId = mod.id;
+                drawPlan();
+            }
+            return;
+        }
+        const wall = room[wallName(mod)];
+        const alongPx = wall.z1 === wall.z2 ? point.x - wall.x1 : point.z - wall.z1;
+        snapshot();
+        selectedId = mod.id;
+        moduleDrag = { id: mod.id, x: event.clientX, y: event.clientY, active: true, grab: alongPx / room.scale - (Number(mod.offset) || 0) };
+        dragId = mod.id;
+        planPointer = { kind: 'module', id: mod.id };
+        canvas.setPointerCapture(event.pointerId);
+        drawPlan();
+    });
+    canvas.addEventListener('pointermove', (event) => {
+        if (!planPointer) return;
+        const point = planPoint(event);
+        const room = planMetrics();
+        if (planPointer.kind === 'grip') {
+            const delta = planPointer.id === 'front' ? point.x - planPointer.x : point.z - planPointer.z;
+            const next = clamp(Math.round(planPointer.cm + delta / planPointer.scale), 80, 800);
+            if (planPointer.id === 'front') state.wallWidth = next;
+            else if (planPointer.id === 'left') state.leftWall = next;
+            else state.rightWall = next;
+            paintPlan();
+            return;
+        }
+        const mod = state.modules.find((item) => item.id === planPointer.id);
+        if (!mod) return;
+        const pick = planWallPick(point, room, mod);
+        if (pick.wall !== wallName(mod)) {
+            mod.wall = pick.wall;
+            if (moduleDrag) {
+                moduleDrag.anchor = null;
+                moduleDrag.origin = null;
+                moduleDrag.grab = alongSize(mod) / 2;
+            }
+        }
+        const wall = room[wallName(mod)];
+        if (!wall) return;
+        const alongPx = wall.z1 === wall.z2 ? point.x - wall.x1 : point.z - wall.z1;
+        slideModule(mod, alongPx / room.scale - (moduleDrag?.grab || 0));
+        paintPlan();
+    });
+    canvas.addEventListener('pointerup', () => {
+        const dragged = planPointer?.kind === 'module' ? state.modules.find((item) => item.id === planPointer.id) : null;
+        if (dragged) settleOverlaps(dragged);
+        planPointer = null;
+        moduleDrag = null;
+        dragId = null;
+        if (planMode === '2d') refreshPlan();
+        scheduleSave();
+    });
+    el('plan-tools')?.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-plan-tool]');
+        if (!button) return;
+        planTool = button.dataset.planTool;
+        el('plan-tools').querySelectorAll('button').forEach((item) => item.classList.toggle('is-on', item === button));
+    });
 }
 
 function framePlan() {
@@ -4176,39 +4526,33 @@ function framePlan() {
 function setPlanMode(mode) {
     if (!perspCamera || !orthoCamera || !controls) return;
     planMode = mode === '2d' ? '2d' : '3d';
+    document.body.classList.toggle('plan-2d', planMode === '2d');
+    document.body.classList.remove('plan-room');
+    el('plan-board')?.classList.toggle('hidden', planMode !== '2d');
     document.querySelectorAll('[data-plan]').forEach((button) => {
         button.classList.toggle('is-on', button.dataset.plan === planMode);
     });
     if (planMode === '2d') {
-        camera = orthoCamera;
-        controls.object = orthoCamera;
-        controls.enableRotate = false;
-        controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
-        controls.minPolarAngle = 0;
-        controls.maxPolarAngle = 0.01;
-        framePlan();
-    } else {
-        camera = perspCamera;
-        controls.object = perspCamera;
-        controls.enableRotate = true;
-        controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
-        controls.minPolarAngle = 0.08;
-        controls.maxPolarAngle = Math.PI / 2 - 0.02;
-        setCameraView('perspective');
+        bindPlanBoard();
+        drawPlan();
+        return;
     }
+    camera = perspCamera;
+    controls.object = perspCamera;
+    controls.enableRotate = true;
+    controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
+    controls.minPolarAngle = 0.08;
+    controls.maxPolarAngle = Math.PI / 2 - 0.02;
+    setCameraView('perspective');
     resize();
 }
 
 function revealCustomizer(mod) {
     if (!mod || customFor === mod.id) return;
     customFor = mod.id;
+    if (window.matchMedia('(max-width: 900px)').matches) return;
     document.body.classList.add('show-custom');
     document.body.classList.remove('show-library');
-    if (window.matchMedia('(max-width: 900px)').matches) {
-        el('library').classList.remove('is-open');
-        el('inspector').classList.add('is-open');
-        document.body.dataset.sheet = 'doors';
-    }
     requestAnimationFrame(resize);
 }
 
@@ -4380,6 +4724,7 @@ function init3d() {
         }
     }, true);
     window.addEventListener('pointermove', (event) => {
+        if (planMode === '2d') return;
         if (pointerPress && Math.hypot(event.clientX - pointerPress.x, event.clientY - pointerPress.y) > clickSlop) {
             pointerPress.moved = true;
             if (pointerPress.id && !moduleDrag) beginModuleDrag(pointerPress.id, event);
@@ -4407,6 +4752,9 @@ function init3d() {
         beginModuleDrag(mod.id, event);
     });
     const finishModuleDrag = () => {
+        const dragged = moduleDrag ? state.modules.find((item) => item.id === moduleDrag.id) : null;
+        if (dragged) settleOverlaps(dragged);
+        if (moduleDrag) moduleDrag.anchor = null;
         moduleDrag = null;
         dragId = null;
         pointerDown = null;
@@ -4981,7 +5329,7 @@ function renderInspector() {
             <div class="field"><label>Sol duvar genişliği (cm)</label><input id="wall-left" type="number" min="80" max="800" value="${sideLimit('left')}"></div>
             <div class="field"><label>Ön duvar genişliği (cm)</label><input id="wall-front" type="number" min="80" max="800" value="${wallLimit()}"></div>
             <div class="field"><label>Sağ duvar genişliği (cm)</label><input id="wall-right" type="number" min="80" max="800" value="${sideLimit('right')}"></div>
-            <div class="field"><label>Yükseklik (cm)</label><input id="room-h" type="number" min="160" max="400" value="${roomHeightLimit()}"></div>
+            <div class="field"><label>Oda yüksekliği (cm)</label><input id="room-h" type="number" min="${ROOM_H_MIN}" max="${ROOM_H_MAX}" value="${roomHeightLimit()}"><p class="hint">Standart ${ROOM_H_STD} cm. ${ROOM_H_MIN} ile ${ROOM_H_MAX} arasında değiştirilebilir.</p></div>
             ${colorChoicesHtml(state, state.modules.some((item) => cabinetHasDrawers(item)))}
             ${swatchPicker(ALUMINUM, state.aluminumId, 'alum', 'Alüminyum kapak', true)}
             ${swatchPicker(GLASS, state.glassId, 'glass', 'Cam')}
@@ -5002,7 +5350,7 @@ function renderInspector() {
             state.rightWall = clamp(Number(event.target.value), 80, 800);
         }));
         body.querySelector('#room-h').addEventListener('change', (event) => commit(() => {
-            state.roomHeight = clamp(Number(event.target.value), 160, 400);
+            state.roomHeight = clamp(Number(event.target.value), ROOM_H_MIN, ROOM_H_MAX);
         }));
         body.querySelector('#cab-plinth').addEventListener('change', (event) => commit(() => {
             state.plinth = event.target.checked;
@@ -5155,6 +5503,7 @@ function render() {
     renderSummary();
     rebuild();
     fitRoom();
+    if (planMode === '2d') drawPlan();
 }
 
 function addSet(setId) {
@@ -5301,6 +5650,109 @@ function wallFullMessage(wall) {
     return `${name} bu dolap için yer kalmadı.`;
 }
 
+function wallSpan(mod) {
+    const wall = wallName(mod);
+    return wall === 'front' ? wallLimit() : sideLimit(wall);
+}
+
+function rowMates(mod) {
+    return state.modules
+        .filter((item) => item !== mod && item.kind !== 'corner' && item.kind !== 'end' && wallName(item) === wallName(mod))
+        .sort((a, b) => (Number(a.offset) || 0) - (Number(b.offset) || 0));
+}
+
+function slideModule(mod, rawOffset) {
+    if (!mod || mod.kind === 'corner' || mod.kind === 'end') return;
+    const along = alongSize(mod);
+    const limit = Math.max(along, wallSpan(mod));
+    const at = clamp(Number(rawOffset) || 0, 0, limit - along);
+    const home = Number(mod.offset) || 0;
+    const hold = moduleDrag?.anchor;
+    if (hold && hold.id === mod.id) {
+        const caught = hold.dir > 0 ? at >= hold.at - 0.5 : at <= hold.at + 0.5;
+        const backed = hold.dir > 0 ? at < hold.at - along * (1 - PASS_RATIO) : at > hold.at + along * (1 - PASS_RATIO);
+        if (!caught && !backed) {
+            mod.offset = hold.at;
+            return;
+        }
+        moduleDrag.anchor = null;
+    }
+    if (Math.abs(at - home) < 1) {
+        mod.offset = at;
+        return;
+    }
+    if (moduleDrag && moduleDrag.origin == null) moduleDrag.origin = home;
+    const mates = rowMates(mod);
+    if (at > home + 0.5) {
+        const next = mates.find((item) => {
+            const start = Number(item.offset) || 0;
+            const end = start + alongSize(item);
+            return end > home + 0.5 && start >= home - along;
+        });
+        if (next) {
+            const nextAlong = alongSize(next);
+            const line = (Number(next.offset) || 0) + nextAlong * PASS_RATIO;
+            if (at + along < line) {
+                mod.offset = at;
+                return;
+            }
+            next.offset = home;
+            mod.offset = home + nextAlong;
+            if (moduleDrag) {
+                moduleDrag.anchor = { id: mod.id, at: mod.offset, dir: 1 };
+                moduleDrag.origin = mod.offset;
+            }
+            return;
+        }
+    } else if (at < home - 0.5) {
+        const prev = [...mates].reverse().find((item) => {
+            const start = Number(item.offset) || 0;
+            const end = start + alongSize(item);
+            return start < home + 0.5 && end > home - along;
+        });
+        if (prev) {
+            const prevAlong = alongSize(prev);
+            const prevStart = Number(prev.offset) || 0;
+            const line = prevStart + prevAlong * (1 - PASS_RATIO);
+            if (at > line) {
+                mod.offset = at;
+                return;
+            }
+            prev.offset = prevStart + along;
+            mod.offset = prevStart;
+            if (moduleDrag) {
+                moduleDrag.anchor = { id: mod.id, at: mod.offset, dir: -1 };
+                moduleDrag.origin = mod.offset;
+            }
+            return;
+        }
+    }
+    mod.offset = at;
+}
+
+function settleOverlaps(mod) {
+    if (!mod || mod.kind === 'corner' || mod.kind === 'end') return;
+    const along = alongSize(mod);
+    const limit = Math.max(along, wallSpan(mod));
+    for (let pass = 0; pass < 4; pass += 1) {
+        let at = clamp(Number(mod.offset) || 0, 0, limit - along);
+        const hit = rowMates(mod).find((other) => {
+            const o0 = Number(other.offset) || 0;
+            const o1 = o0 + alongSize(other);
+            return at < o1 - 0.4 && at + along > o0 + 0.4;
+        });
+        if (!hit) {
+            mod.offset = at;
+            return;
+        }
+        const o0 = Number(hit.offset) || 0;
+        const o1 = o0 + alongSize(hit);
+        const origin = moduleDrag?.origin;
+        at = origin != null && origin >= o0 - 0.5 ? o1 : o0 - along;
+        mod.offset = clamp(at, 0, limit - along);
+    }
+}
+
 function dragModule(id, event) {
     const mod = state.modules.find((item) => item.id === id);
     if (!mod || !renderer) return;
@@ -5316,12 +5768,21 @@ function dragModule(id, event) {
             Object.assign(mod, previous);
             return;
         }
-    } else if (!applyWallDrop(mod, pick)) {
-        Object.assign(mod, previous);
-        return;
+    } else {
+        const remembered = state.modules.map((item) => ({ id: item.id, wall: item.wall, offset: item.offset, cornerSide: item.cornerSide }));
+        mod.wall = pick.wall === 'left' || pick.wall === 'right' ? pick.wall : 'front';
+        slideModule(mod, pick.offset);
+        if (!layout(state.modules)) {
+            remembered.forEach((row) => {
+                const item = state.modules.find((entry) => entry.id === row.id);
+                if (item) Object.assign(item, row);
+            });
+            Object.assign(mod, previous);
+            return;
+        }
     }
     selectedId = id;
-    rebuild();
+    if (!shiftCabinets()) rebuild();
     showDragGhost(mod);
     renderSummary();
     updateHud();
@@ -5441,6 +5902,7 @@ function addCabinet(target) {
         state.modules.push(mod);
         selectedId = mod.id;
     });
+    frameCamera();
     el('library').classList.remove('is-open');
     if (!window.matchMedia('(max-width: 900px)').matches) el('inspector').classList.add('is-open');
 }
@@ -5599,6 +6061,7 @@ async function addGlbModule(id, dropEvent) {
         if (!window.matchMedia('(max-width: 900px)').matches) el('inspector').classList.add('is-open');
     } catch (error) {
         noteDrop({ phase: 'error', id, message: String(error?.stack || error).slice(0, 500) });
+        toast('Bu modülün modeli açılamadı. Sahne duruyor. Başka bir modül seçebilirsiniz.');
     }
 }
 
@@ -5646,6 +6109,7 @@ function addCadModule(id, dropEvent) {
         state.modules.push(mod);
         selectedId = mod.id;
     });
+    frameCamera();
     el('library').classList.remove('is-open');
     if (!window.matchMedia('(max-width: 900px)').matches) el('inspector').classList.add('is-open');
 }
@@ -5667,6 +6131,7 @@ function addProduct(productId, dropEvent) {
         state.modules.push(mod);
         selectedId = mod.id;
     });
+    frameCamera();
     el('library').classList.remove('is-open');
 }
 
@@ -6221,6 +6686,7 @@ async function takeRender() {
             }
         }
         const href = renderer.domElement.toDataURL('image/png');
+        window.__renderImage = href;
         const elapsed = Math.round(performance.now() - started);
         window.__renderStats = {
             ms: elapsed,
@@ -6331,24 +6797,12 @@ function bindChrome() {
     el('view-bar').addEventListener('click', (event) => {
         const button = event.target.closest('[data-view]');
         if (!button) return;
-        if (button.dataset.view === 'top') setPlanMode('2d');
-        else {
-            if (planMode === '2d') {
-                planMode = '3d';
-                camera = perspCamera;
-                controls.object = perspCamera;
-                controls.enableRotate = true;
-                controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
-                controls.minPolarAngle = 0.08;
-                controls.maxPolarAngle = Math.PI / 2 - 0.02;
-                document.querySelectorAll('[data-plan]').forEach((item) => item.classList.toggle('is-on', item.dataset.plan === '3d'));
-            }
-            setCameraView(button.dataset.view);
-        }
+        if (planMode === '2d') setPlanMode('3d');
+        setCameraView(button.dataset.view);
     });
     el('plan-switch').addEventListener('click', (event) => {
         const button = event.target.closest('[data-plan]');
-        if (button) setPlanMode(button.dataset.plan);
+        if (button && (button.dataset.plan === '2d' || button.dataset.plan === '3d')) setPlanMode(button.dataset.plan);
     });
     el('btn-modules').onclick = () => showModuleLibrary();
     el('btn-guides').onclick = () => {
@@ -6379,8 +6833,8 @@ function bindChrome() {
             msg.textContent = 'Duvar genişlikleri 80 ile 800 cm arasında olmalı.';
             return;
         }
-        if (!Number.isFinite(roomH) || roomH < 160 || roomH > 400) {
-            msg.textContent = 'Yükseklik 160 ile 400 cm arasında olmalı.';
+        if (!Number.isFinite(roomH) || roomH < ROOM_H_MIN || roomH > ROOM_H_MAX) {
+            msg.textContent = `Oda yüksekliği ${ROOM_H_MIN} ile ${ROOM_H_MAX} cm arasında olmalı.`;
             return;
         }
         state.customerName = String(form.get('customerName') || '').trim();
@@ -6516,7 +6970,9 @@ function applyDefaultColors() {
     if (!(Number(state.wallWidth) >= 80)) state.wallWidth = WALL_X;
     if (!(Number(state.leftWall) >= 80)) state.leftWall = 300;
     if (!(Number(state.rightWall) >= 80)) state.rightWall = 300;
-    if (!(Number(state.roomHeight) >= 160)) state.roomHeight = 270;
+    if (!(Number(state.roomHeight) >= ROOM_H_MIN)) state.roomHeight = ROOM_H_STD;
+    state.roomHeight = Math.min(ROOM_H_MAX, Number(state.roomHeight) || ROOM_H_STD);
+    if (!state.roomSketch || !Array.isArray(state.roomSketch.openings)) state.roomSketch = { openings: [] };
 }
 
 function ensureModuleColors() {
@@ -6546,7 +7002,21 @@ function projectBody() {
     };
 }
 
+function writeDraft() {
+    try {
+        if (projectToken) return;
+        if (!state.modules.length) {
+            sessionStorage.removeItem('meemare-wardrobe-draft');
+            return;
+        }
+        sessionStorage.setItem('meemare-wardrobe-draft', JSON.stringify({ savedAt: Date.now(), state }));
+    } catch {
+        /* taslak yazılamazsa sahne bellekte kalır */
+    }
+}
+
 function scheduleSave() {
+    writeDraft();
     if (!projectToken) return;
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => persist(false), 700);
@@ -6563,16 +7033,21 @@ async function persist(manual) {
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': window.WARDROBE.csrf, Accept: 'application/json' },
             body: JSON.stringify(projectBody()),
         });
-        const data = await response.json();
-        if (manual) toast(data.message || (data.ok ? 'Proje kaydedildi.' : 'Kayıt yazılamadı.'));
-        return Boolean(data.ok);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.ok) {
+            if (manual) toast(`${data.message || 'Kayıt yazılamadı.'} Tasarım ekranda duruyor.`);
+            return false;
+        }
+        if (manual) toast(data.message || 'Proje kaydedildi.');
+        return true;
     } catch {
-        if (manual) toast('Kayıt yazılamadı.');
+        if (manual) toast('Kayıt yazılamadı. Tasarım ekranda duruyor. Tekrar deneyin.');
         return false;
     }
 }
 
 function startNewProject() {
+    try { sessionStorage.removeItem('meemare-wardrobe-draft'); } catch { /* boş */ }
     state = blankState();
     applyDefaultColors();
     projectToken = null;
@@ -6593,7 +7068,7 @@ function startNewProject() {
     form.leftWall.value = '300';
     form.frontWall.value = '300';
     form.rightWall.value = '300';
-    form.roomHeight.value = '270';
+    form.roomHeight.value = String(ROOM_H_STD);
     el('customer-msg').textContent = '';
     el('customer-modal').classList.remove('hidden');
     searchProjects('', el('resume-list'), () => el('customer-modal').classList.add('hidden'));
@@ -6775,12 +7250,77 @@ async function boot() {
         }
         el('customer-form').projectName.value = state.name || 'Dolabım';
     }
+    try {
+        const draft = JSON.parse(sessionStorage.getItem('meemare-wardrobe-draft') || 'null');
+        if (draft?.state?.modules?.length) {
+            state = draft.state;
+            ensureModuleColors();
+            render();
+            frameCamera();
+            el('customer-modal').classList.add('hidden');
+            toast('Kaydedilmemiş taslak geri yüklendi.');
+            return;
+        }
+    } catch {
+        /* bozuk taslak yok sayılır */
+    }
     el('customer-modal').classList.add('hidden');
     render();
     frameCamera();
 }
 
 window.__setCameraView = (mode) => setCameraView(mode);
+window.__studio = {
+    add: (id) => addGlbModule(id),
+    remove: () => deleteSelected(),
+    clear: () => {
+        commit(() => {
+            state.modules = [];
+            selectedId = null;
+        });
+        frameCamera();
+    },
+    undo: () => undo(),
+    redo: () => redo(),
+    paint: (colorId) => {
+        const mod = selected();
+        if (!mod) return false;
+        commit(() => {
+            mod.doorColorId = colorId;
+            mod.carcassId = colorId;
+        });
+        return true;
+    },
+    setDoor: (kind) => {
+        const mod = selected();
+        if (!mod) return false;
+        commit(() => {
+            mod.door = kind;
+            mod.open = 0;
+        });
+        return true;
+    },
+    toggleDoor: () => {
+        const mod = selected();
+        if (!mod) return false;
+        commit(() => {
+            if (mod.door === 'none') mod.door = 'solid';
+            mod.open = mod.open ? 0 : 1;
+        });
+        return mod.open;
+    },
+    stats: () => ({
+        count: state.modules.length,
+        ids: state.modules.map((mod) => mod.glb || mod.kind),
+        places: state.modules.map((mod) => ({ id: mod.glb || mod.name, wall: mod.wall, offset: Math.round(Number(mod.offset) || 0) })),
+        openings: (state.roomSketch?.openings || []).map((item) => ({ wall: item.wallId, kind: item.kind, offset: item.offset, width: item.width })),
+        calls: renderer?.info?.render?.calls ?? null,
+        triangles: renderer?.info?.render?.triangles ?? null,
+        geometries: renderer?.info?.memory?.geometries ?? null,
+        textures: renderer?.info?.memory?.textures ?? null,
+    }),
+    summary: () => el('summary')?.textContent || '',
+};
 window.__rebuildCabinet = () => {
     matCache.clear();
     rebuild();
