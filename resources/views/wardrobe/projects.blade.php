@@ -22,6 +22,10 @@
         header a { color: inherit; text-decoration: none; }
         header strong { letter-spacing: .08em; }
         header span { color: var(--muted); font-size: 13px; margin-left: 8px; }
+        header .nav { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+        header .nav a, header .nav button { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 7px 12px; font-size: 13px; font-weight: 600; color: var(--ink); }
+        header .nav a.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+        header .nav button { font-family: inherit; cursor: pointer; }
         main { display: grid; grid-template-columns: 1fr; gap: 16px; max-width: 1180px; margin: 0 auto; padding: 20px 16px 40px; }
         section.form { max-width: 440px; }
         section { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
@@ -53,6 +57,16 @@
 <body>
 <header>
     <a href="{{ route('wardrobe.index') }}"><strong>MEEMARE</strong><span>Dolap projeleri</span></a>
+    <nav class="nav" aria-label="Uygulama geçişi">
+        <a class="primary" href="{{ route('dashboard') }}">Kontrol paneli</a>
+        <a href="{{ route('sales.index') }}">Satışlar</a>
+        <a href="{{ route('expenses.index') }}">Giderler</a>
+        <a href="{{ route('wardrobe.design') }}">3D tasarla</a>
+        <form method="POST" action="{{ route('logout') }}" style="margin:0">
+            @csrf
+            <button type="submit">Çıkış</button>
+        </form>
+    </nav>
 </header>
 <main>
     <section>

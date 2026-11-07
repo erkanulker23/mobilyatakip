@@ -34,7 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return \App\Support\WorkshopUser::homeUrl($user);
             }
 
-            return route('wardrobe.index');
+            return route('dashboard');
         });
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureUserRole::class,

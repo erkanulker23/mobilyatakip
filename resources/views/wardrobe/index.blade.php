@@ -188,12 +188,13 @@
 <body class="show-library">
 <div id="studio">
     <header class="bar">
-        <a href="{{ route('login') }}" class="brand">
+        <a href="{{ route('wardrobe.index') }}" class="brand">
             <strong>MEEMARE</strong>
             <span>Dolap planı</span>
         </a>
         <input id="project-name" class="name-input" maxlength="80" aria-label="Proje adı" value="Dolabım">
         <div class="grow"></div>
+        <a class="btn extra" href="{{ route('dashboard') }}">Kontrol paneli</a>
         <button type="button" class="btn" id="btn-new">Yeni proje</button>
         <button type="button" class="btn" id="btn-undo" disabled>Geri</button>
         <button type="button" class="btn" id="btn-redo" disabled>İleri</button>
@@ -388,6 +389,6 @@
         csrf: @json(csrf_token())
     };
 </script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=214"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=218"></script>
 </body>
 </html>

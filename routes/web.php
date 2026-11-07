@@ -58,7 +58,7 @@ Route::get('/', function () {
         return redirect(\App\Support\WorkshopUser::homeUrl($user));
     }
 
-    return redirect()->route('wardrobe.index');
+    return redirect()->route('dashboard');
 });
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login')->middleware('guest');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
