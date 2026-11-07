@@ -11,7 +11,9 @@
         category: @js(old('category', '')),
         kasaId: @js(old('kasaId', $defaultKasaId ?? '')),
         saleId: @js(old('saleId', $preselectedSaleId ?? '')),
+        supplierId: @js(old('supplierId', $preselectedSupplierId ?? '')),
         kasaNames: @js($kasalar->pluck('name', 'id')),
+        supplierNames: @js(($suppliers ?? collect())->pluck('name', 'id')),
         saleLabels: @js(($sales ?? collect())->mapWithKeys(fn ($s) => [
             $s->id => $s->saleNumber.' — '.($s->customer?->name ?? 'Müşteri').' — '.number_format((float) $s->grandTotal, 0, ',', '.').' ₺',
         ])),
@@ -35,6 +37,10 @@
         get saleLabel() {
             if (!this.saleId) return 'Siparişe bağlanmadı';
             return this.saleLabels[this.saleId] || 'Seçili sipariş';
+        },
+        get supplierLabel() {
+            if (!this.supplierId) return 'Tedarikçiye bağlanmadı';
+            return this.supplierNames[this.supplierId] || 'Seçili tedarikçi';
         },
         get categoryLabel() {
             return this.category.trim() !== '' ? this.category : 'Kategori seçilmedi';
@@ -137,11 +143,35 @@
                     </div>
                 </div>
 
-                {{-- 3. Sipariş (opsiyonel) --}}
+                {{-- 3. Tedarikçi (opsiyonel) --}}
+                @if(($suppliers ?? collect())->isNotEmpty() || old('supplierId') || !empty($preselectedSupplierId))
+                <div class="card p-6">
+                    <div class="flex items-start gap-3 mb-5">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 text-sm font-bold">3</span>
+                        <div>
+                            <h2 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">Hangi tedarikçiye? <span class="text-neutral-400 font-normal text-sm">(opsiyonel)</span></h2>
+                            <p class="text-sm text-neutral-500 dark:text-slate-400 mt-0.5">Ödemeyi bir tedarikçiye bağlarsanız gider kaydında ve filtrelerde görünür.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label" for="expenseSupplier">Tedarikçi</label>
+                        <select name="supplierId" id="expenseSupplier" class="form-select min-h-[44px]">
+                            <option value="">Bağlama — genel gider</option>
+                            @foreach($suppliers as $s)
+                            <option value="{{ $s->id }}" {{ (string) old('supplierId', $preselectedSupplierId ?? '') === (string) $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
+                            @endforeach
+                        </select>
+                        <p class="mt-1.5 text-xs text-neutral-500 dark:text-slate-400">Tedarikçi adı yazarak hızlı arayın.</p>
+                        @error('supplierId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+                @endif
+
+                {{-- 4. Sipariş (opsiyonel) --}}
                 @if(($sales ?? collect())->isNotEmpty() || old('saleId') || !empty($preselectedSaleId))
                 <div class="card p-6">
                     <div class="flex items-start gap-3 mb-5">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 text-sm font-bold">3</span>
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 text-sm font-bold">{{ ($suppliers ?? collect())->isNotEmpty() ? '4' : '3' }}</span>
                         <div>
                             <h2 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">Hangi sipariş için? <span class="text-neutral-400 font-normal text-sm">(opsiyonel)</span></h2>
                             <p class="text-sm text-neutral-500 dark:text-slate-400 mt-0.5">Satış faturasına bağlarsanız sipariş kartında bu harcama görünür.</p>
@@ -161,10 +191,10 @@
                 </div>
                 @endif
 
-                {{-- 4. Açıklama --}}
+                {{-- 5. Açıklama --}}
                 <div class="card p-6">
                     <div class="flex items-start gap-3 mb-5">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300 text-sm font-bold">{{ ($sales ?? collect())->isNotEmpty() ? '4' : '3' }}</span>
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300 text-sm font-bold">{{ 3 + (($suppliers ?? collect())->isNotEmpty() ? 1 : 0) + (($sales ?? collect())->isNotEmpty() ? 1 : 0) }}</span>
                         <div>
                             <h2 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">Ne için harcandı?</h2>
                             <p class="text-sm text-neutral-500 dark:text-slate-400 mt-0.5">Fatura, fiş veya kısa açıklama yazın — raporlarda bu metin görünür.</p>
@@ -188,7 +218,7 @@
                 {{-- 5. Kategori --}}
                 <div class="card p-6">
                     <div class="flex items-start gap-3 mb-5">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300 text-sm font-bold">{{ ($sales ?? collect())->isNotEmpty() ? '5' : '4' }}</span>
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300 text-sm font-bold">{{ 4 + (($suppliers ?? collect())->isNotEmpty() ? 1 : 0) + (($sales ?? collect())->isNotEmpty() ? 1 : 0) }}</span>
                         <div class="flex-1 min-w-0">
                             <h2 class="text-base font-semibold text-neutral-900 dark:text-neutral-100">Kategori</h2>
                             <p class="text-sm text-neutral-500 dark:text-slate-400 mt-0.5">Hazır kategorilerden birini seçin veya kendi kategorinizi yazın. (Opsiyonel)</p>
@@ -263,6 +293,10 @@
                         <dd class="font-medium text-right" :class="kasaId ? 'text-emerald-700 dark:text-emerald-400' : 'text-neutral-400'" x-text="kasaLabel">—</dd>
                     </div>
                     <div class="flex justify-between gap-3 py-2 border-b border-neutral-100 dark:border-neutral-800">
+                        <dt class="text-neutral-500 shrink-0">Tedarikçi</dt>
+                        <dd class="font-medium text-right truncate max-w-[14rem]" :class="supplierId ? 'text-emerald-700 dark:text-emerald-400' : 'text-neutral-400'" x-text="supplierLabel">—</dd>
+                    </div>
+                    <div class="flex justify-between gap-3 py-2 border-b border-neutral-100 dark:border-neutral-800">
                         <dt class="text-neutral-500 shrink-0">Sipariş</dt>
                         <dd class="font-medium text-right text-sm truncate max-w-[14rem]" :class="saleId ? 'text-emerald-700 dark:text-emerald-400' : 'text-neutral-400'" x-text="saleLabel">—</dd>
                     </div>
@@ -298,34 +332,41 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    function initExpenseSaleSearch() {
-        var sel = document.getElementById('expenseSale');
+    function alpineField(field, value) {
+        var root = document.getElementById('expenseFormRoot');
+        if (root && window.Alpine && typeof Alpine.$data === 'function') {
+            Alpine.$data(root)[field] = value || '';
+        }
+    }
+    function initExpenseSelect(id, placeholder, alpineKey) {
+        var sel = document.getElementById(id);
         if (!sel || typeof TomSelect === 'undefined') return;
         if (sel.tomselect) return;
         var ts = new TomSelect(sel, {
             maxOptions: null,
             allowEmptyOption: true,
-            placeholder: 'Sipariş no veya müşteri ara...',
+            placeholder: placeholder,
             searchField: ['text'],
             sortField: { field: 'text', direction: 'asc' },
             onChange: function (value) {
-                var root = document.getElementById('expenseFormRoot');
-                if (root && window.Alpine && typeof Alpine.$data === 'function') {
-                    Alpine.$data(root).saleId = value || '';
-                }
+                alpineField(alpineKey, value);
             }
         });
         if (sel.value) {
             ts.setValue(sel.value, true);
         }
     }
+    function initExpenseSearch() {
+        initExpenseSelect('expenseSupplier', 'Tedarikçi ara...', 'supplierId');
+        initExpenseSelect('expenseSale', 'Sipariş no veya müşteri ara...', 'saleId');
+    }
     if (typeof TomSelect === 'undefined') {
         var s = document.createElement('script');
         s.src = 'https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js';
-        s.onload = initExpenseSaleSearch;
+        s.onload = initExpenseSearch;
         document.head.appendChild(s);
     } else {
-        initExpenseSaleSearch();
+        initExpenseSearch();
     }
 });
 </script>

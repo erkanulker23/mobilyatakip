@@ -25,6 +25,9 @@ class Supplier extends BaseModel
             }
             DB::table('supplier_payments')->where('supplierId', $id)->delete();
             DB::table('supplier_statements')->where('supplierId', $id)->delete();
+            if (\Illuminate\Support\Facades\Schema::hasColumn('expenses', 'supplierId')) {
+                DB::table('expenses')->where('supplierId', $id)->update(['supplierId' => null]);
+            }
             DB::table('xml_feeds')->where('supplierId', $id)->update(['supplierId' => null]);
         });
     }
@@ -63,6 +66,11 @@ class Supplier extends BaseModel
     public function payments(): HasMany
     {
         return $this->hasMany(SupplierPayment::class, 'supplierId');
+    }
+
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class, 'supplierId');
     }
 
     public function statements(): HasMany

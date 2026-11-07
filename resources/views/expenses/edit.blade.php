@@ -65,6 +65,21 @@
             </select>
             @error('kasaId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
+        @if(($suppliers ?? collect())->isNotEmpty() || $expense->supplierId)
+        <div>
+            <label class="form-label">Tedarikçi <span class="text-neutral-400 font-normal">(opsiyonel)</span></label>
+            <select name="supplierId" id="expenseSupplier" class="form-select">
+                <option value="">Bağlama — genel gider</option>
+                @foreach($suppliers as $s)
+                <option value="{{ $s->id }}" {{ (string) old('supplierId', $expense->supplierId) === (string) $s->id ? 'selected' : '' }}>
+                    {{ $s->name }}
+                </option>
+                @endforeach
+            </select>
+            <p class="mt-1.5 text-xs text-neutral-500">Ödemeyi bir tedarikçiye bağlamak için seçin. Ad yazarak hızlı arayabilirsiniz.</p>
+            @error('supplierId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+        </div>
+        @endif
         @if(($sales ?? collect())->isNotEmpty() || $expense->saleId)
         <div>
             <label class="form-label">Satış faturası / sipariş <span class="text-neutral-400 font-normal">(opsiyonel)</span></label>
@@ -89,24 +104,28 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    function initExpenseSaleSearch() {
-        var sel = document.getElementById('expenseSale');
+    function initExpenseSelect(id, placeholder) {
+        var sel = document.getElementById(id);
         if (!sel || typeof TomSelect === 'undefined') return;
         if (sel.tomselect) return;
         new TomSelect(sel, {
             maxOptions: null,
             allowEmptyOption: true,
-            placeholder: 'Sipariş no veya müşteri ara...',
+            placeholder: placeholder,
             searchField: ['text'],
         });
+    }
+    function initExpenseSearch() {
+        initExpenseSelect('expenseSupplier', 'Tedarikçi ara...');
+        initExpenseSelect('expenseSale', 'Sipariş no veya müşteri ara...');
     }
     if (typeof TomSelect === 'undefined') {
         var s = document.createElement('script');
         s.src = 'https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js';
-        s.onload = initExpenseSaleSearch;
+        s.onload = initExpenseSearch;
         document.head.appendChild(s);
     } else {
-        initExpenseSaleSearch();
+        initExpenseSearch();
     }
 });
 </script>

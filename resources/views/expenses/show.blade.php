@@ -31,6 +31,16 @@
         <div><dt class="text-sm text-neutral-500">Açıklama</dt><dd class="text-neutral-700 whitespace-pre-wrap">{{ $expense->description }}</dd></div>
         <div><dt class="text-sm text-neutral-500">Kasa</dt><dd class="font-medium">{{ $expense->kasa?->name ?? '—' }}</dd></div>
         <div>
+            <dt class="text-sm text-neutral-500">Tedarikçi</dt>
+            <dd class="font-medium">
+                @if($expense->supplier)
+                <a href="{{ route('suppliers.show', $expense->supplier) }}" class="text-emerald-600 hover:underline">{{ $expense->supplier->name }}</a>
+                @else
+                —
+                @endif
+            </dd>
+        </div>
+        <div>
             <dt class="text-sm text-neutral-500">Sipariş / fatura</dt>
             <dd class="font-medium">
                 @if($expense->sale)

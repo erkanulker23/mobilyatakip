@@ -7,6 +7,7 @@ use App\Models\Kasa;
 use App\Models\KasaHareket;
 use App\Models\PersonnelAdvance;
 use App\Models\Sale;
+use App\Models\Supplier;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -21,6 +22,9 @@ class ExpenseController extends Controller
         if ($this->expensesHaveSaleLink()) {
             $with[] = 'sale.customer';
             $with[] = 'sale.items.product';
+        }
+        if ($this->expensesHaveSupplierLink()) {
+            $with[] = 'supplier';
         }
 
         $query = Expense::with($with)
@@ -42,6 +46,9 @@ class ExpenseController extends Controller
                 $q->where('description', 'like', $like)
                     ->orWhere('category', 'like', $like)
                     ->orWhereHas('kasa', fn ($k) => $k->where('name', 'like', $like));
+                if ($this->expensesHaveSupplierLink()) {
+                    $q->orWhereHas('supplier', fn ($s) => $s->where('name', 'like', $like));
+                }
                 if ($this->expensesHaveSaleLink()) {
                     $q->orWhereHas('sale', function ($sale) use ($like) {
                         $sale->where('saleNumber', 'like', $like)
@@ -59,6 +66,9 @@ class ExpenseController extends Controller
         if ($request->filled('kasaId')) {
             $query->where('kasaId', $request->kasaId);
         }
+        if ($request->filled('supplierId') && $this->expensesHaveSupplierLink()) {
+            $query->where('supplierId', $request->supplierId);
+        }
         $amountMin = $this->amountFilter($request, 'amountMin');
         $amountMax = $this->amountFilter($request, 'amountMax');
         if ($amountMin !== null) {
@@ -73,6 +83,9 @@ class ExpenseController extends Controller
         $total = (clone $query)->sum('amount');
         $expenses = $query->paginate(100)->withQueryString();
         $kasalar = Kasa::orderBy('name')->get();
+        $suppliers = $this->expensesHaveSupplierLink()
+            ? Supplier::orderBy('name')->get(['id', 'name'])
+            : collect();
 
         $advances = collect();
         $advanceTotal = 0.0;
@@ -111,7 +124,7 @@ class ExpenseController extends Controller
             $advanceTotal = (float) $advances->sum('amount');
         }
 
-        return view('expenses.index', compact('expenses', 'total', 'kasalar', 'advances', 'advanceTotal'));
+        return view('expenses.index', compact('expenses', 'total', 'kasalar', 'suppliers', 'advances', 'advanceTotal'));
     }
 
     private function categoriesForForm(): array
@@ -165,6 +178,28 @@ class ExpenseController extends Controller
         return Schema::hasColumn('expenses', 'saleId');
     }
 
+    private function expensesHaveSupplierLink(): bool
+    {
+        return Schema::hasColumn('expenses', 'supplierId');
+    }
+
+    private function supplierOptions(?string $includeSupplierId = null)
+    {
+        $suppliers = Supplier::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'isActive']);
+
+        if ($includeSupplierId && ! $suppliers->contains(fn (Supplier $s) => (string) $s->id === (string) $includeSupplierId)) {
+            $extra = Supplier::query()->select(['id', 'name', 'isActive'])->find($includeSupplierId);
+            if ($extra) {
+                $suppliers = $suppliers->prepend($extra);
+            }
+        }
+
+        return $suppliers->filter(fn (Supplier $s) => $s->isActive !== false
+            || (string) $s->id === (string) $includeSupplierId)->values();
+    }
+
     public function create(Request $request)
     {
         $kasalar = Kasa::activeForSelect()->get();
@@ -172,10 +207,22 @@ class ExpenseController extends Controller
         $sales = $this->expensesHaveSaleLink()
             ? $this->saleOptions($request->input('saleId'))
             : collect();
+        $suppliers = $this->expensesHaveSupplierLink()
+            ? $this->supplierOptions($request->input('supplierId'))
+            : collect();
         $preselectedSaleId = $request->input('saleId');
+        $preselectedSupplierId = $request->input('supplierId');
         $defaultKasaId = Kasa::defaultId();
 
-        return view('expenses.create', compact('kasalar', 'categories', 'sales', 'preselectedSaleId', 'defaultKasaId'));
+        return view('expenses.create', compact(
+            'kasalar',
+            'categories',
+            'sales',
+            'suppliers',
+            'preselectedSaleId',
+            'preselectedSupplierId',
+            'defaultKasaId'
+        ));
     }
 
     public function store(Request $request)
@@ -194,26 +241,26 @@ class ExpenseController extends Controller
         if ($this->expensesHaveSaleLink()) {
             $rules['saleId'] = 'nullable|exists:sales,id';
         }
+        if ($this->expensesHaveSupplierLink()) {
+            $rules['supplierId'] = 'nullable|exists:suppliers,id';
+        }
 
         $validated = $request->validate($rules, [
             'kasaId.required' => 'Kasa seçilmeden gider eklenemez.',
         ]);
-        if (! $this->expensesHaveSaleLink()) {
-            unset($validated['saleId']);
-        } else {
-            $validated['saleId'] = $validated['saleId'] ?? null;
-        }
+        $validated = $this->normalizeExpenseLinks($validated);
         $validated['createdBy'] = auth()->id() ?: null;
         $validated['kdvIncluded'] = true;
         $validated['kdvRate'] = 0;
         $validated['kdvAmount'] = 0;
         $expense = Expense::create($validated);
-        $expense->load('sale');
+        $expense->load(['sale', 'supplier']);
         $this->syncExpenseKasaMovement($expense, $validated);
         $this->auditService->logCreate('expense', $expense->id, [
             'amount' => $validated['amount'],
             'description' => $validated['description'],
             'saleId' => $validated['saleId'] ?? null,
+            'supplierId' => $validated['supplierId'] ?? null,
         ]);
 
         return redirect()->route('expenses.show', $expense)->with('success', 'Gider kaydedildi.');
@@ -224,6 +271,9 @@ class ExpenseController extends Controller
         $with = ['kasa', 'createdByUser'];
         if ($this->expensesHaveSaleLink()) {
             $with[] = 'sale.customer';
+        }
+        if ($this->expensesHaveSupplierLink()) {
+            $with[] = 'supplier';
         }
         $expense->load($with);
 
@@ -237,8 +287,11 @@ class ExpenseController extends Controller
         $sales = $this->expensesHaveSaleLink()
             ? $this->saleOptions($expense->saleId)
             : collect();
+        $suppliers = $this->expensesHaveSupplierLink()
+            ? $this->supplierOptions($expense->supplierId)
+            : collect();
 
-        return view('expenses.edit', compact('expense', 'kasalar', 'categories', 'sales'));
+        return view('expenses.edit', compact('expense', 'kasalar', 'categories', 'sales', 'suppliers'));
     }
 
     public function update(Request $request, Expense $expense)
@@ -257,20 +310,19 @@ class ExpenseController extends Controller
         if ($this->expensesHaveSaleLink()) {
             $rules['saleId'] = 'nullable|exists:sales,id';
         }
+        if ($this->expensesHaveSupplierLink()) {
+            $rules['supplierId'] = 'nullable|exists:suppliers,id';
+        }
 
         $validated = $request->validate($rules, [
             'kasaId.required' => 'Kasa seçilmeden gider eklenemez.',
         ]);
-        if (! $this->expensesHaveSaleLink()) {
-            unset($validated['saleId']);
-        } else {
-            $validated['saleId'] = $validated['saleId'] ?? null;
-        }
+        $validated = $this->normalizeExpenseLinks($validated);
         $validated['kdvIncluded'] = true;
         $validated['kdvRate'] = 0;
         $validated['kdvAmount'] = 0;
         $expense->update($validated);
-        $expense->load('sale');
+        $expense->load(['sale', 'supplier']);
 
         $this->syncExpenseKasaMovement($expense, $validated);
 
@@ -278,6 +330,7 @@ class ExpenseController extends Controller
             'amount' => $validated['amount'],
             'description' => $validated['description'],
             'saleId' => $validated['saleId'] ?? null,
+            'supplierId' => $validated['supplierId'] ?? null,
         ]);
 
         return redirect()->route('expenses.show', $expense)->with('success', 'Gider güncellendi.');
@@ -293,6 +346,24 @@ class ExpenseController extends Controller
     }
 
     /** @param  array<string, mixed>  $validated */
+    private function normalizeExpenseLinks(array $validated): array
+    {
+        if (! $this->expensesHaveSaleLink()) {
+            unset($validated['saleId']);
+        } else {
+            $validated['saleId'] = $validated['saleId'] ?? null;
+        }
+
+        if (! $this->expensesHaveSupplierLink()) {
+            unset($validated['supplierId']);
+        } else {
+            $validated['supplierId'] = $validated['supplierId'] ?? null;
+        }
+
+        return $validated;
+    }
+
+    /** @param  array<string, mixed>  $validated */
     private function syncExpenseKasaMovement(Expense $expense, array $validated): void
     {
         $hareket = KasaHareket::where('refType', 'expense')->where('refId', $expense->id)->first();
@@ -300,6 +371,10 @@ class ExpenseController extends Controller
         $sale = $expense->sale ?? (isset($validated['saleId']) ? Sale::find($validated['saleId']) : null);
         if ($sale) {
             $description .= ' · Sipariş: ' . $sale->saleNumber;
+        }
+        $supplier = $expense->supplier ?? (isset($validated['supplierId']) ? Supplier::find($validated['supplierId']) : null);
+        if ($supplier) {
+            $description .= ' · Tedarikçi: ' . $supplier->name;
         }
 
         if (empty($validated['kasaId'])) {

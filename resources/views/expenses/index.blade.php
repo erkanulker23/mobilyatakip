@@ -17,7 +17,7 @@
         <form method="GET" class="flex flex-wrap gap-4 items-end">
         <div class="min-w-[180px] flex-1">
             <label class="form-label">Ara</label>
-            <input type="text" name="search" placeholder="Açıklama, kategori, sipariş, ürün, kasa" value="{{ request('search') }}" class="form-input">
+            <input type="text" name="search" placeholder="Açıklama, kategori, tedarikçi, sipariş, kasa" value="{{ request('search') }}" class="form-input">
         </div>
         <div class="min-w-[130px]">
             <label class="form-label">Başlangıç</label>
@@ -40,6 +40,17 @@
                 @endforeach
             </select>
         </div>
+        @if(($suppliers ?? collect())->isNotEmpty())
+        <div class="min-w-[180px]">
+            <label class="form-label">Tedarikçi</label>
+            <select name="supplierId" class="form-select">
+                <option value="">Tümü</option>
+                @foreach($suppliers as $s)
+                <option value="{{ $s->id }}" {{ (string) request('supplierId') === (string) $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        @endif
         <div class="min-w-[110px]">
             <label class="form-label">Min tutar</label>
             <input type="text" inputmode="decimal" name="amountMin" value="{{ request('amountMin') }}" placeholder="0" class="form-input money-input" autocomplete="off">
@@ -125,6 +136,7 @@
             <tr>
                 <th class="table-th">Tarih</th>
                 <th class="table-th">Açıklama</th>
+                <th class="table-th">Tedarikçi</th>
                 <th class="table-th">Sipariş</th>
                 <th class="table-th">Kategori</th>
                 <th class="table-th">Kasa</th>
@@ -153,6 +165,13 @@
                     @endif
                 </td>
                 <td class="table-td text-slate-600">
+                    @if($e->supplier)
+                    <a href="{{ route('suppliers.show', $e->supplier) }}" class="text-emerald-600 hover:underline">{{ $e->supplier->name }}</a>
+                    @else
+                    <span class="text-neutral-400">—</span>
+                    @endif
+                </td>
+                <td class="table-td text-slate-600">
                     @if($e->sale)
                     <a href="{{ route('sales.show', $e->sale) }}" class="text-emerald-600 hover:underline font-mono text-sm">{{ $e->sale->saleNumber }}</a>
                     @else
@@ -171,7 +190,7 @@
                 </td>
             </tr>
             @empty
-            <tr><td colspan="7" class="px-6 py-8 text-center text-neutral-500">Gider kaydı yok.</td></tr>
+            <tr><td colspan="8" class="px-6 py-8 text-center text-neutral-500">Gider kaydı yok.</td></tr>
             @endforelse
         </tbody>
     </table>
