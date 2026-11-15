@@ -121,7 +121,6 @@ const glbFailed = new Set();
 let glbCatalog = [];
 let showMeasures = false;
 let planMode = '3d';
-let studioWorkspace = 'layout';
 let guidesOn = true;
 let perspCamera = null;
 let orthoCamera = null;
@@ -173,29 +172,6 @@ function applyWallsCm(front, left, right, height) {
     return true;
 }
 
-function setStudioWorkspace(mode) {
-    studioWorkspace = mode === 'room' ? 'room' : 'layout';
-    document.body.classList.toggle('studio-room', studioWorkspace === 'room');
-    document.body.classList.toggle('studio-layout', studioWorkspace !== 'room');
-    document.querySelectorAll('[data-workspace]').forEach((button) => {
-        const on = button.dataset.workspace === studioWorkspace;
-        button.classList.toggle('is-on', on);
-        if (button.tagName === 'A') button.classList.toggle('is-on', false);
-    });
-    if (studioWorkspace === 'room' && planMode === '2d') setPlanMode('3d');
-    const form = el('studio-plan-handoff');
-    if (form) {
-        if (form.onduvar) form.onduvar.value = state.wallWidth;
-        if (form.solduvar) form.solduvar.value = state.leftWall;
-        if (form.sagduvar) form.sagduvar.value = state.rightWall;
-        if (form.odaboy) form.odaboy.value = state.roomHeight;
-    }
-    if (studioWorkspace === 'layout') {
-        if (planMode !== '2d') requestAnimationFrame(resize);
-        else drawPlan();
-    }
-}
-
 window.MeemareStudioApplyWalls = (walls) => {
     if (!walls) return false;
     const ok = applyWallsCm(
@@ -204,10 +180,7 @@ window.MeemareStudioApplyWalls = (walls) => {
         Number(walls.rightCm ?? walls.right ?? walls.sagduvar),
         Number(walls.heightCm ?? walls.height ?? walls.roomHeight),
     );
-    if (ok) {
-        setStudioWorkspace('layout');
-        toast('Oda planı uygulandı. Modülleri kütüphaneden sürükleyin.');
-    }
+    if (ok) toast('Oda ölçüsü uygulandı. Modülleri kataloğdan sürükleyin.');
     return ok;
 };
 
@@ -7374,64 +7347,7 @@ async function takeRender() {
     }
 }
 
-function bindStudioHandoff() {
-    const form = el('studio-plan-handoff');
-    if (!form || form.dataset.bound) return;
-    form.dataset.bound = '1';
-    const apply = () => {
-        const front = Number(form.onduvar?.value);
-        const left = Number(form.solduvar?.value);
-        const right = Number(form.sagduvar?.value);
-        const height = Number(form.odaboy?.value);
-        if (window.MeemareStudioApplyWalls({ frontCm: front, leftCm: left, rightCm: right, heightCm: height })) {
-            ['wall-left', 'wall-front', 'wall-right', 'room-h'].forEach((id) => {
-                const node = el(id);
-                if (!node) return;
-                if (id === 'wall-left') node.value = state.leftWall;
-                if (id === 'wall-front') node.value = state.wallWidth;
-                if (id === 'wall-right') node.value = state.rightWall;
-                if (id === 'room-h') node.value = state.roomHeight;
-            });
-        }
-    };
-    form.addEventListener('submit', (event) => {
-        event.preventDefault();
-        apply();
-    });
-    el('studio-plan-json')?.addEventListener('change', async (event) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-        try {
-            const data = JSON.parse(await file.text());
-            const floor = data?.floors?.[0];
-            const walls = floor?.walls || data?.walls || [];
-            const len = (w) => Math.hypot((w.end?.x ?? 0) - (w.start?.x ?? 0), (w.end?.y ?? 0) - (w.start?.y ?? 0));
-            const lengths = walls.map(len).filter((n) => n > 40).sort((a, b) => b - a);
-            if (!lengths.length) {
-                toast('JSON içinde duvar bulunamadı.');
-                return;
-            }
-            const front = Math.round(Math.max(lengths[0], lengths[1] || lengths[0]));
-            const side = Math.round(lengths.find((n) => Math.abs(n - front) > 20) || lengths[1] || front);
-            const height = Math.round(walls[0]?.height || state.roomHeight || 320);
-            if (form.onduvar) form.onduvar.value = front;
-            if (form.solduvar) form.solduvar.value = side;
-            if (form.sagduvar) form.sagduvar.value = side;
-            if (form.odaboy) form.odaboy.value = height;
-            window.MeemareStudioApplyWalls({ frontCm: front, leftCm: side, rightCm: side, heightCm: height });
-        } catch {
-            toast('Geçersiz OpenPlan JSON.');
-        }
-        event.target.value = '';
-    });
-}
-
 function bindChrome() {
-    document.body.classList.add('studio-layout');
-    bindStudioHandoff();
-    document.querySelectorAll('[data-workspace]').forEach((button) => {
-        button.addEventListener('click', () => setStudioWorkspace(button.dataset.workspace));
-    });
     on('project-name', 'change', (event) => {
         state.name = event.target.value || 'Dolabım';
         scheduleSave();
@@ -7444,6 +7360,10 @@ function bindChrome() {
     });
     onClick('production-close', () => el('production-modal')?.classList.add('hidden'));
     onClick('btn-cabinet', openCabinetStudio);
+    onClick('btn-apply-room-handoff', () => {
+        if (applyHandoffFromStorage()) return;
+        toast('Kayıtlı plan ölçüsü yok. Önce plan sayfasında ölçü kaydedin.');
+    });
     onClick('btn-export-json', downloadMeemareBundle);
     onClick('production-cabinet', openCabinetStudio);
     onClick('btn-undo', undo);

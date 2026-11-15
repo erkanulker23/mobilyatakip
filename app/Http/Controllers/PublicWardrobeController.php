@@ -34,16 +34,17 @@ class PublicWardrobeController extends Controller
 
     public function design(): View
     {
-        return view('tools.embed', [
+        $openplan = public_path('openplan/index.html');
+
+        return view('wardrobe.index', [
             'company' => Company::first(),
-            'tool' => [
-                'title' => '3D dolap tasarla',
-                'lead' => 'Ölçü, kapak, çekmece ve panel listesi — Üretim dolabı ile aynı Cabinet Studio arayüzü.',
-                'src' => route('tools.cabinet.app', ['path' => 'index.html']),
-                'source' => 'https://github.com/petervanderwalt/cabinet-studio',
-                'credit' => 'Cabinet Studio · petervanderwalt',
-                'portal' => 'tasarla',
-            ],
+            'quoteUrl' => route('wardrobe.quote'),
+            'materialsUrl' => route('wardrobe.materials'),
+            'projectStoreUrl' => route('wardrobe.project.store'),
+            'projectIndexUrl' => route('wardrobe.project.index'),
+            'planUrl' => route('tools.plan'),
+            'cabinetUrl' => route('tools.cabinet'),
+            'openplanSrc' => is_file($openplan) ? url('/openplan/index.html') : 'https://app.openplan3d.com/',
         ]);
     }
 

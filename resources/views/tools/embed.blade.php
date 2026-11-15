@@ -43,17 +43,10 @@
         <button type="submit">Ölçüleri kaydet</button>
     </form>
     @endif
-    @if($tool['portal'] === 'tasarla')
-    <div class="meemare-handoff-row">
-        <p style="margin:0;flex:1;color:#5e6a64;font-size:12px">Kapak, ölçü ve DXF bu ekranda. Oda duvarı için önce <strong>Duvar çiz</strong> — plan sayfası buradan ayrı açılır.</p>
-        <a class="btn-apply" href="{{ route('tools.plan') }}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block">Duvar çiz (OpenPlan)</a>
-        <a class="btn-apply" href="{{ route('wardrobe.index') }}" style="text-decoration:none;display:inline-block;background:#1c1c1c">Projeler</a>
-    </div>
-    @endif
     @if($tool['portal'] === 'uretim')
     <div class="meemare-handoff-row">
-        <p style="margin:0;flex:1;color:#5e6a64;font-size:12px">Kayıtlı dolap projesi için <strong>3D tasarla</strong> ile aynı ekranı kullanın; burada doğrudan tek gövde üretim.</p>
-        <a class="btn-apply" href="{{ route('wardrobe.design') }}" style="text-decoration:none;display:inline-block">3D tasarla (projeli)</a>
+        <p style="margin:0;flex:1;color:#5e6a64;font-size:12px">Tek dolap gövdesi, DXF ve kapak detayı burada. Oda ve Y26 modül dizimi için <strong>3D tasarla</strong>.</p>
+        <a class="btn-apply" href="{{ route('wardrobe.design') }}" style="text-decoration:none;display:inline-block">Modül stüdyosu</a>
     </div>
     @endif
     <iframe src="{{ $tool['src'] }}" title="{{ $tool['title'] }}" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen; clipboard-read; clipboard-write"></iframe>
@@ -62,11 +55,8 @@
     <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=4" defer></script>
     <script src="{{ asset('js/openplan-import.js') }}?v=1" defer></script>
 @endif
-@if(in_array($tool['portal'], ['uretim', 'tasarla'], true))
+@if($tool['portal'] === 'uretim')
     <script src="{{ asset('js/meemare-cabinet-bridge.js') }}?v=2" defer></script>
-@endif
-@if($tool['portal'] === 'tasarla')
-    <script src="{{ asset('js/meemare-tasarla-bootstrap.js') }}?v=2" defer></script>
 @endif
 </body>
 </html>
