@@ -175,13 +175,22 @@
         #measure-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
         .measure { position: absolute; transform: translate(-50%, -50%); background: #1f6b4a; color: #fff; font-size: 11px; font-weight: 700; line-height: 1.2; padding: 2px 6px; border-radius: 999px; white-space: nowrap; }
         .btn.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
-        #selection-ui, #height-handle { position: absolute; z-index: 3; }
-        #selection-ui { display: flex; flex-direction: column; align-items: center; gap: 6px; transform: translate(-50%, 10px); pointer-events: none; }
-        #selection-ui button { pointer-events: auto; }
-        #selection-ui .selection-actions { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; max-width: 280px; }
-        #selection-name { background: #149152; color: #fff; font-size: 11px; font-weight: 600; line-height: 1.2; padding: 3px 8px; border-radius: 999px; white-space: nowrap; pointer-events: auto; cursor: grab; touch-action: none; }
-        #selection-ui button { background: #2b2b2b; color: #fff; border: 0; border-radius: 7px; padding: 6px 9px; font-size: 12px; font-weight: 600; }
-        #selection-ui button.is-on { background: #149152; }
+        #selection-ui, #height-handle, #quick-rail { position: absolute; z-index: 9; }
+        #selection-ui { display: none; }
+        #quick-rail {
+            display: flex; flex-direction: column; gap: 4px; min-width: 44px; max-width: 52px;
+            padding: 6px; border-radius: 12px; background: rgba(28,28,28,.88); box-shadow: var(--shadow);
+            transform: translate(8px, -50%); pointer-events: auto;
+        }
+        #quick-rail.hidden { display: none !important; }
+        #quick-rail button {
+            border: 0; border-radius: 8px; padding: 8px 6px; font-size: 11px; font-weight: 700;
+            background: rgba(255,255,255,.12); color: #fff; line-height: 1.1;
+        }
+        #quick-rail button.is-on { background: var(--accent); }
+        #quick-rail button.qr-danger { background: #9f2d2d; }
+        #quick-rail .qr-mini { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; }
+        #quick-rail .qr-mini button { width: 18px; height: 18px; padding: 0; border-radius: 4px; border: 1px solid rgba(255,255,255,.35); }
         #hold-select { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 4; background: #1f6b4a; color: #fff; border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 600; pointer-events: none; }
         .picked { display: inline-block; margin: 0 0 6px; background: #149152; color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; }
         #height-handle {
@@ -297,7 +306,10 @@
                     <button type="button" class="btn-mini" id="btn-apply-room-handoff" style="background:#1c1c1c">Kayıtlı plan ölçüsü</button>
                     <button type="button" class="btn-mini" id="btn-close-room-plan" style="background:#666">Kapat</button>
                 </form>
-                <iframe id="openplan-frame" src="{{ $openplanSrc }}" title="Oda planı (OpenPlan)" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen"></iframe>
+                <div class="room-plan-cta" style="padding:12px;background:#fff;border-top:1px solid var(--line)">
+                    <p class="hint" style="margin:0 0 8px">Duvar çizimi için OpenPlan ayrı sekmede açılır. Ölçüyü buradan girip <strong>3D odaya uygula</strong> yeterli.</p>
+                    <a class="btn btn-primary" href="{{ $planUrl }}" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">OpenPlan'da çiz</a>
+                </div>
             </div>
             <div class="stage-layout">
             <div id="viewport"></div>
@@ -321,26 +333,25 @@
                 <button type="button" id="btn-guides" class="is-on" title="Kılavuz çizgileri">Izgara</button>
                 <button type="button" id="btn-demo-dressing" title="Örnek L giyinme">Örnek</button>
             </div>
-            <div id="view-bar">
-                <button type="button" data-view="perspective">Perspektif</button>
-                <button type="button" data-view="front">Ön</button>
-                <button type="button" data-view="top">Üst</button>
-                <button type="button" data-view="left45" data-view-extra>Sol 45°</button>
-                <button type="button" data-view="right45" data-view-extra>Sağ 45°</button>
-                <button type="button" data-view="shelf" data-view-extra>Raf</button>
-                <button type="button" data-view="drawer" data-view-extra>Çekmece</button>
-                <button type="button" id="btn-view-more">+</button>
+            <div id="view-bar" aria-label="Kamera">
+                <button type="button" data-view="perspective" class="is-on">3D</button>
+                <button type="button" id="cam-orbit-left" title="Sola dön">‹</button>
+                <button type="button" id="cam-orbit-right" title="Sağa dön">›</button>
+                <button type="button" data-view="top" title="Kuş bakışı">Üst</button>
+                <button type="button" data-view="drawer" title="Çekmece yakın">Çekmece</button>
             </div>
             <div id="measure-layer" class="hidden"></div>
-            <div id="selection-ui" class="hidden">
-                <div id="selection-name"></div>
-                <div class="selection-actions">
-                    <button type="button" id="act-config">Özelleştir</button>
-                    <button type="button" id="act-forward">Öne</button>
-                    <button type="button" id="act-back">Arkaya</button>
-                    <button type="button" id="act-clone">Klonla</button>
-                    <button type="button" id="act-delete">Sil</button>
-                </div>
+            <div id="selection-ui" class="hidden" aria-hidden="true"><span id="selection-name"></span></div>
+            <div id="quick-rail" class="hidden" aria-label="Hızlı işlemler">
+                <button type="button" data-qr-door="solid" title="Ahşap kapak">Ahşap</button>
+                <button type="button" data-qr-door="glass" title="Cam kapak">Cam</button>
+                <div class="qr-mini" id="qr-wood-sw"></div>
+                <div class="qr-mini" id="qr-glass-sw"></div>
+                <div class="qr-mini" id="qr-alum-sw"></div>
+                <button type="button" data-qr="open" title="Kapak aç/kapa">Kapak</button>
+                <button type="button" data-qr="clone" title="Klonla">Klon</button>
+                <button type="button" data-qr="delete" class="qr-danger" title="Sil">Sil</button>
+                <button type="button" data-qr="panel" title="Sağ panel">Ayar</button>
             </div>
             <button type="button" id="height-handle" class="hidden" aria-label="Yükseklik">↕</button>
             <div id="hold-select" class="hidden"></div>
@@ -477,6 +488,6 @@
     };
 </script>
 <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=4" defer></script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=230"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=231"></script>
 </body>
 </html>

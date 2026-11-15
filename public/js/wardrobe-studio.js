@@ -122,7 +122,14 @@ let glbCatalog = [];
 let showMeasures = false;
 let planMode = '3d';
 let panelOpacity = 1;
+let sceneFocus = 'room';
 let guidesOn = true;
+
+const FLOOR_STYLES = [
+    { id: 'parquet', name: 'Parke', color: '#a67c52', roughness: 0.72 },
+    { id: 'tile', name: 'Fayans', color: '#e8e6e2', roughness: 0.38 },
+    { id: 'plain', name: 'Düz', color: '#c4b29a', roughness: 0.58 },
+];
 let perspCamera = null;
 let orthoCamera = null;
 let guideLines = null;
@@ -214,9 +221,12 @@ function syncInspectorChrome(mod) {
     if (mod) {
         title.textContent = mod.name;
         if (sub) sub.textContent = 'Kapak, iç ve donanım sekmeleri';
+    } else if (sceneFocus === 'floor') {
+        title.textContent = 'Zemin';
+        if (sub) sub.textContent = 'Parke / fayans seçin';
     } else {
         title.textContent = 'Oda';
-        if (sub) sub.textContent = 'Duvar ölçüsü · soldan modül ekleyin';
+        if (sub) sub.textContent = 'Duvar ölçüsü · zemine tıklayın';
     }
 }
 
@@ -347,6 +357,7 @@ function blankState() {
         rightWall: 300,
         roomHeight: ROOM_H_STD,
         wallColor: '#f7f6f4',
+        floorStyle: 'parquet',
         panelOpacity: 1,
         modules: [],
         roomSketch: { openings: [] },
@@ -4318,26 +4329,128 @@ function project(vector) {
     };
 }
 
+function applyFloorStyle() {
+    if (!room.floor?.material) return;
+    const style = FLOOR_STYLES.find((item) => item.id === (state.floorStyle || 'parquet')) || FLOOR_STYLES[0];
+    room.floor.material.color.set(style.color);
+    room.floor.material.roughness = style.roughness;
+}
+
+function paintQuickRail(mod) {
+    const rail = el('quick-rail');
+    if (!rail) return;
+    rail.querySelectorAll('[data-qr-door]').forEach((btn) => {
+        btn.classList.toggle('is-on', mod && btn.dataset.qrDoor === mod.door);
+    });
+    const woodHost = el('qr-wood-sw');
+    const glassHost = el('qr-glass-sw');
+    const alumHost = el('qr-alum-sw');
+    if (woodHost && mod) {
+        const picks = materials.filter((m) => m.group === 'melamin-kapli-panel').slice(0, 4);
+        woodHost.innerHTML = picks.map((item) => `<button type="button" data-qr-wood="${item.id}" title="${item.name || item.code}"></button>`).join('');
+        woodHost.style.display = picks.length ? 'flex' : 'none';
+        woodHost.querySelectorAll('[data-qr-wood]').forEach((btn, i) => {
+            const item = picks[i];
+            if (item?.image) btn.style.background = `url(${item.image}) center/cover`;
+            else btn.style.background = '#c4a574';
+        });
+    }
+    if (glassHost) {
+        glassHost.innerHTML = mod && mod.door !== 'none'
+            ? GLASS.slice(0, 4).map((item) => `<button type="button" data-qr-glass="${item.id}" title="${item.name}" style="background:${item.color}"></button>`).join('')
+            : '';
+        glassHost.style.display = mod?.door === 'glass' || mod?.door === 'mixed' ? 'flex' : 'none';
+    }
+    if (alumHost) {
+        alumHost.innerHTML = mod && mod.door !== 'none'
+            ? ALUMINUM.slice(0, 4).map((item) => `<button type="button" data-qr-alum="${item.id}" title="${item.name}" style="background:${item.color}"></button>`).join('')
+            : '';
+        alumHost.style.display = mod?.door !== 'none' ? 'flex' : 'none';
+    }
+    rail.querySelectorAll('[data-qr-door]').forEach((b) => { b.style.display = mod?.kind === 'end' ? 'none' : ''; });
+}
+
 function updateHud() {
-    const ui = el('selection-ui');
     const handle = el('height-handle');
+    const rail = el('quick-rail');
     const mod = selected();
     const group = mod ? cabinetRoot.getObjectByName(`mod-${mod.id}`) : null;
     if (!group) {
-        ui.classList.add('hidden');
-        handle.classList.add('hidden');
+        handle?.classList.add('hidden');
+        rail?.classList.add('hidden');
         return;
     }
+    paintQuickRail(mod);
     const box = new THREE.Box3().setFromObject(group);
     const center = new THREE.Vector3();
     box.getCenter(center);
-    const under = project(new THREE.Vector3(center.x, box.min.y + 8, box.max.z));
+    const side = project(new THREE.Vector3(box.max.x + 6, center.y, center.z));
     const top = project(new THREE.Vector3(center.x, box.max.y + 6, center.z));
-    el('selection-name').textContent = allCabinetsSelected ? 'Tüm dolaplar' : mod.name;
-    ui.classList.toggle('hidden', under.behind);
     handle.classList.toggle('hidden', top.behind);
-    placeHud(ui, under.x, under.y);
-    placeHud(handle, top.x, top.y);
+    rail.classList.toggle('hidden', side.behind);
+    if (!side.behind) placeHud(rail, side.x, side.y);
+    if (!top.behind) placeHud(handle, top.x, top.y);
+}
+
+function orbitCamera(delta) {
+    if (!camera || !controls) return;
+    const offset = camera.position.clone().sub(controls.target);
+    const radius = Math.max(120, Math.hypot(offset.x, offset.z));
+    const angle = Math.atan2(offset.x, offset.z) + delta;
+    camera.position.set(
+        controls.target.x + Math.sin(angle) * radius,
+        offset.y,
+        controls.target.z + Math.cos(angle) * radius,
+    );
+    controls.update();
+}
+
+function bindQuickRail() {
+    const rail = el('quick-rail');
+    if (!rail || rail.dataset.bound) return;
+    rail.dataset.bound = '1';
+    rail.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const mod = selected();
+        if (!mod) return;
+        const doorBtn = event.target.closest('[data-qr-door]');
+        if (doorBtn) {
+            commit(() => { mod.door = doorBtn.dataset.qrDoor; mod.open = 0; });
+            return;
+        }
+        const woodBtn = event.target.closest('[data-qr-wood]');
+        if (woodBtn) {
+            const id = woodBtn.dataset.qrWood;
+            commit(() => {
+                mod.doorColorId = id;
+                mod.carcassId = id;
+                paintColor(mod, 'doorColorId', id);
+            });
+            return;
+        }
+        const glassBtn = event.target.closest('[data-qr-glass]');
+        if (glassBtn) {
+            commit(() => { mod.glassId = glassBtn.dataset.qrGlass; state.glassId = mod.glassId; });
+            return;
+        }
+        const alumBtn = event.target.closest('[data-qr-alum]');
+        if (alumBtn) {
+            commit(() => { mod.aluminumId = alumBtn.dataset.qrAlum; state.aluminumId = mod.aluminumId; });
+            return;
+        }
+        const action = event.target.closest('[data-qr]')?.dataset.qr;
+        if (action === 'delete') deleteSelected();
+        if (action === 'clone') cloneSelected();
+        if (action === 'open') commit(() => { mod.open = mod.open > 0.5 ? 0 : 1; });
+        if (action === 'panel') {
+            el('inspector')?.classList.add('is-open');
+            document.body.classList.add('show-custom');
+            document.body.classList.remove('show-library');
+            const tab = rail.querySelector('[data-insp-tab="kapak"]') || el('inspector-body')?.querySelector('[data-insp-tab="kapak"]');
+            tab?.click();
+        }
+    });
+    rail.addEventListener('pointerdown', (event) => event.stopPropagation());
 }
 
 function placeHud(node, x, y) {
@@ -5246,6 +5359,7 @@ function init3d() {
     back.receiveShadow = true;
     scene.add(back);
     room.floor = floor;
+    applyFloorStyle();
     room.back = back;
     const left = new THREE.Mesh(new THREE.BoxGeometry(8, ROOM_H, WALL_Z), wallMat);
     left.position.set(-4, ROOM_H / 2, WALL_Z / 2);
@@ -5303,6 +5417,7 @@ function init3d() {
         if (selectedId !== id || allCabinetsSelected) {
             allCabinetsSelected = false;
             selectedId = id;
+            sceneFocus = 'module';
             render();
         }
     }, true);
@@ -5356,12 +5471,27 @@ function init3d() {
         controls.enabled = true;
         moduleDrag = null;
         pointerDown = null;
-        if (!press || press.moved || !press.id) return;
+        if (press?.moved) return;
         if (event.pointerType === 'mouse' && event.button !== 0) return;
-        if (Math.hypot(event.clientX - press.x, event.clientY - press.y) > clickSlop) return;
+        if (press && Math.hypot(event.clientX - press.x, event.clientY - press.y) > clickSlop) return;
+        if (!press?.id) {
+            if (floorUnder(event)) {
+                selectedId = null;
+                sceneFocus = 'floor';
+                allCabinetsSelected = false;
+                el('inspector')?.classList.add('is-open');
+                render();
+            } else if (selectedId) {
+                selectedId = null;
+                sceneFocus = 'room';
+                render();
+            }
+            return;
+        }
         if (selectedId === press.id && !allCabinetsSelected) return;
         allCabinetsSelected = false;
         selectedId = press.id;
+        sceneFocus = 'module';
         render();
     });
     window.addEventListener('pointerup', (event) => {
@@ -6029,6 +6159,7 @@ function renderInspector() {
             </div>
             <details open>
                 <summary>Görünüm</summary>
+                <div class="field"><label>Zemin</label><div class="seg">${FLOOR_STYLES.map((item) => `<button type="button" data-floor-style="${item.id}" class="${(state.floorStyle || 'parquet') === item.id ? 'is-on' : ''}">${item.name}</button>`).join('')}</div></div>
                 <div class="field"><label>Duvar rengi</label><div class="seg">${['#f7f6f4', '#e8e4dc', '#d4cfc6', '#c5d4c9', '#ffffff', '#3d4a42'].map((hex) => `<button type="button" data-wall-color="${hex}" class="${(state.wallColor || '#f7f6f4').toLowerCase() === hex ? 'is-on' : ''}" style="width:28px;height:28px;background:${hex};border:1px solid #ccc;border-radius:6px" title="${hex}"></button>`).join('')}</div></div>
                 <div class="field opacity-field"><label>Panel opaklığı</label><input id="panel-opacity" type="range" min="25" max="100" value="${Math.round((state.panelOpacity ?? 1) * 100)}"><span id="panel-opacity-val">${Math.round((state.panelOpacity ?? 1) * 100)}%</span></div>
             </details>
@@ -6055,6 +6186,12 @@ function renderInspector() {
         body.querySelector('#room-h').addEventListener('change', (event) => commit(() => {
             state.roomHeight = clamp(Number(event.target.value), ROOM_H_MIN, ROOM_H_MAX);
         }));
+        body.querySelectorAll('[data-floor-style]').forEach((button) => {
+            button.addEventListener('click', () => commit(() => {
+                state.floorStyle = button.dataset.floorStyle;
+                applyFloorStyle();
+            }));
+        });
         body.querySelectorAll('[data-wall-color]').forEach((button) => {
             button.addEventListener('click', () => commit(() => {
                 state.wallColor = button.dataset.wallColor;
@@ -6125,7 +6262,10 @@ function renderInspector() {
         return;
     }
     config.classList.add('hidden');
-    if (!window.matchMedia('(max-width: 900px)').matches) el('inspector').classList.add('is-open');
+    if (!window.matchMedia('(max-width: 900px)').matches) {
+        el('inspector')?.classList.add('is-open');
+        document.body.classList.add('show-custom');
+    }
     revealCustomizer(mod);
     body.innerHTML = moduleConfigHtml(mod);
     bindModuleConfig(body, mod);
@@ -6219,6 +6359,7 @@ function fitRoom() {
         room.floor.geometry.dispose();
         room.floor.geometry = new THREE.BoxGeometry(width, 2, depth + 40);
         room.floor.position.set(width / 2, -1, (depth + 40) / 2 - 8);
+        applyFloorStyle();
     }
 }
 
@@ -6259,6 +6400,15 @@ function syncLightsButton() {
     if (!button) return;
     button.classList.toggle('is-on', lightsOn);
     button.textContent = lightsOn ? 'Işıkları kapat' : 'Işıkları aç';
+}
+
+function floorUnder(event) {
+    if (!renderer || !room.floor) return false;
+    const rect = renderer.domElement.getBoundingClientRect();
+    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(pointer, camera);
+    return raycaster.intersectObject(room.floor, true).length > 0;
 }
 
 function moduleUnder(event) {
@@ -7532,13 +7682,13 @@ function bindStudioHandoff() {
 }
 
 function bindChrome() {
+    bindQuickRail();
     bindStudioHandoff();
     onClick('btn-room-plan', () => toggleRoomPlan(true));
     onClick('btn-close-room-plan', () => toggleRoomPlan(false));
     onClick('room-plan-backdrop', () => toggleRoomPlan(false));
-    onClick('btn-view-more', () => {
-        document.body.classList.toggle('show-extra-views');
-    });
+    onClick('cam-orbit-left', () => orbitCamera(-0.22));
+    onClick('cam-orbit-right', () => orbitCamera(0.22));
     on('project-name', 'change', (event) => {
         state.name = event.target.value || 'Dolabım';
         scheduleSave();
