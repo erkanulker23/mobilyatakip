@@ -36,6 +36,8 @@ const WALL_X = 520;
 const WALL_Z = 400;
 const ROOM_H = 280;
 const SAVE_KEY = 'meemare-wardrobe-saves';
+const ROOM_HANDOFF_KEY = 'meemare-room-handoff';
+const CABINET_HANDOFF_KEY = 'meemare-cabinet-handoff';
 
 const SERIES = [
     { id: 'duz', name: 'Düz kapak' },
@@ -130,6 +132,37 @@ const hiddenDoorIds = new Set();
 const measureNodes = [];
 const measureMat = new THREE.LineBasicMaterial({ color: 0x1f6b4a });
 
+function applyWallsCm(front, left, right, height) {
+    let changed = false;
+    if (front !== null && front >= 80) {
+        state.wallWidth = clamp(Math.round(front), 80, 800);
+        changed = true;
+    }
+    if (left !== null && left >= 80) {
+        state.leftWall = clamp(Math.round(left), 80, 800);
+        changed = true;
+    }
+    if (right !== null && right >= 80) {
+        state.rightWall = clamp(Math.round(right), 80, 800);
+        changed = true;
+    }
+    if (height !== null && height >= ROOM_H_MIN) {
+        state.roomHeight = clamp(Math.round(height), ROOM_H_MIN, ROOM_H_MAX);
+        changed = true;
+    }
+    if (!changed) return false;
+    ['wall-left', 'wall-front', 'wall-right', 'room-h'].forEach((id) => {
+        const node = el(id);
+        if (!node) return;
+        if (id === 'wall-left') node.value = state.leftWall;
+        if (id === 'wall-front') node.value = state.wallWidth;
+        if (id === 'wall-right') node.value = state.rightWall;
+        if (id === 'room-h') node.value = state.roomHeight;
+    });
+    refreshPlan();
+    return true;
+}
+
 function applyRoomQuery(params) {
     if (!params) return false;
     const read = (keys) => {
@@ -144,29 +177,89 @@ function applyRoomQuery(params) {
     const front = read(['onduvar', 'wall', 'on']);
     const left = read(['solduvar', 'left']);
     const right = read(['sagduvar', 'right']);
-    let changed = false;
-    if (front !== null && front >= 80) {
-        state.wallWidth = clamp(Math.round(front), 80, 800);
-        changed = true;
-    }
-    if (left !== null && left >= 80) {
-        state.leftWall = clamp(Math.round(left), 80, 800);
-        changed = true;
-    }
-    if (right !== null && right >= 80) {
-        state.rightWall = clamp(Math.round(right), 80, 800);
-        changed = true;
-    }
-    if (changed) {
-        const wallInputs = ['wall-left', 'wall-front', 'wall-right'];
-        const values = [state.leftWall, state.wallWidth, state.rightWall];
-        wallInputs.forEach((id, index) => {
-            const node = el(id);
-            if (node) node.value = values[index];
-        });
-        toast('Oda planı ölçüleri yüklendi.');
-    }
+    const height = read(['odaboy', 'roomHeight', 'tavan']);
+    const changed = applyWallsCm(front, left, right, height);
+    if (changed) toast('Oda planı ölçüleri yüklendi.');
     return changed;
+}
+
+function applyHandoffFromStorage() {
+    try {
+        const raw = localStorage.getItem(ROOM_HANDOFF_KEY);
+        if (!raw) return false;
+        const data = JSON.parse(raw);
+        const w = data?.walls || {};
+        const ok = applyWallsCm(
+            Number(w.frontCm ?? w.front),
+            Number(w.leftCm ?? w.left),
+            Number(w.rightCm ?? w.right),
+            Number(w.heightCm ?? w.height),
+        );
+        if (ok) toast('Plan sayfasından oda ölçüleri aktarıldı.');
+        localStorage.removeItem(ROOM_HANDOFF_KEY);
+        return ok;
+    } catch {
+        return false;
+    }
+}
+
+function meemareBundle() {
+    return {
+        format: 'meemare-wardrobe-bundle',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        projectToken,
+        room: {
+            frontCm: state.wallWidth,
+            leftCm: state.leftWall,
+            rightCm: state.rightWall,
+            heightCm: state.roomHeight,
+            openings: (state.roomSketch?.openings || []).map((item) => ({
+                wall: item.wallId,
+                kind: item.kind,
+                offset: item.offset,
+                width: item.width,
+            })),
+        },
+        customerName: state.customerName,
+        phone: state.phone,
+        projectName: state.name || 'Dolabım',
+        note: state.note || '',
+        design: state,
+    };
+}
+
+function downloadMeemareBundle() {
+    const payload = meemareBundle();
+    const blob = new Blob([`${JSON.stringify(payload, null, 2)}\n`], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    const slug = (state.name || 'dolap').replace(/[^\w\-]+/g, '_').slice(0, 40);
+    anchor.href = url;
+    anchor.download = `${slug || 'meemare'}_${Date.now()}.meemare.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    toast('Proje dosyası indirildi.');
+}
+
+function openCabinetStudio() {
+    const mod = selected();
+    const widthMm = mod ? Math.round((Number(mod.width) || 45) * 10) : Math.round((state.wallWidth || 300) * 10);
+    const heightMm = Math.round((mod ? moduleHeight(mod) : state.height || 250) * 10);
+    const depthMm = Math.round((mod?.glbDepth || state.depth || 60) * 10);
+    const doors = mod ? doorCount(mod) : 2;
+    const params = new URLSearchParams({
+        genislik: String(widthMm),
+        yukseklik: String(heightMm),
+        derinlik: String(depthMm),
+        kapak: String(doors),
+    });
+    try {
+        localStorage.setItem(CABINET_HANDOFF_KEY, JSON.stringify({ savedAt: Date.now(), module: mod, bundle: meemareBundle() }));
+    } catch {
+        /* devam */
+    }
+    window.open(`/dolap-uretim?${params}`, '_blank', 'noopener');
 }
 
 function blankState() {
@@ -7198,6 +7291,9 @@ function bindChrome() {
         el('production-modal').classList.remove('hidden');
     };
     el('production-close').onclick = () => el('production-modal').classList.add('hidden');
+    el('btn-cabinet')?.addEventListener('click', openCabinetStudio);
+    el('btn-export-json')?.addEventListener('click', downloadMeemareBundle);
+    el('production-cabinet')?.addEventListener('click', openCabinetStudio);
     el('btn-undo').onclick = undo;
     el('btn-redo').onclick = redo;
     el('btn-save').onclick = saveDesign;
@@ -7655,6 +7751,7 @@ async function boot() {
     }
     const params = new URLSearchParams(location.search);
     applyRoomQuery(params);
+    applyHandoffFromStorage();
     const recordId = params.get('kayit');
     const token = params.get('proje');
     if ((recordId && await openProject(recordId)) || (token && await openProject(token))) {

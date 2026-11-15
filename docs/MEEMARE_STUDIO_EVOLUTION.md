@@ -29,9 +29,18 @@ Tam OpenPlan köşe/oda çizimi için repoda `tools/openplan3d` var; sonraki aş
 
 `wardrobe-studio.js` içinde L-oda, kapı/pencere, duvar kolu sürükleme, modül taşıma — OpenPlan’daki akışa yakın; tam serbest duvar çizimi henüz yok.
 
+## Tamamlanan (sıra 2)
+
+| # | Özellik | Dosya |
+| --- | --- | --- |
+| 1 | Plan → stüdyo `localStorage` handoff | `public/js/meemare-plan-bridge.js` |
+| 2 | Stüdyo → üretim dolabı ölçü + handoff | `openCabinetStudio()`, `meemare-cabinet-bridge.js` |
+| 3 | Birleşik proje JSON indirme | `downloadMeemareBundle()` (`.meemare.json`) |
+| 4 | Giriş sonrası üst linkler | `public-gate-top-links.blade.php` |
+
 ## Sıradaki büyük adımlar
 
-1. Self-hosted OpenPlan (`tools/openplan3d` build → `/plan` static)
-2. Üretim dolabına seçili modülden DXF parametreleri
-3. Plan/stüdyo tek proje JSON (duvar + modül + malzeme)
-4. Cabinet Studio panel mantığını tekil modül inspector’a taşıma
+1. Self-hosted OpenPlan (`scripts/build-openplan-static.sh` — adapter-static gerekir)
+2. Cabinet Studio’ya otomatik ölçü enjeksiyonu (cross-origin iframe sınırı)
+3. Inspector’da panel/delik UI (Cabinet Studio parity)
+4. Katalog önizleme v=3 kalitesi (Cycles + malzeme)

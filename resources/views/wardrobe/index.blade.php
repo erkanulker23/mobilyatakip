@@ -210,6 +210,8 @@
         <a class="btn extra" href="{{ route('tools.cabinet') }}">Üretim</a>
         <button type="button" class="btn" id="btn-measures">Ölçüler</button>
         <button type="button" class="btn is-on" id="btn-lights">Işıkları kapat</button>
+        <button type="button" class="btn extra" id="btn-export-json">Proje JSON</button>
+        <button type="button" class="btn extra" id="btn-cabinet">Üretim dolabı</button>
         <button type="button" class="btn" id="btn-shot">Render al</button>
     </header>
     <div class="workspace">
@@ -350,7 +352,8 @@
         <h2>Üretim listesi</h2>
         <p class="hint" id="production-meta"></p>
         <ol class="parts" id="production"></ol>
-        <div style="display:flex;justify-content:flex-end">
+        <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+            <button type="button" class="btn-primary" id="production-cabinet">Üretim dolabında aç</button>
             <button type="button" class="btn" id="production-close">Kapat</button>
         </div>
     </div>
@@ -395,6 +398,6 @@
         csrf: @json(csrf_token())
     };
 </script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=219"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=220"></script>
 </body>
 </html>
