@@ -53,7 +53,7 @@
 <div class="page-shell">
     <div class="meemare-tool-bar">
         <strong>Dolap projeleri</strong>
-        <span class="lead">Kayıtlı odalar ve yeni proje. Oda çizimi için OpenPlan; modül dizimi 3D stüdyoda.</span>
+        <span class="lead">Önce proje oluşturun; duvar çizimi proje içinden veya ayrı plan sayfasından yapılır.</span>
     </div>
     <div class="meemare-nav-row">@include('partials.meemare-apps-nav', ['activeApp' => 'projeler'])</div>
     @include('partials.meemare-workflow', ['workflowStep' => 'projeler'])
@@ -69,18 +69,12 @@
     <section class="form">
         <h2>Yeni proje</h2>
         <form id="create">
-            <div class="field"><label>Ad</label><input name="customerName" required maxlength="120"></div>
+            <div class="field"><label>Müşteri adı</label><input name="customerName" required maxlength="120" autocomplete="name"></div>
             <div class="field"><label>Proje adı</label><input name="projectName" required maxlength="80" value="Dolabım"></div>
-            <p class="plan-cta">Odayı çizmek için <a href="{{ $planUrl }}">Oda planı (OpenPlan)</a> sayfasını kullanın; ölçüleri 3D stüdyoya aktarın. Hızlı başlangıç için duvar cm değerlerini aşağıya yazın.</p>
-            <div class="grid">
-                <div class="field"><label>Sol duvar (cm)</label><input name="leftWall" type="number" min="80" max="800" value="300"></div>
-                <div class="field"><label>Ön duvar (cm)</label><input name="frontWall" type="number" min="80" max="800" value="300"></div>
-                <div class="field"><label>Sağ duvar (cm)</label><input name="rightWall" type="number" min="80" max="800" value="300"></div>
-            </div>
-            <div class="field"><label>Oda yüksekliği (cm)</label><input name="roomHeight" type="number" min="160" max="320" value="320" required></div>
-            <div class="field" style="margin-top:10px"><label>Not</label><input name="note" maxlength="2000"></div>
+            <div class="field"><label>Not (isteğe bağlı)</label><input name="note" maxlength="2000"></div>
+            <p class="hint">Proje oluşturulunca 3D dolap ekranı açılır; oradan <strong>Duvar çiz</strong> ile OpenPlan kullanılır.</p>
             <p class="msg" id="msg"></p>
-            <button class="btn primary" type="submit">Dolabı tasarla</button>
+            <button class="btn primary" type="submit">Proje oluştur</button>
         </form>
     </section>
 </main>
@@ -128,18 +122,10 @@ document.getElementById('create').addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = new FormData(event.target);
     const msg = document.getElementById('msg');
-    const left = Number(form.get('leftWall'));
-    const front = Number(form.get('frontWall'));
-    const right = Number(form.get('rightWall'));
-    const roomH = Number(form.get('roomHeight'));
-    if (![left, front, right].every((value) => Number.isFinite(value) && value >= 80 && value <= 800)) {
-        msg.textContent = 'Duvar genişlikleri 80 ile 800 cm arasında olmalı.';
-        return;
-    }
-    if (!Number.isFinite(roomH) || roomH < 160 || roomH > 320) {
-        msg.textContent = 'Oda yüksekliği 160 ile 320 cm arasında olmalı.';
-        return;
-    }
+    const left = 300;
+    const front = 300;
+    const right = 300;
+    const roomH = 320;
     const name = String(form.get('projectName') || 'Dolabım');
     msg.textContent = 'Kaydediliyor…';
     const response = await fetch(storeUrl, {

@@ -12,6 +12,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    @include('partials.meemare-shell-styles')
     <style>
         :root {
             --ink: #1c1c1c;
@@ -36,7 +37,6 @@
             display: flex; align-items: center; gap: 8px; padding: 0 14px; background: var(--panel);
         }
         header.bar { border-bottom: 1px solid var(--line); flex-wrap: nowrap; gap: 8px; padding-top: 8px; padding-bottom: 8px; min-height: 48px; overflow-x: auto; scrollbar-width: thin; }
-        @include('partials.meemare-shell-styles')
         #room-plan-panel {
             display: none; position: absolute; inset: 0; z-index: 8;
             grid-template-rows: auto 1fr; background: #f3f1ec;

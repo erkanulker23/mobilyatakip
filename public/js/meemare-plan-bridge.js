@@ -31,7 +31,7 @@
         } catch (e) {
             console.warn('meemare handoff', e);
         }
-        flash('Ölçüler dolap stüdyosu için hazır. 3D tasarla sayfasına geçin.');
+        flash('Ölçüler kaydedildi. Dolap projenizi açın veya sayfayı yenileyin.');
     }
 
     function flash(text) {
@@ -65,7 +65,8 @@
 
     const form = document.getElementById('plan-handoff');
     if (form) {
-        form.addEventListener('submit', () => {
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
             saveHandoff({
                 source: 'plan-form',
                 walls: {

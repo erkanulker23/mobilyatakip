@@ -39,7 +39,15 @@
                 if (!field) return;
                 field.value = [walls.frontCm, walls.leftCm, walls.rightCm][i];
             });
-            saveHandoff(walls);
+            saveHandoff({
+                source: 'openplan-json',
+                walls: {
+                    frontCm: walls.frontCm,
+                    leftCm: walls.leftCm,
+                    rightCm: walls.rightCm,
+                    heightCm: walls.heightCm,
+                },
+            });
         } catch {
             alert('Geçersiz OpenPlan JSON.');
         }

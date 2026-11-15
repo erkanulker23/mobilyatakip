@@ -32,21 +32,21 @@
     <div class="meemare-nav-row">@include('partials.meemare-apps-nav', ['activeApp' => $tool['portal']])</div>
     @include('partials.meemare-workflow', ['workflowStep' => $tool['portal']])
     @if($tool['portal'] === 'plan')
-    <form class="meemare-handoff-row" id="plan-handoff" action="{{ route('wardrobe.design') }}" method="get">
-        <p>Duvarları alttaki tuvalde çizin. Ölçüleri yazıp <strong>3D dolaba aktar</strong> veya JSON yükleyin.</p>
+    <form class="meemare-handoff-row" id="plan-handoff">
+        <p style="margin:0;flex:1">Bu sayfa bağımsızdır. Duvarları çizin; ölçüleri kaydedin. Açık dolap projenize döndüğünüzde otomatik uygulanır.</p>
         <label style="display:flex;flex-direction:column;gap:3px;font-weight:600;color:#3d5247">OpenPlan JSON
             <input id="openplan-json-file" type="file" accept="application/json,.json" style="width:auto;font-size:11px">
         </label>
         <label>Ön (cm)<input type="number" name="onduvar" min="80" max="800" value="320" required></label>
         <label>Sol (cm)<input type="number" name="solduvar" min="80" max="800" value="280"></label>
         <label>Sağ (cm)<input type="number" name="sagduvar" min="80" max="800" value="280"></label>
-        <button type="submit">3D dolaba aktar</button>
+        <button type="submit">Ölçüleri kaydet</button>
     </form>
     @endif
     @if($tool['portal'] === 'tasarla')
     <div class="meemare-handoff-row">
-        <p style="margin:0;flex:1;color:#5e6a64;font-size:12px">Plan veya projeden gelen ölçüler otomatik uygulanır. Sürükle-bırak, kapak ve DXF aynı üretim ekranındaki gibidir.</p>
-        <a class="btn-apply" href="{{ route('tools.plan') }}" style="text-decoration:none;display:inline-block">Önce oda planı</a>
+        <p style="margin:0;flex:1;color:#5e6a64;font-size:12px">Kapak, ölçü ve DXF bu ekranda. Oda duvarı için önce <strong>Duvar çiz</strong> — plan sayfası buradan ayrı açılır.</p>
+        <a class="btn-apply" href="{{ route('tools.plan') }}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block">Duvar çiz (OpenPlan)</a>
         <a class="btn-apply" href="{{ route('wardrobe.index') }}" style="text-decoration:none;display:inline-block;background:#1c1c1c">Projeler</a>
     </div>
     @endif
@@ -59,14 +59,14 @@
     <iframe src="{{ $tool['src'] }}" title="{{ $tool['title'] }}" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen; clipboard-read; clipboard-write"></iframe>
 </div>
 @if($tool['portal'] === 'plan')
-    <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=3" defer></script>
+    <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=4" defer></script>
     <script src="{{ asset('js/openplan-import.js') }}?v=1" defer></script>
 @endif
 @if(in_array($tool['portal'], ['uretim', 'tasarla'], true))
     <script src="{{ asset('js/meemare-cabinet-bridge.js') }}?v=2" defer></script>
 @endif
 @if($tool['portal'] === 'tasarla')
-    <script src="{{ asset('js/meemare-tasarla-bootstrap.js') }}?v=1" defer></script>
+    <script src="{{ asset('js/meemare-tasarla-bootstrap.js') }}?v=2" defer></script>
 @endif
 </body>
 </html>

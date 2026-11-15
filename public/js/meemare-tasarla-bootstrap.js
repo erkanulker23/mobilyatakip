@@ -20,6 +20,28 @@
         frame.src = url.pathname + url.search;
     }
 
+    try {
+        const roomRaw = localStorage.getItem('meemare-room-handoff');
+        if (roomRaw) {
+            const data = JSON.parse(roomRaw);
+            const w = data?.walls || {};
+            const front = Number(w.frontCm ?? w.front);
+            const left = Number(w.leftCm ?? w.left);
+            const height = Number(w.heightCm ?? w.height) || 320;
+            if (front >= 80) {
+                applyIframeQuery({
+                    widthMm: front * 10,
+                    heightMm: height * 10,
+                    depthMm: 560,
+                    doors: 2,
+                });
+                localStorage.removeItem('meemare-room-handoff');
+            }
+        }
+    } catch {
+        /* */
+    }
+
     const frontCm = num(['onduvar', 'wall', 'on']);
     const leftCm = num(['solduvar', 'left']);
     const heightCm = num(['odaboy', 'roomHeight', 'tavan'], 260);
