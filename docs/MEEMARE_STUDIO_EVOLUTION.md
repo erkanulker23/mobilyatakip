@@ -4,7 +4,7 @@
 
 | Sayfa | URL | Açıklama |
 | --- | --- | --- |
-| Dolap projeleri | `/dolap` | Kayıtlı odalar (giriş gerekir) |
+| Dolap projeleri | `/dolap` | Kayıtlı odalar; yeni proje ölçü veya OpenPlan |
 | 3D tasarla | `/dolap/tasarla` | Modül stüdyosu |
 | Oda planı | `/plan` | OpenPlan3D (iframe) |
 | Üretim dolabı | `/dolap-uretim` | Cabinet Studio |
@@ -17,7 +17,9 @@ Kontrol paneli yan menüsüne **Meemare tasarım** bölümü eklendi (tüm rolle
 
 ## Ortak gezinme
 
-`resources/views/partials/meemare-apps-nav.blade.php` — plan, üretim, dolap sayfalarında aynı şerit.
+- `meemare-apps-nav` — uygulama geçişi (projeler / 3D / plan / üretim)
+- `meemare-workflow` — aynı dört adım şeridi (tüm tasarım sayfalarında)
+- `meemare-shell-styles` — üst bar + handoff satırı (Cabinet Studio ile uyumlu)
 
 ## Oda → dolap aktarımı
 

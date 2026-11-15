@@ -170,7 +170,9 @@ function setStudioWorkspace(mode) {
     document.body.classList.toggle('studio-room', studioWorkspace === 'room');
     document.body.classList.toggle('studio-layout', studioWorkspace !== 'room');
     document.querySelectorAll('[data-workspace]').forEach((button) => {
-        button.classList.toggle('is-on', button.dataset.workspace === studioWorkspace);
+        const on = button.dataset.workspace === studioWorkspace;
+        button.classList.toggle('is-on', on);
+        if (button.tagName === 'A') button.classList.toggle('is-on', false);
     });
     if (studioWorkspace === 'room' && planMode === '2d') setPlanMode('3d');
     const form = el('studio-plan-handoff');
@@ -7863,6 +7865,7 @@ async function loadMaterials() {
 async function boot() {
     init3d();
     bindChrome();
+    renderLibrary();
     try {
         await loadMaterials();
     } catch {

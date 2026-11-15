@@ -28,6 +28,7 @@ class PublicWardrobeController extends Controller
             'projectStoreUrl' => route('wardrobe.project.store'),
             'projectIndexUrl' => route('wardrobe.project.index'),
             'designUrl' => route('wardrobe.design'),
+            'planUrl' => route('tools.plan'),
         ]);
     }
 

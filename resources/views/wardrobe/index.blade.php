@@ -36,23 +36,7 @@
             display: flex; align-items: center; gap: 8px; padding: 0 14px; background: var(--panel);
         }
         header.bar { border-bottom: 1px solid var(--line); flex-wrap: nowrap; gap: 8px; padding-top: 8px; padding-bottom: 8px; min-height: 48px; overflow-x: auto; scrollbar-width: thin; }
-        .nav-row { padding: 8px 14px; background: #f7f5f1; border-bottom: 1px solid var(--line); overflow-x: auto; }
-        .workflow-row {
-            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-            padding: 6px 14px; background: #fffcf8; border-bottom: 1px solid var(--line);
-        }
-        .workflow-row p { display: none; }
-        .workflow-steps { display: flex; gap: 6px; flex-wrap: wrap; width: 100%; }
-        .workflow-steps button {
-            border: 1px solid var(--line); background: #fff; border-radius: 8px;
-            padding: 7px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
-        }
-        .workflow-steps button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
-        .workflow-steps a {
-            display: inline-flex; align-items: center; border: 1px solid var(--line); background: #fff;
-            border-radius: 8px; padding: 7px 12px; font-size: 12px; font-weight: 600;
-            color: inherit; text-decoration: none; margin-left: auto;
-        }
+        @include('partials.meemare-shell-styles')
         #room-plan-panel {
             display: none; position: absolute; inset: 0; z-index: 8;
             grid-template-rows: auto 1fr; background: #f3f1ec;
@@ -121,9 +105,8 @@
             }
             body.studio-room aside.left,
             body.studio-room aside.right { display: none; }
-            body:not(.show-custom) aside.right { transform: translateX(100%); position: absolute; right: 0; top: 0; bottom: 0; width: min(320px, 30vw); }
-            body.show-custom aside.right { position: relative; transform: none; width: auto; }
-            aside .sheet-close { display: block; }
+            aside.right { display: flex; }
+            aside .sheet-close { display: none; }
         }
         .side-head { padding: 12px 14px 0; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
         .library-search { padding: 10px 12px 0; }
@@ -233,7 +216,7 @@
                 transition: transform .2s ease; border-radius: 16px 16px 0 0; box-shadow: var(--shadow);
             }
             aside.is-open { transform: none; }
-            .sheet-close { display: block; margin: 8px 12px 0 auto; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 700; }
+            aside .sheet-close { display: block; margin: 8px 12px 0 auto; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 700; }
             #project-sheet {
                 display: none; position: fixed; left: 0; right: 0; bottom: calc(72px + env(safe-area-inset-bottom));
                 z-index: 20; background: var(--panel); border-radius: 16px 16px 0 0; box-shadow: var(--shadow); padding: 12px;
@@ -255,13 +238,13 @@
         }
     </style>
 </head>
-<body class="show-library studio-layout">
+<body class="show-library show-custom studio-layout">
 <div id="studio">
-    <header class="bar">
+    <header class="bar meemare-tool-bar">
         <a href="{{ route('wardrobe.index') }}" class="brand">
-            <strong>MEEMARE</strong>
-            <span>3D dolap stüdyosu</span>
+            <strong>3D dolap dizimi</strong>
         </a>
+        <span class="lead">Soldan modül seçin, ortada duvara dizin, sağda ölçü ve malzeme — üretim için Üretim dolabı.</span>
         <input id="project-name" class="name-input" maxlength="80" aria-label="Proje adı" value="Dolabım">
         <div class="toolbar-spacer"></div>
         <button type="button" class="btn" id="btn-undo" disabled>Geri</button>
@@ -274,19 +257,12 @@
         <button type="button" class="btn extra" id="btn-cabinet">Üretim</button>
         <button type="button" class="btn" id="btn-shot">Render</button>
     </header>
-    <div class="nav-row">@include('partials.meemare-apps-nav', ['activeApp' => 'tasarla'])</div>
-    <div class="workflow-row">
-        <div class="workflow-steps">
-            <button type="button" data-workspace="layout" class="is-on">3D dizim</button>
-            <button type="button" data-workspace="room">Oda planı (OpenPlan)</button>
-            <a href="{{ route('tools.plan') }}">Plan tam ekran</a>
-            <a href="{{ $cabinetUrl }}">Üretim dolabı</a>
-        </div>
-    </div>
+    <div class="meemare-nav-row">@include('partials.meemare-apps-nav', ['activeApp' => 'tasarla'])</div>
+    @include('partials.meemare-workflow', ['workflowStep' => 'tasarla'])
     <div class="workspace">
         <aside class="left" id="library">
             <button type="button" class="sheet-close" id="close-library">Kapat</button>
-            <div class="side-head">Dolap modülleri</div>
+            <div class="side-head">Modül kataloğu</div>
             <div class="library-search"><input id="module-search" type="search" placeholder="Modül ara" autocomplete="off"></div>
             <div class="side-body" id="library-body"></div>
         </aside>
@@ -297,7 +273,7 @@
         </div>
         <section class="stage">
             <div id="room-plan-panel" aria-label="Oda planı">
-                <form id="studio-plan-handoff" class="room-handoff">
+                <form id="studio-plan-handoff" class="room-handoff meemare-handoff-row">
                     <label>OpenPlan JSON<input id="studio-plan-json" type="file" accept="application/json,.json"></label>
                     <label>Ön (cm)<input name="onduvar" type="number" min="80" max="800" value="320" required></label>
                     <label>Sol (cm)<input name="solduvar" type="number" min="80" max="800" value="280"></label>
@@ -354,6 +330,7 @@
         </section>
         <aside class="right" id="inspector">
             <button type="button" class="sheet-close" id="close-inspector">Kapat</button>
+            <div class="side-head">Dolap ve oda ayarları</div>
             <div class="side-body" id="inspector-body"></div>
             <div class="side-foot">
                 <button type="button" class="btn" id="btn-production">Üretim listesi</button>
@@ -481,6 +458,6 @@
     };
 </script>
 <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=3" defer></script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=223"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=224"></script>
 </body>
 </html>
