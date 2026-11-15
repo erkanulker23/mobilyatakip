@@ -135,6 +135,9 @@ Route::prefix('dolap')->middleware('auth')->group(function () {
         ->name('wardrobe.project.destroy');
 });
 
+Route::get('/openplan/{path?}', [\App\Http\Controllers\PublicToolController::class, 'openplanAsset'])
+    ->where('path', '.*')
+    ->name('tools.openplan.asset');
 Route::get('/plan', [\App\Http\Controllers\PublicToolController::class, 'plan'])->name('tools.plan');
 Route::get('/dolap-uretim/uygulama/{path}', [\App\Http\Controllers\PublicToolController::class, 'cabinetApp'])
     ->where('path', 'index\\.html|kitchen-layout\\.html')

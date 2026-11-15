@@ -23,7 +23,7 @@ Kontrol paneli yan menüsüne **Meemare tasarım** bölümü eklendi (tüm rolle
 
 `/plan` üstündeki form ölçüleri `?onduvar=&solduvar=&sagduvar=` ile `/dolap/tasarla`ya gönderir. Stüdyo `applyRoomQuery()` ile duvar cm değerlerini yükler.
 
-Tam OpenPlan köşe/oda çizimi için repoda `tools/openplan3d` var; sonraki aşama: aynı domain’de derleyip otomatik handoff (postMessage).
+OpenPlan aynı domain’de `public/openplan` ( `scripts/build-openplan-static.sh` ) ile sunulur; dosyadan JSON import ve manuel ölçü handoff mevcut, tam postMessage export sonraki aşama.
 
 ## Stüdyo 2B (mevcut)
 
@@ -38,9 +38,14 @@ Tam OpenPlan köşe/oda çizimi için repoda `tools/openplan3d` var; sonraki aş
 | 3 | Birleşik proje JSON indirme | `downloadMeemareBundle()` (`.meemare.json`) |
 | 4 | Giriş sonrası üst linkler | `public-gate-top-links.blade.php` |
 
-## Sıradaki büyük adımlar
+## Tamamlanan (sıra 3)
 
-1. Self-hosted OpenPlan (`scripts/build-openplan-static.sh` — adapter-static gerekir)
-2. Cabinet Studio’ya otomatik ölçü enjeksiyonu (cross-origin iframe sınırı)
-3. Inspector’da panel/delik UI (Cabinet Studio parity)
-4. Katalog önizleme v=3 kalitesi (Cycles + malzeme)
+| # | Özellik |
+| --- | --- |
+| 1 | OpenPlan statik build (`scripts/build-openplan-static.sh`) + `/openplan/*` |
+| 2 | OpenPlan JSON → dolap ölçüsü (`openplan-import.js`) |
+| 3 | Cabinet Studio otomatik mm (`cabinet-studio-handoff.js`, proxy sayfada) |
+| 4 | Inspector üretim parçaları (`module.json` tablosu) |
+| 5 | Cycles katalog önizleme (`scripts/render-y26-catalog-previews.py`, `?v=5`) |
+
+OpenPlan build sunucuda bir kez çalıştırılmalı; yoksa `/plan` harici iframe’e düşer.

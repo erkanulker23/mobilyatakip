@@ -5,14 +5,38 @@ namespace App\Http\Controllers;
 use App\Models\Company;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class PublicToolController extends Controller
 {
     public function plan(): View
     {
         return $this->embed('plan');
+    }
+
+    public function openplanAsset(?string $path = null): BinaryFileResponse
+    {
+        $index = public_path('openplan/index.html');
+        if (! is_file($index)) {
+            abort(404, 'OpenPlan henüz derlenmedi. scripts/build-openplan-static.sh çalıştırın.');
+        }
+        $relative = $path ? str_replace('\\', '/', $path) : 'index.html';
+        if ($relative === '' || str_contains($relative, '..')) {
+            abort(404);
+        }
+        $full = public_path('openplan/'.$relative);
+        if (is_dir($full)) {
+            $full = rtrim($full, '/').'/index.html';
+        }
+        if (! is_file($full)) {
+            $full = $index;
+        }
+        $mime = File::mimeType($full) ?: 'application/octet-stream';
+
+        return response()->file($full, ['Content-Type' => $mime]);
     }
 
     public function cabinet(): View
@@ -51,7 +75,8 @@ class PublicToolController extends Controller
             $html
         );
 
-        $script = '<script src="'.e(asset('js/cabinet-studio-tr.js').'?v=3').'"></script>';
+        $script = '<script src="'.e(asset('js/cabinet-studio-tr.js').'?v=4').'"></script>';
+        $script .= '<script src="'.e(asset('js/cabinet-studio-handoff.js').'?v=1').'"></script>';
         $html = preg_replace('/<html lang="en">/', '<html lang="tr">', $html, 1);
         $html = preg_replace('/<head>/', '<head>'.$script, $html, 1);
 
@@ -64,7 +89,9 @@ class PublicToolController extends Controller
             'plan' => [
                 'title' => 'Oda planı',
                 'lead' => 'Duvar, kapı ve odayı 2D/3D çizin. Dolap stüdyosundan ayrıdır.',
-                'src' => 'https://app.openplan3d.com/',
+                'src' => is_file(public_path('openplan/index.html'))
+                    ? url('/openplan/index.html')
+                    : 'https://app.openplan3d.com/',
                 'source' => 'https://github.com/laanlabs/openPlan3D',
                 'credit' => 'OpenPlan3D · MIT · laanlabs',
                 'portal' => 'plan',

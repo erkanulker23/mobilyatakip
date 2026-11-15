@@ -125,6 +125,7 @@ let addInteriorKind = 'tek-aski';
 let addWidth = 60;
 let dxfModules = [];
 let cadModules = [];
+const moduleJsonCache = new Map();
 let moduleDrag = null;
 let dragId = null;
 let dragGhost = null;
@@ -5652,6 +5653,46 @@ function doorTools(mod) {
     return `<button type="button" class="btn" id="mod-hide-door" style="width:100%;margin-top:8px">${one}</button><button type="button" class="btn" id="mod-hide-all" style="width:100%;margin-top:8px">${all}</button>${allDoorButton()}`;
 }
 
+async function loadModuleJson(glbId) {
+    if (!glbId) return null;
+    if (moduleJsonCache.has(glbId)) return moduleJsonCache.get(glbId);
+    try {
+        const response = await fetch(`/catalog/y26/${glbId}/module.json`, { cache: 'force-cache' });
+        if (!response.ok) return null;
+        const json = await response.json();
+        moduleJsonCache.set(glbId, json);
+        return json;
+    } catch {
+        return null;
+    }
+}
+
+function modulePartsHtml(parts) {
+    const rows = (parts || []).slice(0, 36).map((part) => {
+        const w = part.width_mm ?? part.width ?? '—';
+        const h = part.height_mm ?? part.height ?? '—';
+        const d = part.depth_mm ?? part.depth ?? '—';
+        const layer = part.layer || 'PARÇA';
+        const name = part.name || '—';
+        return `<tr><td>${layer}</td><td>${name}</td><td>${w}×${h}×${d}</td></tr>`;
+    }).join('');
+    return `<div class="parts-panel" id="module-parts"><h3>Üretim parçaları</h3><table class="parts-table"><thead><tr><th>Katman</th><th>Parça</th><th>mm (G×Y×D)</th></tr></thead><tbody>${rows}</tbody></table><button type="button" class="btn" id="mod-cabinet" style="width:100%;margin-top:8px">Cabinet Studio’da aç</button></div>`;
+}
+
+function hydrateModuleParts(mod) {
+    if (!mod?.glb) return;
+    loadModuleJson(mod.glb).then((json) => {
+        const host = el('module-parts');
+        if (!host || selected()?.id !== mod.id) return;
+        if (!json?.parts?.length) {
+            host.outerHTML = '<p class="hint">Bu modül için parça listesi yok.</p>';
+            return;
+        }
+        host.outerHTML = modulePartsHtml(json.parts);
+        el('mod-cabinet')?.addEventListener('click', openCabinetStudio);
+    });
+}
+
 function renderProduction() {
     const lines = state.modules.map((item, index) => {
         const swing = swingLabel(item);
@@ -5687,6 +5728,7 @@ function moduleConfigHtml(mod) {
         <p class="hint">${mod.width} × ${moduleHeight(mod)} cm. Yerini sahnede sürükleyerek değiştir. ${mod.door === 'none' ? 'Kapak yok. Ahşap veya cam kapağı aşağıdan seç.' : 'Kapağı aşağıdan değiştirebilirsin.'}</p>
         ${allCabinetsSelected ? '<p class="hint">Tüm dolaplar seçili. Bir rengi değiştirince hepsine yazılır.</p>' : ''}
         ${boardNote}
+        ${mod.glb ? '<div id="module-parts" class="parts-panel"><p class="hint">Üretim parçaları yükleniyor…</p></div>' : ''}
         ${colorChoicesHtml(mod, cabinetHasDrawers(mod))}
         ${mod.kind === 'end' ? '' : `<div class="field field-key"><label>Kapak</label><div class="seg"><button type="button" data-door="none" class="${mod.door === 'none' ? 'is-on' : ''}">Kapaksız</button><button type="button" data-door="solid" class="${mod.door === 'solid' ? 'is-on' : ''}">Ahşap kapak</button><button type="button" data-door="glass" class="${mod.door === 'glass' ? 'is-on' : ''}">Cam kapak</button></div></div>`}
         ${mod.kind === 'end' ? '' : `<div class="field"><label>Genişlik (cm)</label><input id="mod-w" type="number" min="30" max="200" value="${mod.width}"></div>`}
@@ -5920,6 +5962,7 @@ function renderInspector() {
     revealCustomizer(mod);
     body.innerHTML = moduleConfigHtml(mod);
     bindModuleConfig(body, mod);
+    hydrateModuleParts(mod);
 }
 
 function renderSummary() {

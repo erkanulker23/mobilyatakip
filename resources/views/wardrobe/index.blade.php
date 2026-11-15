@@ -93,6 +93,11 @@
         .set-card img { width: 64px; height: 64px; object-fit: contain; background: #f7f6f4; border-radius: 8px; flex: none; }
         .set-card strong { display: block; font-size: 13px; }
         .parts { margin: 0 0 12px; padding-left: 18px; font-size: 12px; }
+        .parts-panel { margin: 10px 0 14px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+        .parts-panel h3 { margin: 0 0 8px; font-size: 13px; }
+        .parts-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+        .parts-table th, .parts-table td { border-bottom: 1px solid var(--line); padding: 4px 3px; text-align: left; vertical-align: top; }
+        .parts-table th { color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
         .parts li { margin: 0 0 8px; }
         .parts li.is-on { background: #e5f6ec; border: 2px solid #149152; border-radius: 8px; padding: 6px 8px; list-style-position: inside; }
         #viewport { position: absolute; inset: 0; }
@@ -398,6 +403,6 @@
         csrf: @json(csrf_token())
     };
 </script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=220"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=221"></script>
 </body>
 </html>

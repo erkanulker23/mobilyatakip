@@ -14,7 +14,7 @@
       "height": 2.5,
       "depth": 0.6,
       "modelPath": "/catalog/y26/y26_tek_01/model.glb",
-      "previewPath": "/catalog/y26/y26_tek_01/preview.png?v=4",
+      "previewPath": "/catalog/y26/y26_tek_01/preview.png?v=5",
       "sourceUnit": "m",
       "sourceUpAxis": "Y",
       "frontAxis": "-Z",
@@ -26,7 +26,8 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_057",
-      "geometrySource": "vm_v4_obj"
+      "geometrySource": "vm_v4_obj",
+      "catalogRender": "cycles-v5"
     },
     {
       "id": "y26_tek_02",
@@ -37,7 +38,7 @@
       "height": 2.5,
       "depth": 0.6,
       "modelPath": "/catalog/y26/y26_tek_02/model.glb",
-      "previewPath": "/catalog/y26/y26_tek_02/preview.png?v=4",
+      "previewPath": "/catalog/y26/y26_tek_02/preview.png?v=5",
       "sourceUnit": "m",
       "sourceUpAxis": "Y",
       "frontAxis": "-Z",
@@ -49,7 +50,8 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_058",
-      "geometrySource": "vm_v4_obj"
+      "geometrySource": "vm_v4_obj",
+      "catalogRender": "cycles-v5"
     },
     {
       "id": "y26_tek_03",
@@ -60,7 +62,7 @@
       "height": 2.5,
       "depth": 0.6,
       "modelPath": "/catalog/y26/y26_tek_03/model.glb",
-      "previewPath": "/catalog/y26/y26_tek_03/preview.png?v=4",
+      "previewPath": "/catalog/y26/y26_tek_03/preview.png?v=5",
       "sourceUnit": "m",
       "sourceUpAxis": "Y",
       "frontAxis": "-Z",
@@ -72,7 +74,8 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_061",
-      "geometrySource": "vm_v4_obj"
+      "geometrySource": "vm_v4_obj",
+      "catalogRender": "cycles-v5"
     },
     {
       "id": "y26_tek_04",
@@ -83,7 +86,7 @@
       "height": 2.5,
       "depth": 0.6,
       "modelPath": "/catalog/y26/y26_tek_04/model.glb",
-      "previewPath": "/catalog/y26/y26_tek_04/preview.png?v=4",
+      "previewPath": "/catalog/y26/y26_tek_04/preview.png?v=5",
       "sourceUnit": "m",
       "sourceUpAxis": "Y",
       "frontAxis": "-Z",
@@ -95,7 +98,8 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_065",
-      "geometrySource": "vm_v4_obj"
+      "geometrySource": "vm_v4_obj",
+      "catalogRender": "cycles-v5"
     },
     {
       "id": "y26_tek_05",
@@ -106,7 +110,7 @@
       "height": 2.5,
       "depth": 0.6,
       "modelPath": "/catalog/y26/y26_tek_05/model.glb",
-      "previewPath": "/catalog/y26/y26_tek_05/preview.png?v=4",
+      "previewPath": "/catalog/y26/y26_tek_05/preview.png?v=5",
       "sourceUnit": "m",
       "sourceUpAxis": "Y",
       "frontAxis": "-Z",
@@ -118,7 +122,8 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_066",
-      "geometrySource": "vm_v4_obj"
+      "geometrySource": "vm_v4_obj",
+      "catalogRender": "cycles-v5"
     },
     {
       "id": "y26_tek_06",
@@ -129,7 +134,7 @@
       "height": 2.5,
       "depth": 0.6,
       "modelPath": "/catalog/y26/y26_tek_06/model.glb",
-      "previewPath": "/catalog/y26/y26_tek_06/preview.png?v=4",
+      "previewPath": "/catalog/y26/y26_tek_06/preview.png?v=5",
       "sourceUnit": "m",
       "sourceUpAxis": "Y",
       "frontAxis": "-Z",
@@ -141,7 +146,8 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_067",
-      "geometrySource": "vm_v4_obj"
+      "geometrySource": "vm_v4_obj",
+      "catalogRender": "cycles-v5"
     },
     {
       "id": "y26_tek_07",
@@ -152,7 +158,7 @@
       "height": 2.5,
       "depth": 0.6,
       "modelPath": "/catalog/y26/y26_tek_07/model.glb",
-      "previewPath": "/catalog/y26/y26_tek_07/preview.png?v=4",
+      "previewPath": "/catalog/y26/y26_tek_07/preview.png?v=5",
       "sourceUnit": "m",
       "sourceUpAxis": "Y",
       "frontAxis": "-Z",
@@ -164,7 +170,8 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_069",
-      "geometrySource": "vm_v4_obj"
+      "geometrySource": "vm_v4_obj",
+      "catalogRender": "cycles-v5"
     },
     {
       "id": "y26_tek_08",
@@ -175,7 +182,7 @@
       "height": 2.5,
       "depth": 0.6,
       "modelPath": "/catalog/y26/y26_tek_08/model.glb",
-      "previewPath": "/catalog/y26/y26_tek_08/preview.png?v=4",
+      "previewPath": "/catalog/y26/y26_tek_08/preview.png?v=5",
       "sourceUnit": "m",
       "sourceUpAxis": "Y",
       "frontAxis": "-Z",
@@ -187,7 +194,8 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_070",
-      "geometrySource": "vm_v4_obj"
+      "geometrySource": "vm_v4_obj",
+      "catalogRender": "cycles-v5"
     },
     {
       "id": "y26_tek_09",
@@ -198,7 +206,7 @@
       "height": 2.5,
       "depth": 0.6,
       "modelPath": "/catalog/y26/y26_tek_09/model.glb",
-      "previewPath": "/catalog/y26/y26_tek_09/preview.png?v=4",
+      "previewPath": "/catalog/y26/y26_tek_09/preview.png?v=5",
       "sourceUnit": "m",
       "sourceUpAxis": "Y",
       "frontAxis": "-Z",
@@ -210,7 +218,8 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_071",
-      "geometrySource": "vm_v4_obj"
+      "geometrySource": "vm_v4_obj",
+      "catalogRender": "cycles-v5"
     },
     {
       "id": "y26_tek_10",
@@ -221,7 +230,7 @@
       "height": 2.5,
       "depth": 0.6,
       "modelPath": "/catalog/y26/y26_tek_10/model.glb",
-      "previewPath": "/catalog/y26/y26_tek_10/preview.png?v=4",
+      "previewPath": "/catalog/y26/y26_tek_10/preview.png?v=5",
       "sourceUnit": "m",
       "sourceUpAxis": "Y",
       "frontAxis": "-Z",
@@ -233,7 +242,8 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_075",
-      "geometrySource": "vm_v4_obj"
+      "geometrySource": "vm_v4_obj",
+      "catalogRender": "cycles-v5"
     },
     {
       "id": "y26_cift_01",
@@ -244,7 +254,7 @@
       "height": 2.5,
       "depth": 0.6,
       "modelPath": "/catalog/y26/y26_cift_01/model.glb",
-      "previewPath": "/catalog/y26/y26_cift_01/preview.png?v=4",
+      "previewPath": "/catalog/y26/y26_cift_01/preview.png?v=5",
       "sourceUnit": "m",
       "sourceUpAxis": "Y",
       "frontAxis": "-Z",
@@ -256,7 +266,8 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_078",
-      "geometrySource": "vm_v4_obj"
+      "geometrySource": "vm_v4_obj",
+      "catalogRender": "cycles-v5"
     },
     {
       "id": "y26_cift_02",
@@ -267,7 +278,7 @@
       "height": 2.5,
       "depth": 0.6,
       "modelPath": "/catalog/y26/y26_cift_02/model.glb",
-      "previewPath": "/catalog/y26/y26_cift_02/preview.png?v=4",
+      "previewPath": "/catalog/y26/y26_cift_02/preview.png?v=5",
       "sourceUnit": "m",
       "sourceUpAxis": "Y",
       "frontAxis": "-Z",
@@ -279,7 +290,8 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_079",
-      "geometrySource": "vm_v4_obj"
+      "geometrySource": "vm_v4_obj",
+      "catalogRender": "cycles-v5"
     },
     {
       "id": "y26_cift_03",
@@ -290,7 +302,7 @@
       "height": 2.5,
       "depth": 0.6,
       "modelPath": "/catalog/y26/y26_cift_03/model.glb",
-      "previewPath": "/catalog/y26/y26_cift_03/preview.png?v=4",
+      "previewPath": "/catalog/y26/y26_cift_03/preview.png?v=5",
       "sourceUnit": "m",
       "sourceUpAxis": "Y",
       "frontAxis": "-Z",
@@ -302,7 +314,8 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_080",
-      "geometrySource": "vm_v4_obj"
+      "geometrySource": "vm_v4_obj",
+      "catalogRender": "cycles-v5"
     },
     {
       "id": "y26_cift_04",
@@ -313,7 +326,7 @@
       "height": 2.5,
       "depth": 0.6,
       "modelPath": "/catalog/y26/y26_cift_04/model.glb",
-      "previewPath": "/catalog/y26/y26_cift_04/preview.png?v=4",
+      "previewPath": "/catalog/y26/y26_cift_04/preview.png?v=5",
       "sourceUnit": "m",
       "sourceUpAxis": "Y",
       "frontAxis": "-Z",
@@ -325,7 +338,8 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_081",
-      "geometrySource": "vm_v4_obj"
+      "geometrySource": "vm_v4_obj",
+      "catalogRender": "cycles-v5"
     },
     {
       "id": "y26_cift_05",
@@ -336,7 +350,7 @@
       "height": 2.5,
       "depth": 0.6,
       "modelPath": "/catalog/y26/y26_cift_05/model.glb",
-      "previewPath": "/catalog/y26/y26_cift_05/preview.png?v=4",
+      "previewPath": "/catalog/y26/y26_cift_05/preview.png?v=5",
       "sourceUnit": "m",
       "sourceUpAxis": "Y",
       "frontAxis": "-Z",
@@ -348,7 +362,8 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_085",
-      "geometrySource": "vm_v4_obj"
+      "geometrySource": "vm_v4_obj",
+      "catalogRender": "cycles-v5"
     },
     {
       "id": "y26_cift_06",
@@ -359,7 +374,7 @@
       "height": 2.5,
       "depth": 0.6,
       "modelPath": "/catalog/y26/y26_cift_06/model.glb",
-      "previewPath": "/catalog/y26/y26_cift_06/preview.png?v=4",
+      "previewPath": "/catalog/y26/y26_cift_06/preview.png?v=5",
       "sourceUnit": "m",
       "sourceUpAxis": "Y",
       "frontAxis": "-Z",
@@ -371,7 +386,8 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_086",
-      "geometrySource": "vm_v4_obj"
+      "geometrySource": "vm_v4_obj",
+      "catalogRender": "cycles-v5"
     },
     {
       "id": "y26_cift_07",
@@ -382,7 +398,7 @@
       "height": 2.5,
       "depth": 0.6,
       "modelPath": "/catalog/y26/y26_cift_07/model.glb",
-      "previewPath": "/catalog/y26/y26_cift_07/preview.png?v=4",
+      "previewPath": "/catalog/y26/y26_cift_07/preview.png?v=5",
       "sourceUnit": "m",
       "sourceUpAxis": "Y",
       "frontAxis": "-Z",
@@ -394,7 +410,8 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_087",
-      "geometrySource": "vm_v4_obj"
+      "geometrySource": "vm_v4_obj",
+      "catalogRender": "cycles-v5"
     },
     {
       "id": "y26_cift_08",
@@ -405,7 +422,7 @@
       "height": 2.5,
       "depth": 0.6,
       "modelPath": "/catalog/y26/y26_cift_08/model.glb",
-      "previewPath": "/catalog/y26/y26_cift_08/preview.png?v=4",
+      "previewPath": "/catalog/y26/y26_cift_08/preview.png?v=5",
       "sourceUnit": "m",
       "sourceUpAxis": "Y",
       "frontAxis": "-Z",
@@ -417,7 +434,8 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_014_024",
-      "geometrySource": "vm_v4_obj"
+      "geometrySource": "vm_v4_obj",
+      "catalogRender": "cycles-v5"
     },
     {
       "id": "y26_cift_09",
@@ -428,7 +446,7 @@
       "height": 2.5,
       "depth": 0.6,
       "modelPath": "/catalog/y26/y26_cift_09/model.glb",
-      "previewPath": "/catalog/y26/y26_cift_09/preview.png?v=4",
+      "previewPath": "/catalog/y26/y26_cift_09/preview.png?v=5",
       "sourceUnit": "m",
       "sourceUpAxis": "Y",
       "frontAxis": "-Z",
@@ -440,7 +458,8 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_014_025",
-      "geometrySource": "vm_v4_obj"
+      "geometrySource": "vm_v4_obj",
+      "catalogRender": "cycles-v5"
     },
     {
       "id": "y26_cift_10",
@@ -451,7 +470,7 @@
       "height": 2.5,
       "depth": 0.6,
       "modelPath": "/catalog/y26/y26_cift_10/model.glb",
-      "previewPath": "/catalog/y26/y26_cift_10/preview.png?v=4",
+      "previewPath": "/catalog/y26/y26_cift_10/preview.png?v=5",
       "sourceUnit": "m",
       "sourceUpAxis": "Y",
       "frontAxis": "-Z",
@@ -463,7 +482,8 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_014_026",
-      "geometrySource": "vm_v4_obj"
+      "geometrySource": "vm_v4_obj",
+      "catalogRender": "cycles-v5"
     }
   ]
 }
