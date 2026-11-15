@@ -249,6 +249,7 @@
         <div class="toolbar-spacer"></div>
         <button type="button" class="btn" id="btn-undo" disabled>Geri</button>
         <button type="button" class="btn" id="btn-redo" disabled>İleri</button>
+        <a class="btn" id="btn-saved" href="{{ route('wardrobe.index') }}">Projeler</a>
         <button type="button" class="btn" id="btn-save">Kaydet</button>
         <button type="button" class="btn" id="btn-share">Paylaş</button>
         <button type="button" class="btn" id="btn-measures">Ölçüler</button>
@@ -458,6 +459,6 @@
     };
 </script>
 <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=3" defer></script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=224"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=225"></script>
 </body>
 </html>

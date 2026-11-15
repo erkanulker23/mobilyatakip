@@ -68,6 +68,14 @@ const SETS = [
 ];
 
 const el = (id) => document.getElementById(id);
+const onClick = (id, handler) => {
+    const node = el(id);
+    if (node) node.addEventListener('click', handler);
+};
+const on = (id, type, handler) => {
+    const node = el(id);
+    if (node) node.addEventListener(type, handler);
+};
 const uid = () => Math.random().toString(36).slice(2, 10);
 const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
 const productById = (id) => PRODUCTS.find((item) => item.id === id);
@@ -7424,65 +7432,66 @@ function bindChrome() {
     document.querySelectorAll('[data-workspace]').forEach((button) => {
         button.addEventListener('click', () => setStudioWorkspace(button.dataset.workspace));
     });
-    el('project-name').addEventListener('change', (event) => {
+    on('project-name', 'change', (event) => {
         state.name = event.target.value || 'Dolabım';
         scheduleSave();
     });
-    el('btn-new')?.addEventListener('click', () => { location.href = '/dolap'; });
-    el('module-search').addEventListener('input', () => renderLibrary());
-    el('btn-production').onclick = () => {
+    onClick('btn-new', () => { location.href = '/dolap'; });
+    on('module-search', 'input', () => renderLibrary());
+    onClick('btn-production', () => {
         renderProduction();
-        el('production-modal').classList.remove('hidden');
-    };
-    el('production-close').onclick = () => el('production-modal').classList.add('hidden');
-    el('btn-cabinet')?.addEventListener('click', openCabinetStudio);
-    el('btn-export-json')?.addEventListener('click', downloadMeemareBundle);
-    el('production-cabinet')?.addEventListener('click', openCabinetStudio);
-    el('btn-undo').onclick = undo;
-    el('btn-redo').onclick = redo;
-    el('btn-save').onclick = saveDesign;
-    el('btn-share').onclick = shareDesign;
-    el('btn-saved').onclick = () => { location.href = '/dolap'; };
-    el('saved-close').onclick = () => el('saved-modal').classList.add('hidden');
-    el('btn-measures').onclick = () => {
+        el('production-modal')?.classList.remove('hidden');
+    });
+    onClick('production-close', () => el('production-modal')?.classList.add('hidden'));
+    onClick('btn-cabinet', openCabinetStudio);
+    onClick('btn-export-json', downloadMeemareBundle);
+    onClick('production-cabinet', openCabinetStudio);
+    onClick('btn-undo', undo);
+    onClick('btn-redo', redo);
+    onClick('btn-save', saveDesign);
+    onClick('btn-share', shareDesign);
+    onClick('btn-saved', () => { location.href = '/dolap'; });
+    onClick('saved-close', () => el('saved-modal')?.classList.add('hidden'));
+    onClick('btn-measures', () => {
         showMeasures = !showMeasures;
-        el('btn-measures').classList.toggle('is-on', showMeasures);
+        el('btn-measures')?.classList.toggle('is-on', showMeasures);
         rebuild();
-    };
-    el('btn-lights').onclick = () => {
+    });
+    onClick('btn-lights', () => {
         lightsOn = !lightsOn;
         syncLightsButton();
         rebuild();
-    };
-    el('btn-shot').onclick = () => { takeRender(); };
-    el('view-bar').addEventListener('click', (event) => {
+    });
+    onClick('btn-shot', () => { takeRender(); });
+    on('view-bar', 'click', (event) => {
         const button = event.target.closest('[data-view]');
         if (!button) return;
         if (planMode === '2d') setPlanMode('3d');
         setCameraView(button.dataset.view);
     });
-    el('plan-switch').addEventListener('click', (event) => {
+    on('plan-switch', 'click', (event) => {
         const button = event.target.closest('[data-plan]');
         if (button && (button.dataset.plan === '2d' || button.dataset.plan === '3d')) setPlanMode(button.dataset.plan);
     });
-    el('btn-modules').onclick = () => showModuleLibrary();
-    el('btn-guides').onclick = () => {
+    onClick('btn-modules', () => showModuleLibrary());
+    onClick('btn-guides', () => {
         guidesOn = !guidesOn;
-        el('btn-guides').classList.toggle('is-on', guidesOn);
+        el('btn-guides')?.classList.toggle('is-on', guidesOn);
         syncGuides(layout(state.modules) || []);
-    };
-    el('act-forward').onclick = () => nudgeDepth(10);
-    el('act-back').onclick = () => nudgeDepth(-10);
-    el('btn-quote').onclick = () => {
+    });
+    onClick('act-forward', () => nudgeDepth(10));
+    onClick('act-back', () => nudgeDepth(-10));
+    onClick('btn-quote', () => {
         const form = el('quote-form');
+        if (!form) return;
         form.name.value = state.customerName || '';
         form.phone.value = state.phone || '';
         form.note.value = state.note || '';
-        el('quote-modal').classList.remove('hidden');
-    };
-    el('saved-search').onclick = () => searchProjects(el('saved-phone').value, el('saved-list'), () => el('saved-modal').classList.add('hidden'));
-    el('resume-search').onclick = () => searchProjects('', el('resume-list'), () => el('customer-modal').classList.add('hidden'));
-    el('customer-form').addEventListener('submit', async (event) => {
+        el('quote-modal')?.classList.remove('hidden');
+    });
+    onClick('saved-search', () => searchProjects(el('saved-phone')?.value, el('saved-list'), () => el('saved-modal')?.classList.add('hidden')));
+    onClick('resume-search', () => searchProjects('', el('resume-list'), () => el('customer-modal')?.classList.add('hidden')));
+    on('customer-form', 'submit', async (event) => {
         event.preventDefault();
         const form = new FormData(event.target);
         const msg = el('customer-msg');
@@ -7519,8 +7528,8 @@ function bindChrome() {
         render();
         frameCamera();
     });
-    el('quote-close').onclick = () => el('quote-modal').classList.add('hidden');
-    el('quote-form').addEventListener('submit', async (event) => {
+    onClick('quote-close', () => el('quote-modal')?.classList.add('hidden'));
+    on('quote-form', 'submit', async (event) => {
         event.preventDefault();
         const form = new FormData(event.target);
         const msg = el('quote-msg');
@@ -7538,48 +7547,48 @@ function bindChrome() {
             msg.textContent = 'Bağlantı kurulamadı. Tasarımı kaydedip daha sonra deneyin.';
         }
     });
-    el('act-config').onclick = () => {
+    onClick('act-config', () => {
         if (!selected()) return;
-        el('config-modal').classList.add('hidden');
+        el('config-modal')?.classList.add('hidden');
         renderInspector();
         openPhoneSheet('doors');
-    };
-    el('config-close').onclick = () => el('config-modal').classList.add('hidden');
-    el('act-clone').onclick = cloneSelected;
-    el('act-delete').onclick = deleteSelected;
-    el('open-library').onclick = () => openPhoneSheet('modules');
-    el('open-material').onclick = () => openPhoneSheet('material');
-    el('open-doors').onclick = () => openPhoneSheet('doors');
-    el('open-measures').onclick = () => {
+    });
+    onClick('config-close', () => el('config-modal')?.classList.add('hidden'));
+    onClick('act-clone', cloneSelected);
+    onClick('act-delete', deleteSelected);
+    onClick('open-library', () => openPhoneSheet('modules'));
+    onClick('open-material', () => openPhoneSheet('material'));
+    onClick('open-doors', () => openPhoneSheet('doors'));
+    onClick('open-measures', () => {
         showMeasures = true;
-        el('btn-measures').classList.add('is-on');
+        el('btn-measures')?.classList.add('is-on');
         openPhoneSheet('measure');
-    };
-    el('open-project').onclick = () => openPhoneSheet('project');
-    el('close-library').onclick = () => {
+    });
+    onClick('open-project', () => openPhoneSheet('project'));
+    onClick('close-library', () => {
         if (window.matchMedia('(max-width: 900px)').matches) openPhoneSheet('modules');
         else {
             document.body.classList.remove('show-library');
             requestAnimationFrame(resize);
         }
-    };
-    el('close-inspector').onclick = () => {
+    });
+    onClick('close-inspector', () => {
         if (window.matchMedia('(max-width: 900px)').matches) openPhoneSheet(document.body.dataset.sheet || 'material');
         else {
             document.body.classList.remove('show-custom');
             customFor = selectedId;
             requestAnimationFrame(resize);
         }
-    };
-    el('close-project').onclick = () => openPhoneSheet('project');
-    el('sheet-new').onclick = () => { location.href = '/dolap'; };
-    el('sheet-undo').onclick = () => el('btn-undo').click();
-    el('sheet-redo').onclick = () => el('btn-redo').click();
-    el('sheet-saved').onclick = () => el('btn-saved').click();
-    el('sheet-share').onclick = () => el('btn-share').click();
-    el('sheet-quote').onclick = () => el('btn-quote').click();
-    el('sheet-shot').onclick = () => el('btn-shot').click();
-    el('selection-ui').addEventListener('pointerdown', (event) => event.stopPropagation());
+    });
+    onClick('close-project', () => openPhoneSheet('project'));
+    onClick('sheet-new', () => { location.href = '/dolap'; });
+    onClick('sheet-undo', () => el('btn-undo')?.click());
+    onClick('sheet-redo', () => el('btn-redo')?.click());
+    onClick('sheet-saved', () => { location.href = '/dolap'; });
+    onClick('sheet-share', () => el('btn-share')?.click());
+    onClick('sheet-quote', () => el('btn-quote')?.click());
+    onClick('sheet-shot', () => el('btn-shot')?.click());
+    on('selection-ui', 'pointerdown', (event) => event.stopPropagation());
 }
 
 function applyColorsToAll(source) {
