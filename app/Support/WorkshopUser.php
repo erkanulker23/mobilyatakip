@@ -38,6 +38,7 @@ final class WorkshopUser
             'api.user-tasks.',
             'logout',
             'wardrobe.',
+            'tools.',
             'assets.',
             'storage.',
             'company.',

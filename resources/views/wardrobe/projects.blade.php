@@ -57,15 +57,8 @@
 <body>
 <header>
     <a href="{{ route('wardrobe.index') }}"><strong>MEEMARE</strong><span>Dolap projeleri</span></a>
-    <nav class="nav" aria-label="Uygulama geçişi">
-        <a class="primary" href="{{ route('dashboard') }}">Kontrol paneli</a>
-        <a href="{{ route('sales.index') }}">Satışlar</a>
-        <a href="{{ route('expenses.index') }}">Giderler</a>
-        <a href="{{ route('wardrobe.design') }}">3D tasarla</a>
-        <form method="POST" action="{{ route('logout') }}" style="margin:0">
-            @csrf
-            <button type="submit">Çıkış</button>
-        </form>
+    <nav class="nav" aria-label="Uygulama geçişi" style="max-width:100%">
+        @include('partials.meemare-apps-nav', ['activeApp' => 'projeler'])
     </nav>
 </header>
 <main>

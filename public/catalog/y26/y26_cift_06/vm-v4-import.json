@@ -1,0 +1,19 @@
+{
+  "sourceObj": "vm_v4_011_086.obj",
+  "sizeBeforeFit": [
+    0.9001,
+    2.5,
+    0.6
+  ],
+  "scaleApplied": [
+    8.898974,
+    12.079033,
+    3.888626
+  ],
+  "targetM": [
+    0.9,
+    2.5,
+    0.6
+  ],
+  "glb": "/Users/erkanulker/mobilyatakip/public/catalog/y26/y26_cift_06/model.glb"
+}

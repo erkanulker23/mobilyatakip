@@ -31,7 +31,12 @@
         header.bar, footer.bar, .series {
             display: flex; align-items: center; gap: 8px; padding: 0 14px; background: var(--panel);
         }
-        header.bar { border-bottom: 1px solid var(--line); }
+        header.bar { border-bottom: 1px solid var(--line); flex-wrap: wrap; gap: 8px; padding-top: 8px; padding-bottom: 8px; }
+        .apps-row { width: 100%; order: 10; overflow-x: auto; padding-bottom: 2px; }
+        @media (min-width: 1100px) {
+            .apps-row { width: auto; order: 0; flex: 1; justify-content: center; display: flex; }
+            header.bar .brand { order: -1; }
+        }
         .series { display: none; }
         footer.bar { border-top: 1px solid var(--line); justify-content: space-between; }
         .brand { display: flex; flex-direction: column; line-height: 1.1; text-decoration: none; color: inherit; }
@@ -190,18 +195,19 @@
     <header class="bar">
         <a href="{{ route('wardrobe.index') }}" class="brand">
             <strong>MEEMARE</strong>
-            <span>Dolap planı</span>
+            <span>3D dolap stüdyosu</span>
         </a>
+        <div class="apps-row">@include('partials.meemare-apps-nav', ['activeApp' => 'tasarla'])</div>
         <input id="project-name" class="name-input" maxlength="80" aria-label="Proje adı" value="Dolabım">
         <div class="grow"></div>
-        <a class="btn extra" href="{{ route('dashboard') }}">Kontrol paneli</a>
         <button type="button" class="btn" id="btn-new">Yeni proje</button>
         <button type="button" class="btn" id="btn-undo" disabled>Geri</button>
         <button type="button" class="btn" id="btn-redo" disabled>İleri</button>
         <button type="button" class="btn" id="btn-saved">Kayıtlar</button>
         <button type="button" class="btn" id="btn-save">Kaydet</button>
         <button type="button" class="btn" id="btn-share">Paylaş</button>
-        <a class="btn extra" href="{{ url('/plan') }}">Oda planı</a>
+        <a class="btn extra" href="{{ route('tools.plan') }}">Oda planı</a>
+        <a class="btn extra" href="{{ route('tools.cabinet') }}">Üretim</a>
         <button type="button" class="btn" id="btn-measures">Ölçüler</button>
         <button type="button" class="btn is-on" id="btn-lights">Işıkları kapat</button>
         <button type="button" class="btn" id="btn-shot">Render al</button>
@@ -223,9 +229,9 @@
             <div id="plan-board" class="hidden">
                 <canvas id="plan-canvas"></canvas>
                 <div id="plan-tools">
-                    <button type="button" data-plan-tool="move" class="is-on">Taşı</button>
-                    <button type="button" data-plan-tool="door">Kapı</button>
-                    <button type="button" data-plan-tool="window">Pencere</button>
+                    <button type="button" data-plan-tool="move" class="is-on" title="Modülü duvar boyunca sürükleyin">Taşı</button>
+                    <button type="button" data-plan-tool="door" title="Duvara tıklayın: kapı ekleyin / kaldırın">Kapı</button>
+                    <button type="button" data-plan-tool="window" title="Duvara tıklayın: pencere ekleyin / kaldırın">Pencere</button>
                 </div>
             </div>
             <div id="plan-switch">
@@ -389,6 +395,6 @@
         csrf: @json(csrf_token())
     };
 </script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=218"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=219"></script>
 </body>
 </html>

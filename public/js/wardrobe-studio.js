@@ -130,6 +130,45 @@ const hiddenDoorIds = new Set();
 const measureNodes = [];
 const measureMat = new THREE.LineBasicMaterial({ color: 0x1f6b4a });
 
+function applyRoomQuery(params) {
+    if (!params) return false;
+    const read = (keys) => {
+        for (const key of keys) {
+            const raw = params.get(key);
+            if (raw === null || raw === '') continue;
+            const value = Number(raw);
+            if (Number.isFinite(value)) return value;
+        }
+        return null;
+    };
+    const front = read(['onduvar', 'wall', 'on']);
+    const left = read(['solduvar', 'left']);
+    const right = read(['sagduvar', 'right']);
+    let changed = false;
+    if (front !== null && front >= 80) {
+        state.wallWidth = clamp(Math.round(front), 80, 800);
+        changed = true;
+    }
+    if (left !== null && left >= 80) {
+        state.leftWall = clamp(Math.round(left), 80, 800);
+        changed = true;
+    }
+    if (right !== null && right >= 80) {
+        state.rightWall = clamp(Math.round(right), 80, 800);
+        changed = true;
+    }
+    if (changed) {
+        const wallInputs = ['wall-left', 'wall-front', 'wall-right'];
+        const values = [state.leftWall, state.wallWidth, state.rightWall];
+        wallInputs.forEach((id, index) => {
+            const node = el(id);
+            if (node) node.value = values[index];
+        });
+        toast('Oda planı ölçüleri yüklendi.');
+    }
+    return changed;
+}
+
 function blankState() {
     return {
         name: 'Dolabım',
@@ -3007,6 +3046,62 @@ function bakeGlb(template, mirror, widthMeters, glbId) {
     return clone;
 }
 
+function alignCornerReturn(model, targetMeters) {
+    const meshes = [];
+    model.traverse((child) => {
+        if (!child.isMesh || !child.geometry) return;
+        child.geometry.computeBoundingBox();
+        const box = child.geometry.boundingBox;
+        if (!box) return;
+        meshes.push({
+            mesh: child,
+            box,
+            size: box.getSize(new THREE.Vector3()),
+            center: box.getCenter(new THREE.Vector3()),
+        });
+    });
+    let full = 0;
+    meshes.forEach((part) => {
+        full = Math.max(full, part.box.max.z);
+    });
+    const stiles = meshes.filter((part) => part.size.x < 0.04 && part.size.y > 0.8 && part.size.z > 0.2);
+    if (stiles.length < 2 || full < 0.2) return;
+    stiles.sort((a, b) => a.box.max.z - b.box.max.z);
+    const shallow = stiles[0];
+    const deep = stiles[stiles.length - 1];
+    const short = shallow.box.max.z;
+    if (short > full * 0.8) return;
+    const target = Math.min(Math.max(targetMeters, 0.3), full - 0.012);
+    if (Math.abs(target - short) < 0.006) return;
+    const split = (shallow.center.x + deep.center.x) / 2;
+    const toward = shallow.center.x >= deep.center.x ? 1 : -1;
+    meshes.forEach((part) => {
+        if ((part.center.x - split) * toward < 0.01) return;
+        if (part.box.max.z > short + 0.02 || part.box.max.z < short * 0.5) return;
+        const gap = short - part.box.max.z;
+        const newMax = target - gap;
+        const minZ = part.box.min.z;
+        const span = part.box.max.z - minZ;
+        if (span < 0.001 || newMax <= minZ + 0.002) return;
+        const scale = (newMax - minZ) / span;
+        const position = part.mesh.geometry.attributes.position;
+        for (let i = 0; i < position.count; i += 1) {
+            const z = position.getZ(i);
+            position.setZ(i, minZ + (z - minZ) * scale);
+        }
+        position.needsUpdate = true;
+        part.mesh.geometry.computeVertexNormals();
+        part.mesh.geometry.computeBoundingBox();
+        part.mesh.geometry.computeBoundingSphere();
+    });
+    shallow.mesh.geometry.computeBoundingBox();
+    window.__cornerFront = {
+        shortCm: Math.round(short * 1000) / 10,
+        targetCm: Math.round(target * 1000) / 10,
+        frontCm: Math.round(shallow.mesh.geometry.boundingBox.max.z * 1000) / 10,
+    };
+}
+
 function placeGlb(template, mod) {
     const side = mod.kind === 'corner' && mod.cornerSide === 'right' ? 'right' : 'left';
     const key = `${mod.glb}:${side}`;
@@ -3023,6 +3118,7 @@ function placeGlb(template, mod) {
     model.traverse((child) => {
         if (child.isMesh && child.geometry) child.geometry = child.geometry.clone();
     });
+    if (mod.kind === 'corner') alignCornerReturn(model, (Number(state.depth) || 60) / 100);
     paintGlb(model, mod);
     mountGlbDrawers(model, mod);
     roundGlbRails(model, mod);
@@ -3702,8 +3798,9 @@ function addCornerGlbDoors(group, mod, preview) {
     const style = mod.door === 'glass' ? 'glass' : 'solid';
     const leafW = Math.max(12, w / 2 - T);
     const leafD = Math.max(12, d / 2 - T);
+    const face = Math.max(30, Number(state.depth) || 60);
     const along = new THREE.Group();
-    along.position.set(mirrored ? leafW / 2 + T : w - leafW / 2, y, d / 2 + 0.2);
+    along.position.set(mirrored ? leafW / 2 + T : w - leafW / 2, y, face + 0.15);
     addCornerLeaf(along, leafW, doorH, style, mod, mirrored ? 'right' : 'left');
     along.userData.kind = 'corner-door';
     along.userData.sign = 1;
@@ -4429,13 +4526,42 @@ function drawPlanModule(ctx, mod, room) {
     const d = Math.max(2, rect.d);
     const selected = mod.id === selectedId;
     const wall = wallName(mod);
+    const corner = mod.kind === 'corner';
+    const face = corner
+        ? Math.min(d - 1, Math.max(8, ((Math.max(30, Number(state.depth) || 60) / Math.max(1, alongSize(mod))) * d)))
+        : d;
+    const mid = w / 2;
     ctx.fillStyle = selected ? 'rgba(31,107,74,0.13)' : '#fbfaf6';
-    ctx.fillRect(x, z, w, d);
-    ctx.strokeStyle = selected ? '#1f6b4a' : '#3a3834';
-    ctx.lineWidth = selected ? 1.6 : 1;
-    ctx.strokeRect(x + 0.5, z + 0.5, Math.max(0, w - 1), Math.max(0, d - 1));
+    if (corner) {
+        ctx.beginPath();
+        if (mod.cornerSide !== 'right') {
+            ctx.moveTo(x, z);
+            ctx.lineTo(x + w, z);
+            ctx.lineTo(x + w, z + face);
+            ctx.lineTo(x + mid, z + face);
+            ctx.lineTo(x + mid, z + d);
+            ctx.lineTo(x, z + d);
+        } else {
+            ctx.moveTo(x, z);
+            ctx.lineTo(x + w, z);
+            ctx.lineTo(x + w, z + d);
+            ctx.lineTo(x + mid, z + d);
+            ctx.lineTo(x + mid, z + face);
+            ctx.lineTo(x, z + face);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = selected ? '#1f6b4a' : '#3a3834';
+        ctx.lineWidth = selected ? 1.6 : 1;
+        ctx.stroke();
+    } else {
+        ctx.fillRect(x, z, w, d);
+        ctx.strokeStyle = selected ? '#1f6b4a' : '#3a3834';
+        ctx.lineWidth = selected ? 1.6 : 1;
+        ctx.strokeRect(x + 0.5, z + 0.5, Math.max(0, w - 1), Math.max(0, d - 1));
+    }
     const inset = Math.min(5, w * 0.14, d * 0.14);
-    if (w > 22 && d > 22) {
+    if (!corner && w > 22 && d > 22) {
         ctx.strokeStyle = selected ? 'rgba(31,107,74,0.28)' : 'rgba(58,56,52,0.16)';
         ctx.lineWidth = 1;
         ctx.strokeRect(x + inset, z + inset, w - inset * 2, d - inset * 2);
@@ -4443,17 +4569,17 @@ function drawPlanModule(ctx, mod, room) {
     ctx.strokeStyle = selected ? '#1f6b4a' : '#242220';
     ctx.lineWidth = 2.25;
     ctx.beginPath();
-    if (mod.kind === 'corner') {
+    if (corner) {
         if (mod.cornerSide !== 'right') {
+            ctx.moveTo(x + mid, z + face);
+            ctx.lineTo(x + w, z + face);
             ctx.moveTo(x, z + d);
-            ctx.lineTo(x + w, z + d);
-            ctx.moveTo(x + w, z);
-            ctx.lineTo(x + w, z + d);
+            ctx.lineTo(x + mid, z + d);
         } else {
-            ctx.moveTo(x, z + d);
+            ctx.moveTo(x, z + face);
+            ctx.lineTo(x + mid, z + face);
+            ctx.moveTo(x + mid, z + d);
             ctx.lineTo(x + w, z + d);
-            ctx.moveTo(x, z);
-            ctx.lineTo(x, z + d);
         }
     } else if (wall === 'left') {
         ctx.moveTo(x + w, z);
@@ -7528,6 +7654,7 @@ async function boot() {
         console.warn(error);
     }
     const params = new URLSearchParams(location.search);
+    applyRoomQuery(params);
     const recordId = params.get('kayit');
     const token = params.get('proje');
     if ((recordId && await openProject(recordId)) || (token && await openProject(token))) {
@@ -7594,6 +7721,29 @@ window.__studio = {
             mod.open = 0;
         });
         return true;
+    },
+    shift: (id, offset) => {
+        const mod = state.modules.find((item) => item.glb === id || item.id === id);
+        if (!mod) return null;
+        commit(() => { mod.offset = offset; });
+        return true;
+    },
+    fronts: () => {
+        const rows = [];
+        cabinetRoot.updateMatrixWorld(true);
+        cabinetRoot.traverse((child) => {
+            if (!child.isMesh) return;
+            const box = new THREE.Box3().setFromObject(child);
+            if (box.max.z < 55) return;
+            rows.push({
+                name: child.name || child.parent?.name || '',
+                maxZ: Math.round(box.max.z * 10) / 10,
+                minX: Math.round(box.min.x * 10) / 10,
+                maxX: Math.round(box.max.x * 10) / 10,
+            });
+        });
+        rows.sort((a, b) => b.maxZ - a.maxZ);
+        return rows.slice(0, 24);
     },
     toggleDoor: () => {
         const mod = selected();

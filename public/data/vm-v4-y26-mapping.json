@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "sourceObj": "dolap modülleri obj.obj",
+  "sourceNote": "Viessmann vm_v4 showroom export (3ds Max). 20 benzersiz gövde; Y26 ile bire bir.",
+  "scalePolicy": "fit_box",
+  "targetUnits": "m",
+  "modules": [
+    { "y26Id": "y26_tek_01", "vmObject": "vm_v4_011_057", "width": 0.45, "height": 2.5, "depth": 0.6, "category": "y26-tek" },
+    { "y26Id": "y26_tek_02", "vmObject": "vm_v4_011_058", "width": 0.45, "height": 2.5, "depth": 0.6, "category": "y26-tek" },
+    { "y26Id": "y26_tek_03", "vmObject": "vm_v4_011_061", "width": 0.45, "height": 2.5, "depth": 0.6, "category": "y26-tek" },
+    { "y26Id": "y26_tek_04", "vmObject": "vm_v4_011_065", "width": 0.45, "height": 2.5, "depth": 0.6, "category": "y26-tek" },
+    { "y26Id": "y26_tek_05", "vmObject": "vm_v4_011_066", "width": 0.45, "height": 2.5, "depth": 0.6, "category": "y26-tek" },
+    { "y26Id": "y26_tek_06", "vmObject": "vm_v4_011_067", "width": 0.45, "height": 2.5, "depth": 0.6, "category": "y26-tek" },
+    { "y26Id": "y26_tek_07", "vmObject": "vm_v4_011_069", "width": 0.45, "height": 2.5, "depth": 0.6, "category": "y26-tek" },
+    { "y26Id": "y26_tek_08", "vmObject": "vm_v4_011_070", "width": 0.45, "height": 2.5, "depth": 0.6, "category": "y26-tek" },
+    { "y26Id": "y26_tek_09", "vmObject": "vm_v4_011_071", "width": 0.45, "height": 2.5, "depth": 0.6, "category": "y26-tek" },
+    { "y26Id": "y26_tek_10", "vmObject": "vm_v4_011_075", "width": 0.45, "height": 2.5, "depth": 0.6, "category": "y26-tek" },
+    { "y26Id": "y26_cift_01", "vmObject": "vm_v4_011_078", "width": 0.9, "height": 2.5, "depth": 0.6, "category": "y26-cift" },
+    { "y26Id": "y26_cift_02", "vmObject": "vm_v4_011_079", "width": 0.9, "height": 2.5, "depth": 0.6, "category": "y26-cift" },
+    { "y26Id": "y26_cift_03", "vmObject": "vm_v4_011_080", "width": 0.9, "height": 2.5, "depth": 0.6, "category": "y26-cift" },
+    { "y26Id": "y26_cift_04", "vmObject": "vm_v4_011_081", "width": 0.9, "height": 2.5, "depth": 0.6, "category": "y26-cift" },
+    { "y26Id": "y26_cift_05", "vmObject": "vm_v4_011_085", "width": 0.9, "height": 2.5, "depth": 0.6, "category": "y26-cift" },
+    { "y26Id": "y26_cift_06", "vmObject": "vm_v4_011_086", "width": 0.9, "height": 2.5, "depth": 0.6, "category": "y26-cift" },
+    { "y26Id": "y26_cift_07", "vmObject": "vm_v4_011_087", "width": 0.9, "height": 2.5, "depth": 0.6, "category": "y26-cift" },
+    { "y26Id": "y26_cift_08", "vmObject": "vm_v4_014_024", "width": 0.9, "height": 2.5, "depth": 0.6, "category": "y26-cift" },
+    { "y26Id": "y26_cift_09", "vmObject": "vm_v4_014_025", "width": 0.9, "height": 2.5, "depth": 0.6, "category": "y26-cift" },
+    { "y26Id": "y26_cift_10", "vmObject": "vm_v4_014_026", "width": 0.9, "height": 2.5, "depth": 0.6, "category": "y26-cift" }
+  ]
+}

@@ -1,144 +1,641 @@
 @extends('layouts.app')
 @section('title', 'Düzenle: ' . $purchase->purchaseNumber)
+@push('head')
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+<style>
+.form-create-section { padding: 1rem 0; border-bottom: 1px solid #e2e8f0; }
+.form-create-section:last-of-type { border-bottom: 0; }
+.dark .form-create-section { border-color: #334155; }
+.form-create-section-title { font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.75rem; }
+.dark .form-create-section-title { color: #94a3b8; }
+.purchase-item-card { background: #fff; border-radius: 0.5rem; padding: 0.75rem 1rem; border: 1px solid #e2e8f0; margin-bottom: 0.75rem; min-width: 0; }
+@media (max-width: 1279px) { .purchase-item-card { min-width: 540px; } }
+.dark .purchase-item-card { background: #334155; border-color: #475569; }
+.items-scroll-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+.purchase-item-card .form-label { margin-bottom: 0.25rem; white-space: nowrap; font-size: 0.75rem; }
+.purchase-item-card .form-input, .purchase-item-card .form-select { min-width: 0; width: 100%; padding: 0.5rem 0.625rem; min-height: 38px !important; }
+.purchase-totals-box { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border-radius: 0.75rem; padding: 0.75rem 1rem; border: 1px solid #a7f3d0; }
+.dark .purchase-totals-box { background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(5,150,105,0.2) 100%); border-color: #047857; }
+.form-actions-sticky { padding: 1rem 0; margin: 0 -1.5rem -1.5rem; padding-left: 1.5rem; padding-right: 1.5rem; background: #fff; border-top: 1px solid #f1f5f9; }
+.dark .form-actions-sticky { background: #1e293b; border-color: #334155; }
+@media (min-width: 768px) { .form-actions-sticky { margin: 0; padding: 0; border: 0; background: transparent; } }
+@media (max-width: 767px) { .form-actions-sticky { margin-left: -1rem; margin-right: -1rem; padding-left: 1rem; padding-right: 1rem; margin-bottom: -1rem; padding-bottom: max(1rem, env(safe-area-inset-bottom)); } }
+.ts-wrapper .ts-control .item { display: flex; align-items: center; gap: 0.5rem; }
+.ts-wrapper .ts-control .item img { flex-shrink: 0; }
+.ts-dropdown.dropup { bottom: 100%; top: auto !important; margin-top: 0; margin-bottom: 4px; }
+</style>
+@endpush
 @section('content')
-<div class="mb-6">
-    <div class="flex items-center gap-2 text-neutral-500 text-sm mb-1">
-        <a href="{{ route('purchases.index') }}" class="hover:text-neutral-900">Alışlar</a>
-        <span>/</span>
-        <a href="{{ route('purchases.show', $purchase) }}" class="hover:text-neutral-900">{{ $purchase->purchaseNumber }}</a>
-        <span>/</span>
-        <span class="text-neutral-700">Düzenle</span>
+@if($purchase->isCancelled ?? false)
+    <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 px-4 py-3 text-sm dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
+        Bu alış iptal edilmiş; kalemler ve tutarlar değiştirilemez.
     </div>
+@endif
+<div class="mb-6 md:mb-8">
+    <nav class="flex items-center gap-2 text-neutral-500 dark:text-slate-400 text-sm mb-1">
+        <a href="{{ route('purchases.index') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Alışlar</a>
+        <span aria-hidden="true">/</span>
+        <a href="{{ route('purchases.show', $purchase) }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">{{ $purchase->purchaseNumber }}</a>
+        <span aria-hidden="true">/</span>
+        <span class="text-neutral-700 dark:text-slate-300">Düzenle</span>
+    </nav>
     <h1 class="page-title">Alış Düzenle</h1>
-    <p class="page-desc">{{ $purchase->purchaseNumber }} @if($purchase->warehouse)<span class="text-neutral-500">· Depo: {{ $purchase->warehouse->name }}</span>@endif</p>
+    <p class="page-desc">{{ $purchase->purchaseNumber }}@if($purchase->warehouse) · Depo: {{ $purchase->warehouse->name }}@endif</p>
 </div>
 
-<div class="card p-6 max-w-4xl">
-    <form method="POST" action="{{ route('purchases.update', $purchase) }}" class="space-y-5">
-        @csrf @method('PUT')
-        <div>
-            <label class="form-label">KDV</label>
-            <select name="kdvIncluded" class="form-select">
-                <option value="1" {{ old('kdvIncluded', $purchase->kdvIncluded ?? true) ? 'selected' : '' }}>KDV Dahil</option>
-                <option value="0" {{ !old('kdvIncluded', $purchase->kdvIncluded ?? true) ? 'selected' : '' }}>KDV Hariç</option>
-            </select>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div>
-                <label class="form-label">Tedarikçi *</label>
-                <select name="supplierId" required class="form-select">
-                    @foreach($suppliers as $s)
-                    <option value="{{ $s->id }}" {{ old('supplierId', $purchase->supplierId) == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div>
-                <label class="form-label">Tedarikçi iskonto oranı %</label>
-                <input type="number" step="0.01" min="0" max="100" name="supplierDiscountRate" value="{{ old('supplierDiscountRate', $purchase->supplierDiscountRate) }}" class="form-input w-32" placeholder="0">
-            </div>
-            <div>
-                <label class="form-label">Alış Tarihi *</label>
-                <input type="date" name="purchaseDate" required value="{{ old('purchaseDate', $purchase->purchaseDate?->format('Y-m-d')) }}" class="form-input">
-            </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div>
-                <label class="form-label">Vade Tarihi</label>
-                <input type="date" name="dueDate" value="{{ old('dueDate', $purchase->dueDate?->format('Y-m-d')) }}" class="form-input">
-            </div>
-            <div>
-                <label class="form-label">Notlar</label>
-                <input type="text" name="notes" value="{{ old('notes', $purchase->notes) }}" class="form-input">
-            </div>
-        </div>
-
-        <div class="pt-4 border-t border-neutral-200 dark:border-slate-600">
-            <h3 class="text-sm font-semibold text-neutral-500 uppercase tracking-wider mb-3">Nakliye bilgileri</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="lg:col-span-2">
-                    <label class="form-label">Nakliye firması</label>
-                    <select name="shippingCompanyId" class="form-select">
-                        <option value="">Seçiniz</option>
-                        @foreach($shippingCompanies ?? [] as $sc)
-                        <option value="{{ $sc->id }}" {{ old('shippingCompanyId', $purchase->shippingCompanyId) == $sc->id ? 'selected' : '' }}>{{ $sc->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="form-label">Araç plakası</label>
-                    <input type="text" name="vehiclePlate" value="{{ old('vehiclePlate', $purchase->vehiclePlate) }}" class="form-input" placeholder="34 ABC 123">
-                </div>
-                <div>
-                    <label class="form-label">Şoför adı</label>
-                    <input type="text" name="driverName" value="{{ old('driverName', $purchase->driverName) }}" class="form-input" placeholder="Ahmet Yılmaz">
-                </div>
-                <div class="sm:col-span-2">
-                    <label class="form-label">Şoför telefonu</label>
-                    <input type="tel" name="driverPhone" value="{{ old('driverPhone', $purchase->driverPhone) }}" class="form-input" placeholder="0555 123 45 67">
-                </div>
-            </div>
-        </div>
-
-        <div class="form-items-section-box mt-5">
-            <h3 class="text-lg font-semibold text-neutral-900 mb-4">Alış Kalemleri</h3>
-            <div id="items" class="space-y-3">
-                @foreach($purchase->items as $idx => $item)
-                <div class="item-row form-item-row grid grid-cols-1 md:grid-cols-[1fr_100px_100px_100px_80px_40px] gap-3 items-end">
-                    <div>
-                        <label class="form-label">Ürün *</label>
-                        <select name="items[{{ $idx }}][productId]" required class="form-select item-product">
-                            @foreach($products as $p)
-                            <option value="{{ $p->id }}" data-price="{{ $p->unitPrice }}" data-kdv="{{ $p->kdvRate ?? 18 }}" {{ $item->productId == $p->id ? 'selected' : '' }}>{{ $p->name }}</option>
+@php
+    $suppliersJson = $suppliers->map(fn($s) => [
+        'id' => $s->id, 'name' => $s->name,
+        'phone' => $s->phone ?? '', 'email' => $s->email ?? '', 'address' => $s->address ?? '',
+        'taxNumber' => $s->taxNumber ?? '', 'taxOffice' => $s->taxOffice ?? ''
+    ])->values();
+    $productsPurchaseJson = ($products ?? collect())->map(function($p) {
+        $price = $p->unitPrice !== null && $p->unitPrice !== '' ? (float) $p->unitPrice : 0;
+        $img = is_array($p->images ?? null) ? ($p->images[0] ?? null) : ($p->images ?? null);
+        return ['id' => $p->id, 'name' => $p->name . ' (' . number_format($price, 0, ',', '.') . ' ₺)', 'price' => $price, 'kdv' => (float)($p->kdvRate ?? 18), 'image' => $img ? (Str::startsWith($img, 'http') ? $img : url($img)) : null];
+    })->values();
+@endphp
+@php
+    $canDeletePurchase = !$purchase->isCancelled
+        && (float) ($purchase->paidAmount ?? 0) <= 0
+        && !\App\Models\SupplierPayment::where('purchaseId', $purchase->id)->exists();
+    $purchaseItemsJson = $purchase->items->map(fn ($i) => [
+        'productId' => $i->productId,
+        'listPrice' => $i->listPrice,
+        'unitPrice' => $i->unitPrice,
+        'quantity' => $i->quantity,
+        'kdvRate' => $i->kdvRate ?? 18,
+        'lineDiscountPercent' => $i->lineDiscountPercent,
+        'lineDiscountAmount' => $i->lineDiscountAmount,
+    ])->values();
+@endphp
+<div class="w-full max-w-7xl mx-auto px-1" x-data="purchaseCreateForm()" @open-quick-add-product.window="showQuickAddProduct = true">
+    <form method="POST" action="{{ route('purchases.update', $purchase) }}" id="purchaseForm">
+        @csrf
+        @method('PUT')
+        <div class="card overflow-hidden">
+            {{-- Tedarikçi & ayarlar --}}
+            <div class="form-create-section px-4 sm:px-6 lg:px-8 pt-6">
+                <h2 class="form-create-section-title">Tedarikçi & ayarlar</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="sm:col-span-2 lg:col-span-1">
+                        <label class="form-label">Tedarikçi <span class="text-red-500">*</span></label>
+                        <select name="supplierId" required class="form-select min-h-[44px] md:min-h-[42px]" id="supplierSelect" placeholder="Tedarikçi ara veya seçin...">
+                            <option value="">Seçiniz</option>
+                            @foreach($suppliers as $s)
+                            <option value="{{ $s->id }}" {{ old('supplierId', $purchase->supplierId) == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
                             @endforeach
                         </select>
+                        @error('supplierId')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
+                        <div id="supplierInfoBox" class="mt-5 pt-4 border-t border-slate-100 dark:border-slate-700/60 hidden">
+                            <p id="supplierName" class="text-base font-semibold text-slate-800 dark:text-slate-100 mb-3">—</p>
+                            <div class="space-y-2.5 text-sm">
+                                <div id="supplierPhoneRow" class="flex gap-2"><span class="text-slate-400 dark:text-neutral-500 w-20 shrink-0">Telefon</span><span id="supplierPhone" class="text-neutral-700 dark:text-slate-200">—</span></div>
+                                <div id="supplierEmailRow" class="flex gap-2"><span class="text-slate-400 dark:text-neutral-500 w-20 shrink-0">E-posta</span><span id="supplierEmail" class="text-neutral-700 dark:text-slate-200">—</span></div>
+                                <div id="supplierAddressRow" class="flex gap-2"><span class="text-slate-400 dark:text-neutral-500 w-20 shrink-0">Adres</span><span id="supplierAddress" class="text-neutral-700 dark:text-slate-200">—</span></div>
+                                <div id="supplierTaxRow" class="flex gap-2"><span class="text-slate-400 dark:text-neutral-500 w-20 shrink-0">Vergi</span><span id="supplierTax" class="text-neutral-700 dark:text-slate-200">—</span></div>
+                            </div>
+                        </div>
                     </div>
-                    <div><label class="form-label">Liste fiyatı</label><input type="text" inputmode="decimal" name="items[{{ $idx }}][listPrice]" value="{{ old("items.{$idx}.listPrice", $item->listPrice ? money($item->listPrice) : '') }}" class="form-input item-listprice" placeholder="—" autocomplete="off"></div>
-                    <div><label class="form-label">İskontolu fiyat *</label><input type="text" inputmode="decimal" name="items[{{ $idx }}][unitPrice]" required value="{{ old("items.{$idx}.unitPrice", money($item->unitPrice)) }}" class="form-input item-price" autocomplete="off"></div>
-                    <div><label class="form-label">Adet *</label><input type="number" name="items[{{ $idx }}][quantity]" value="{{ old("items.{$idx}.quantity", $item->quantity) }}" required min="1" class="form-input item-qty"></div>
-                    <div><label class="form-label">KDV %</label><input type="number" step="0.01" min="0" max="100" name="items[{{ $idx }}][kdvRate]" value="{{ old("items.{$idx}.kdvRate", $item->kdvRate ?? 18) }}" class="form-input item-kdv"></div>
-                    <div><button type="button" onclick="removeRow(this)" class="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">−</button></div>
+                    <div>
+                        <label class="form-label">Depo</label>
+                        <input type="text" readonly class="form-input min-h-[44px] md:min-h-[42px] bg-slate-50 dark:bg-slate-800/80"
+                               value="{{ $purchase->warehouse?->name ?? '—' }}">
+                        <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400">Düzenlemede depo değiştirilmez (stok hareketleri kayıtlı).</p>
+                    </div>
+                    <div>
+                        <label class="form-label">KDV</label>
+                        <select name="kdvIncluded" class="form-select min-h-[44px] md:min-h-[42px]">
+                            <option value="1" {{ old('kdvIncluded', $purchase->kdvIncluded ?? true) ? 'selected' : '' }}>KDV Dahil</option>
+                            <option value="0" {{ !old('kdvIncluded', $purchase->kdvIncluded ?? true) ? 'selected' : '' }}>KDV Hariç</option>
+                        </select>
+                        <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400">Birim fiyat KDV dahil mi?</p>
+                    </div>
+                    <div>
+                        <label class="form-label">Tedarikçi iskonto %</label>
+                        <input type="number" step="0.01" min="0" max="100" name="supplierDiscountRate" value="{{ old('supplierDiscountRate', $purchase->supplierDiscountRate) }}" class="form-input min-h-[44px] md:min-h-[42px]" placeholder="0">
+                        <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400">Bu alış için geçerli (opsiyonel)</p>
+                    </div>
                 </div>
-                @endforeach
             </div>
-            <button type="button" onclick="addRow()" class="mt-3 btn-secondary text-sm">+ Kalem Ekle</button>
-        </div>
 
-        <div class="flex gap-3 pt-2">
-            <button type="submit" class="btn-primary">Güncelle</button>
-            <a href="{{ route('purchases.show', $purchase) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-200 text-neutral-700 rounded-lg hover:bg-slate-300 font-medium">İptal</a>
+            {{-- Tarihler --}}
+            <div class="form-create-section px-4 sm:px-6 lg:px-8">
+                <h2 class="form-create-section-title">Tarihler</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Alış Tarihi <span class="text-red-500">*</span></label>
+                        <input type="date" name="purchaseDate" required value="{{ old('purchaseDate', $purchase->purchaseDate?->format('Y-m-d')) }}" class="form-input min-h-[44px] md:min-h-[42px]">
+                        @error('purchaseDate')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label class="form-label">Vade Tarihi</label>
+                        <input type="date" name="dueDate" value="{{ old('dueDate', $purchase->dueDate?->format('Y-m-d')) }}" class="form-input min-h-[44px] md:min-h-[42px]">
+                        @error('dueDate')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+            </div>
+
+            {{-- Nakliye bilgileri --}}
+            <div class="form-create-section px-4 sm:px-6 lg:px-8">
+                <h2 class="form-create-section-title">Nakliye bilgileri</h2>
+                <p class="text-xs text-neutral-500 dark:text-slate-400 mb-3">Malı hangi nakliye firması getirdi? Araç plakası, şoför ve iletişim bilgilerini kaydedin. Nakliye ödemelerini firmaya özel takip edebilirsiniz.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="lg:col-span-2">
+                        <label class="form-label">Nakliye firması</label>
+                        <select name="shippingCompanyId" class="form-select min-h-[44px] md:min-h-[42px]">
+                            <option value="">Seçiniz</option>
+                            @foreach($shippingCompanies ?? [] as $sc)
+                            <option value="{{ $sc->id }}" {{ old('shippingCompanyId', $purchase->shippingCompanyId) == $sc->id ? 'selected' : '' }}>{{ $sc->name }}</option>
+                            @endforeach
+                        </select>
+                        <p class="mt-1 text-xs text-neutral-500 dark:text-slate-400">Sisteme tanımlı nakliye firmalarından seçin</p>
+                        @error('shippingCompanyId')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label class="form-label">Araç plakası</label>
+                        <input type="text" name="vehiclePlate" value="{{ old('vehiclePlate', $purchase->vehiclePlate) }}" class="form-input min-h-[44px] md:min-h-[42px]" placeholder="34 ABC 123">
+                        @error('vehiclePlate')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label class="form-label">Şoför adı</label>
+                        <input type="text" name="driverName" value="{{ old('driverName', $purchase->driverName) }}" class="form-input min-h-[44px] md:min-h-[42px]" placeholder="Ahmet Yılmaz">
+                        @error('driverName')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="form-label">Şoför telefonu</label>
+                        <input type="tel" name="driverPhone" value="{{ old('driverPhone', $purchase->driverPhone) }}" class="form-input min-h-[44px] md:min-h-[42px]" placeholder="0555 123 45 67" inputmode="tel">
+                        @error('driverPhone')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+            </div>
+
+            {{-- Not --}}
+            <div class="form-create-section px-4 sm:px-6 lg:px-8">
+                <h2 class="form-create-section-title">Not</h2>
+                <textarea name="notes" rows="3" class="form-input form-textarea min-h-[80px]" placeholder="Alışla ilgili notlar, açıklamalar...">{{ old('notes', $purchase->notes) }}</textarea>
+                @error('notes')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
+            </div>
+
+            {{-- Kalemler --}}
+            <div class="form-create-section px-4 sm:px-6 lg:px-8 pb-6">
+                <div class="form-items-section-box">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                        <h2 class="form-create-section-title mb-0">Alış kalemleri</h2>
+                        <p class="text-xs text-neutral-500 dark:text-slate-400 sm:max-w-sm">Ürün seçin, liste ve iskontolu fiyat girin.</p>
+                    </div>
+                    <template id="purchase-item-template">
+                    <div class="item-row purchase-item-card" data-row-idx="__IDX__">
+                        <div class="space-y-4">
+                            {{-- Ürün + Fiyat/Adet/KDV satırı — her hücre border ile ayrı --}}
+                            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-11 gap-2 xl:gap-2 xl:items-end">
+                                <div class="xl:col-span-3 flex gap-1.5 xl:pr-1">
+                                    <div class="flex-1 min-w-0">
+                                        <label class="form-label">Ürün / Hizmet <span class="text-red-500">*</span></label>
+                                        <select name="items[__IDX__][productId]" required class="form-select item-product" data-placeholder="Ürün ara veya seçin...">
+                                            <option value="">Seçiniz</option>
+                                            @foreach($products as $p)
+                                            @php $img = is_array($p->images ?? null) ? ($p->images[0] ?? null) : ($p->images ?? null); @endphp
+                                            <option value="{{ $p->id }}" data-price="{{ $p->unitPrice }}" data-kdv="{{ $p->kdvRate ?? 18 }}" data-image="{{ $img ? (Str::startsWith($img, 'http') ? $img : url($img)) : '' }}">{{ $p->name }} ({{ number_format($p->unitPrice, 0, ',', '.') }} ₺)</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <button type="button" onclick="window.openQuickAddPurchaseProduct && window.openQuickAddPurchaseProduct(this)" class="shrink-0 self-end flex items-center justify-center w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 touch-manipulation" title="Ürün/hizmet hızlı ekle" aria-label="Hızlı ekle">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                    </button>
+                                </div>
+                                <div class="xl:col-span-2 xl:border-l xl:border-neutral-200 dark:xl:border-slate-600 xl:pl-2">
+                                    <label class="form-label">Liste fiyatı</label>
+                                    <input type="text" inputmode="decimal" name="items[__IDX__][listPrice]" class="form-input item-listprice min-h-[44px] md:min-h-[42px] w-full" placeholder="—" title="Örn: 20.000">
+                                </div>
+                                <div class="xl:col-span-2 xl:border-l xl:border-neutral-200 dark:xl:border-slate-600 xl:pl-2">
+                                    <label class="form-label">İskontolu fiyat <span class="text-red-500">*</span></label>
+                                    <input type="text" inputmode="decimal" name="items[__IDX__][unitPrice]" required class="form-input item-price min-h-[44px] md:min-h-[42px] w-full" placeholder="0" title="Örn: 20.000">
+                                </div>
+                                <div class="xl:col-span-1 xl:border-l xl:border-neutral-200 dark:xl:border-slate-600 xl:pl-4">
+                                    <label class="form-label">Adet <span class="text-red-500">*</span></label>
+                                    <input type="number" name="items[__IDX__][quantity]" value="1" required min="1" class="form-input item-qty min-h-[44px] md:min-h-[42px] w-full" placeholder="1">
+                                </div>
+                                <div class="xl:col-span-1 xl:border-l xl:border-neutral-200 dark:xl:border-slate-600 xl:pl-4">
+                                    <label class="form-label">KDV %</label>
+                                    <input type="number" step="0.01" min="0" max="100" name="items[__IDX__][kdvRate]" value="18" class="form-input item-kdv min-h-[44px] md:min-h-[42px] w-full" placeholder="18">
+                                </div>
+                                <div class="xl:col-span-1 xl:border-l xl:border-neutral-200 dark:xl:border-slate-600 xl:pl-4">
+                                    <label class="form-label">İskonto oranı %</label>
+                                    <input type="number" step="0.01" min="0" max="100" name="items[__IDX__][lineDiscountPercent]" value="" class="form-input item-disc-pct min-h-[44px] md:min-h-[42px] w-full" placeholder="0" title="İskontolu fiyat × adet üzerinden %">
+                                </div>
+                                <div class="xl:col-span-1 xl:border-l xl:border-neutral-200 dark:xl:border-slate-600 xl:pl-2 flex items-end gap-1.5 pb-0.5">
+                                    <button type="button" onclick="removePurchaseRow(this)" class="btn-remove-row w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/60 text-sm touch-manipulation" aria-label="Satır sil" title="Kalem sil">−</button>
+                                    <button type="button" onclick="addPurchaseRow()" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-200 dark:bg-slate-600 text-neutral-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500 text-sm touch-manipulation" aria-label="Satır ekle" title="Kalem ekle">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    </template>
+                    <div id="items" class="space-y-3 items-scroll-wrapper"></div>
+                    <div class="mt-6 flex flex-col lg:flex-row lg:items-start gap-4">
+                        <div class="flex-1 min-w-0"></div>
+                        <div id="purchaseTotals" class="purchase-totals-box w-full lg:min-w-[280px] shrink-0">
+                            <div class="space-y-1.5 text-sm">
+                                <div class="flex justify-between"><span class="text-slate-600 dark:text-slate-300">Ara Toplam</span> <span id="subtotalBeforeDiscDisplay" class="font-medium text-neutral-900 dark:text-white">0 ₺</span></div>
+                                <div id="purchaseDiscountPctRow" class="flex justify-between hidden"><span class="text-slate-600 dark:text-slate-300">İsk. % Toplam</span> <span id="purchaseDiscountPctDisplay" class="font-medium text-amber-600 dark:text-amber-400">0 ₺</span></div>
+                                <div id="purchaseDiscountAmtRow" class="flex justify-between hidden"><span class="text-slate-600 dark:text-slate-300">İsk. ₺ Toplam</span> <span id="purchaseDiscountAmtDisplay" class="font-medium text-amber-600 dark:text-amber-400">0 ₺</span></div>
+                                <div class="flex justify-between"><span class="text-slate-600 dark:text-slate-300">KDV Toplam</span> <span id="kdvDisplay" class="font-medium text-neutral-900 dark:text-white">0 ₺</span></div>
+                                <div class="flex justify-between pt-2 border-t border-emerald-200 dark:border-emerald-800"><span class="font-medium text-slate-800 dark:text-slate-200">Genel Toplam</span> <span id="grandTotalDisplay" class="font-semibold text-emerald-700 dark:text-emerald-300 text-lg">0 ₺</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Aksiyonlar --}}
+            <div class="form-actions-sticky px-4 sm:px-6 lg:px-8 pt-5 pb-6 md:pb-6">
+                <div class="flex flex-col-reverse sm:flex-row gap-3 sm:gap-2">
+                    <a href="{{ route('purchases.show', $purchase) }}" class="btn-secondary justify-center min-h-[44px] md:min-h-[42px] order-2 sm:order-1">İptal</a>
+                    <button type="submit" class="btn-primary justify-center min-h-[44px] md:min-h-[42px] flex-1 sm:flex-initial order-1 sm:order-2" @if($purchase->isCancelled) disabled @endif>Güncelle</button>
+                </div>
+            </div>
         </div>
     </form>
+
+    @if($canDeletePurchase)
+        <form method="POST" action="{{ route('purchases.destroy', $purchase) }}" class="px-4 sm:px-6 lg:px-8 pb-6"
+              onsubmit="return confirm('Bu alış kaydını silmek istediğinize emin misiniz? Stok hareketleri geri alınır.');">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 font-medium">
+                Alışı Sil
+            </button>
+        </form>
+    @endif
+
+    {{-- Hızlı Ürün/Hizmet Ekle Modal --}}
+    <div x-show="showQuickAddProduct" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="quick-add-product-title">
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showQuickAddProduct = false"></div>
+        <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-neutral-200 dark:border-slate-700 overflow-hidden">
+            <div class="px-5 pt-5 pb-1">
+                <h2 id="quick-add-product-title" class="text-lg font-semibold text-neutral-900">Hızlı Ürün / Hizmet Ekle</h2>
+            </div>
+            <form @submit.prevent="quickAddProduct()" class="p-5 space-y-4">
+                <div>
+                    <label class="form-label">Ad <span class="text-red-500">*</span></label>
+                    <input type="text" x-model="quickProduct.name" required class="form-input min-h-[44px]" placeholder="Örn: Montaj hizmeti">
+                </div>
+                <div>
+                    <label class="form-label">Birim fiyat (₺) <span class="text-red-500">*</span></label>
+                    <input type="text" inputmode="decimal" data-input="money" x-model="quickProduct.unitPrice" required class="form-input min-h-[44px]" placeholder="0" autocomplete="off">
+                </div>
+                <div>
+                    <label class="form-label">KDV %</label>
+                    <input type="number" step="0.01" min="0" max="100" x-model="quickProduct.kdvRate" class="form-input min-h-[44px]" placeholder="18">
+                </div>
+                <p x-show="quickAddProductError" x-text="quickAddProductError" class="text-sm text-red-600 dark:text-red-400"></p>
+                <div class="flex gap-3 justify-end pt-2">
+                    <button type="button" @click="showQuickAddProduct = false" class="btn-secondary min-h-[44px]">İptal</button>
+                    <button type="submit" :disabled="quickAddProductLoading" class="btn-primary min-h-[44px] disabled:opacity-70">Ekle</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 <script>
-let idx = {{ $purchase->items->count() }};
-function addRow() {
-    const t = document.querySelector('.item-row');
-    const c = t.cloneNode(true);
-    c.querySelectorAll('select, input').forEach(e => {
-        if (e.name) e.name = e.name.replace(/\[\d+\]/, '[' + idx + ']');
-        if (e.classList.contains('item-listprice')) e.value = '';
-        if (e.classList.contains('item-price')) e.value = '';
-        if (e.classList.contains('item-qty')) e.value = '1';
-        if (e.classList.contains('item-kdv')) e.value = '18';
-    });
-    c.querySelector('button')?.setAttribute('onclick', 'removeRow(this)');
-    document.getElementById('items').appendChild(c);
-    idx++;
-}
-function removeRow(btn) {
-    if (document.querySelectorAll('.item-row').length <= 1) return;
-    btn.closest('.item-row').remove();
-}
-document.querySelectorAll('.item-product').forEach(s => {
-    s.addEventListener('change', function() {
-        const row = this.closest('.item-row');
-        const o = this.selectedOptions[0];
-        if (o && o.dataset.price) {
-            if (row.querySelector('.item-listprice')) row.querySelector('.item-listprice').value = o.dataset.price;
-            if (row.querySelector('.item-price')) row.querySelector('.item-price').value = o.dataset.price;
+const suppliersPurchaseData = @json($suppliersJson);
+const productsPurchaseData = @json($productsPurchaseJson ?? []);
+const purchaseExistingItems = @json($purchaseItemsJson);
+function purchaseCreateForm() {
+    return {
+        showQuickAddProduct: false,
+        quickProduct: { name: '', unitPrice: '', kdvRate: '18' },
+        quickAddProductLoading: false,
+        quickAddProductError: '',
+        async quickAddProduct() {
+            this.quickAddProductError = '';
+            this.quickAddProductLoading = true;
+            try {
+                const res = await fetch('{{ route("api.products.quick-store") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: this.quickProduct.name,
+                        unitPrice: (window.parseMoney || parseFloat)(this.quickProduct.unitPrice) || 0,
+                        kdvRate: parseFloat(this.quickProduct.kdvRate) || 18,
+                    })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    const text = data.name + ' (' + fmt(data.price) + ' ₺)';
+                    productsPurchaseData.push({ id: String(data.id), name: text, price: data.price, kdv: data.kdv, image: data.image || null });
+                    const tmplSelect = document.getElementById('purchase-item-template')?.content?.querySelector('.item-product');
+                    if (tmplSelect) {
+                        const opt = document.createElement('option');
+                        opt.value = data.id;
+                        opt.setAttribute('data-price', data.price);
+                        opt.setAttribute('data-kdv', data.kdv);
+                        if (data.image) opt.setAttribute('data-image', data.image);
+                        opt.textContent = text;
+                        tmplSelect.appendChild(opt);
+                    }
+                    (window.purchaseProductSelects || []).forEach(function(ts) {
+                        if (ts) ts.addOption({ value: String(data.id), text: text });
+                    });
+                    const targetRow = resolvePurchaseRowForQuickProduct(window.quickAddPurchaseProductForRowIndex ?? 0);
+                    applyProductToPurchaseRow(targetRow, data, text);
+                    targetRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                    this.showQuickAddProduct = false;
+                    this.quickProduct = { name: '', unitPrice: '', kdvRate: '18' };
+                    updateTotals();
+                } else {
+                    this.quickAddProductError = data.message || 'Hata oluştu';
+                }
+            } catch (e) {
+                this.quickAddProductError = 'Bağlantı hatası';
+            }
+            this.quickAddProductLoading = false;
         }
-        if (o && o.dataset.kdv && row.querySelector('.item-kdv')) row.querySelector('.item-kdv').value = o.dataset.kdv;
+    };
+}
+function fmt(n) { return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n || 0); }
+function parseTrNum(s) {
+    if (s == null || s === '') return NaN;
+    if (typeof s === 'number') return s;
+    if (window.parseLinePrice) {
+        var v = window.parseLinePrice(s);
+        if (!isNaN(v)) return v;
+    }
+    return window.parseMoney ? window.parseMoney(s) : NaN;
+}
+function updateTotals() {
+    const kdvIncl = document.querySelector('select[name="kdvIncluded"]')?.value === '1';
+    let subtotal = 0, kdvTotal = 0, totalDiscountPct = 0;
+    document.querySelectorAll('.item-row').forEach(row => {
+        const price = parseTrNum(row.querySelector('.item-price')?.value || 0);
+        const qty = parseInt(row.querySelector('.item-qty')?.value || 1, 10);
+        const kdv = parseFloat(row.querySelector('.item-kdv')?.value || 18, 10);
+        const discPct = parseFloat(row.querySelector('.item-disc-pct')?.value || 0, 10);
+        if (price <= 0 || qty <= 0) return;
+        let lineNetBeforeDisc;
+        if (kdvIncl) {
+            lineNetBeforeDisc = price * qty / (1 + kdv / 100);
+        } else {
+            lineNetBeforeDisc = price * qty;
+        }
+        const lineDiscPct = lineNetBeforeDisc * (discPct / 100);
+        let lineNet = lineNetBeforeDisc - lineDiscPct;
+        lineNet = Math.max(0, lineNet);
+        totalDiscountPct += lineDiscPct;
+        const lineKdv = lineNet * (kdv / 100);
+        subtotal += lineNet;
+        kdvTotal += lineKdv;
     });
+    document.getElementById('subtotalBeforeDiscDisplay').textContent = fmt(subtotal + totalDiscountPct) + ' ₺';
+    const discPctRow = document.getElementById('purchaseDiscountPctRow');
+    const discPctDisp = document.getElementById('purchaseDiscountPctDisplay');
+    if (discPctRow && discPctDisp) {
+        discPctRow.classList.toggle('hidden', totalDiscountPct <= 0);
+        discPctDisp.textContent = '-' + fmt(totalDiscountPct) + ' ₺';
+    }
+    const discAmtRow = document.getElementById('purchaseDiscountAmtRow');
+    if (discAmtRow) discAmtRow.classList.add('hidden');
+    document.getElementById('kdvDisplay').textContent = fmt(kdvTotal) + ' ₺';
+    document.getElementById('grandTotalDisplay').textContent = fmt(subtotal + kdvTotal) + ' ₺';
+}
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof TomSelect === 'undefined') {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js';
+        s.onload = initPurchaseForm;
+        document.head.appendChild(s);
+    } else initPurchaseForm();
 });
+function updateSupplierInfo(supplierId) {
+    const box = document.getElementById('supplierInfoBox');
+    const phoneEl = document.getElementById('supplierPhone');
+    const emailEl = document.getElementById('supplierEmail');
+    const addressEl = document.getElementById('supplierAddress');
+    const taxEl = document.getElementById('supplierTax');
+    if (!box) return;
+    if (!supplierId) { box.classList.add('hidden'); return; }
+    const s = suppliersPurchaseData.find(x => String(x.id) === String(supplierId));
+    if (!s) { box.classList.add('hidden'); return; }
+    box.classList.remove('hidden');
+    document.getElementById('supplierName').textContent = s.name || '—';
+    const setRow = (id, val) => {
+        const row = document.getElementById(id + 'Row');
+        const el = document.getElementById(id);
+        if (!row || !el) return;
+        const v = val || '—';
+        el.textContent = v;
+        row.classList.toggle('hidden', v === '—');
+    };
+    setRow('supplierPhone', s.phone);
+    setRow('supplierEmail', s.email);
+    setRow('supplierAddress', s.address);
+    const taxParts = [s.taxNumber, s.taxOffice].filter(Boolean);
+    setRow('supplierTax', taxParts.length ? taxParts.join(' · ') : null);
+}
+function initPurchaseForm() {
+    const sel = document.getElementById('supplierSelect');
+    if (sel && typeof TomSelect !== 'undefined') {
+        window.purchaseSupplierTomSelect = new TomSelect(sel, {
+            maxOptions: 100,
+            placeholder: 'Tedarikçi ara veya seçin...',
+            searchField: ['text'],
+            onChange: function(v) { updateSupplierInfo(v); }
+        });
+        setTimeout(function() { updateSupplierInfo(window.purchaseSupplierTomSelect?.getValue()); }, 0);
+    }
+    const itemsHost = document.getElementById('items');
+    if (itemsHost) itemsHost.innerHTML = '';
+  if (purchaseExistingItems && purchaseExistingItems.length) {
+        purchaseExistingItems.forEach(function (item) {
+            const row = addPurchaseRow(false);
+            fillPurchaseRow(row, item);
+        });
+    } else {
+        addPurchaseRow();
+    }
+    document.getElementById('purchaseForm')?.addEventListener('input', function() {
+        updateTotals();
+    });
+    document.getElementById('purchaseForm')?.addEventListener('change', function() {
+        updateTotals();
+    });
+    document.getElementById('purchaseForm')?.addEventListener('submit', function() {
+        document.querySelectorAll('.item-listprice, .item-price').forEach(function(inp) {
+            const v = parseTrNum(inp.value);
+            inp.value = isNaN(v) || v < 0 ? '' : String(v);
+        });
+    });
+    updateTotals();
+}
+window.openQuickAddPurchaseProduct = function(btn) {
+    const row = btn && btn.closest ? btn.closest('.item-row') : null;
+    window.quickAddPurchaseProductForRowIndex = row ? parseInt(row.getAttribute('data-row-idx'), 10) : 0;
+    window.dispatchEvent(new CustomEvent('open-quick-add-product'));
+};
+function purchaseRowIsEmpty(row) {
+    if (!row) return true;
+    const tsVal = row.querySelector('.item-product')?.tomselect?.getValue();
+    const price = parseTrNum(row.querySelector('.item-price')?.value || 0);
+    return !tsVal && !(price > 0);
+}
+function resolvePurchaseRowForQuickProduct(rowIndex) {
+    const rows = document.querySelectorAll('#items .item-row');
+    let row = rows[rowIndex] || null;
+    if (!row || !purchaseRowIsEmpty(row)) {
+        row = addPurchaseRow(false);
+    }
+    return row;
+}
+function applyProductToPurchaseRow(rowEl, data, text) {
+    if (!rowEl || !data) return;
+    const id = String(data.id);
+    const price = parseFloat(data.price) || 0;
+    const kdv = parseFloat(data.kdv) ?? 18;
+    const listPriceEl = rowEl.querySelector('.item-listprice');
+    const priceEl = rowEl.querySelector('.item-price');
+    const kdvEl = rowEl.querySelector('.item-kdv');
+    const qtyEl = rowEl.querySelector('.item-qty');
+    if (listPriceEl) listPriceEl.value = fmt(price);
+    if (priceEl) priceEl.value = fmt(price);
+    if (kdvEl) kdvEl.value = kdv;
+    if (qtyEl && (!qtyEl.value || parseInt(qtyEl.value, 10) < 1)) qtyEl.value = '1';
+    const ts = rowEl.querySelector('.item-product')?.tomselect;
+    if (ts) {
+        if (!ts.options[id]) ts.addOption({ value: id, text: text });
+        ts.setValue(id, true);
+    }
+}
+let purchaseIdx = 0;
+function removePurchaseRow(btn) {
+    const container = document.getElementById('items');
+    const rows = container.querySelectorAll('.item-row');
+    if (rows.length <= 1) return;
+    const row = btn.closest('.item-row');
+    if (!row) return;
+    const ts = row.querySelector('.item-product')?.tomselect;
+    if (ts) ts.destroy();
+    row.remove();
+    reindexPurchaseRows();
+    updateTotals();
+}
+function reindexPurchaseRows() {
+    const container = document.getElementById('items');
+    container.querySelectorAll('.item-row').forEach((row, i) => {
+        row.setAttribute('data-row-idx', String(i));
+        row.querySelectorAll('[name]').forEach(el => {
+            if (el.name) el.name = el.name.replace(/items\[\d+\]/, 'items[' + i + ']');
+        });
+        const removeBtn = row.querySelector('.btn-remove-row');
+        if (removeBtn) removeBtn.style.visibility = container.querySelectorAll('.item-row').length <= 1 ? 'hidden' : '';
+    });
+    if (window.purchaseProductSelects) {
+        const arr = [];
+        container.querySelectorAll('.item-product').forEach((sel, i) => { arr[i] = sel.tomselect; });
+        window.purchaseProductSelects = arr;
+    }
+}
+function addPurchaseRow(focusNew) {
+    const tmpl = document.getElementById('purchase-item-template');
+    if (!tmpl) return null;
+    const c = tmpl.content.cloneNode(true);
+    c.querySelectorAll('[name]').forEach(e => { e.name = e.name.replace(/__IDX__/g, purchaseIdx); });
+    const row = c.querySelector('.item-row');
+    if (row) row.setAttribute('data-row-idx', String(purchaseIdx));
+    c.querySelector('.item-listprice').value = '';
+    c.querySelector('.item-price').value = '';
+    c.querySelector('.item-qty').value = '1';
+    c.querySelector('.item-kdv').value = '18';
+    c.querySelector('.item-disc-pct').value = '';
+    document.getElementById('items').appendChild(c);
+    const rowEl = document.getElementById('items').lastElementChild;
+    const prodSel = rowEl.querySelector('.item-product');
+    initPurchaseProductSelect(prodSel, purchaseIdx);
+    purchaseIdx++;
+    reindexPurchaseRows();
+    if (focusNew) {
+        const ts = prodSel && prodSel.tomselect;
+        if (ts) ts.focus();
+        rowEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+    return rowEl;
+}
+function fillPurchaseRow(row, item) {
+    if (!row || !item) return;
+    const listEl = row.querySelector('.item-listprice');
+    const priceEl = row.querySelector('.item-price');
+    const qtyEl = row.querySelector('.item-qty');
+    const kdvEl = row.querySelector('.item-kdv');
+    const discEl = row.querySelector('.item-disc-pct');
+    if (listEl != null && item.listPrice != null && item.listPrice !== '') {
+        listEl.value = fmt(parseFloat(item.listPrice));
+    }
+    if (priceEl != null && item.unitPrice != null && item.unitPrice !== '') {
+        priceEl.value = fmt(parseFloat(item.unitPrice));
+    }
+    if (qtyEl) qtyEl.value = String(item.quantity || 1);
+    if (kdvEl) kdvEl.value = item.kdvRate != null ? item.kdvRate : 18;
+    if (discEl && item.lineDiscountPercent) {
+        discEl.value = item.lineDiscountPercent;
+    }
+    const ts = row.querySelector('.item-product')?.tomselect;
+    const productId = item.productId ? String(item.productId) : '';
+    if (ts && productId) {
+        if (!ts.options[productId]) {
+            const p = (productsPurchaseData || []).find(function (x) { return String(x.id) === productId; });
+            if (p) ts.addOption({ value: productId, text: p.name });
+        }
+        ts.setValue(productId, true);
+    }
+}
+function initPurchaseProductSelect(sel, rowIdx) {
+    if (!sel || typeof TomSelect === 'undefined') return;
+    window.purchaseProductSelects = window.purchaseProductSelects || [];
+    const row = sel.closest('.item-row');
+    const data = productsPurchaseData || [];
+    const opts = data.map(function(p) { return { value: String(p.id), text: p.name }; });
+    const ts = new TomSelect(sel, {
+        options: opts,
+        maxOptions: opts.length || 100,
+        placeholder: 'Ürün ara veya seçin...',
+        searchField: ['text'],
+        dropdownParent: 'body',
+        onDropdownOpen: function() {
+            const rect = this.control.getBoundingClientRect();
+            const viewportH = window.innerHeight || document.documentElement.clientHeight;
+            if (rect.bottom > viewportH - 220) { this.dropdown.classList.add('dropup'); }
+        },
+        onDropdownClose: function() { this.dropdown.classList.remove('dropup'); },
+        render: {
+            item: function(data, escape) {
+                const p = (productsPurchaseData || []).find(function(x) { return String(x.id) === String(data.value); });
+                const img = p && p.image;
+                const imgHtml = img ? '<img src="' + escape(img) + '" alt="" class="w-8 h-8 object-cover rounded shrink-0 mr-2" onerror="this.style.display=\'none\'">' : '';
+                return '<div class="flex items-center gap-2 min-w-0"><span class="shrink-0">' + imgHtml + '</span><span class="truncate">' + escape(data.text) + '</span></div>';
+            },
+            option: function(data, escape) {
+                const p = (productsPurchaseData || []).find(function(x) { return String(x.id) === String(data.value); });
+                const img = p && p.image;
+                const imgHtml = img ? '<img src="' + escape(img) + '" alt="" class="w-8 h-8 object-cover rounded shrink-0 mr-2" onerror="this.style.display=\'none\'">' : '';
+                return '<div class="flex items-center gap-2">' + imgHtml + '<span>' + escape(data.text) + '</span></div>';
+            }
+        },
+        onChange: function(v) {
+            if (!v) return;
+            const p = (productsPurchaseData || []).find(function(x) { return String(x.id) === String(v); });
+            if (p && (p.price != null || p.price === 0)) {
+                row.querySelector('.item-listprice').value = fmt(p.price);
+                row.querySelector('.item-price').value = fmt(p.price);
+            }
+            if (p && (p.kdv != null || p.kdv === 0)) row.querySelector('.item-kdv').value = p.kdv;
+            updateTotals();
+        }
+    });
+    window.purchaseProductSelects[rowIdx] = ts;
+}
 </script>
 @endsection

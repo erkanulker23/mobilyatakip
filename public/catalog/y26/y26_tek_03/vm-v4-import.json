@@ -1,0 +1,19 @@
+{
+  "sourceObj": "vm_v4_011_061.obj",
+  "sizeBeforeFit": [
+    0.45,
+    2.5,
+    0.6
+  ],
+  "scaleApplied": [
+    2.052847,
+    5.965628,
+    0.834629
+  ],
+  "targetM": [
+    0.45,
+    2.5,
+    0.6
+  ],
+  "glb": "/Users/erkanulker/mobilyatakip/public/catalog/y26/y26_tek_03/model.glb"
+}
