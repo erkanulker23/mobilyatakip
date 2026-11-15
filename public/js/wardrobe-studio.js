@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { bindRoomSketch, roomSketchOnOpen, roomSketchBeforeHandoff } from './wardrobe-room-sketch.js';
+import { bindRoomSketch, roomSketchOnOpen, roomSketchBeforeHandoff } from './wardrobe-room-sketch.js?v=259';
 
 const T = 1.8;
 const BACK = 0.8;
@@ -16,28 +16,35 @@ const PASS_RATIO = 0.82;
 const SNAP_PICK_CM = 26;
 const SNAP_WIZARD_CM = 40;
 const ALUMINUM = [
-    { id: 'al-gumus', name: 'Gümüş', color: '#d5d8dc' },
-    { id: 'al-inox', name: 'Inox', color: '#b7bcc2' },
-    { id: 'al-beyaz', name: 'Beyaz', color: '#f3f3f1' },
-    { id: 'al-antrasit', name: 'Antrasit', color: '#4a4e52' },
-    { id: 'al-siyah', name: 'Mat siyah', color: '#2a2a2a' },
-    { id: 'al-bronz', name: 'Bronz', color: '#8d6b45' },
-    { id: 'al-sampanya', name: 'Şampanya', color: '#d9c6a6' },
-    { id: 'al-gold', name: 'Gold', color: '#c6a56a' },
+    { id: 'al-inox', name: 'Inox', color: '#c8ced6', roughness: 0.24 },
+    { id: 'al-sampanya', name: 'Şampanya', color: '#e8d0a8', roughness: 0.28 },
+    { id: 'al-bronz', name: 'Bronz', color: '#a86b38', roughness: 0.3 },
+    { id: 'al-gumus', name: 'Gümüş', color: '#eceff2', roughness: 0.3 },
+    { id: 'al-beyaz', name: 'Beyaz', color: '#f8f8f6', roughness: 0.38 },
+    { id: 'al-antrasit', name: 'Antrasit', color: '#5e656d', roughness: 0.34 },
+    { id: 'al-siyah', name: 'Mat siyah', color: '#1a1a1a', roughness: 0.48 },
+    { id: 'al-gold', name: 'Gold', color: '#d4b15a', roughness: 0.28 },
 ];
+/** Kapaklar sekmesinde öne çıkan çerçeve renkleri. */
+const ALUM_FOCUS = ['al-inox', 'al-sampanya', 'al-bronz'];
+/** WebGL’de tint + iç görünürlük dengesi (çok yüksek transmission rengi siler, çok düşük opak yapar). */
 const GLASS = [
-    { id: 'cam-seffaf', name: 'Şeffaf', color: '#f4f7f8', transmission: 0.94, roughness: 0.04 },
-    { id: 'cam-fum', name: 'Füme', color: '#9c9792', transmission: 0.8, roughness: 0.055 },
-    { id: 'cam-bronz', name: 'Bronz', color: '#c49562', transmission: 0.72, roughness: 0.06 },
-    { id: 'cam-gri', name: 'Gri', color: '#9aa1a6', transmission: 0.5 },
-    { id: 'cam-antrasit', name: 'Antrasit', color: '#3e4246', transmission: 0.28 },
-    { id: 'cam-mavi', name: 'Mavi', color: '#7f9aaf', transmission: 0.48 },
-    { id: 'cam-yesil', name: 'Yeşil', color: '#7d947c', transmission: 0.48 },
-    { id: 'cam-siyah', name: 'Siyah', color: '#2a2a2a', transmission: 0.28 },
+    { id: 'cam-fum', name: 'Füme', color: '#6e6964', transmission: 0.48, roughness: 0.1, opacity: 0.46 },
+    { id: 'cam-bronz', name: 'Bronz', color: '#b87333', transmission: 0.42, roughness: 0.11, opacity: 0.48 },
+    { id: 'cam-siyah', name: 'Siyah', color: '#141414', transmission: 0.16, roughness: 0.15, opacity: 0.7 },
+    { id: 'cam-seffaf', name: 'Şeffaf', color: '#eef3f6', transmission: 0.9, roughness: 0.04, opacity: 0.22 },
+    { id: 'cam-gri', name: 'Gri', color: '#8a9298', transmission: 0.55, roughness: 0.09, opacity: 0.4 },
+    { id: 'cam-antrasit', name: 'Antrasit', color: '#3a4046', transmission: 0.32, roughness: 0.12, opacity: 0.55 },
+    { id: 'cam-mavi', name: 'Mavi', color: '#6a8eab', transmission: 0.55, roughness: 0.09, opacity: 0.4 },
+    { id: 'cam-yesil', name: 'Yeşil', color: '#6d8f6b', transmission: 0.55, roughness: 0.09, opacity: 0.4 },
 ];
+/** Kapaklar sekmesinde öne çıkan cam renkleri. */
+const GLASS_FOCUS = ['cam-fum', 'cam-bronz', 'cam-siyah'];
 const PLINTH = 8;
 const WALL_X = 520;
 const WALL_Z = 400;
+/** Oda duvar kalınlığı (cm). İç yüzey oda sınırında; kalınlık dışarı doğru. */
+const ROOM_WALL_T = 8;
 const ROOM_H = 280;
 const SAVE_KEY = 'meemare-wardrobe-saves';
 const ROOM_HANDOFF_KEY = 'meemare-room-handoff';
@@ -129,6 +136,10 @@ let planMode = '3d';
 let panelOpacity = 1;
 let sceneFocus = 'room';
 let guidesOn = true;
+/** Inspector sekmesi — her render’da Kapaklar’a sıfırlanmasın. */
+let inspectorActiveTab = 'kapak';
+let inspectorBoundId = null;
+const INSPECTOR_TABS = new Set(['kapak', 'ic', 'govde', 'baza', 'overlay', 'donanim']);
 
 const FLOOR_STYLES = [
     { id: 'parquet', name: 'Parke', color: '#a67c52', roughness: 0.72 },
@@ -139,6 +150,8 @@ let perspCamera = null;
 let orthoCamera = null;
 let walkLock = null;
 let walkMode = false;
+/** Space basılıyken sol sürükleme = ortamı kaydır (pan). */
+let spacePanHeld = false;
 let walkSprint = false;
 const walkKeys = { forward: false, back: false, left: false, right: false };
 const WALK_EYE_CM = 158;
@@ -192,7 +205,27 @@ function applyWallsCm(front, left, right, height) {
     return true;
 }
 
-window.MeemareStudioApplyWalls = (walls) => {
+function applyRoomSketchExtras(extras) {
+    if (!extras) return;
+    const sketch = ensureSketch();
+    if (Array.isArray(extras.sketchWalls) && extras.sketchWalls.length) {
+        sketch.walls = extras.sketchWalls.map((w, i) => ({ ...w, id: w.id || `w${i}` }));
+    }
+    if (Array.isArray(extras.openings)) {
+        sketch.openings = extras.openings.map((item, i) => ({
+            id: item.id || `o${i}`,
+            wallId: item.wallId || item.wall || 'front',
+            kind: item.kind === 'window' ? 'window' : 'door',
+            style: item.style || item.type || (item.kind === 'window' ? 'fixed' : 'single'),
+            offset: Math.round(Number(item.offset) || 0),
+            width: Math.round(Number(item.width) || (item.kind === 'window' ? 120 : 90)),
+            height: Math.round(Number(item.height) || (item.kind === 'window' ? 120 : 210)),
+            sill: Math.round(Number(item.sill ?? item.sillHeight) || (item.kind === 'window' ? 90 : 0)),
+        }));
+    }
+}
+
+window.MeemareStudioApplyWalls = (walls, extras) => {
     if (!walls) return false;
     const ok = applyWallsCm(
         Number(walls.frontCm ?? walls.front ?? walls.onduvar),
@@ -201,11 +234,15 @@ window.MeemareStudioApplyWalls = (walls) => {
         Number(walls.heightCm ?? walls.height ?? walls.roomHeight),
     );
     if (ok) {
+        applyRoomSketchExtras(extras || walls);
+        fitRoom?.();
         toggleRoomPlan(false);
         if (document.body.classList.contains('studio-plan-first')) {
             closePlanStudioStep(false);
         } else {
-            toast('Oda ölçüsü uygulandı. Modülleri kataloğdan sürükleyin.');
+            toast(extras?.openings?.length
+                ? `Oda + ${extras.openings.length} kapı/pencere uygulandı.`
+                : 'Oda ölçüsü uygulandı. Modülleri kataloğdan sürükleyin.');
         }
     }
     return ok;
@@ -215,10 +252,8 @@ function toggleRoomPlan(open) {
     const on = Boolean(open);
     document.body.classList.toggle('show-room-plan', on);
     if (!on) return;
-    const preferOpenPlan = Boolean(window.WARDROBE?.openplanSrc)
-        && !document.body.classList.contains('studio-plan-first')
-        && roomPlanEditorMode === 'openplan';
-    setRoomPlanEditorMode(preferOpenPlan ? 'openplan' : 'sketch');
+    // /plan ile aynı: yerel OpenPlan varsa onu aç (kapı/pencere kataloğu + seçim araçları).
+    setRoomPlanEditorMode(preferredRoomPlanMode());
     const form = el('studio-plan-handoff');
     if (form) {
         if (form.onduvar) form.onduvar.value = state.wallWidth;
@@ -226,7 +261,9 @@ function toggleRoomPlan(open) {
         if (form.sagduvar) form.sagduvar.value = state.rightWall;
         if (form.odaboy) form.odaboy.value = state.roomHeight;
     }
-    requestAnimationFrame(() => roomSketchOnOpen(state));
+    requestAnimationFrame(() => {
+        if (roomPlanEditorMode === 'sketch') roomSketchOnOpen(state);
+    });
 }
 
 function syncViewModeBar() {
@@ -287,8 +324,15 @@ function applyHandoffFromStorage() {
             Number(w.heightCm ?? w.height),
         );
         if (ok) {
+            applyRoomSketchExtras({
+                openings: data.openings,
+                sketchWalls: data.sketchWalls,
+            });
+            fitRoom?.();
             toggleRoomPlan(false);
-            toast('Plan sayfasından oda ölçüleri aktarıldı.');
+            toast(Array.isArray(data.openings) && data.openings.length
+                ? `Plan aktarıldı · ${data.openings.length} kapı/pencere`
+                : 'Plan sayfasından oda ölçüleri aktarıldı.');
         }
         localStorage.removeItem(ROOM_HANDOFF_KEY);
         return ok;
@@ -378,7 +422,7 @@ function blankState() {
         interiorId: '',
         backId: '',
         shelfId: '',
-        aluminumId: 'al-gumus',
+        aluminumId: 'al-inox',
         glassId: 'cam-fum',
         plinth: true,
         plinthHidden: false,
@@ -486,6 +530,27 @@ function hasKulp(mod) {
 
 function plinthOf(mod) {
     return mod?.plinth === false ? 0 : PLINTH;
+}
+
+/** Cam/alüminyum kapak çekmece yüzünü örtmesin — ölçülen veya katalog yüksekliği. */
+function doorBaseClearance(parent, mod) {
+    const plinth = plinthOf(mod);
+    if (mod?.door !== 'glass' && mod?.door !== 'mixed') return plinth;
+    if (parent) {
+        parent.updateMatrixWorld(true);
+        let top = 0;
+        parent.traverse((child) => {
+            if (child.name !== 'drawer-slide') return;
+            const box = new THREE.Box3().setFromObject(child);
+            if (!box.isEmpty()) top = Math.max(top, box.max.y);
+        });
+        if (top > plinth + 1) return top + 1.2;
+    }
+    const n = glbDrawerCount(mod) || moduleDrawerCount(mod);
+    if (n > 0) return plinth + n * (Number(mod.drawerHeight) || 16) + 2;
+    const drawers = mod?.glb ? cornerRecipe(mod.glb)?.drawers : null;
+    if (drawers?.length) return Math.max(plinth, Math.max(...drawers) + 10);
+    return plinth;
 }
 
 function moduleHeight(mod) {
@@ -727,11 +792,26 @@ function snapshot() {
     future = [];
 }
 
-function commit(fn) {
+function commit(fn, opts = {}) {
     snapshot();
     fn();
-    render();
+    if (opts.sceneOnly) {
+        rebuild();
+        fitRoom();
+        renderSummary();
+        renderProduction();
+        updateHud();
+        syncInspectorLive();
+        if (planMode === '2d') drawPlan();
+    } else {
+        render();
+    }
     scheduleSave();
+}
+
+/** 3D güncelle, inspector DOM’unu silme (sekme/scroll kaybı olmasın). */
+function commitScene(fn) {
+    commit(fn, { sceneOnly: true });
 }
 
 function undo() {
@@ -937,28 +1017,35 @@ function material(key, source, opts = {}) {
     const item = plain ? null : decor(source);
     const flat = Boolean(item && isPlainDecor(item));
     const opa = opts.glass || opts.metal ? 1 : (state.panelOpacity ?? panelOpacity ?? 1);
-    const id = `${key}|${item ? item.id : source}|${opts.glass ? 1 : 0}|${opts.metal ? 1 : 0}|${opts.transmission ?? ''}|${opts.attenuation ?? ''}|${opts.representative ? woodStudyMode() : 'plain'}|o${Math.round(opa * 100)}`;
+    const id = `${key}|${item ? item.id : source}|${opts.glass ? 1 : 0}|${opts.metal ? 1 : 0}|${opts.transmission ?? ''}|${opts.opacity ?? ''}|${opts.attenuation ?? ''}|${opts.representative ? woodStudyMode() : 'plain'}|o${Math.round(opa * 100)}`;
     if (matCache.has(id)) return matCache.get(id);
-    // Volume attenuation (thickness > 0) makes three-gpu-pathtracer 0.0.23 return black
-    // for a pane a few millimeters thick. Thickness 0 and an infinite attenuation
-    // distance select its thin-film path, which tints by the base color and still transmits.
+    // Cam: WebGL’de tint görünsün diye transmission düşürülür; thickness 0 pathtracer
+    // (three-gpu-pathtracer 0.0.23) siyah pane sorununu önler.
     const mat = opts.glass
-        ? new THREE.MeshPhysicalMaterial({
-            color: source,
-            roughness: opts.roughness ?? 0.05,
-            metalness: 0,
-            specularIntensity: 1,
-            transmission: opts.transmission ?? 0.92,
-            thickness: 0,
-            transparent: false,
-            opacity: 1,
-            depthWrite: true,
-            ior: 1.52,
-            attenuationDistance: Infinity,
-            envMapIntensity: 1,
-            clearcoat: 0.12,
-            clearcoatRoughness: 0.08,
-        })
+        ? (() => {
+            const transmission = THREE.MathUtils.clamp(opts.transmission ?? 0.88, 0.1, 0.92);
+            const opacity = THREE.MathUtils.clamp(opts.opacity ?? (0.2 + transmission * 0.55), 0.2, 0.9);
+            const glassMat = new THREE.MeshPhysicalMaterial({
+                color: source,
+                roughness: opts.roughness ?? 0.06,
+                metalness: 0,
+                specularIntensity: 1,
+                transmission,
+                thickness: 0,
+                transparent: true,
+                opacity,
+                depthWrite: opacity > 0.7,
+                ior: 1.5,
+                attenuationColor: new THREE.Color(source),
+                attenuationDistance: transmission > 0.7 ? Infinity : 0.8,
+                envMapIntensity: 1.2,
+                clearcoat: 0.22,
+                clearcoatRoughness: 0.06,
+                side: THREE.DoubleSide,
+            });
+            glassMat.userData.glass = true;
+            return glassMat;
+        })()
         : item && !flat
         ? new THREE.MeshStandardMaterial({
             color: '#ffffff',
@@ -970,19 +1057,22 @@ function material(key, source, opts = {}) {
             side: THREE.DoubleSide,
         })
         : new THREE.MeshStandardMaterial({
-            color: item ? '#ffffff' : source,
+            color: item ? (PLAIN_CODE_HEX[item.code] || '#d0d2cf') : source,
             map: null,
-            roughness: flat ? 0.78 : (opts.metal ? 0.48 : 0.62),
+            roughness: flat ? 0.82 : (opts.metal ? 0.48 : 0.62),
             metalness: opts.metal ? 0.55 : 0,
-            specularIntensity: opts.metal ? 0.32 : 0.2,
-            envMapIntensity: opts.metal ? 0.08 : 0.12,
+            specularIntensity: opts.metal ? 0.32 : 0.14,
+            envMapIntensity: opts.metal ? 0.08 : 0.1,
             side: THREE.DoubleSide,
         });
     if (flat && item.image) {
         mat.userData.flatUrl = item.image;
         const known = flatColorCache.get(item.image);
         if (known) mat.color.copy(known);
-        else loadFlatColor(item.image);
+        else {
+            if (PLAIN_CODE_HEX[item.code]) mat.color.set(PLAIN_CODE_HEX[item.code]);
+            loadFlatColor(item.image);
+        }
     } else if (item?.image && opts.representative && item.finish_hint !== 'highgloss') {
         mat.userData.decorUrl = item.image;
         mat.userData.finish = item.finish_hint || 'matte';
@@ -1536,7 +1626,9 @@ function glbDrawerCount(mod) {
 function glbAccessoryName(name) {
     const n = String(name || '').toLowerCase();
     if (/askilik|boru|rail/.test(n)) return false;
-    return /aski|kiyafet|ayakkabi|valiz|tekstil|canta|bavul/.test(n);
+    // GLB içindeki kapak/kulp mesh’leri prosedürel kapakla çakışıp tabanda saçılma yapabiliyor.
+    if (/^kapak|door_?leaf|kulp_?kapak|handle_door/.test(n)) return true;
+    return /aski|kiyafet|ayakkabi|valiz|tekstil|canta|bavul|gomlek|pantolon|elbise/.test(n);
 }
 
 function glbPartRole(name) {
@@ -1549,13 +1641,16 @@ function glbPartRole(name) {
 }
 
 function extractFaces(geometry, predicate) {
-    const pos = geometry.attributes.position;
-    const nor = geometry.attributes.normal;
-    const uv = geometry.attributes.uv;
-    if (!pos || !nor) return { taken: null, left: geometry };
+    // Indexed BufferGeometry'yi üçgen çorbası sanmak parçalı/patlak mesh üretir (dolap altı saçılma).
+    const source = geometry?.index ? geometry.toNonIndexed() : geometry;
+    const pos = source?.attributes?.position;
+    const nor = source?.attributes?.normal;
+    const uv = source?.attributes?.uv;
+    if (!pos || !nor || pos.count < 3) return { taken: null, left: geometry };
     const taken = [];
     const left = [];
     for (let i = 0; i < pos.count; i += 3) {
+        if (i + 2 >= pos.count) break;
         let nx = 0;
         let ny = 0;
         let nz = 0;
@@ -1582,6 +1677,7 @@ function extractFaces(geometry, predicate) {
         next.setAttribute('position', new THREE.Float32BufferAttribute(p, 3));
         next.setAttribute('normal', new THREE.Float32BufferAttribute(n, 3));
         if (u.length) next.setAttribute('uv', new THREE.Float32BufferAttribute(u, 2));
+        next.computeVertexNormals();
         next.computeBoundingBox();
         return next;
     };
@@ -1636,7 +1732,8 @@ function addRailSockets(mesh) {
 
 function paintGlb(root, mod) {
     const drawerId = drawerOf(mod);
-    const woodOpts = mod.glb === 'y26_cift_01' ? { representative: true } : {};
+    // Tüm Y26 gövdelerinde Kastamonu katalog dokusu (A402 vb.); düz gri değil.
+    const woodOpts = { representative: true };
     const added = [];
     root.traverse((child) => {
         if (!child.isMesh) return;
@@ -1653,6 +1750,11 @@ function paintGlb(root, mod) {
                         : material('glb-body', carcassOf(mod), woodOpts);
         const next = role === 'back' ? source.clone() : source;
         next.vertexColors = false;
+        if (role !== 'metal' && !next.userData?.glass) {
+            next.transparent = false;
+            next.opacity = 1;
+            next.depthWrite = true;
+        }
         if (role === 'back') next.roughness = Math.min(0.92, (next.roughness || 0.62) + 0.12);
         child.castShadow = true;
         child.receiveShadow = true;
@@ -1678,35 +1780,9 @@ function paintGlb(root, mod) {
             child.material = alumFrameMaterial(alum);
             if (mod.glb === 'y26_cift_01') addRailSockets(child);
         }
-        if (role === 'carcass' && /govde|dikme/.test(name) && child.geometry?.attributes?.normal) {
-            const front = extractFaces(child.geometry, (_nx, _ny, nz) => nz > 0.72);
-            if (front.taken && front.left) {
-                child.geometry = front.left;
-                const lip = new THREE.Mesh(front.taken, edgeBandMaterial(carcassOf(mod), woodOpts));
-                lip.name = `${child.name}_BANT`;
-                lip.castShadow = true;
-                lip.receiveShadow = true;
-                added.push([child, lip]);
-            }
-        }
-        if (role !== 'shelf' || !child.geometry?.attributes?.normal) return;
-        const front = extractFaces(child.geometry, (_nx, _ny, nz) => nz > 0.72);
-        if (!front.taken || !front.left) return;
-        const under = extractFaces(front.left, (_nx, ny) => ny < -0.72);
-        child.geometry = under.left || front.left;
-        const lip = new THREE.Mesh(front.taken, edgeBandMaterial(shelfOf(mod), woodOpts));
-        lip.name = `${child.name}_BANT`;
-        lip.castShadow = true;
-        lip.receiveShadow = true;
-        added.push([child, lip]);
-        if (!under.taken) return;
-        const sole = new THREE.Mesh(under.taken, edgeBandMaterial(shelfOf(mod), woodOpts));
-        sole.name = `${child.name}_ALT`;
-        sole.castShadow = true;
-        sole.receiveShadow = true;
-        added.push([child, sole]);
+        // Kenar bandı / extractFaces: indexed GLB’de tabanda patlak mesh üretiyordu — kapalı.
     });
-    added.forEach(([parent, mesh]) => parent.add(mesh));
+    void added;
 }
 
 function moduleDrawerCount(mod) {
@@ -2139,17 +2215,71 @@ function ledMaterial(on) {
 const alumFrameCache = new Map();
 
 function alumFrameMaterial(alum) {
-    const key = alum?.id || 'al-gumus';
+    const key = `v4|${alum?.id || 'al-inox'}|${alum?.color || ''}`;
     if (alumFrameCache.has(key)) return alumFrameCache.get(key);
     // MeshPhysical clearcoat/anisotropy paints metal black in three-gpu-pathtracer 0.0.23.
     const mat = new THREE.MeshStandardMaterial({
-        color: alum?.color || '#c5c9ce',
-        metalness: 0.84,
-        roughness: 0.28,
-        envMapIntensity: 0.72,
+        color: alum?.color || '#c8ced6',
+        metalness: alum?.id === 'al-beyaz' ? 0.35 : alum?.id === 'al-siyah' ? 0.55 : 0.82,
+        roughness: alum?.roughness ?? 0.28,
+        envMapIntensity: 1.25,
     });
     alumFrameCache.set(key, mat);
     return mat;
+}
+
+function glassMaterial(glass) {
+    const item = glass || glassOf(null);
+    return material(`glass-v3-${item.id}`, item.color, {
+        glass: true,
+        transmission: item.transmission,
+        roughness: item.roughness,
+        opacity: item.opacity,
+        attenuation: item.attenuation,
+    });
+}
+
+function orderedFinishes(list, focusIds) {
+    const focus = focusIds
+        .map((id) => list.find((item) => item.id === id))
+        .filter(Boolean);
+    const rest = list.filter((item) => !focusIds.includes(item.id));
+    return [...focus, ...rest];
+}
+
+/** Alüminyum/cam seçimi: kapak yoksa cam kapak aç, 3D’yi anında yenile. */
+function applyModuleAluminum(mod, id) {
+    if (!mod || !ALUMINUM.some((item) => item.id === id)) return;
+    const needGlassDoor = mod.door !== 'glass' && mod.door !== 'mixed';
+    const apply = () => {
+        mod.aluminumId = id;
+        state.aluminumId = id;
+        if (needGlassDoor) {
+            mod.door = 'glass';
+            if (!GLASS.some((item) => item.id === mod.glassId)) {
+                mod.glassId = state.glassId || 'cam-fum';
+            }
+        }
+    };
+    if (needGlassDoor) commit(apply);
+    else commitScene(apply);
+}
+
+function applyModuleGlass(mod, id) {
+    if (!mod || !GLASS.some((item) => item.id === id)) return;
+    const needGlassDoor = mod.door !== 'glass' && mod.door !== 'mixed';
+    const apply = () => {
+        mod.glassId = id;
+        state.glassId = id;
+        if (needGlassDoor) {
+            mod.door = 'glass';
+            if (!ALUMINUM.some((item) => item.id === mod.aluminumId)) {
+                mod.aluminumId = state.aluminumId || 'al-inox';
+            }
+        }
+    };
+    if (needGlassDoor) commit(apply);
+    else commitScene(apply);
 }
 
 function ledStyleOf(mod) {
@@ -2614,25 +2744,23 @@ function addHingedDoor(parent, x, y, w, h, d, hinge, style, mod, preview) {
         const alum = aluminumOf(mod);
         const glass = glassOf(mod);
         const frame = alumFrameMaterial(alum);
-        const bar = 2.05;
-        [panel(leaf, w, bar, 1.45, 0, h / 2 - bar / 2, 0.72, frame),
-            panel(leaf, w, bar, 1.45, 0, -h / 2 + bar / 2, 0.72, frame),
-            panel(leaf, bar, h, 1.45, -w / 2 + bar / 2, 0, 0.72, frame),
-            panel(leaf, bar, h, 1.45, w / 2 - bar / 2, 0, 0.72, frame)].forEach((piece) => {
+        const bar = 2.6;
+        [panel(leaf, w, bar, 1.7, 0, h / 2 - bar / 2, 0.72, frame),
+            panel(leaf, w, bar, 1.7, 0, -h / 2 + bar / 2, 0.72, frame),
+            panel(leaf, bar, h, 1.7, -w / 2 + bar / 2, 0, 0.72, frame),
+            panel(leaf, bar, h, 1.7, w / 2 - bar / 2, 0, 0.72, frame)].forEach((piece) => {
             if (piece) piece.name = 'CAM_CERCEVE';
         });
-        const glassOpts = { glass: true, transmission: glass.transmission, roughness: glass.roughness, attenuation: glass.attenuation };
         const rim = 0.18;
         const paneW = Math.max(1, w - bar * 2 - rim * 2);
         const paneH = Math.max(1, h - bar * 2 - rim * 2);
-        const pane = panel(leaf, paneW, paneH, 0.6, 0, 0, DOOR_T * 0.55, material(`glass-${glass.id}`, glass.color, glassOpts));
+        const pane = panel(leaf, paneW, paneH, 0.6, 0, 0, DOOR_T * 0.55, glassMaterial(glass));
         if (pane) pane.name = 'CAM';
         if (pane) pane.castShadow = false;
         const edgeMat = material(`glass-edge-${glass.id}`, glass.color, {
             glass: true,
-            transmission: Math.min(0.55, glass.transmission ?? 0.5),
-            roughness: 0.18,
-            attenuation: Infinity,
+            transmission: Math.min(0.35, (glass.transmission ?? 0.4) * 0.7),
+            roughness: Math.max(0.12, glass.roughness ?? 0.12),
         });
         const openingW = w - bar * 2;
         const openingH = h - bar * 2;
@@ -2687,8 +2815,9 @@ function addHingedDoor(parent, x, y, w, h, d, hinge, style, mod, preview) {
 }
 
 function addTambour(parent, w, h, d, mod, preview) {
-    const base = plinthOf(mod);
+    const base = doorBaseClearance(parent, mod);
     const doorH = h - base - 0.6;
+    if (doorH < 24) return;
     const group = new THREE.Group();
     group.position.set(0, base, d + 0.2);
     const slats = Math.max(14, Math.round((w - 1) / 2.4));
@@ -2737,8 +2866,9 @@ function addDoors(parent, w, h, d, mod, preview) {
         addTambour(parent, w, h, d, mod, preview);
         return;
     }
-    const base = plinthOf(mod);
+    const base = doorBaseClearance(parent, mod);
     const doorH = h - base - 0.6;
+    if (doorH < 24) return;
     const y = base + doorH / 2;
     if (mod.door === 'accordion') {
         const leafW = 22;
@@ -2798,33 +2928,26 @@ let selectionEdgeMat = null;
 let selectionWashMat = null;
 
 function selectionFrame(mod) {
-    if (!selectionEdgeMat) {
-        selectionEdgeMat = new THREE.MeshBasicMaterial({ color: 0x149152, depthTest: false, depthWrite: false, transparent: true, opacity: 0.38 });
-        selectionWashMat = new THREE.MeshBasicMaterial({ color: 0x149152, depthTest: false, depthWrite: false, transparent: true, opacity: 0 });
+    if (!selectionLineMat) {
+        selectionLineMat = new THREE.LineBasicMaterial({ color: 0x1f6b4a, depthTest: true, transparent: true, opacity: 0.55 });
     }
     const box = footprint(mod);
     if (mod.kind === 'corner') return cornerSelection(mod, box);
-    const group = new THREE.Group();
-    const w = box.w + 1.2;
-    const h = box.h + 1.2;
-    const d = box.d + 1.2;
-    const t = 0.55;
-    const bars = [
-        [w, t, t, 0, -h / 2, -d / 2], [w, t, t, 0, -h / 2, d / 2], [t, t, d, -w / 2, -h / 2, 0], [t, t, d, w / 2, -h / 2, 0],
-        [w, t, t, 0, h / 2, -d / 2], [w, t, t, 0, h / 2, d / 2], [t, t, d, -w / 2, h / 2, 0], [t, t, d, w / 2, h / 2, 0],
-        [t, h, t, -w / 2, 0, -d / 2], [t, h, t, w / 2, 0, -d / 2], [t, h, t, -w / 2, 0, d / 2], [t, h, t, w / 2, 0, d / 2],
-    ];
-    bars.forEach(([bw, bh, bd, x, y, z]) => {
-        const mesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), selectionEdgeMat);
-        mesh.position.set(x, y, z);
-        mesh.renderOrder = 20;
-        group.add(mesh);
-    });
-    const wash = new THREE.Mesh(new THREE.BoxGeometry(box.w, box.h, box.d), selectionWashMat);
-    wash.renderOrder = 19;
-    group.add(wash);
-    group.position.set(box.w / 2, box.h / 2, box.d / 2);
-    return group;
+    // İnce hat çerçevesi — kalın yeşil çubuklar/saçılma yok.
+    const w = box.w;
+    const h = box.h;
+    const d = box.d;
+    const positions = new Float32Array([
+        0, 0, 0, w, 0, 0, w, 0, 0, w, 0, d, w, 0, d, 0, 0, d, 0, 0, d, 0, 0, 0,
+        0, h, 0, w, h, 0, w, h, 0, w, h, d, w, h, d, 0, h, d, 0, h, d, 0, h, 0,
+        0, 0, 0, 0, h, 0, w, 0, 0, w, h, 0, 0, 0, d, 0, h, d, w, 0, d, w, h, d,
+    ]);
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const line = new THREE.LineSegments(geometry, selectionLineMat);
+    line.renderOrder = 20;
+    line.name = 'selection-frame';
+    return line;
 }
 
 let selectionLineMat = null;
@@ -3223,6 +3346,31 @@ function bakeGlb(template, mirror, widthMeters, glbId) {
     });
     drop.forEach((child) => child.parent?.remove(child));
     orientGlbToFront(clone);
+    // Bozuk vm_v4 aktarımı: tek mesh + absürt bbox → stüdyoda taban saçılması.
+    // Parametrik gövde beklenen kutuya yakın olmalı; değilse bake’i reddetme yerine
+    // bbox’u katalog hedefine oturt (son çare).
+    {
+        const box = geometryBounds(clone);
+        const size = box.getSize(new THREE.Vector3());
+        const catalog = glbCatalog.find((entry) => entry.id === glbId);
+        const tw = catalog?.width || widthMeters || 0.45;
+        const th = catalog?.height || 2.5;
+        const td = catalog?.depth || 0.6;
+        if (size.y > 0.05 && size.x > 0.05 && size.z > 0.05
+            && (size.y < th * 0.55 || size.z > td * 1.45 || size.y < size.z * 0.75)) {
+            const sx = tw / size.x;
+            const sy = th / size.y;
+            const sz = td / size.z;
+            rewritePositions(clone, (x, y, z, nx, ny, nz) => ({
+                x: (x - box.min.x) * sx,
+                y: (y - box.min.y) * sy,
+                z: (z - box.min.z) * sz,
+                nx,
+                ny,
+                nz,
+            }));
+        }
+    }
     fitReferenceInterior(clone, glbId);
     clone.traverse((child) => {
         if (child.isMesh) return;
@@ -3330,6 +3478,7 @@ function placeGlb(template, mod) {
     mountGlbDrawers(model, mod);
     roundGlbRails(model, mod);
     wrap.add(model);
+    dressGlb(wrap, model, mod);
     addGlbLeds(wrap, model, mod);
     return wrap;
 }
@@ -3364,8 +3513,8 @@ function roundGlbRails(model, mod) {
     });
 }
 
-function dressGlb() {
-    return;
+function dressGlb(wrap, model, mod) {
+    dressGlbInterior(wrap, model, mod);
 }
 
 function dressGlbRemoved(wrap, model, mod) {
@@ -3466,7 +3615,7 @@ function dressGlbRemoved(wrap, model, mod) {
     }
 }
 
-function dressGlbUnused(wrap, model, mod) {
+function dressGlbInterior(wrap, model, mod) {
     if (mod?.props === false || !propTemplates) return;
     const shelves = [];
     let rail = null;
@@ -3819,24 +3968,22 @@ function hollowDrawerBox(group, kutu, mod) {
 }
 
 function mountGlbDrawers(model, mod) {
+    // Minimal: çekmece gruplarını kaydırılabilir yap; ekstra ray/kulp/hollow yok (taban saçılması).
     const meshes = [];
     model.traverse((child) => {
         if (child.isMesh && /cekmece/.test(String(child.name || '').toLocaleLowerCase('tr'))) meshes.push(child);
     });
-    packDrawerFronts(model, meshes);
+    if (!meshes.length) return;
+    // packDrawerFronts / hollow: tabanda saçılmış metal mesh üretiyordu — skip.
     const groups = new Map();
     meshes.forEach((mesh) => {
         const match = String(mesh.name || '').match(/_(\d+)$/);
-        const key = match ? match[1] : '';
-        if (!key) return;
+        const key = match ? match[1] : mesh.uuid;
         if (!groups.has(key)) groups.set(key, []);
         groups.get(key).push(mesh);
     });
     groups.forEach((parts) => {
-        const named = (pattern) => parts.some((mesh) => pattern.test(String(mesh.name || '').toLocaleLowerCase('tr')));
-        const legacy = named(/_on_/) && named(/taban/) && named(/arka/);
-        const boxed = named(/_on_/) && named(/kutu/);
-        if (!legacy && !boxed) return;
+        if (!parts.some((mesh) => /_on_/.test(String(mesh.name || '').toLowerCase()))) return;
         const group = new THREE.Group();
         group.name = 'drawer-slide';
         model.add(group);
@@ -3847,59 +3994,9 @@ function mountGlbDrawers(model, mod) {
             if (mesh.geometry.boundingBox) box.union(mesh.geometry.boundingBox);
         });
         const size = box.getSize(new THREE.Vector3());
-        const center = box.getCenter(new THREE.Vector3());
-        if (boxed) {
-            const kutu = parts.find((mesh) => /kutu/.test(String(mesh.name || '').toLocaleLowerCase('tr')));
-            if (kutu) hollowDrawerBox(group, kutu, mod);
-        }
-        if (legacy && size.x > 0.04 && size.y > 0.04 && size.z > 0.05) {
-            const sideT = 0.012;
-            const sideH = Math.max(0.04, size.y - 0.006);
-            const sideD = Math.max(0.05, size.z - 0.012);
-            const shell = material('glb-body', carcassOf(mod));
-            const side = new THREE.BoxGeometry(sideT, sideH, sideD);
-            const left = new THREE.Mesh(side, shell);
-            left.name = 'DRAWER_YAN_SOL';
-            left.position.set(box.min.x + sideT / 2, center.y, center.z);
-            const right = new THREE.Mesh(side, shell);
-            right.name = 'DRAWER_YAN_SAG';
-            right.position.set(box.max.x - sideT / 2, center.y, center.z);
-            group.add(left, right);
-        }
-        const front = parts.find((mesh) => /_on_/.test(String(mesh.name || '').toLowerCase()));
-        if (front?.geometry.boundingBox) {
-            const face = front.geometry.boundingBox;
-            const pull = new THREE.Mesh(
-                new THREE.BoxGeometry(Math.min(0.14, (face.max.x - face.min.x) * 0.42), 0.012, 0.016),
-                alumFrameMaterial(aluminumOf(mod))
-            );
-            pull.name = 'CEKMECE_KULP';
-            pull.castShadow = true;
-            pull.position.set((face.min.x + face.max.x) / 2, (face.min.y + face.max.y) / 2, face.max.z + 0.01);
-            group.add(pull);
-        }
         group.userData.slide = mod;
         group.userData.rest = 0.02;
-        group.userData.travel = Math.min(0.42, Math.max(0.28, size.z * 0.72));
-        const kutu = parts.find((mesh) => /kutu/.test(String(mesh.name || '').toLowerCase()));
-        const socket = kutu?.geometry?.boundingBox;
-        if (socket) {
-            const fixedGeo = new THREE.BoxGeometry(0.008, 0.013, Math.max(0.12, (socket.max.z - socket.min.z) * 0.86));
-            const fixedMat = alumFrameMaterial(aluminumOf(mod));
-            const fy = socket.min.y + 0.01;
-            const fz = (socket.min.z + socket.max.z) / 2;
-            const fixedL = new THREE.Mesh(fixedGeo, fixedMat);
-            fixedL.name = 'GOVDE_RAY_SOL';
-            fixedL.position.set(socket.min.x - 0.014, fy, fz);
-            const fixedR = new THREE.Mesh(fixedGeo, fixedMat);
-            fixedR.name = 'GOVDE_RAY_SAG';
-            fixedR.position.set(socket.max.x + 0.014, fy, fz);
-            [fixedL, fixedR].forEach((mesh) => {
-                mesh.castShadow = true;
-                mesh.receiveShadow = true;
-                model.add(mesh);
-            });
-        }
+        group.userData.travel = Math.min(0.42, Math.max(0.2, size.z * 0.7 || 0.3));
         slides.push(group);
     });
 }
@@ -3997,7 +4094,7 @@ function addCornerGlbDoors(group, mod, preview) {
     const w = mod.width || 90;
     const d = mod.returnDepth || w;
     const h = moduleHeight(mod);
-    const base = plinthOf(mod);
+    const base = doorBaseClearance(group, mod);
     const doorH = h - base - T - 0.6;
     if (doorH < 20) return;
     const y = base + doorH / 2;
@@ -4063,14 +4160,13 @@ function addCornerDoors(group, mod, box, preview) {
 function addCornerLeaf(parent, w, h, style, mod, hinge) {
     if (style === 'glass') {
         const alum = aluminumOf(mod);
-        const glass = glassOf(mod);
         const frame = alumFrameMaterial(alum);
-        const bar = 2.05;
-        panel(parent, w, bar, 1.45, 0, h / 2 - bar / 2, 0.72, frame);
-        panel(parent, w, bar, 1.45, 0, -h / 2 + bar / 2, 0.72, frame);
-        panel(parent, bar, h, 1.45, -w / 2 + bar / 2, 0, 0.72, frame);
-        panel(parent, bar, h, 1.45, w / 2 - bar / 2, 0, 0.72, frame);
-        const pane = panel(parent, Math.max(1, w - bar * 2), Math.max(1, h - bar * 2), 0.6, 0, 0, DOOR_T * 0.55, material(`glass-${glass.id}`, glass.color, { glass: true, transmission: glass.transmission, roughness: glass.roughness, attenuation: glass.attenuation }));
+        const bar = 2.6;
+        panel(parent, w, bar, 1.7, 0, h / 2 - bar / 2, 0.72, frame);
+        panel(parent, w, bar, 1.7, 0, -h / 2 + bar / 2, 0.72, frame);
+        panel(parent, bar, h, 1.7, -w / 2 + bar / 2, 0, 0.72, frame);
+        panel(parent, bar, h, 1.7, w / 2 - bar / 2, 0, 0.72, frame);
+        const pane = panel(parent, Math.max(1, w - bar * 2), Math.max(1, h - bar * 2), 0.6, 0, 0, DOOR_T * 0.55, glassMaterial(glassOf(mod)));
         if (pane) pane.castShadow = false;
     } else {
         beveledBoard(parent, w - 0.35, h - 0.35, DOOR_T, 0, 0, DOOR_T / 2, material('door', doorOf(mod)));
@@ -4113,9 +4209,19 @@ function buildModule(mod, preview) {
             const template = glbTemplates.get(mod.glb);
             if (!template) {
                 const box = footprint(mod);
+                if (!glbFailed.has(mod.glb) && !preview) {
+                    const item = glbCatalog.find((entry) => entry.id === mod.glb);
+                    if (item) ensureGlb(item).then(() => rebuild()).catch(() => {});
+                }
+                const failed = glbFailed.has(mod.glb);
                 const missing = new THREE.Mesh(
                     new THREE.BoxGeometry(box.w, box.h, box.d),
-                    new THREE.MeshBasicMaterial({ color: '#c0392b', wireframe: true })
+                    new THREE.MeshBasicMaterial({
+                        color: failed ? '#a89984' : '#d2c6b4',
+                        wireframe: !failed,
+                        transparent: true,
+                        opacity: failed ? 0.35 : 0.5,
+                    })
                 );
                 missing.position.set(box.w / 2, box.h / 2, box.d / 2);
                 group.add(missing);
@@ -4276,6 +4382,7 @@ function rebuild() {
     if (!spots) return;
     doorPivots.length = 0;
     slides.length = 0;
+    bakedGlb.clear();
     clearMeasures();
     clearGroup(cabinetRoot);
     spots.forEach((spot) => {
@@ -4417,9 +4524,6 @@ function syncSelectionBar(mod) {
     bar.classList.toggle('hidden', !show);
     const name = el('selection-bar-name');
     if (name) name.textContent = mod ? String(mod.name || 'Dolap') : '';
-    bar.querySelectorAll('[data-sb-door]').forEach((btn) => {
-        btn.classList.toggle('is-on', mod && btn.dataset.sbDoor === mod.door);
-    });
 }
 
 function openInspectorForSelection() {
@@ -4432,7 +4536,9 @@ function openInspectorForSelection() {
     if (window.matchMedia('(max-width: 900px)').matches) {
         document.body.classList.remove('show-library');
         el('library')?.classList.remove('is-open');
-        document.body.dataset.sheet = 'material';
+        el('project-sheet')?.classList.remove('is-open');
+        // material/doors filtreleri sekmeleri bozuyordu — serbest inspector.
+        document.body.dataset.sheet = 'inspector';
     }
 }
 
@@ -4459,12 +4565,12 @@ function handleModuleQuickAction(event, scope) {
     }
     const glassBtn = event.target.closest('[data-qr-glass]');
     if (glassBtn) {
-        commit(() => { mod.glassId = glassBtn.dataset.qrGlass; state.glassId = mod.glassId; });
+        applyModuleGlass(mod, glassBtn.dataset.qrGlass);
         return;
     }
     const alumBtn = event.target.closest('[data-qr-alum]');
     if (alumBtn) {
-        commit(() => { mod.aluminumId = alumBtn.dataset.qrAlum; state.aluminumId = mod.aluminumId; });
+        applyModuleAluminum(mod, alumBtn.dataset.qrAlum);
         return;
     }
     const action = event.target.closest('[data-qr]')?.dataset.qr
@@ -4474,11 +4580,8 @@ function handleModuleQuickAction(event, scope) {
     if (action === 'open') commit(() => { mod.open = mod.open > 0.5 ? 0 : 1; });
     if (action === 'panel') {
         openInspectorForSelection();
+        if (!INSPECTOR_TABS.has(inspectorActiveTab)) inspectorActiveTab = 'kapak';
         renderInspector();
-        requestAnimationFrame(() => {
-            root.querySelector?.('[data-insp-tab="kapak"]')?.click()
-                || el('inspector-body')?.querySelector('[data-insp-tab="kapak"]')?.click();
-        });
     }
 }
 
@@ -4488,37 +4591,17 @@ function updateHud() {
     const mod = selected();
     const group = mod ? cabinetRoot.getObjectByName(`mod-${mod.id}`) : null;
     syncSelectionBar(mod);
+    // Yan şişman quick-rail kapalı — Ahşap/Cam/swatch kalabalığı yok; alttaki ince çubuk yeter.
+    rail?.classList.add('hidden');
     if (!group) {
         handle?.classList.add('hidden');
-        rail?.classList.add('hidden');
         return;
     }
-    paintQuickRail(mod);
     const box = new THREE.Box3().setFromObject(group);
     const center = new THREE.Vector3();
     box.getCenter(center);
-    const rect = el('viewport')?.getBoundingClientRect();
-    const anchors = [
-        new THREE.Vector3(box.max.x + 8, center.y, center.z),
-        new THREE.Vector3(box.min.x - 8, center.y, center.z),
-        new THREE.Vector3(center.x, center.y, box.max.z + 12),
-        new THREE.Vector3(center.x, center.y + 20, center.z),
-    ];
-    let side = null;
-    anchors.forEach((point) => {
-        const p = project(point);
-        if (p.behind) return;
-        if (rect && (p.x < 8 || p.x > rect.width - 8 || p.y < 8 || p.y > rect.height - 8)) return;
-        if (!side || p.x > side.x) side = p;
-    });
-    if (!side) {
-        const centerPt = project(center);
-        if (!centerPt.behind) side = centerPt;
-    }
     const top = project(new THREE.Vector3(center.x, box.max.y + 8, center.z));
     handle.classList.toggle('hidden', top.behind);
-    rail.classList.toggle('hidden', !side);
-    if (side) placeHud(rail, side.x, side.y);
     if (!top.behind) placeHud(handle, top.x, top.y);
 }
 
@@ -4587,22 +4670,60 @@ function focusSelectedModule() {
         setCameraView('perspective');
         return;
     }
+    group.updateWorldMatrix(true, true);
     const box = new THREE.Box3().setFromObject(group);
+    if (box.isEmpty()) {
+        setCameraView('perspective');
+        return;
+    }
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
-    // Oda bağlamı görünsün; tek panel kenarına yapışık aşırı yakın kadrajı önle (QA-UX-002).
-    const span = Math.max(size.x, size.y * 0.55, size.z, alongSize(mod), 90);
-    controls.target.set(center.x, Math.min(center.y, roomHeightLimit() * 0.42), center.z);
-    camera.fov = 32;
+    // Tam gövde + oda payı: yükseklik FOV’una göre mesafe (QA-UX-002 — panel içine zoom yok).
+    const fov = 34;
+    camera.fov = fov;
+    const half = THREE.MathUtils.degToRad(fov * 0.5);
+    const fitH = Math.max(size.y, Number(mod.height) || 250, 180) * 1.22;
+    const fitW = Math.max(size.x, size.z, alongSize(mod), 90) * 1.45;
+    const vp = el('viewport');
+    const aspect = Math.max(0.75, camera.aspect || ((vp?.clientWidth || 600) / Math.max(vp?.clientHeight || 400, 1)));
+    const dist = Math.max(
+        (fitH * 0.5) / Math.tan(half),
+        (fitW * 0.5) / Math.tan(half) / aspect,
+        280,
+    );
+    const wall = wallLimit();
+    const openRight = wall - (center.x + size.x * 0.5);
+    const openLeft = center.x - size.x * 0.5;
+    const yawSign = openRight >= openLeft ? 1 : -1;
+    const nearCorner = openRight < 55 || openLeft < 55;
+    const yaw = yawSign * (nearCorner ? 0.18 : 0.4);
+    const aimY = clamp(center.y, roomHeightLimit() * 0.28, roomHeightLimit() * 0.48);
+    controls.target.set(center.x, aimY, Math.max(center.z, box.max.z - size.z * 0.35));
+    // Oda içinde kal: yan duvarın dışına taşan kadraj duvar yüzeyi gösterir (QA-UX-002).
+    let x = center.x + Math.sin(yaw) * dist;
+    x = clamp(x, 28, Math.max(40, wall - 28));
+    const dx = x - center.x;
+    const forward = Math.sqrt(Math.max(dist * dist - dx * dx, (Math.max(size.z, 60) + 140) ** 2));
+    const z = controls.target.z + forward;
     camera.position.set(
-        center.x + span * 0.55,
-        Math.min(roomHeightLimit() * 0.55, center.y + span * 0.35 + 40),
-        center.z + span * 1.85,
+        x,
+        clamp(aimY + dist * 0.06, 120, roomHeightLimit() * 0.72),
+        z,
     );
     camera.near = 1;
-    camera.far = 4000;
+    camera.far = Math.max(5000, dist * 6);
     camera.updateProjectionMatrix();
+    controls.minPolarAngle = 0.08;
+    controls.maxPolarAngle = Math.PI / 2 - 0.02;
     controls.update();
+    window.__camDebug = {
+        size: [Math.round(size.x), Math.round(size.y), Math.round(size.z)],
+        dist: Math.round(dist),
+        forward: Math.round(forward),
+        open: [Math.round(openLeft), Math.round(openRight)],
+        cam: camera.position.toArray().map((n) => Math.round(n)),
+        aim: controls.target.toArray().map((n) => Math.round(n)),
+    };
     resize();
 }
 
@@ -4757,8 +4878,11 @@ function tick() {
 function openPhoneSheet(name) {
     const phone = window.matchMedia('(max-width: 900px)').matches;
     if (!phone) {
-        if (name === 'modules') el('library').scrollIntoView();
-        else el('inspector').classList.add('is-open');
+        if (name === 'modules') showModuleLibrary();
+        else {
+            document.body.classList.add('show-custom');
+            el('inspector')?.classList.add('is-open');
+        }
         return;
     }
     const same = document.body.dataset.sheet === name;
@@ -5227,8 +5351,20 @@ function refreshPlan() {
     drawPlan();
 }
 
+function planOpeningDefaults(kind) {
+    const preset = state.roomSketch?.openingPreset;
+    if (kind === 'window') {
+        if (preset === 'window_wide') return { width: 180, height: 120, sill: 90, style: 'fixed' };
+        return { width: 120, height: 120, sill: 90, style: 'fixed' };
+    }
+    if (preset === 'door_double') return { width: 150, height: 210, sill: 0, style: 'double' };
+    if (preset === 'door_sliding') return { width: 180, height: 210, sill: 0, style: 'sliding' };
+    return { width: 90, height: 210, sill: 0, style: 'single' };
+}
+
 function toggleOpening(wall, t) {
-    const width = planTool === 'door' ? 90 : 120;
+    const defs = planOpeningDefaults(planTool);
+    const width = defs.width;
     const offset = Math.round(Math.max(0, Math.min(wall.length - width, t * wall.length - width / 2)));
     const sketch = ensureSketch();
     const index = sketch.openings.findIndex((item) => item.wallId === wall.id && Math.abs((Number(item.offset) || 0) - offset) < Math.max(width, Number(item.width) || 0) * 0.7);
@@ -5240,8 +5376,9 @@ function toggleOpening(wall, t) {
             kind: planTool,
             offset,
             width,
-            height: planTool === 'door' ? 210 : 120,
-            sill: planTool === 'door' ? 0 : 90,
+            height: defs.height,
+            sill: defs.sill,
+            style: defs.style,
         });
     }
 }
@@ -5370,6 +5507,7 @@ function setPlanMode(mode) {
     camera = perspCamera;
     controls.object = perspCamera;
     controls.enableRotate = true;
+    setSpacePan(false);
     controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
     controls.minPolarAngle = 0.08;
     controls.maxPolarAngle = Math.PI / 2 - 0.02;
@@ -5386,13 +5524,23 @@ function revealCustomizer(mod) {
     requestAnimationFrame(resize);
 }
 
+function closeModuleLibrary() {
+    el('library')?.classList.remove('is-open');
+    document.body.classList.remove('show-library');
+    if (window.matchMedia('(max-width: 900px)').matches) document.body.dataset.sheet = '';
+}
+
 function showModuleLibrary() {
     toggleRoomPlan(false);
     customFor = selectedId;
     document.body.classList.add('show-library');
     document.body.classList.remove('show-custom');
     el('library')?.classList.add('is-open');
-    if (window.matchMedia('(max-width: 900px)').matches) openPhoneSheet('modules');
+    if (window.matchMedia('(max-width: 900px)').matches) {
+        document.body.dataset.sheet = 'modules';
+        el('inspector')?.classList.remove('is-open');
+        el('project-sheet')?.classList.remove('is-open');
+    }
     requestAnimationFrame(resize);
 }
 
@@ -5523,6 +5671,8 @@ function init3d() {
     controls.enablePan = true;
     controls.screenSpacePanning = true;
     controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
+    controls.mouseButtons.MIDDLE = THREE.MOUSE.DOLLY;
+    controls.mouseButtons.RIGHT = THREE.MOUSE.PAN;
     controls.touches.ONE = THREE.TOUCH.ROTATE;
     controls.touches.TWO = THREE.TOUCH.DOLLY_PAN;
     frameCamera();
@@ -5531,11 +5681,20 @@ function init3d() {
     window.addEventListener('resize', resize);
     renderer.setAnimationLoop(tick);
     el('hold-select')?.classList.add('hidden');
+    bindSpacePan(renderer.domElement);
 
     const clickSlop = 8;
     renderer.domElement.addEventListener('pointerdown', (event) => {
         if (walkMode) {
             if (!walkLock?.isLocked && event.button === 0) walkLock?.lock();
+            return;
+        }
+        // Space + sürükle: OrbitControls pan — modül seçimi/sürüklemesi yok.
+        if (spacePanHeld) {
+            pointerPress = null;
+            pointerDown = null;
+            moduleDrag = null;
+            controls.enabled = true;
             return;
         }
         if (event.pointerType === 'mouse' && event.button !== 0) return;
@@ -5565,6 +5724,7 @@ function init3d() {
     window.addEventListener('pointermove', (event) => {
         if (walkMode) return;
         if (planMode === '2d') return;
+        if (spacePanHeld) return;
         if (pointerPress && Math.hypot(event.clientX - pointerPress.x, event.clientY - pointerPress.y) > clickSlop) {
             pointerPress.moved = true;
             if (pointerPress.id && !moduleDrag) beginModuleDrag(pointerPress.id, event);
@@ -5780,7 +5940,7 @@ function renderLibrary() {
     const body = ['y26-tek', 'y26-cift', 'tek', 'cift', 'kose'].map((key) => {
         const cards = glbCatalog.filter((item) => item.category === key && matches(item)).map((item) => `
             <div class="card${glbFailed.has(item.id) ? ' is-broken' : ''}" data-glb="${item.id}">
-                <img src="${item.previewPath}" alt="">
+                <img src="${item.previewPath}" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/images/wardrobe/glb-preview/tek_v1.png'">
                 <strong>${item.name}</strong>
                 <span>${String(item.spec || '').startsWith('Y26') ? `${item.spec} · ` : ''}${Math.round(item.width * 100)} × ${Math.round(item.height * 100)} × ${Math.round(item.depth * 100)} cm</span>
                 <button type="button" class="card-add">Ekle</button>
@@ -5982,7 +6142,7 @@ function swatchPicker(list, active, attr, label, strong) {
 
 function bindSwatch(root, attr, onPick) {
     root.querySelectorAll(`[data-${attr}]`).forEach((button) => {
-        button.onclick = () => onPick(button.dataset[attr]);
+        button.onclick = () => onPick(button.getAttribute(`data-${attr}`) || button.dataset[attr]);
     });
 }
 
@@ -6039,31 +6199,101 @@ function inspectorTabBar(active = 'kapak') {
     const tabs = [
         ['kapak', 'Kapaklar'],
         ['ic', 'İç'],
-        ['govde', 'Konstrüksiyon'],
+        ['govde', 'Ölçü'],
         ['baza', 'Baza'],
-        ['overlay', 'Overlay'],
+        ['overlay', 'Konum'],
         ['donanim', 'Donanım'],
     ];
-    return `<div class="seg insp-tabs" role="tablist">${tabs.map(([id, label]) => `<button type="button" data-insp-tab="${id}" class="${active === id ? 'is-on' : ''}">${label}</button>`).join('')}</div>`;
+    const current = INSPECTOR_TABS.has(active) ? active : 'kapak';
+    return `<div class="seg insp-tabs" role="tablist">${tabs.map(([id, label]) => `<button type="button" role="tab" data-insp-tab="${id}" aria-selected="${current === id ? 'true' : 'false'}" class="${current === id ? 'is-on' : ''}">${label}</button>`).join('')}</div>`;
+}
+
+function paintInspectorTabs(root, active = inspectorActiveTab) {
+    const current = INSPECTOR_TABS.has(active) ? active : 'kapak';
+    inspectorActiveTab = current;
+    root.querySelectorAll('[data-insp-tab]').forEach((button) => {
+        const on = button.dataset.inspTab === current;
+        button.classList.toggle('is-on', on);
+        button.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    root.querySelectorAll('.insp-pane').forEach((pane) => {
+        pane.hidden = pane.dataset.inspPane !== current;
+    });
 }
 
 function bindInspectorTabs(root) {
-    let active = 'kapak';
-    const paint = () => {
-        root.querySelectorAll('[data-insp-tab]').forEach((button) => {
-            button.classList.toggle('is-on', button.dataset.inspTab === active);
-        });
-        root.querySelectorAll('.insp-pane').forEach((pane) => {
-            pane.hidden = pane.dataset.inspPane !== active;
-        });
+    const scrollTabsIntoView = () => {
+        const tabs = root.querySelector?.('.insp-tabs') || root.parentElement?.querySelector?.('.insp-tabs');
+        const host = el('inspector-body');
+        if (!tabs || !host) return;
+        host.scrollTop = Math.max(0, tabs.offsetTop - 4);
     };
     root.querySelectorAll('[data-insp-tab]').forEach((button) => {
         button.onclick = () => {
-            active = button.dataset.inspTab;
-            paint();
+            inspectorActiveTab = button.dataset.inspTab || 'kapak';
+            paintInspectorTabs(root, inspectorActiveTab);
+            scrollTabsIntoView();
         };
     });
-    paint();
+    paintInspectorTabs(root, inspectorActiveTab);
+    requestAnimationFrame(scrollTabsIntoView);
+}
+
+function syncInspectorLive() {
+    const mod = selected();
+    const root = el('inspector-body');
+    if (!mod || !root || root.dataset.boundId !== String(mod.id)) return;
+    root.querySelectorAll('[data-door]').forEach((button) => {
+        button.classList.toggle('is-on', button.dataset.door === mod.door);
+    });
+    const swing = swingOf(mod);
+    root.querySelectorAll('[data-swing]').forEach((button) => {
+        button.classList.toggle('is-on', button.dataset.swing === swing);
+    });
+    root.querySelectorAll('[data-led]').forEach((button) => {
+        button.classList.toggle('is-on', button.dataset.led === ledStyleOf(mod));
+    });
+    const opener = root.querySelector('#mod-open');
+    if (opener) opener.textContent = mod.open > 0.5 ? 'Kapağı kapat' : 'Kapağı aç';
+    const drawers = root.querySelector('#mod-drawers');
+    if (drawers) drawers.textContent = mod.drawersOpen > 0.5 ? 'Çekmeceleri kapat' : 'Çekmeceleri aç';
+    const plinth = root.querySelector('#mod-plinth');
+    if (plinth) plinth.checked = mod.plinth !== false;
+    const plinthHidden = root.querySelector('#mod-plinth-hidden');
+    if (plinthHidden) {
+        plinthHidden.checked = Boolean(mod.plinthHidden);
+        plinthHidden.disabled = mod.plinth === false;
+    }
+    const kulp = root.querySelector('#mod-kulp');
+    if (kulp) kulp.checked = mod.kulp !== false;
+    const markDecor = (attr, id) => {
+        const picker = root.querySelector(`[data-picker="${attr}"]`);
+        if (!picker) return;
+        const label = picker.querySelector('label');
+        if (label && !picker.querySelector('.swatches')) {
+            const title = label.textContent.split(':')[0];
+            label.textContent = `${title}: ${decorLabel(id)}`;
+        }
+        picker.querySelectorAll('[data-decor]').forEach((button) => {
+            button.classList.toggle('is-on', button.dataset.decor === id);
+        });
+    };
+    markDecor('carcass', mod.carcassId);
+    markDecor('door', mod.doorColorId);
+    markDecor('back', backOf(mod));
+    markDecor('shelf', shelfOf(mod));
+    markDecor('drawer', drawerOf(mod));
+    root.querySelectorAll('[data-alum]').forEach((button) => {
+        button.classList.toggle('is-on', button.dataset.alum === aluminumOf(mod).id);
+    });
+    root.querySelectorAll('[data-glass]').forEach((button) => {
+        button.classList.toggle('is-on', button.dataset.glass === glassOf(mod).id);
+    });
+    const alumLabel = root.querySelector('[data-picker="alum"] label');
+    if (alumLabel) alumLabel.textContent = `Alüminyum kapak: ${aluminumOf(mod).name}`;
+    const glassLabel = root.querySelector('[data-picker="glass"] label');
+    if (glassLabel) glassLabel.textContent = `Cam rengi: ${glassOf(mod).name}`;
+    paintInspectorTabs(root, inspectorActiveTab);
 }
 
 function hingeScheduleHtml(mod) {
@@ -6097,11 +6327,12 @@ function modulePartsHtml(parts) {
 
 function hydrateModuleParts(mod) {
     if (!mod?.glb) return;
+    const token = mod.id;
     loadModuleJson(mod.glb).then((json) => {
         const host = el('module-parts');
-        if (!host || selected()?.id !== mod.id) return;
+        if (!host || selected()?.id !== token) return;
         if (!json?.parts?.length) {
-            host.outerHTML = '<p class="hint">Bu modül için parça listesi yok.</p>';
+            host.innerHTML = '<p class="hint">Bu modül için parça listesi yok.</p>';
             return;
         }
         host.outerHTML = modulePartsHtml(json.parts);
@@ -6136,39 +6367,40 @@ function moduleConfigHtml(mod) {
         : '';
     const listed = glbCatalog.find((entry) => entry.id === mod.glb);
     const boardNote = listed?.boardMm
-        ? `<p class="hint">Raf, yan panel ve çekmece önü ${listed.boardMm} mm. Arkalık ${listed.backMm} mm. Çekmece kutusu: yan ve arka 16 mm, taban 8 mm. Dekor görseli temsili dijital dokudur.</p>`
+        ? `<details class="insp-tech"><summary>Panel kalınlıkları</summary><p>Raf, yan panel ve çekmece önü ${listed.boardMm} mm. Arkalık ${listed.backMm} mm. Çekmece kutusu: yan ve arka 16 mm, taban 8 mm. Dekor görseli temsili dijital dokudur.</p></details>`
         : '';
     const swingBlock = swingPicker(mod);
     const doorToolsBlock = swingBlock ? '' : doorTools(mod);
     return `
-        <p class="picked">Seçili dolap</p>
-        <h2>${mod.name}</h2>
-        <p class="hint">${mod.width} × ${moduleHeight(mod)} cm — sürükleyin; alttaki <strong>siyah çubuktan</strong> kapak/klon/sil.</p>
-        ${allCabinetsSelected ? '<p class="hint">Tüm dolaplar seçili. Bir rengi değiştirince hepsine yazılır.</p>' : ''}
-        ${boardNote}
-        ${inspectorTabBar('kapak')}
-        <div class="insp-pane" data-insp-pane="kapak">
-            ${mod.kind === 'end' ? '' : `<div class="field field-key"><label>Kapak</label><div class="seg"><button type="button" data-door="none" class="${mod.door === 'none' ? 'is-on' : ''}">Kapaksız</button><button type="button" data-door="solid" class="${mod.door === 'solid' ? 'is-on' : ''}">Ahşap</button><button type="button" data-door="glass" class="${mod.door === 'glass' ? 'is-on' : ''}">Cam</button>${doorCount(mod) > 1 ? `<button type="button" data-door="mixed" class="${mod.door === 'mixed' ? 'is-on' : ''}">Karışık</button>` : ''}</div></div>`}
-            ${swingBlock || doorToolsBlock}
-            ${swatchPicker(ALUMINUM, aluminumOf(mod).id, 'alum', 'Alüminyum kapak', true)}
-            ${swatchPicker(GLASS, glassOf(mod).id, 'glass', 'Cam rengi')}
+        <div class="insp-mod-head">
+            <p class="picked">Seçili dolap</p>
+            <h2>${mod.name}</h2>
+            <p class="hint">${mod.width} × ${moduleHeight(mod)} cm · siyah çubuk: kapak / klon / sil${allCabinetsSelected ? ' · tüm dolaplar seçili' : ''}</p>
         </div>
-        <div class="insp-pane" data-insp-pane="ic" hidden>
+        ${inspectorTabBar(inspectorActiveTab)}
+        <div class="insp-pane" data-insp-pane="kapak"${inspectorActiveTab === 'kapak' ? '' : ' hidden'}>
+            ${mod.kind === 'end' ? '' : `<div class="field field-key"><label>Kapak tipi</label><div class="seg seg-compact"><button type="button" data-door="solid" class="${mod.door === 'solid' ? 'is-on' : ''}">Ahşap</button><button type="button" data-door="glass" class="${mod.door === 'glass' ? 'is-on' : ''}">Cam</button><button type="button" data-door="none" class="${mod.door === 'none' ? 'is-on' : ''}">Yok</button>${doorCount(mod) > 1 ? `<button type="button" data-door="mixed" class="${mod.door === 'mixed' ? 'is-on' : ''}">Karışık</button>` : ''}</div></div>`}
+            ${swingBlock || doorToolsBlock}
+            ${swatchPicker(orderedFinishes(ALUMINUM, ALUM_FOCUS), aluminumOf(mod).id, 'alum', 'Alüminyum kapak', true)}
+            ${swatchPicker(orderedFinishes(GLASS, GLASS_FOCUS), glassOf(mod).id, 'glass', 'Cam rengi')}
+        </div>
+        <div class="insp-pane" data-insp-pane="ic"${inspectorActiveTab === 'ic' ? '' : ' hidden'}>
             ${colorChoicesHtml(mod, cabinetHasDrawers(mod))}
             ${shelfField}
             ${drawerField}
             ${ledPicker(mod)}
         </div>
-        <div class="insp-pane" data-insp-pane="govde" hidden>
+        <div class="insp-pane" data-insp-pane="govde"${inspectorActiveTab === 'govde' ? '' : ' hidden'}>
             ${mod.kind === 'end' ? '' : `<div class="field"><label>Genişlik (cm)</label><input id="mod-w" type="number" min="30" max="200" value="${mod.width}"></div>`}
             ${mod.kind === 'end' ? '' : `<div class="field"><label>Yükseklik (cm)</label><input id="mod-h" type="number" min="${mod.dxf === 'ust' ? 40 : H_MIN}" max="${H_MAX}" value="${moduleHeight(mod)}"></div>`}
             ${mod.glb ? '<div id="module-parts" class="parts-panel"><p class="hint">Parça listesi yükleniyor…</p></div>' : ''}
+            ${boardNote}
         </div>
-        <div class="insp-pane" data-insp-pane="baza" hidden>
+        <div class="insp-pane" data-insp-pane="baza"${inspectorActiveTab === 'baza' ? '' : ' hidden'}>
             <label class="check"><input id="mod-plinth" type="checkbox" ${mod.plinth === false ? '' : 'checked'}> Baza (toe kick)</label>
             <label class="check"><input id="mod-plinth-hidden" type="checkbox" ${mod.plinthHidden ? 'checked' : ''} ${mod.plinth === false ? 'disabled' : ''}> Gizli baza</label>
         </div>
-        <div class="insp-pane" data-insp-pane="overlay" hidden>
+        <div class="insp-pane" data-insp-pane="overlay"${inspectorActiveTab === 'overlay' ? '' : ' hidden'}>
             ${mod.kind === 'end' ? '' : `<div class="field"><label>Öne / arkaya (cm)</label><input id="mod-depth" type="number" min="0" max="120" value="${depthNudge(mod)}"></div><p class="hint">Kapak bindirme ve derinlik hizası için modülü öne veya arkaya kaydırın.</p>`}
             ${mod.kind !== 'end' && !mod.glb ? `<button type="button" class="btn" id="mod-upper" style="width:100%;margin-bottom:12px">${upperHeight(mod) ? 'Üst dolabı kaldır' : 'Üst dolap ekle'}</button>` : ''}
             <div style="display:flex;gap:8px;margin-top:8px">
@@ -6176,7 +6408,7 @@ function moduleConfigHtml(mod) {
                 <button type="button" class="btn" id="mod-right">Sağa kaydır</button>
             </div>
         </div>
-        <div class="insp-pane" data-insp-pane="donanim" hidden>
+        <div class="insp-pane" data-insp-pane="donanim"${inspectorActiveTab === 'donanim' ? '' : ' hidden'}>
             <label class="check"><input id="mod-kulp" type="checkbox" ${mod.kulp === false ? '' : 'checked'}> Kulp / tutamak</label>
             <h3 style="font-size:13px;margin:12px 0 6px">Menteşe tablosu</h3>
             ${hingeScheduleHtml(mod)}
@@ -6188,25 +6420,36 @@ function bindModuleConfig(root, mod) {
     root.querySelectorAll('[data-door]').forEach((button) => {
         button.onclick = () => {
             if (mod.door === button.dataset.door) return;
-            commit(() => { mod.door = button.dataset.door; });
+            // Kapak tipi UI’yi değiştirir (açılış seçenekleri) → full refresh, sekme korunur.
+            commit(() => {
+                mod.door = button.dataset.door;
+                if (mod.door === 'glass' || mod.door === 'mixed') {
+                    if (!GLASS.some((item) => item.id === mod.glassId)) {
+                        mod.glassId = /bronz/i.test(mod.name || '') ? 'cam-bronz' : 'cam-fum';
+                    }
+                    if (!ALUMINUM.some((item) => item.id === mod.aluminumId)) {
+                        mod.aluminumId = /bronz/i.test(mod.name || '') ? 'al-bronz' : 'al-inox';
+                    }
+                }
+            });
         };
     });
     root.querySelectorAll('[data-swing]').forEach((button) => {
-        button.onclick = () => commit(() => { mod.swing = button.dataset.swing; });
+        button.onclick = () => commitScene(() => { mod.swing = button.dataset.swing; });
     });
     root.querySelectorAll('[data-interior]').forEach((button) => {
-        button.onclick = () => commit(() => applyInterior(mod, button.dataset.interior));
+        button.onclick = () => commitScene(() => applyInterior(mod, button.dataset.interior));
     });
     const widthInput = root.querySelector('#mod-w');
-    if (widthInput) widthInput.addEventListener('change', (event) => commit(() => {
+    if (widthInput) widthInput.addEventListener('change', (event) => commitScene(() => {
         mod.width = clamp(Number(event.target.value), 30, 200);
     }));
     const depthInput = root.querySelector('#mod-depth');
-    if (depthInput) depthInput.addEventListener('change', (event) => commit(() => {
+    if (depthInput) depthInput.addEventListener('change', (event) => commitScene(() => {
         mod.depthOffset = clamp(Number(event.target.value), 0, 120);
     }));
     const shelfInput = root.querySelector('#mod-shelves');
-    if (shelfInput) shelfInput.addEventListener('change', (event) => commit(() => {
+    if (shelfInput) shelfInput.addEventListener('change', (event) => commitScene(() => {
         const count = clamp(Number(event.target.value), 1, 12);
         if (cadById(mod.cad)) {
             mod.shelfCount = count;
@@ -6219,7 +6462,7 @@ function bindModuleConfig(root, mod) {
         if (!mod.interior) mod.interior = 'raf';
     }));
     const drawerCount = root.querySelector('#mod-drawer-count');
-    if (drawerCount) drawerCount.addEventListener('change', (event) => commit(() => {
+    if (drawerCount) drawerCount.addEventListener('change', (event) => commitScene(() => {
         const count = clamp(Number(event.target.value), 1, 8);
         if (cadById(mod.cad)) {
             mod.drawerCount = count;
@@ -6231,53 +6474,55 @@ function bindModuleConfig(root, mod) {
         mod.product = 'custom';
     }));
     const drawerHeight = root.querySelector('#mod-drawer-h');
-    if (drawerHeight) drawerHeight.addEventListener('change', (event) => commit(() => {
+    if (drawerHeight) drawerHeight.addEventListener('change', (event) => commitScene(() => {
         mod.drawerHeight = clamp(Number(event.target.value), 12, 40);
         mod.layout = 'custom';
         mod.product = 'custom';
     }));
-    bindDecor(root, 'drawer', drawerOf(mod), (id) => commit(() => paintColor(mod, 'drawerColorId', id)));
-    root.querySelector('#mod-plinth').addEventListener('change', (event) => commit(() => {
+    bindDecor(root, 'drawer', drawerOf(mod), (id) => commitScene(() => paintColor(mod, 'drawerColorId', id)));
+    root.querySelector('#mod-plinth')?.addEventListener('change', (event) => commitScene(() => {
         mod.plinth = event.target.checked;
         if (!mod.plinth) mod.plinthHidden = false;
     }));
     const hiddenKick = root.querySelector('#mod-plinth-hidden');
-    if (hiddenKick) hiddenKick.addEventListener('change', (event) => commit(() => { mod.plinthHidden = event.target.checked; }));
-    root.querySelector('#mod-kulp').addEventListener('change', (event) => commit(() => { mod.kulp = event.target.checked; }));
-    bindSwatch(root, 'led', (id) => commit(() => {
+    if (hiddenKick) hiddenKick.addEventListener('change', (event) => commitScene(() => { mod.plinthHidden = event.target.checked; }));
+    root.querySelector('#mod-kulp')?.addEventListener('change', (event) => commitScene(() => { mod.kulp = event.target.checked; }));
+    bindSwatch(root, 'led', (id) => commitScene(() => {
         mod.ledStyle = id === 'off' ? 'off' : id;
         mod.led = id !== 'off';
         if (mod.led) lightsOn = true;
         syncLightsButton();
     }));
     const heightInput = root.querySelector('#mod-h');
-    if (heightInput) heightInput.addEventListener('change', (event) => commit(() => {
+    if (heightInput) heightInput.addEventListener('change', (event) => commitScene(() => {
         mod.height = clamp(Number(event.target.value), mod.dxf === 'ust' ? 40 : H_MIN, H_MAX);
     }));
-    bindSwatch(root, 'alum', (id) => commit(() => { mod.aluminumId = id; }));
-    bindSwatch(root, 'glass', (id) => commit(() => { mod.glassId = id; }));
-    bindDecor(root, 'carcass', mod.carcassId, (id) => commit(() => paintColor(mod, 'carcassId', id)));
-    bindDecor(root, 'door', mod.doorColorId, (id) => commit(() => paintColor(mod, 'doorColorId', id)));
-    bindDecor(root, 'back', backOf(mod), (id) => commit(() => paintColor(mod, 'backId', id)));
-    bindDecor(root, 'shelf', shelfOf(mod), (id) => commit(() => paintColor(mod, 'shelfId', id)));
+    bindSwatch(root, 'alum', (id) => applyModuleAluminum(mod, id));
+    bindSwatch(root, 'glass', (id) => applyModuleGlass(mod, id));
+    bindDecor(root, 'carcass', mod.carcassId, (id) => commitScene(() => paintColor(mod, 'carcassId', id)));
+    bindDecor(root, 'door', mod.doorColorId, (id) => commitScene(() => paintColor(mod, 'doorColorId', id)));
+    bindDecor(root, 'back', backOf(mod), (id) => commitScene(() => paintColor(mod, 'backId', id)));
+    bindDecor(root, 'shelf', shelfOf(mod), (id) => commitScene(() => paintColor(mod, 'shelfId', id)));
     bindColorScope(root, mod);
     const opener = root.querySelector('#mod-open');
-    if (opener) opener.onclick = () => commit(() => { mod.open = mod.open > 0.5 ? 0 : 1; });
+    if (opener) opener.onclick = () => commitScene(() => { mod.open = mod.open > 0.5 ? 0 : 1; });
     const hideOne = root.querySelector('#mod-hide-door');
     if (hideOne) hideOne.onclick = () => {
         if (hiddenDoorIds.has(mod.id)) hiddenDoorIds.delete(mod.id);
         else hiddenDoorIds.add(mod.id);
-        render();
+        rebuild();
+        renderInspector();
     };
     const hideAll = root.querySelector('#mod-hide-all');
     if (hideAll) hideAll.onclick = () => {
         hideAllDoors = !hideAllDoors;
-        render();
+        rebuild();
+        renderInspector();
     };
     const upper = root.querySelector('#mod-upper');
     if (upper) upper.onclick = () => {
         if (upperHeight(mod)) {
-            commit(() => { mod.upper = 0; });
+            commitScene(() => { mod.upper = 0; });
             return;
         }
         const fit = Math.floor(roomHeightLimit() - moduleHeight(mod));
@@ -6285,15 +6530,15 @@ function bindModuleConfig(root, mod) {
             toast('Tavan payı üst dolap için yetmiyor.');
             return;
         }
-        commit(() => { mod.upper = Math.min(48, fit); });
+        commitScene(() => { mod.upper = Math.min(48, fit); });
     };
     const drawers = root.querySelector('#mod-drawers');
-    if (drawers) drawers.onclick = () => commit(() => {
+    if (drawers) drawers.onclick = () => commitScene(() => {
         mod.drawersOpen = mod.drawersOpen > 0.5 ? 0 : 1;
         if (mod.drawersOpen > 0.5) mod.open = 1;
     });
     const allDoors = root.querySelector('#mod-doors-all');
-    if (allDoors) allDoors.onclick = () => commit(() => {
+    if (allDoors) allDoors.onclick = () => commitScene(() => {
         const open = doorsAreOpen() ? 0 : 1;
         state.modules.forEach((item) => {
             if (item.kind === 'end' || item.door === 'none') return;
@@ -6310,7 +6555,9 @@ function renderInspector() {
     syncInspectorChrome(mod);
     renderProduction();
     const config = el('config-modal');
+    const scrollY = body?.scrollTop || 0;
     if (!mod) {
+        inspectorBoundId = null;
         customFor = null;
         config.classList.add('hidden');
         body.innerHTML = `
@@ -6422,14 +6669,35 @@ function renderInspector() {
             state.modules.forEach((item) => { item.height = state.height; });
         }));
         body.querySelector('#cab-d').addEventListener('change', (event) => commit(() => { state.depth = clamp(Number(event.target.value), 40, 70); }));
-        bindSwatch(body, 'alum', (id) => commit(() => { state.aluminumId = id; }));
-        bindSwatch(body, 'glass', (id) => commit(() => { state.glassId = id; }));
+        bindSwatch(body, 'alum', (id) => {
+            if (!ALUMINUM.some((item) => item.id === id)) return;
+            commit(() => {
+                state.aluminumId = id;
+                state.modules.forEach((item) => {
+                    if (item.kind === 'end') return;
+                    item.aluminumId = id;
+                    if (item.door !== 'glass' && item.door !== 'mixed') item.door = 'glass';
+                });
+            });
+        });
+        bindSwatch(body, 'glass', (id) => {
+            if (!GLASS.some((item) => item.id === id)) return;
+            commit(() => {
+                state.glassId = id;
+                state.modules.forEach((item) => {
+                    if (item.kind === 'end') return;
+                    item.glassId = id;
+                    if (item.door !== 'glass' && item.door !== 'mixed') item.door = 'glass';
+                });
+            });
+        });
         bindDecor(body, 'carcass', state.carcassId, (id) => commit(() => { state.carcassId = id; }));
         bindDecor(body, 'door', state.doorColorId, (id) => commit(() => { state.doorColorId = id; }));
         bindDecor(body, 'back', state.backId, (id) => commit(() => { state.backId = id; }));
         bindDecor(body, 'shelf', state.shelfId, (id) => commit(() => { state.shelfId = id; }));
         bindDecor(body, 'drawer', state.drawerColorId || solidDoorColor(), (id) => commit(() => { state.drawerColorId = id; }));
         bindColorScope(body, state);
+        body.dataset.boundId = '';
         return;
     }
     config.classList.add('hidden');
@@ -6438,9 +6706,18 @@ function renderInspector() {
         document.body.classList.add('show-custom');
     }
     revealCustomizer(mod);
+    if (inspectorBoundId !== mod.id) {
+        inspectorBoundId = mod.id;
+        inspectorActiveTab = 'kapak';
+    }
     body.innerHTML = moduleConfigHtml(mod);
+    body.dataset.boundId = String(mod.id);
     bindModuleConfig(body, mod);
     hydrateModuleParts(mod);
+    requestAnimationFrame(() => {
+        body.scrollTop = scrollY;
+        paintInspectorTabs(body, inspectorActiveTab);
+    });
 }
 
 function renderSummary() {
@@ -6505,7 +6782,150 @@ function replaceWall(key, object) {
         room[key].traverse((node) => { if (node.geometry) node.geometry.dispose(); });
     }
     room[key] = object;
-    scene.add(object);
+    if (object) scene.add(object);
+}
+
+function openingFrameMat() {
+    if (!room.openingFrameMat) {
+        room.openingFrameMat = new THREE.MeshStandardMaterial({ color: '#f0eeea', roughness: 0.88, metalness: 0.02 });
+    }
+    return room.openingFrameMat;
+}
+
+function openingDoorMat() {
+    if (!room.openingDoorMat) {
+        room.openingDoorMat = new THREE.MeshStandardMaterial({ color: '#8a6f4e', roughness: 0.62, metalness: 0.04 });
+    }
+    return room.openingDoorMat;
+}
+
+function openingGlassMat() {
+    if (!room.openingGlassMat) {
+        room.openingGlassMat = new THREE.MeshPhysicalMaterial({
+            color: '#c5d8e8',
+            roughness: 0.08,
+            metalness: 0,
+            transmission: 0.86,
+            thickness: 0,
+            transparent: false,
+            opacity: 1,
+            depthWrite: true,
+            ior: 1.5,
+            attenuationDistance: Infinity,
+            envMapIntensity: 0.6,
+        });
+    }
+    return room.openingGlassMat;
+}
+
+function addBoxMesh(parent, w, h, d, x, y, z, mat, rotY = 0) {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    mesh.position.set(x, y, z);
+    mesh.rotation.y = rotY;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    parent.add(mesh);
+    return mesh;
+}
+
+/** OpenPlan tarzı oda kapısı / penceresi — çerçeve + kanat / cam. */
+function buildRoomOpeningProp(item, wallId, roomW) {
+    const style = String(item.style || (item.kind === 'window' ? 'fixed' : 'single'));
+    const openW = Math.max(40, Number(item.width) || (item.kind === 'window' ? 120 : 90));
+    const openH = Math.max(60, Number(item.height) || (item.kind === 'window' ? 120 : 210));
+    const sill = item.kind === 'window' ? Math.max(0, Number(item.sill) || 90) : 0;
+    const along = Math.max(0, Number(item.offset) || 0);
+    const frameT = 4;
+    const wallT = ROOM_WALL_T;
+    const group = new THREE.Group();
+    group.name = `opening-${item.id || wallId}`;
+    const frame = openingFrameMat();
+    const wood = openingDoorMat();
+    const glass = openingGlassMat();
+
+    // Yerel: X = duvar boyunca, Y = yükseklik, Z = odaya doğru (+)
+    const wallYaw = wallId === 'front' ? 0 : wallId === 'left' ? Math.PI / 2 : -Math.PI / 2;
+    const origin = wallId === 'front'
+        ? new THREE.Vector3(along, sill, 0)
+        : wallId === 'left'
+            ? new THREE.Vector3(0, sill, along)
+            : new THREE.Vector3(roomW, sill, along);
+    const host = new THREE.Group();
+    host.position.copy(origin);
+    host.rotation.y = wallYaw;
+    group.add(host);
+
+    const put = (w, h, d, x, y, z, mat) => addBoxMesh(host, w, h, d, x, y, z, mat, 0);
+
+    put(frameT, openH, wallT + 2, frameT / 2, openH / 2, 0, frame);
+    put(frameT, openH, wallT + 2, openW - frameT / 2, openH / 2, 0, frame);
+    put(Math.max(2, openW - frameT * 2), frameT, wallT + 2, openW / 2, openH - frameT / 2, 0, frame);
+
+    if (item.kind === 'window') {
+        put(Math.max(2, openW - frameT * 2), frameT, wallT + 2, openW / 2, frameT / 2, 0, frame);
+        put(Math.max(2, openW - frameT * 2), Math.max(2, openH - frameT * 2), 1.2, openW / 2, openH / 2, 1.5, glass);
+        put(2, Math.max(2, openH - frameT * 2), 1.4, openW / 2, openH / 2, 1.6, frame);
+        return group;
+    }
+
+    const leafH = Math.max(40, openH - frameT - 2);
+    const leafD = 3.2;
+    const openAngle = 0.45;
+    if (style === 'double') {
+        const leafW = Math.max(20, (openW - frameT * 2 - 2) / 2);
+        [[frameT + 1, 1], [openW - frameT - 1, -1]].forEach(([hingeX, sign]) => {
+            const pivot = new THREE.Group();
+            pivot.position.set(hingeX, 1, 1.2);
+            pivot.rotation.y = sign * openAngle;
+            const leaf = new THREE.Mesh(new THREE.BoxGeometry(leafW, leafH, leafD), wood);
+            leaf.position.set(sign * leafW / 2, leafH / 2, leafD / 2);
+            leaf.castShadow = true;
+            pivot.add(leaf);
+            host.add(pivot);
+        });
+    } else if (style === 'sliding') {
+        const leafW = openW * 0.55;
+        put(leafW, leafH, leafD, openW * 0.28, leafH / 2 + 1, 6, wood);
+        put(Math.max(2, openW - 4), 1.5, 2, openW / 2, openH - 3, 5, frame);
+    } else {
+        const leafW = Math.max(30, openW - frameT * 2 - 2);
+        const pivot = new THREE.Group();
+        pivot.position.set(frameT + 1, 1, 1.2);
+        pivot.rotation.y = openAngle;
+        const leaf = new THREE.Mesh(new THREE.BoxGeometry(leafW, leafH, leafD), wood);
+        leaf.position.set(leafW / 2, leafH / 2, leafD / 2);
+        leaf.castShadow = true;
+        pivot.add(leaf);
+        const knob = new THREE.Mesh(new THREE.BoxGeometry(1.2, 8, 1.4), frame);
+        knob.position.set(leafW - 6, leafH * 0.48, leafD + 0.8);
+        pivot.add(knob);
+        host.add(pivot);
+    }
+    return group;
+}
+
+function fitRoomOpenings() {
+    const root = new THREE.Group();
+    root.name = 'room-openings';
+    const roomW = wallLimit();
+    ['front', 'left', 'right'].forEach((wallId) => {
+        roomOpenings(wallId).forEach((item) => {
+            root.add(buildRoomOpeningProp(item, wallId, roomW));
+        });
+    });
+    replaceWall('openings', root);
+}
+
+/**
+ * Ön duvarı yan duvar kalınlığı kadar uzat — dış köşe boşluğu (basamak) kalmasın.
+ * Yan duvarlar z=0’dan başlar; ön duvar x=-T…width+T span eder.
+ */
+function withOuterCornerReturns(pieces, span, height, wallT = ROOM_WALL_T) {
+    return [
+        { along: -wallT, length: wallT, y: 0, h: height },
+        ...pieces,
+        { along: span, length: wallT, y: 0, h: height },
+    ];
 }
 
 function fitRoom() {
@@ -6514,6 +6934,7 @@ function fitRoom() {
     const left = sideLimit('left');
     const right = sideLimit('right');
     const depth = roomDepthLimit();
+    const wallT = ROOM_WALL_T;
     const wallHex = state.wallColor || '#f7f6f4';
     if (!room.wallMat) room.wallMat = new THREE.MeshStandardMaterial({ color: wallHex, roughness: 0.9 });
     else room.wallMat.color.set(wallHex);
@@ -6528,18 +6949,21 @@ function fitRoom() {
         });
         return group;
     };
-    replaceWall('back', build(wallPieces(width, height, roomOpenings('front')), {
-        geometry: (piece) => new THREE.BoxGeometry(piece.length, piece.h, 8),
-        position: (piece) => new THREE.Vector3(piece.along + piece.length / 2, piece.y + piece.h / 2, -4),
+    // Ön duvar: iç yüz z=0, dış yüz z=-wallT; uçlar yan duvar dışına taşar → temiz dış köşe.
+    replaceWall('back', build(withOuterCornerReturns(wallPieces(width, height, roomOpenings('front')), width, height, wallT), {
+        geometry: (piece) => new THREE.BoxGeometry(piece.length, piece.h, wallT),
+        position: (piece) => new THREE.Vector3(piece.along + piece.length / 2, piece.y + piece.h / 2, -wallT / 2),
     }));
+    // Sol / sağ: iç yüz x=0 / x=width; z=0’dan derinliğe — ön duvarın iç yüzüne butt join.
     replaceWall('left', build(wallPieces(left, height, roomOpenings('left')), {
-        geometry: (piece) => new THREE.BoxGeometry(8, piece.h, piece.length),
-        position: (piece) => new THREE.Vector3(-4, piece.y + piece.h / 2, piece.along + piece.length / 2),
+        geometry: (piece) => new THREE.BoxGeometry(wallT, piece.h, piece.length),
+        position: (piece) => new THREE.Vector3(-wallT / 2, piece.y + piece.h / 2, piece.along + piece.length / 2),
     }));
     replaceWall('right', build(wallPieces(right, height, roomOpenings('right')), {
-        geometry: (piece) => new THREE.BoxGeometry(8, piece.h, piece.length),
-        position: (piece) => new THREE.Vector3(width + 4, piece.y + piece.h / 2, piece.along + piece.length / 2),
+        geometry: (piece) => new THREE.BoxGeometry(wallT, piece.h, piece.length),
+        position: (piece) => new THREE.Vector3(width + wallT / 2, piece.y + piece.h / 2, piece.along + piece.length / 2),
     }));
+    fitRoomOpenings();
     if (room.floor) {
         room.floor.geometry.dispose();
         room.floor.geometry = new THREE.BoxGeometry(width, 2, depth + 40);
@@ -6562,7 +6986,7 @@ function addSet(setId) {
     const set = SETS.find((item) => item.id === setId);
     const mods = set.parts.map((id) => {
         const mod = createModule(id);
-        preferCatalogWood(mod);
+        preferCatalogWood(mod, { force: true });
         return mod;
     });
     if (mods.some((mod) => mod.kind === 'corner') && state.modules.some((mod) => mod.kind === 'corner')) {
@@ -6577,7 +7001,7 @@ function addSet(setId) {
         state.modules.push(...mods);
         selectedId = null;
     });
-    el('library').classList.remove('is-open');
+    closeModuleLibrary();
 }
 
 function syncLightsButton() {
@@ -6795,27 +7219,46 @@ function wallFullMessage(wall) {
 function initStudioLayout() {
     const mobile = window.matchMedia('(max-width: 900px)').matches;
     document.body.classList.remove('show-library', 'show-custom');
+    el('library')?.classList.remove('is-open');
     if (mobile) {
-        document.body.classList.add('show-library');
-        el('library')?.classList.add('is-open');
         el('inspector')?.classList.remove('is-open');
     } else {
-        document.body.classList.add('show-library', 'show-custom');
+        document.body.classList.add('show-custom');
         el('inspector')?.classList.add('is-open');
     }
 }
 
-let roomPlanEditorMode = 'sketch';
+let roomPlanEditorMode = 'openplan';
+
+function hasLocalOpenPlan() {
+    const src = String(window.WARDROBE?.openplanSrc || '').trim();
+    return Boolean(src) && !/openplan3d\.com/i.test(src);
+}
+
+function preferredRoomPlanMode() {
+    return hasLocalOpenPlan() ? 'openplan' : 'sketch';
+}
+
+function openPlanEmbedUrl() {
+    const src = String(window.WARDROBE?.openplanSrc || '').trim().replace(/\/index\.html$/i, '');
+    if (!src) return '';
+    const base = src.endsWith('/') ? src : `${src}/`;
+    // php built-in: /openplan/editor dosya gibi 404 verir → ana sayfa + embed=1.
+    return `${base}?embed=1`;
+}
 
 function ensureOpenPlanFrame(frame) {
-    if (!frame || frame.dataset.loaded) return;
-    const src = String(window.WARDROBE?.openplanSrc || '').trim();
-    if (!src || /openplan3d\.com/i.test(src)) return;
-    frame.src = src.endsWith('/') ? src : `${src.replace(/\/index\.html$/i, '')}/`;
+    if (!frame) return;
+    if (!hasLocalOpenPlan()) return;
+    const target = openPlanEmbedUrl();
+    if (!target) return;
+    if (frame.dataset.loaded === '1' && /embed=1/.test(frame.src || '')) return;
+    frame.src = target;
     frame.dataset.loaded = '1';
     frame.addEventListener('load', () => {
         try {
             frame.contentWindow?.focus();
+            frame.contentWindow?.postMessage({ source: 'meemare', action: 'openEditor' }, '*');
         } catch {
             /* cross-origin */
         }
@@ -6829,13 +7272,85 @@ function openPlanFrameFullscreen() {
     if (req) void req.call(node);
 }
 
+function isTypingTarget(target) {
+    if (!target) return false;
+    const tag = String(target.tagName || '').toLowerCase();
+    return tag === 'input' || tag === 'textarea' || tag === 'select' || target.isContentEditable;
+}
+
+function syncSpacePanControls() {
+    if (!controls) return;
+    if (spacePanHeld && !walkMode && planMode !== '2d') {
+        controls.enabled = true;
+        controls.enablePan = true;
+        controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
+        if (renderer?.domElement) renderer.domElement.style.cursor = 'grab';
+        document.body.classList.add('space-pan');
+    } else {
+        controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
+        if (renderer?.domElement && !walkMode) renderer.domElement.style.cursor = '';
+        document.body.classList.remove('space-pan');
+    }
+}
+
+function setSpacePan(on) {
+    const next = Boolean(on) && !walkMode && planMode !== '2d'
+        && !document.body.classList.contains('show-room-plan')
+        && !document.body.classList.contains('studio-plan-first');
+    if (spacePanHeld === next) {
+        if (next) syncSpacePanControls();
+        return;
+    }
+    spacePanHeld = next;
+    if (spacePanHeld) {
+        // Modül sürüklerken Space’e basılırsa sürüklemeyi bırak, ortama pan geç.
+        moduleDrag = null;
+        dragId = null;
+        pointerPress = null;
+        pointerDown = null;
+        clearDragGhost?.();
+        clearSnapHints?.();
+    }
+    syncSpacePanControls();
+}
+
+function bindSpacePan(canvas) {
+    if (window.__meemareSpacePan) return;
+    window.__meemareSpacePan = true;
+    window.addEventListener('keydown', (event) => {
+        if (event.code !== 'Space' && event.key !== ' ') return;
+        if (event.repeat) {
+            event.preventDefault();
+            return;
+        }
+        if (isTypingTarget(event.target)) return;
+        if (walkMode || planMode === '2d') return;
+        if (document.body.classList.contains('show-room-plan') || document.body.classList.contains('studio-plan-first')) return;
+        event.preventDefault();
+        setSpacePan(true);
+    });
+    window.addEventListener('keyup', (event) => {
+        if (event.code !== 'Space' && event.key !== ' ') return;
+        if (!spacePanHeld) return;
+        event.preventDefault();
+        setSpacePan(false);
+        if (canvas) canvas.style.cursor = '';
+    });
+    window.addEventListener('blur', () => setSpacePan(false));
+    canvas?.addEventListener('pointerdown', () => {
+        if (spacePanHeld && canvas) canvas.style.cursor = 'grabbing';
+    });
+    canvas?.addEventListener('pointerup', () => {
+        if (spacePanHeld && canvas) canvas.style.cursor = 'grab';
+    });
+}
+
 function bindWalkKeys() {
     if (window.__meemareWalkKeys) return;
     window.__meemareWalkKeys = true;
     const setKey = (event, on) => {
         if (!walkMode) return;
-        const t = event.target;
-        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+        if (isTypingTarget(event.target)) return;
         const map = {
             KeyW: 'forward',
             ArrowUp: 'forward',
@@ -6890,6 +7405,7 @@ function setWalkMode(on) {
         setCameraView('perspective');
         return;
     }
+    setSpacePan(false);
     if (planMode === '2d') setPlanMode('3d');
     placeWalkCamera();
     if (controls) controls.enabled = false;
@@ -6915,18 +7431,49 @@ function updateWalk(dt) {
 }
 
 function setRoomPlanEditorMode(mode) {
-    const hasLocalOpenPlan = Boolean(String(window.WARDROBE?.openplanSrc || '').trim())
-        && !/openplan3d\.com/i.test(String(window.WARDROBE?.openplanSrc || ''));
-    roomPlanEditorMode = mode === 'openplan' && hasLocalOpenPlan ? 'openplan' : 'sketch';
+    const local = hasLocalOpenPlan();
+    roomPlanEditorMode = mode === 'openplan' && local ? 'openplan' : 'sketch';
     el('room-plan-openplan')?.classList.toggle('hidden', roomPlanEditorMode !== 'openplan');
     el('room-plan-sketch-wrap')?.classList.toggle('hidden', roomPlanEditorMode !== 'sketch');
-    el('room-plan-mode')?.classList.toggle('hidden', !hasLocalOpenPlan);
+    document.body.classList.toggle('room-plan-openplan-mode', roomPlanEditorMode === 'openplan');
+    el('room-plan-mode')?.classList.toggle('hidden', !local);
     document.querySelectorAll('[data-room-plan-mode]').forEach((btn) => {
         btn.classList.toggle('is-on', btn.dataset.roomPlanMode === roomPlanEditorMode);
-        if (btn.dataset.roomPlanMode === 'openplan') btn.classList.toggle('hidden', !hasLocalOpenPlan);
+        if (btn.dataset.roomPlanMode === 'openplan') btn.classList.toggle('hidden', !local);
     });
     if (roomPlanEditorMode === 'openplan') ensureOpenPlanFrame(el('openplan-frame'));
     else requestAnimationFrame(() => roomSketchOnOpen(state));
+}
+
+function applyRoomPlanFromHeader() {
+    if (roomPlanEditorMode === 'openplan' && requestOpenPlanRoomExport()) {
+        setTimeout(() => {
+            if (applyHandoffFromStorage()) return;
+            const form = el('studio-plan-handoff');
+            if (!form) return;
+            const front = Number(form.onduvar?.value);
+            const left = Number(form.solduvar?.value);
+            const right = Number(form.sagduvar?.value);
+            const height = Number(form.odaboy?.value || state.roomHeight);
+            window.MeemareStudioApplyWalls(
+                { frontCm: front, leftCm: left, rightCm: right, heightCm: height },
+                { openings: state.roomSketch?.openings, sketchWalls: state.roomSketch?.walls },
+            );
+        }, 450);
+        return;
+    }
+    roomSketchBeforeHandoff(state);
+    const form = el('studio-plan-handoff');
+    const front = Number(form?.onduvar?.value);
+    const left = Number(form?.solduvar?.value);
+    const right = Number(form?.sagduvar?.value);
+    const height = Number(form?.odaboy?.value || state.roomHeight);
+    if (!window.MeemareStudioApplyWalls(
+        { frontCm: front, leftCm: left, rightCm: right, heightCm: height },
+        { openings: state.roomSketch?.openings, sketchWalls: state.roomSketch?.walls },
+    )) {
+        toast('Önce oda ölçüsünü tanımlayın.');
+    }
 }
 
 function closePlanStudioStep(applyHandoff = true) {
@@ -6944,6 +7491,17 @@ function closePlanStudioStep(applyHandoff = true) {
     toast('Soldan modül ekleyin.');
 }
 
+function requestOpenPlanRoomExport() {
+    const frame = el('openplan-frame');
+    if (!frame?.contentWindow || roomPlanEditorMode !== 'openplan') return false;
+    try {
+        frame.contentWindow.postMessage({ source: 'meemare', action: 'exportRoom' }, '*');
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 function finishPlanFirstStep() {
     roomSketchBeforeHandoff(state);
     const handoff = el('studio-plan-handoff');
@@ -6952,6 +7510,37 @@ function finishPlanFirstStep() {
         ['onduvar', 'solduvar', 'sagduvar', 'odaboy'].forEach((name) => {
             if (form[name] && handoff[name]) form[name].value = handoff[name].value;
         });
+    }
+    // OpenPlan açıksa önce kapı/pencere dahil export iste (meemare-plan-bridge uygular).
+    if (requestOpenPlanRoomExport()) {
+        let settled = false;
+        const markSettled = () => { settled = true; };
+        const onMsg = (event) => {
+            const data = event.data;
+            if (!data || data.source !== 'openplan3d' || !data.export) return;
+            markSettled();
+            window.removeEventListener('message', onMsg);
+        };
+        window.addEventListener('message', onMsg);
+        setTimeout(() => {
+            window.removeEventListener('message', onMsg);
+            if (settled || applyHandoffFromStorage()) return;
+            if (!form) {
+                closePlanStudioStep(false);
+                return;
+            }
+            const front = Number(form.onduvar?.value || handoff?.onduvar?.value);
+            const left = Number(form.solduvar?.value || handoff?.solduvar?.value);
+            const right = Number(form.sagduvar?.value || handoff?.sagduvar?.value);
+            const height = Number(form.odaboy?.value || handoff?.odaboy?.value || state.roomHeight);
+            if (!window.MeemareStudioApplyWalls(
+                { frontCm: front, leftCm: left, rightCm: right, heightCm: height },
+                { openings: state.roomSketch?.openings, sketchWalls: state.roomSketch?.walls },
+            )) {
+                closePlanStudioStep(false);
+            }
+        }, 450);
+        return;
     }
     if (applyHandoffFromStorage()) return;
     if (!form) {
@@ -6962,7 +7551,10 @@ function finishPlanFirstStep() {
     const left = Number(form.solduvar?.value || handoff?.solduvar?.value);
     const right = Number(form.sagduvar?.value || handoff?.sagduvar?.value);
     const height = Number(form.odaboy?.value || handoff?.odaboy?.value || state.roomHeight);
-    if (!window.MeemareStudioApplyWalls({ frontCm: front, leftCm: left, rightCm: right, heightCm: height })) {
+    if (!window.MeemareStudioApplyWalls(
+        { frontCm: front, leftCm: left, rightCm: right, heightCm: height },
+        { openings: state.roomSketch?.openings, sketchWalls: state.roomSketch?.walls },
+    )) {
         closePlanStudioStep(false);
     }
 }
@@ -6972,10 +7564,12 @@ window.MeemareStudioClosePlan = () => closePlanStudioStep(true);
 function maybeOpenPlanStudio(params) {
     if (!params || params.get('plan') !== '1') return;
     document.body.classList.add('studio-plan-first', 'show-room-plan');
-    setRoomPlanEditorMode('sketch');
+    setRoomPlanEditorMode(preferredRoomPlanMode());
     requestAnimationFrame(() => {
-        roomSketchOnOpen(state);
-        toast('Duvar çiz (W), kapı (D), pencere (P). Bitince «Modül dizimine geç».');
+        if (roomPlanEditorMode === 'sketch') roomSketchOnOpen(state);
+        toast(roomPlanEditorMode === 'openplan'
+            ? 'Plan editörü (/plan ile aynı). Duvar · kapı · pencere; bitince «Modül dizimine geç».'
+            : 'Duvar çiz (W), kapı/pencere önayarları. Bitince «Modül dizimine geç».');
     });
     const next = new URLSearchParams(params);
     next.delete('plan');
@@ -7294,7 +7888,7 @@ function addCabinet(target) {
         return;
     }
     const mod = createModule(corner ? 'kose-raf' : 'tek-raf');
-    preferCatalogWood(mod);
+    preferCatalogWood(mod, { force: true });
     mod.kind = corner ? 'corner' : 'wardrobe';
     mod.width = recipe?.kind === 'corner' ? recipe.width : width;
     mod.door = 'none';
@@ -7323,8 +7917,11 @@ function addCabinet(target) {
         selectedId = mod.id;
     });
     focusSelectedModule();
-    el('library').classList.remove('is-open');
-    if (!window.matchMedia('(max-width: 900px)').matches) el('inspector').classList.add('is-open');
+    closeModuleLibrary();
+    if (!window.matchMedia('(max-width: 900px)').matches) {
+        document.body.classList.add('show-custom');
+        el('inspector')?.classList.add('is-open');
+    }
 }
 
 async function ensureGlb(item) {
@@ -7333,7 +7930,10 @@ async function ensureGlb(item) {
     const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
     const loader = new GLTFLoader();
     try {
-        const gltf = await loader.loadAsync(item.modelPath);
+        // Parametrik GLB geri yüklendi; eski bozuk vm_v4 cache’ini kır.
+        const path = String(item.modelPath || '');
+        const url = path.includes('?') ? `${path}&v=param2` : `${path}?v=param2`;
+        const gltf = await loader.loadAsync(url);
         glbTemplates.set(item.id, gltf.scene);
         return gltf.scene;
     } catch (error) {
@@ -7471,9 +8071,10 @@ async function addGlbModule(id, dropEvent) {
         });
         focusSelectedModule();
         snapDoors();
-        el('library').classList.remove('is-open');
+        closeModuleLibrary();
         if (!window.matchMedia('(max-width: 900px)').matches) {
-            el('inspector').classList.add('is-open');
+            document.body.classList.add('show-custom');
+            el('inspector')?.classList.add('is-open');
         } else {
             document.body.classList.remove('show-custom');
         }
@@ -7487,7 +8088,7 @@ function addCadModule(id, dropEvent) {
     const item = cadById(id);
     if (!item) return;
     const mod = createModule(item.width > 70 ? 'cift-raf' : 'tek-raf');
-    preferCatalogWood(mod);
+    preferCatalogWood(mod, { force: true });
     mod.cad = item.id;
     mod.name = item.name;
     mod.width = item.width;
@@ -7528,8 +8129,11 @@ function addCadModule(id, dropEvent) {
         selectedId = mod.id;
     });
     focusSelectedModule();
-    el('library').classList.remove('is-open');
-    if (!window.matchMedia('(max-width: 900px)').matches) el('inspector').classList.add('is-open');
+    closeModuleLibrary();
+    if (!window.matchMedia('(max-width: 900px)').matches) {
+        document.body.classList.add('show-custom');
+        el('inspector')?.classList.add('is-open');
+    }
 }
 
 function addProduct(productId, dropEvent) {
@@ -7539,7 +8143,7 @@ function addProduct(productId, dropEvent) {
         return;
     }
     const mod = createModule(productId);
-    preferCatalogWood(mod);
+    preferCatalogWood(mod, { force: true });
     if (dropEvent && !placeDropped(mod, dropEvent)) return;
     if (!layout([...state.modules, mod])) {
         toast('Bu modül duvarın dışında kalıyor.');
@@ -7550,7 +8154,7 @@ function addProduct(productId, dropEvent) {
         selectedId = mod.id;
     });
     focusSelectedModule();
-    el('library').classList.remove('is-open');
+    closeModuleLibrary();
     if (window.matchMedia('(max-width: 900px)').matches) document.body.classList.remove('show-custom');
 }
 
@@ -8284,6 +8888,10 @@ function bindChrome() {
     onClick('btn-plan-toggle-handoff', () => {
         el('studio-plan-first-handoff')?.classList.toggle('is-collapsed');
     });
+    onClick('btn-room-measures', () => {
+        el('studio-plan-handoff')?.classList.toggle('is-open');
+    });
+    onClick('btn-apply-plan-header', () => applyRoomPlanFromHeader());
     onClick('btn-walk', () => setWalkMode(!walkMode));
     bindWalkKeys();
     document.getElementById('room-plan-mode')?.addEventListener('click', (event) => {
@@ -8422,21 +9030,34 @@ function bindChrome() {
     onClick('config-close', () => el('config-modal')?.classList.add('hidden'));
     onClick('act-clone', cloneSelected);
     onClick('act-delete', deleteSelected);
-    onClick('open-library', () => openPhoneSheet('modules'));
-    onClick('open-material', () => openPhoneSheet('material'));
-    onClick('open-doors', () => openPhoneSheet('doors'));
+    onClick('open-library', () => showModuleLibrary());
+    onClick('open-material', () => {
+        if (selected()) {
+            inspectorActiveTab = 'ic';
+            renderInspector();
+        }
+        openPhoneSheet('material');
+    });
+    onClick('open-doors', () => {
+        if (selected()) {
+            inspectorActiveTab = 'kapak';
+            renderInspector();
+        }
+        openPhoneSheet('doors');
+    });
     onClick('open-measures', () => {
         showMeasures = true;
         el('btn-measures')?.classList.add('is-on');
+        if (selected()) {
+            inspectorActiveTab = 'govde';
+            renderInspector();
+        }
         openPhoneSheet('measure');
     });
     onClick('open-project', () => openPhoneSheet('project'));
     onClick('close-library', () => {
-        if (window.matchMedia('(max-width: 900px)').matches) openPhoneSheet('modules');
-        else {
-            document.body.classList.remove('show-library');
-            requestAnimationFrame(resize);
-        }
+        closeModuleLibrary();
+        requestAnimationFrame(resize);
     });
     onClick('close-inspector', () => {
         if (window.matchMedia('(max-width: 900px)').matches) openPhoneSheet(document.body.dataset.sheet || 'material');
@@ -8469,7 +9090,16 @@ function applyColorsToAll(source) {
     });
 }
 
-/** Üretim dolabı önizlemesi: düz mat gri/beyaz melamin (ahşap desen değil). */
+/** Düz melamin kodları — texture yüklenene kadar anlık üretim rengi. */
+const PLAIN_CODE_HEX = {
+    D123: '#cfd1ce', // Açık Gri
+    D141: '#aeb2b5', // Kül Gri
+    D152: '#f2f2f0', // Opak Beyaz
+    D129: '#f7f7f5', // Lake Beyaz
+    D106: '#6e7276', // Koyu Gri
+};
+
+/** Düz üretim panelleri (gri/beyaz) — yalnızca üretim listesi / lake senaryosu. */
 function productionPanelId() {
     const codes = ['D123', 'D141', 'D152', 'D129'];
     for (const code of codes) {
@@ -8480,12 +9110,21 @@ function productionPanelId() {
     return plain?.id || materials[0]?.id || '';
 }
 
+/** Katalog varsayılanı: Kastamonu Naturel Meşe (A402), yoksa başka ahşap desen. */
 function catalogWoodId() {
-    return materials.find((item) => item.group === 'melamin-kapli-panel' && item.code === 'A402')?.id || productionPanelId();
+    const a402 = materials.find((item) => item.group === 'melamin-kapli-panel' && item.code === 'A402');
+    if (a402?.id) return a402.id;
+    const wood = materials.find((item) => item.group === 'melamin-kapli-panel' && !isPlainDecor(item) && /^A/.test(item.code || ''));
+    return wood?.id || productionPanelId();
+}
+
+function isProductionPlainId(id) {
+    const item = decor(id);
+    return Boolean(item && PLAIN_CODE_HEX[item.code]);
 }
 
 function solidDoorColor() {
-    return productionPanelId();
+    return catalogWoodId();
 }
 
 function defaultDoorForCatalogItem(item) {
@@ -8507,9 +9146,22 @@ function moduleFromCatalogItem(item, opts = {}) {
     mod.spec = item.spec;
     mod.width = Math.round(item.width * 100);
     mod.height = mod.glbHeight;
-    mod.door = opts.door ?? defaultDoorForCatalogItem(item);
-    preferCatalogWood(mod);
-    mod.open = 0;
+    // İlk eklemede kapaksız (açık iç görünüm); ahşap/cam sonra seçilir.
+    mod.door = opts.door ?? 'none';
+    if (mod.door === 'glass' || mod.door === 'mixed') {
+        if (/bronz/i.test(String(item.name || ''))) {
+            mod.glassId = 'cam-bronz';
+            mod.aluminumId = 'al-bronz';
+        } else {
+            mod.glassId = 'cam-fum';
+            mod.aluminumId = 'al-inox';
+        }
+    } else {
+        mod.glassId = mod.glassId || state.glassId || 'cam-fum';
+        mod.aluminumId = mod.aluminumId || state.aluminumId || 'al-inox';
+    }
+    preferCatalogWood(mod, { force: true });
+    mod.open = 1;
     mod.kind = item.category === 'kose' ? 'corner' : 'wardrobe';
     mod.wall = opts.wall === 'left' || opts.wall === 'right' ? opts.wall : 'front';
     mod.offset = Number.isFinite(opts.offset) ? opts.offset : 10000;
@@ -8573,35 +9225,41 @@ async function applyDressingRoomDemo() {
     frameCamera();
     snapDoors();
     const doors = modules.reduce((sum, mod) => sum + (mod.door === 'none' ? 0 : doorCount(mod)), 0);
-    toast(`Hazır: köşe + ${modules.length - 1} modül, ${doors} kapak (mat gri gövde, cam/ahşap kapak seçilebilir).`);
+    toast(`Hazır: köşe + ${modules.length - 1} modül, ${doors} kapak (Kastamonu ahşap gövde).`);
     return true;
 }
 
-function preferCatalogWood(mod) {
-    const prod = productionPanelId();
-    if (!prod || !mod) return;
-    const oak = catalogWoodId();
-    const legacy = new Set([oak, productionPanelId(), ''].filter(Boolean));
-    const lake = materials.find((item) => item.group === 'melamin-kapli-panel' && item.code === 'D129')?.id;
-    if (lake) legacy.add(lake);
+function preferCatalogWood(mod, { force = false } = {}) {
+    const wood = catalogWoodId();
+    if (!wood || !mod) return;
+    const plainIds = new Set(
+        materials
+            .filter((item) => item.group === 'melamin-kapli-panel' && PLAIN_CODE_HEX[item.code])
+            .map((item) => item.id),
+    );
+    const legacy = new Set([wood, productionPanelId(), ...plainIds, ''].filter(Boolean));
     const apply = (field) => {
         const cur = mod[field] || '';
-        if (cur && !legacy.has(cur) && cur !== state.carcassId && cur !== state.doorColorId) return;
-        mod[field] = prod;
+        if (!force && cur && !legacy.has(cur) && cur !== state.carcassId && cur !== state.doorColorId) return;
+        mod[field] = wood;
     };
     ['carcassId', 'doorColorId', 'interiorId', 'backId', 'shelfId', 'drawerColorId'].forEach(apply);
 }
 
 function applyDefaultColors() {
-    const prod = productionPanelId();
-    const fallback = materials.find((item) => item.id === prod) || materials[0];
-    if (!decorExists(state.carcassId)) state.carcassId = fallback?.id || '';
-    if (!decorExists(state.doorColorId)) state.doorColorId = fallback?.id || '';
-    if (!decorExists(state.interiorId)) state.interiorId = fallback?.id || '';
-    if (!decorExists(state.backId)) state.backId = fallback?.id || '';
-    if (!decorExists(state.shelfId)) state.shelfId = fallback?.id || '';
-    if (!decorExists(state.drawerColorId)) state.drawerColorId = fallback?.id || '';
-    if (!ALUMINUM.some((item) => item.id === state.aluminumId)) state.aluminumId = 'al-gumus';
+    const wood = catalogWoodId();
+    const fallback = materials.find((item) => item.id === wood) || materials[0];
+    const useWood = (cur) => !decorExists(cur) || !cur || isProductionPlainId(cur);
+    if (useWood(state.carcassId)) state.carcassId = fallback?.id || '';
+    if (useWood(state.doorColorId)) state.doorColorId = fallback?.id || '';
+    if (useWood(state.interiorId)) state.interiorId = fallback?.id || '';
+    if (useWood(state.backId)) state.backId = fallback?.id || '';
+    if (useWood(state.shelfId)) state.shelfId = fallback?.id || '';
+    if (useWood(state.drawerColorId)) state.drawerColorId = fallback?.id || '';
+    // Yeni eklemede şeffaf/yarı saydam panel olmasın
+    state.panelOpacity = 1;
+    panelOpacity = 1;
+    if (!ALUMINUM.some((item) => item.id === state.aluminumId)) state.aluminumId = 'al-inox';
     if (!GLASS.some((item) => item.id === state.glassId)) state.glassId = 'cam-fum';
     if (typeof state.plinth !== 'boolean') state.plinth = true;
     if (typeof state.kulp !== 'boolean') state.kulp = true;
@@ -8617,12 +9275,15 @@ function applyDefaultColors() {
 function ensureModuleColors() {
     applyDefaultColors();
     state.modules.forEach((mod) => {
-        if (!decorExists(mod.carcassId)) mod.carcassId = state.carcassId;
-        if (!decorExists(mod.doorColorId)) mod.doorColorId = state.doorColorId;
-        if (!decorExists(mod.interiorId)) mod.interiorId = state.interiorId;
-        if (!decorExists(mod.backId)) mod.backId = state.backId || state.interiorId;
-        if (!decorExists(mod.shelfId)) mod.shelfId = state.shelfId || state.interiorId;
-        if (!ALUMINUM.some((item) => item.id === mod.aluminumId)) mod.aluminumId = state.aluminumId || 'al-gumus';
+        if (!decorExists(mod.carcassId) || isProductionPlainId(mod.carcassId)) mod.carcassId = state.carcassId;
+        if (!decorExists(mod.doorColorId) || isProductionPlainId(mod.doorColorId)) mod.doorColorId = state.doorColorId;
+        if (!decorExists(mod.interiorId) || isProductionPlainId(mod.interiorId)) mod.interiorId = state.interiorId;
+        if (!decorExists(mod.backId) || isProductionPlainId(mod.backId)) mod.backId = state.backId || state.interiorId;
+        if (!decorExists(mod.shelfId) || isProductionPlainId(mod.shelfId)) mod.shelfId = state.shelfId || state.interiorId;
+        if (!decorExists(mod.drawerColorId) || isProductionPlainId(mod.drawerColorId)) {
+            mod.drawerColorId = state.drawerColorId || state.doorColorId;
+        }
+        if (!ALUMINUM.some((item) => item.id === mod.aluminumId)) mod.aluminumId = state.aluminumId || 'al-inox';
         if (!GLASS.some((item) => item.id === mod.glassId)) mod.glassId = state.glassId || 'cam-fum';
         if (!mod.height) mod.height = state.height;
         if (typeof mod.plinth !== 'boolean') mod.plinth = state.plinth !== false;
@@ -8946,17 +9607,38 @@ async function boot() {
 }
 
 window.__setCameraView = (mode) => setCameraView(mode);
+window.__moduleCount = () => state.modules.length;
+window.__wallRun = (wall = 'front') => state.modules
+    .filter((mod) => mod.kind !== 'corner' && wallName(mod) === wall)
+    .reduce((sum, mod) => sum + alongSize(mod), 0);
+window.__exportState = () => JSON.parse(JSON.stringify(state));
 window.__studio = {
     dressingDemo: () => applyDressingRoomDemo(),
     add: (id) => addGlbModule(id),
+    select: (id) => {
+        const mod = state.modules.find((item) => item.id === id || item.glb === id);
+        if (!mod) return false;
+        selectedId = mod.id;
+        allCabinetsSelected = false;
+        sceneFocus = 'cabinet';
+        openInspectorForSelection();
+        renderInspector();
+        focusSelectedModule();
+        updateHud();
+        return true;
+    },
     remove: () => deleteSelected(),
     clear: () => {
         commit(() => {
             state.modules = [];
             selectedId = null;
+            sceneFocus = 'room';
         });
         frameCamera();
     },
+    applyWalls: (front, left, right, height) => applyWallsCm(front, left, right, height),
+    focusSelected: () => focusSelectedModule(),
+    exportState: () => window.__exportState(),
     undo: () => undo(),
     redo: () => redo(),
     paint: (colorId) => {
@@ -9000,6 +9682,35 @@ window.__studio = {
         rows.sort((a, b) => b.maxZ - a.maxZ);
         return rows.slice(0, 24);
     },
+    lowMeshes: () => {
+        const rows = [];
+        cabinetRoot.updateMatrixWorld(true);
+        cabinetRoot.traverse((child) => {
+            if (!child.isMesh) return;
+            const box = new THREE.Box3().setFromObject(child);
+            const size = box.getSize(new THREE.Vector3());
+            const mat = Array.isArray(child.material) ? child.material[0] : child.material;
+            rows.push({
+                name: child.name || '(anon)',
+                parent: child.parent?.name || '',
+                role: glbPartRole(child.name),
+                color: mat?.color?.getHexString?.() || '',
+                metal: mat?.metalness ?? null,
+                opa: mat?.opacity ?? null,
+                tr: Boolean(mat?.transparent),
+                dw: mat?.depthWrite !== false,
+                yMin: Math.round(box.min.y * 10) / 10,
+                yMax: Math.round(box.max.y * 10) / 10,
+                h: Math.round(size.y * 10) / 10,
+                w: Math.round(size.x * 10) / 10,
+                d: Math.round(size.z * 10) / 10,
+                tris: child.geometry?.index?.count
+                    ? child.geometry.index.count / 3
+                    : (child.geometry?.attributes?.position?.count || 0) / 3,
+            });
+        });
+        return rows.sort((a, b) => a.yMin - b.yMin).slice(0, 60);
+    },
     toggleDoor: () => {
         const mod = selected();
         if (!mod) return false;
@@ -9020,6 +9731,41 @@ window.__studio = {
         textures: renderer?.info?.memory?.textures ?? null,
     }),
     summary: () => el('summary')?.textContent || '',
+    setOpenings: (items) => {
+        commit(() => {
+            const sketch = ensureSketch();
+            sketch.openings = Array.isArray(items) ? items.map((item) => ({ ...item })) : [];
+        });
+        fitRoom();
+        if (planMode === '2d') drawPlan();
+        return ensureSketch().openings.length;
+    },
+    rawGlb: (id) => {
+        const tpl = glbTemplates.get(id || state.modules[0]?.glb);
+        if (!tpl) return null;
+        const rows = [];
+        const clone = tpl.clone(true);
+        clone.updateMatrixWorld(true);
+        clone.traverse((child) => {
+            if (!child.isMesh) return;
+            const g = child.geometry.clone();
+            g.applyMatrix4(child.matrixWorld);
+            g.computeBoundingBox();
+            const box = g.boundingBox;
+            const size = box.getSize(new THREE.Vector3());
+            rows.push({
+                name: child.name || '(anon)',
+                drop: glbAccessoryName(child.name),
+                x: Math.round(size.x * 1000) / 1000,
+                y: Math.round(size.y * 1000) / 1000,
+                z: Math.round(size.z * 1000) / 1000,
+                min: [Math.round(box.min.x * 1000) / 1000, Math.round(box.min.y * 1000) / 1000, Math.round(box.min.z * 1000) / 1000],
+                max: [Math.round(box.max.x * 1000) / 1000, Math.round(box.max.y * 1000) / 1000, Math.round(box.max.z * 1000) / 1000],
+                tris: child.geometry?.index?.count ? child.geometry.index.count / 3 : (child.geometry?.attributes?.position?.count || 0) / 3,
+            });
+        });
+        return rows.sort((a, b) => b.tris - a.tris).slice(0, 80);
+    },
 };
 window.__rebuildCabinet = () => {
     matCache.clear();

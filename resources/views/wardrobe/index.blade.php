@@ -34,50 +34,120 @@
             padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);
         }
         .studio-top {
-            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-            padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line);
-            min-height: 52px;
+            display: flex; align-items: center; gap: 8px; flex-wrap: nowrap;
+            padding: 6px 10px; background: var(--panel); border-bottom: 1px solid var(--line);
+            min-height: 40px; height: 40px;
         }
         .studio-top .brand { flex: 0 0 auto; }
-        .studio-top .name-input { flex: 0 1 140px; min-width: 100px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: #fff; }
-        .studio-top__nav { flex: 1 1 280px; min-width: 0; overflow-x: auto; scrollbar-width: thin; }
-        .studio-top__actions { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; align-items: center; }
+        .studio-top .brand span { display: none; }
+        .studio-top .name-input {
+            flex: 1 1 120px; min-width: 88px; max-width: 180px;
+            border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; background: #fff;
+            font-size: 13px;
+        }
+        .studio-top__nav { flex: 0 0 auto; min-width: 0; margin-left: auto; }
+        .studio-top__actions { display: flex; gap: 5px; flex-wrap: nowrap; align-items: center; }
+        .studio-top__actions .btn { padding: 5px 8px; }
         .studio-top__actions .btn-quiet { color: var(--muted); }
         footer.bar, .series {
             display: flex; align-items: center; gap: 8px; padding: 0 14px; background: var(--panel);
         }
         #room-plan-panel {
-            display: none; position: fixed; inset: 12px; z-index: 25; max-width: 1280px; margin: auto;
-            grid-template-rows: auto minmax(0, 1fr) auto; background: #f3f1ec; border: 1px solid var(--line); border-radius: 14px;
-            box-shadow: 0 18px 48px rgba(28,28,28,.2); min-height: 0;
+            display: none; position: fixed; inset: 0; z-index: 25; max-width: none; margin: 0;
+            grid-template-rows: auto minmax(0, 1fr) auto; background: #eceae6; border: 0; border-radius: 0;
+            box-shadow: none; min-height: 0; overflow: hidden;
+            padding-top: env(safe-area-inset-top);
         }
-        body.show-room-plan #room-plan-panel { display: grid; }
+        body.show-room-plan #room-plan-panel { display: grid; visibility: visible; }
+        body.show-room-plan .workspace,
+        body.show-room-plan .studio-top,
+        body.show-room-plan footer.bar { visibility: hidden; }
+        /* Panel .workspace içinde; visibility miras alınır — açıkça görünür tut */
+        body.show-room-plan .room-plan-backdrop,
+        body.show-room-plan #room-plan-panel,
+        body.show-room-plan #room-plan-panel * { visibility: visible; }
         .room-sketch-head {
-            display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px;
-            background: #fffcf8; border-bottom: 1px solid var(--line);
+            display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; padding: 8px 12px;
+            background: #fffcf8; border-bottom: 1px solid var(--line); min-height: 48px;
         }
-        .room-sketch-head strong { font-size: 15px; letter-spacing: .02em; }
-        .room-sketch-head .grow-h { flex: 1; min-width: 120px; font-size: 12px; color: var(--muted); margin: 0; }
+        .room-sketch-head strong { font-size: 14px; letter-spacing: .02em; white-space: nowrap; }
+        .room-sketch-head .grow-h { display: none; }
         .room-sketch-body {
-            display: grid; grid-template-columns: 148px minmax(0, 1fr); min-height: 0; min-width: 0;
+            display: grid; grid-template-columns: 196px minmax(0, 1fr); min-height: 0; min-width: 0; height: 100%; overflow: hidden;
         }
+        .room-sketch-wrap.room-sketch-body { grid-template-rows: minmax(0, 1fr); }
         @media (max-width: 720px) {
-            .room-sketch-body { grid-template-columns: 1fr; grid-template-rows: auto minmax(280px, 1fr); }
-            .room-sketch-tools { flex-direction: row !important; flex-wrap: wrap; border-right: 0 !important; border-bottom: 1px solid var(--line); }
+            .room-sketch-body,
+            .room-sketch-wrap.room-sketch-body {
+                grid-template-columns: 1fr;
+                grid-template-rows: minmax(0, 1fr) auto;
+            }
+            .room-sketch-wrap .room-sketch-stage { grid-row: 1; min-height: 240px; }
+            .room-sketch-wrap .room-sketch-tools {
+                grid-row: 2; flex-direction: row !important; flex-wrap: nowrap; align-items: stretch;
+                border-right: 0 !important; border-top: 1px solid var(--line); border-bottom: 0;
+                max-height: 148px; overflow: auto; padding: 8px; gap: 8px;
+            }
+            .room-sketch-wrap .sketch-kicker { display: none; }
+            .room-sketch-wrap .room-sketch-hint { display: none; }
+            .room-sketch-wrap .room-sketch-presets { display: flex; flex-wrap: nowrap; gap: 6px; }
+            .room-sketch-wrap .room-opening-presets button { min-height: 72px; min-width: 72px; padding: 6px; }
+            .room-sketch-wrap .room-sketch-tools > button { flex: 0 0 auto; white-space: nowrap; }
         }
         .room-sketch-tools {
-            display: flex; flex-direction: column; gap: 6px; padding: 10px; background: #fff; border-right: 1px solid var(--line);
+            display: flex; flex-direction: column; gap: 6px; padding: 10px; background: #fff; border-right: 1px solid var(--line); overflow: auto; min-height: 0;
         }
         .room-sketch-tools .sketch-kicker {
             margin: 8px 0 2px; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
         }
+        .room-sketch-tools .sketch-kicker:first-child { margin-top: 0; }
         .room-sketch-tools button {
             border: 1px solid var(--line); background: #fff; border-radius: 10px; padding: 8px 10px; font-size: 12px; font-weight: 700; text-align: left; cursor: pointer;
         }
         .room-sketch-tools button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
         .room-sketch-tools button.is-accent { background: var(--accent); color: #fff; border-color: var(--accent); }
-        .room-sketch-stage { position: relative; min-height: 0; min-width: 0; background: #ebe8e2; }
-        #room-sketch-canvas { width: 100%; height: 100%; min-height: 360px; display: block; touch-action: none; cursor: crosshair; }
+        .room-sketch-presets {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+        }
+        .room-sketch-presets button {
+            display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px; text-align: center; font-size: 11px;
+        }
+        .room-sketch-presets svg { width: 36px; height: 28px; display: block; }
+        .room-opening-presets { grid-template-columns: 1fr 1fr; gap: 8px; }
+        .room-opening-presets button {
+            border: 1px solid #d7dbe3; background: #fff; border-radius: 12px; padding: 10px 8px 8px;
+            display: flex; flex-direction: column; align-items: center; gap: 6px; min-height: 92px;
+        }
+        .room-opening-presets button .op-ico {
+            width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center;
+            background: #eef6fb; color: #3a6f9a;
+        }
+        .room-opening-presets button[data-opening-preset^="door_"] .op-ico { background: #f7f0e4; color: #8a6a3b; }
+        .room-opening-presets button .op-name { font-size: 12px; font-weight: 700; color: #243038; line-height: 1.1; }
+        .room-opening-presets button .op-sub { font-size: 10px; font-weight: 600; color: #8a929a; line-height: 1.2; }
+        .room-opening-presets button.is-on { background: #1c1c1c; border-color: #1c1c1c; }
+        .room-opening-presets button.is-on .op-name,
+        .room-opening-presets button.is-on .op-sub { color: #fff; }
+        .room-opening-presets button.is-on .op-ico { background: rgba(255,255,255,.12); color: #fff; }
+        .room-sketch-hint {
+            margin: 4px 0 0; font-size: 10px; line-height: 1.35; color: var(--muted); font-weight: 600;
+        }
+        .room-sketch-stage { position: relative; min-height: 0; min-width: 0; height: 100%; background: #ebe8e2; overflow: hidden; }
+        #room-sketch-selbar {
+            position: absolute; z-index: 6; display: none; align-items: center; gap: 0;
+            padding: 4px; border-radius: 12px; background: #fff; border: 1px solid #e4e2dc;
+            box-shadow: 0 8px 24px rgba(28,28,28,.14); transform: translateZ(0);
+        }
+        #room-sketch-selbar.is-visible { display: flex; }
+        #room-sketch-selbar button {
+            width: 34px; height: 34px; border: 0; background: transparent; border-radius: 8px;
+            display: grid; place-items: center; cursor: pointer; color: #2c2a27;
+        }
+        #room-sketch-selbar button:hover { background: #f3f1ec; }
+        #room-sketch-selbar button[data-sketch-sel="delete"] { color: #b42318; }
+        #room-sketch-selbar .sel-div { width: 1px; height: 18px; background: #e4e2dc; margin: 0 2px; }
+        #room-sketch-selbar svg { width: 16px; height: 16px; display: block; }
+        #room-sketch-canvas { width: 100%; height: 100%; min-height: 0; display: block; touch-action: none; cursor: crosshair; }
         #room-sketch-status {
             position: absolute; left: 10px; right: 10px; bottom: 10px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
             padding: 6px 10px; border-radius: 10px; background: rgba(255,252,248,.94); border: 1px solid var(--line); font-size: 11px; color: #5e5953;
@@ -86,58 +156,95 @@
         #room-sketch-status .room-sketch-zoom button {
             width: 26px; height: 26px; border-radius: 8px; border: 1px solid var(--line); background: #fff; font-weight: 700; cursor: pointer;
         }
-        .room-plan-backdrop { display: none; position: fixed; inset: 0; z-index: 24; background: rgba(28,28,28,.35); }
+        .room-plan-backdrop { display: none; position: fixed; inset: 0; z-index: 24; background: #1c1c1c; }
         body.show-room-plan .room-plan-backdrop { display: block; }
         .room-handoff {
-            display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; padding: 8px 12px;
-            background: #fffcf8; border-bottom: 1px solid var(--line); font-size: 12px;
+            display: none; gap: 8px; align-items: flex-end; flex-wrap: wrap; padding: 8px 12px;
+            background: #fffcf8; border-top: 1px solid var(--line); font-size: 12px;
         }
+        .room-handoff.is-open { display: flex; }
         .room-handoff label { display: flex; flex-direction: column; gap: 3px; font-weight: 600; color: #3d5247; }
         .room-handoff input[type="number"] { width: 72px; border: 1px solid #cfe0d6; border-radius: 8px; padding: 6px 8px; font-size: 12px; }
         .room-handoff button { border: 0; background: var(--accent); color: #fff; border-radius: 999px; padding: 7px 14px; font-weight: 700; cursor: pointer; font-size: 12px; }
         #openplan-frame, #openplan-studio-frame {
-            width: 100%; height: 100%; border: 0; background: #fff; min-height: 0;
+            width: 100%; height: 100%; border: 0; background: #1a2332; min-height: 0;
         }
+        .room-plan-openplan { min-height: 0; height: 100%; }
+        .room-plan-head-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
+        .room-plan-head-actions .btn-apply-plan {
+            border: 0; background: var(--accent); color: #fff; border-radius: 999px; padding: 7px 14px;
+            font-weight: 700; font-size: 12px; cursor: pointer; white-space: nowrap;
+        }
+        body.room-plan-openplan-mode #btn-room-redraw { display: none; }
+        .room-plan-mode { margin-right: 0; }
+        .room-plan-mode button { opacity: .72; }
+        .room-plan-mode button.is-on { opacity: 1; }
         #studio-plan-first {
             display: none; position: fixed; left: 0; right: 0; bottom: 0; top: 0;
             z-index: 28; grid-template-rows: auto minmax(0, 1fr) auto; background: #eceae6;
-            padding-top: max(52px, calc(52px + env(safe-area-inset-top)));
+            padding-top: max(40px, calc(40px + env(safe-area-inset-top)));
         }
         body.studio-plan-first #studio-plan-first { display: grid; }
         body.studio-plan-first #room-plan-panel {
             position: fixed; left: 0; right: 0; bottom: 0; z-index: 29;
-            top: max(108px, calc(108px + env(safe-area-inset-top)));
+            top: max(48px, calc(48px + env(safe-area-inset-top)));
             width: auto; max-width: none; height: auto; max-height: none;
             border-radius: 0; transform: none; box-shadow: none;
             display: grid !important;
+            grid-template-rows: auto minmax(0, 1fr) auto;
+            overflow: hidden;
+            padding-top: 0;
+        }
+        body.studio-plan-first .workspace,
+        body.studio-plan-first .studio-top { visibility: hidden; }
+        body.studio-plan-first #studio-plan-first,
+        body.studio-plan-first #studio-plan-first *,
+        body.studio-plan-first #room-plan-panel,
+        body.studio-plan-first #room-plan-panel * { visibility: visible; }
+        body.studio-plan-first .room-sketch-body {
+            min-height: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        body.studio-plan-first .room-sketch-tools {
+            overflow: auto;
+            max-height: 100%;
         }
         body.studio-plan-first .room-plan-backdrop { display: none !important; }
         body.studio-plan-first #btn-close-room-plan { display: none; }
-        body.studio-plan-first #room-plan-mode { display: none; }
         body.studio-plan-first .room-sketch-head > strong,
         body.studio-plan-first .room-sketch-head > .grow-h { display: none; }
         .plan-first-head {
-            display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px;
+            display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; padding: 6px 10px;
             background: #fffcf8; border-bottom: 1px solid var(--line); font-size: 12px;
+            min-height: 44px;
         }
-        .plan-first-head p { margin: 0; flex: 1; min-width: 200px; color: var(--muted); }
-        .plan-first-head .btn-primary { background: var(--accent); color: #fff; border: 0; border-radius: 999px; padding: 8px 16px; font-weight: 700; }
+        .plan-first-head > strong { font-size: 13px; white-space: nowrap; }
+        .plan-first-head p { margin: 0; flex: 1; min-width: 0; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .plan-first-head .btn { padding: 6px 10px; font-size: 11px; }
+        .plan-first-head .btn-primary { background: var(--accent); color: #fff; border: 0; border-radius: 999px; padding: 7px 14px; font-weight: 700; white-space: nowrap; }
+        @media (max-width: 900px) {
+            .plan-first-head { flex-wrap: wrap; }
+            .plan-first-hint { display: none; }
+        }
         .plan-first-frame { min-height: 0; position: relative; display: none; }
         body.studio-plan-first .plan-first-frame { display: block; }
         .plan-first-foot.is-collapsed { display: none; }
         .plan-first-hint { margin: 0; font-size: 11px; color: var(--muted); max-width: 58ch; line-height: 1.45; }
         body.walk-mode #viewport { cursor: crosshair; }
         body.walk-locked #viewport { cursor: none; }
+        body.space-pan #viewport canvas { cursor: grab !important; }
+        body.space-pan #viewport canvas:active { cursor: grabbing !important; }
         body.walk-mode #walk-hud { display: flex; }
         #walk-hud {
             display: none; position: absolute; left: 12px; top: 12px; z-index: 12;
             padding: 8px 12px; border-radius: 10px; background: rgba(20, 24, 22, .78); color: #fff;
             font-size: 11px; font-weight: 600; gap: 8px; align-items: center; pointer-events: none;
         }
-        .room-plan-mode { display: flex; gap: 6px; margin-right: auto; }
+        .room-plan-mode { display: flex; gap: 6px; }
         .room-plan-mode button { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 11px; font-weight: 700; }
         .room-plan-mode button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
-        .room-plan-openplan { display: grid; grid-template-rows: 1fr; min-height: 320px; height: 100%; }
+        .room-plan-openplan { display: grid !important; grid-template-columns: 1fr !important; grid-template-rows: 1fr; min-height: 0; height: 100%; }
         .room-plan-openplan.hidden, .room-sketch-wrap.hidden { display: none !important; }
         .toolbar-spacer { flex: 1; min-width: 12px; }
         @media (max-width: 900px) {
@@ -159,6 +266,8 @@
         .seg { display: flex; gap: 6px; flex-wrap: wrap; }
         .seg button { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 7px 10px; font-size: 12px; font-weight: 600; }
         .seg button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
+        .seg-compact { gap: 4px; }
+        .seg-compact button { padding: 5px 8px; font-size: 11px; border-radius: 7px; }
         .workspace {
             display: grid; min-height: 0; position: relative;
             grid-template-columns: minmax(0, 1fr);
@@ -166,26 +275,35 @@
         }
         @media (min-width: 901px) {
             .workspace {
-                grid-template-columns: min(300px, 28vw) minmax(0, 1fr) min(320px, 30vw);
+                grid-template-columns: minmax(0, 1fr) min(320px, 30vw);
             }
         }
         .stage { position: relative; min-width: 0; min-height: 0; background: #eceae6; grid-column: 1 / -1; grid-row: 1; }
         @media (min-width: 901px) {
-            .stage { grid-column: 2; }
+            .stage { grid-column: 1; }
         }
         .stage-layout { position: absolute; inset: 0; min-height: 0; }
         aside { background: var(--panel); min-height: 0; display: flex; flex-direction: column; z-index: 6; }
         @media (min-width: 901px) {
+            /* Modül ekle: sağdan açılan çekmece — sahne alanı genişler */
             aside.left {
-                grid-column: 1; grid-row: 1; border-right: 1px solid var(--line);
-                box-shadow: none;
+                position: absolute; top: 0; right: 0; bottom: 0;
+                width: min(320px, 30vw); grid-column: unset; grid-row: 1;
+                border-left: 1px solid var(--line); border-right: none;
+                box-shadow: -10px 0 28px rgba(28, 28, 28, .1);
+                transform: translateX(105%);
+                transition: transform .2s ease;
+                z-index: 8;
             }
+            aside.left.is-open,
+            body.show-library aside.left { transform: none; }
+            aside.left .sheet-close { display: block; margin: 10px 12px 0 auto; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 700; }
             aside.right {
-                grid-column: 3; grid-row: 1; border-left: 1px solid var(--line);
+                grid-column: 2; grid-row: 1; border-left: 1px solid var(--line);
                 transform: none; position: relative; width: auto;
+                display: flex;
             }
-            aside.right { display: flex; }
-            aside .sheet-close { display: none; }
+            aside.right .sheet-close { display: none; }
         }
         .side-head { padding: 12px 14px 0; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
         .side-head .side-sub { display: block; font-size: 11px; font-weight: 500; text-transform: none; color: var(--muted); margin-top: 4px; }
@@ -222,9 +340,23 @@
         .parts-table { width: 100%; border-collapse: collapse; font-size: 10px; }
         .parts-table th, .parts-table td { border-bottom: 1px solid var(--line); padding: 4px 3px; text-align: left; vertical-align: top; }
         .parts-table th { color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
-        .insp-tabs { margin: 0 0 10px; }
-        .insp-tabs button { font-size: 11px; padding: 6px 8px; }
+        .insp-mod-head { margin: 0 0 8px; }
+        .insp-mod-head h2 { margin: 0 0 4px; font-size: 15px; }
+        .insp-mod-head .hint { margin: 0; font-size: 11px; line-height: 1.35; }
+        .insp-mod-head .picked { margin: 0 0 4px; }
+        .insp-tech { margin: 8px 0 0; border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; background: #fff; }
+        .insp-tech summary { cursor: pointer; font-size: 11px; font-weight: 700; color: var(--muted); }
+        .insp-tech p { margin: 6px 0 0; font-size: 11px; color: var(--muted); line-height: 1.4; }
+        .insp-tabs {
+            position: sticky; top: 0; z-index: 2; margin: 0 0 10px; padding: 6px 0 8px;
+            background: var(--panel);
+            flex-wrap: nowrap; overflow-x: auto; gap: 4px; scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        .insp-tabs::-webkit-scrollbar { display: none; }
+        .insp-tabs button { flex: 0 0 auto; font-size: 11px; padding: 7px 10px; white-space: nowrap; }
         .insp-pane[hidden] { display: none !important; }
+        .insp-pane { min-height: 80px; padding-bottom: 12px; }
         .opacity-field input[type="range"] { width: 100%; }
         .parts li { margin: 0 0 8px; }
         .parts li.is-on { background: #e5f6ec; border: 2px solid #149152; border-radius: 8px; padding: 6px 8px; list-style-position: inside; }
@@ -255,10 +387,10 @@
         #selection-ui, #height-handle, #quick-rail, #selection-bar { position: absolute; z-index: 9; }
         #selection-ui { display: none; }
         #selection-bar {
-            left: 50%; bottom: 58px; transform: translateX(-50%);
-            display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center;
-            max-width: min(640px, calc(100% - 140px)); padding: 8px 12px; border-radius: 14px;
-            background: rgba(28, 28, 28, .93); box-shadow: var(--shadow); pointer-events: auto;
+            left: 50%; bottom: 72px; transform: translateX(-50%);
+            display: flex; align-items: center; gap: 5px; flex-wrap: nowrap; justify-content: center;
+            max-width: min(360px, calc(100% - 160px)); padding: 5px 8px; border-radius: 999px;
+            background: rgba(28, 28, 28, .9); box-shadow: var(--shadow); pointer-events: auto;
         }
         #selection-bar.hidden { display: none !important; }
         body.plan-2d #selection-bar { display: none !important; }
@@ -273,7 +405,8 @@
         #selection-bar button.is-on { background: var(--accent); }
         #selection-bar button.sb-danger { background: #9f2d2d; }
         @media (max-width: 900px) {
-            #selection-bar { bottom: calc(118px + env(safe-area-inset-bottom)); max-width: calc(100% - 16px); }
+            /* stage-toolbar ~120px; selection bar onun üstünde — çakışmasın */
+            #selection-bar { bottom: calc(168px + env(safe-area-inset-bottom)); max-width: calc(100% - 16px); }
             #selection-bar-name { display: none; }
         }
         #quick-rail {
@@ -335,16 +468,30 @@
             .stage { position: relative; inset: auto; flex: 1 1 auto; min-height: 0; width: 100%; grid-column: 1; }
             aside.left, aside.right { grid-column: 1; }
             #viewport { min-height: 0; }
-            aside {
+            aside.right {
                 position: fixed; left: 0; right: 0; bottom: calc(72px + env(safe-area-inset-bottom));
                 height: min(42dvh, 380px); z-index: 20; transform: translateY(120%);
                 transition: transform .2s ease; border-radius: 16px 16px 0 0; box-shadow: var(--shadow);
             }
-            aside.is-open { transform: none; }
-            body.show-custom:not(.show-library) aside.right { transform: none; }
+            aside.right.is-open { transform: none; }
+            /* Modül ekle sağdan kayar — 3D alanı açık kalır */
+            aside.left {
+                position: fixed; top: 0; right: 0; left: auto;
+                bottom: calc(72px + env(safe-area-inset-bottom));
+                width: min(92vw, 380px); height: auto;
+                max-height: calc(100dvh - 72px - env(safe-area-inset-bottom));
+                z-index: 21; transform: translateX(110%);
+                transition: transform .2s ease; border-radius: 16px 0 0 16px; box-shadow: var(--shadow);
+            }
+            aside.left.is-open,
+            body.show-library aside.left { transform: none; }
+            /* Modül ayar paneli: sekmeler + içerik görünsün */
+            body.show-custom:not(.show-library) aside.right {
+                transform: none;
+                height: min(62dvh, 560px);
+            }
             body.show-library:not(.show-custom) aside.right { transform: translateY(120%); }
             body:not(.show-library):not(.show-custom) aside.right { transform: translateY(120%); }
-            body:not(.show-library):not(.show-custom) aside.left.is-open { transform: none; }
             aside .sheet-close { display: block; margin: 8px 12px 0 auto; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 700; }
             #project-sheet {
                 display: none; position: fixed; left: 0; right: 0; bottom: calc(72px + env(safe-area-inset-bottom));
@@ -359,18 +506,15 @@
             #view-bar::-webkit-scrollbar { display: none; }
             #view-bar button { padding: 6px 8px; font-size: 11px; }
             .name-input { width: min(42vw, 180px); }
-            body[data-sheet="material"] #inspector-body > :not([data-picker]) { display: none; }
-            body[data-sheet="doors"] #inspector-body > :not(:has([data-door], [data-swing], #mod-open)) { display: none; }
-            body[data-sheet="measure"] #inspector-body > :not(:has(#wall-left, #wall-front, #wall-right, #room-h, #cab-h, #cab-d, #mod-w, #mod-h)) { display: none; }
+            /* Mobil alt menü yalnızca sheet’i açar; sekme geçişini CSS ile kilitleme (Donanım/İç boş kalıyordu). */
         }
     </style>
 </head>
 <body class="studio-layout">
 <div id="studio">
     <div class="studio-top">
-        <a href="{{ route('wardrobe.index') }}" class="brand"><strong>3D tasarla</strong></a>
+        <a href="{{ route('wardrobe.design') }}" class="brand" title="3D tasarla"><strong>Meemare</strong></a>
         <input id="project-name" class="name-input" maxlength="80" aria-label="Proje adı" value="Dolabım">
-        <div class="studio-top__nav">@include('partials.meemare-apps-nav', ['activeApp' => 'tasarla'])</div>
         <div class="studio-top__actions">
             <button type="button" class="btn" id="btn-undo" disabled title="Geri">↶</button>
             <button type="button" class="btn" id="btn-redo" disabled title="İleri">↷</button>
@@ -382,11 +526,19 @@
             <button type="button" class="btn btn-quiet extra" id="btn-cabinet">Üretim</button>
             <button type="button" class="btn btn-quiet extra" id="btn-shot">Render</button>
         </div>
+        <div class="studio-top__nav">@include('partials.meemare-apps-nav', ['activeApp' => 'tasarla', 'compact' => true])</div>
     </div>
+    <script>
+        document.addEventListener('click', (event) => {
+            document.querySelectorAll('details.meemare-apps--compact[open]').forEach((node) => {
+                if (!node.contains(event.target)) node.removeAttribute('open');
+            });
+        });
+    </script>
     <div id="studio-plan-first" aria-label="Oda planı — dolap tasarla">
         <div class="plan-first-head">
-            <strong>2. Odayı çizin</strong>
-            <p class="plan-first-hint">Bu ekran <strong>dolap tasarla</strong> içinde: duvar, kapı ve pencere çizin (W / D / P). Bitince yeşil düğme ile modül dizimine geçin.</p>
+            <strong>2. Oda planı</strong>
+            <p class="plan-first-hint">/plan ile aynı editör: duvar, kapı ve pencere. Seçince kopyala · ayna · sil. Bitince yeşil düğme → modül dizimi.</p>
             <button type="button" class="btn" id="btn-plan-fullscreen" title="Tam ekran">Tam ekran</button>
             <button type="button" class="btn" id="btn-plan-toggle-handoff">Ölçü / JSON</button>
             <button type="button" class="btn" id="btn-plan-skip">Ölçüyü atla</button>
@@ -419,45 +571,133 @@
         <section class="stage">
             <div id="room-plan-panel" aria-label="Oda planı" role="dialog">
                 <div class="room-sketch-head">
+                    <strong>Oda planı</strong>
                     <div class="room-plan-mode" id="room-plan-mode">
-                        <button type="button" data-room-plan-mode="sketch" class="is-on">Oda çizimi</button>
-                        <button type="button" data-room-plan-mode="openplan">Plan (OpenPlan)</button>
+                        <button type="button" data-room-plan-mode="openplan" class="is-on">Plan</button>
+                        <button type="button" data-room-plan-mode="sketch">Basit</button>
                     </div>
-                    <strong>Odayı çiz</strong>
-                    <p class="grow-h">Duvar, kapı ve pencere — dolap tasarlama içinde. Plan sekmesi yalnızca yerel OpenPlan varsa.</p>
-                    <button type="button" class="btn" id="btn-room-redraw">Yeniden çiz</button>
-                    <button type="button" class="btn" id="btn-close-room-plan">Kapat</button>
+                    <div class="room-plan-head-actions">
+                        <button type="button" class="btn" id="btn-room-measures" title="Ölçü / JSON">Ölçü</button>
+                        <button type="button" class="btn" id="btn-room-redraw">Yeniden çiz</button>
+                        <button type="button" class="btn-apply-plan" id="btn-apply-plan-header">3D’ye uygula</button>
+                        <button type="button" class="btn" id="btn-close-room-plan">Kapat</button>
+                    </div>
                 </div>
-                <div id="room-plan-openplan" class="room-plan-openplan room-sketch-body hidden">
+                <div id="room-plan-openplan" class="room-plan-openplan room-sketch-body">
                     <iframe id="openplan-frame" title="OpenPlan" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen; clipboard-read; clipboard-write"></iframe>
                 </div>
-                <div id="room-plan-sketch-wrap" class="room-sketch-wrap room-sketch-body">
+                <div id="room-plan-sketch-wrap" class="room-sketch-wrap room-sketch-body hidden">
                     <aside class="room-sketch-tools" aria-label="Plan araçları">
-                        <p class="sketch-kicker">Araçlar</p>
-                        <button type="button" data-sketch-tool="select" class="is-on">Seç / kaydır</button>
+                        <p class="sketch-kicker">Build</p>
+                        <button type="button" data-sketch-tool="select" class="is-on">Seç (V)</button>
                         <button type="button" data-sketch-tool="wall">Duvar çiz (W)</button>
-                        <button type="button" data-sketch-tool="door">Kapı</button>
-                        <button type="button" data-sketch-tool="window">Pencere</button>
-                        <p class="sketch-kicker">Şablon</p>
-                        <button type="button" id="btn-sketch-l">L giyinme odası</button>
-                        <button type="button" id="btn-sketch-rect">Dikdörtgen oda</button>
+                        <button type="button" id="btn-sketch-finish-draw">Çizimi bitir (Esc)</button>
+                        <p class="sketch-kicker">Oda şablonları</p>
+                        <div class="room-sketch-presets">
+                            <button type="button" id="btn-sketch-rect" title="Dikdörtgen oda">
+                                <svg viewBox="0 0 40 30" aria-hidden="true"><rect x="6" y="5" width="28" height="20" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>
+                                Dikdörtgen
+                            </button>
+                            <button type="button" id="btn-sketch-l" title="L oda">
+                                <svg viewBox="0 0 40 30" aria-hidden="true"><path d="M8 5h14v12h10v8H8z" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>
+                                L oda
+                            </button>
+                            <button type="button" id="btn-sketch-u" title="U oda">
+                                <svg viewBox="0 0 40 30" aria-hidden="true"><path d="M8 5h8v14h8V5h8v20H8z" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>
+                                U oda
+                            </button>
+                            <button type="button" id="btn-sketch-t" title="T oda">
+                                <svg viewBox="0 0 40 30" aria-hidden="true"><path d="M6 5h28v8H26v12H14V13H6z" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>
+                                T oda
+                            </button>
+                        </div>
                         <button type="button" id="btn-sketch-clear">Temizle</button>
+                        <p class="sketch-kicker">Doors</p>
+                        <div class="room-sketch-presets room-opening-presets">
+                            <button type="button" data-opening-preset="door_single" class="is-on" title="Tek kanat 90 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M8 6h4v18H8zM12 6v18" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 6a14 14 0 0 1 14 14" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></span>
+                                <span class="op-name">Single</span><span class="op-sub">90cm swing</span>
+                            </button>
+                            <button type="button" data-opening-preset="door_double" title="Çift kanat 150 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M6 6h4v18H6zM30 6h4v18h-4z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 6a10 10 0 0 1 10 10M30 6a10 10 0 0 0-10 10" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></span>
+                                <span class="op-name">Double</span><span class="op-sub">150cm swing</span>
+                            </button>
+                            <button type="button" data-opening-preset="door_sliding" title="Sürgülü 180 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><rect x="6" y="8" width="16" height="14" fill="none" stroke="currentColor" stroke-width="2"/><rect x="18" y="10" width="14" height="10" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 15h18" stroke="currentColor" stroke-width="1.4"/></svg></span>
+                                <span class="op-name">Sliding</span><span class="op-sub">180cm slide</span>
+                            </button>
+                            <button type="button" data-opening-preset="door_french" title="French 150 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M8 6h8v18H8zM24 6h8v18h-8z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 12h8M8 18h8M24 12h8M24 18h8" stroke="currentColor" stroke-width="1.2"/></svg></span>
+                                <span class="op-name">French</span><span class="op-sub">150cm glass</span>
+                            </button>
+                            <button type="button" data-opening-preset="door_pocket" title="Pocket 90 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M6 6v18M12 6h4v18h-4z" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
+                                <span class="op-name">Pocket</span><span class="op-sub">90cm recess</span>
+                            </button>
+                            <button type="button" data-opening-preset="door_bifold" title="Bifold 180 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M6 6h5v18H6zM16 6h5v18h-5zM26 6h5v18h-5z" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
+                                <span class="op-name">Bifold</span><span class="op-sub">180cm fold</span>
+                            </button>
+                            <button type="button" data-opening-preset="door_opening" title="Doorway 100 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M12 6v18M28 6v18" fill="none" stroke="currentColor" stroke-width="2.5"/></svg></span>
+                                <span class="op-name">Doorway</span><span class="op-sub">100cm open</span>
+                            </button>
+                            <button type="button" data-opening-preset="door_garage" title="Garage 240 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><rect x="8" y="7" width="24" height="16" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11h24M8 15h24M8 19h24" stroke="currentColor" stroke-width="1.3"/></svg></span>
+                                <span class="op-name">Garage</span><span class="op-sub">240cm overhead</span>
+                            </button>
+                        </div>
+                        <p class="sketch-kicker">Windows</p>
+                        <div class="room-sketch-presets room-opening-presets">
+                            <button type="button" data-opening-preset="window_std" title="Standard 120 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><rect x="8" y="8" width="24" height="14" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 12h24M8 18h24M20 8v14" stroke="currentColor" stroke-width="1.4"/></svg></span>
+                                <span class="op-name">Standard</span><span class="op-sub">120×120cm</span>
+                            </button>
+                            <button type="button" data-opening-preset="window_fixed" title="Fixed 100 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><rect x="10" y="9" width="20" height="12" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 15h20M20 9v12" stroke="currentColor" stroke-width="1.4"/></svg></span>
+                                <span class="op-name">Fixed</span><span class="op-sub">100×100cm</span>
+                            </button>
+                            <button type="button" data-opening-preset="window_casement" title="Casement 80 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><rect x="12" y="6" width="16" height="18" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 15h16M20 6v18" stroke="currentColor" stroke-width="1.4"/></svg></span>
+                                <span class="op-name">Casement</span><span class="op-sub">80×130cm</span>
+                            </button>
+                            <button type="button" data-opening-preset="window_sliding" title="Sliding 180 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><rect x="4" y="9" width="32" height="12" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 15h32M20 9v12" stroke="currentColor" stroke-width="1.4"/></svg></span>
+                                <span class="op-name">Sliding</span><span class="op-sub">180×120cm</span>
+                            </button>
+                            <button type="button" data-opening-preset="window_bay" title="Bay 200 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M6 20h28M10 20l4-10h12l4 10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M14 10v10M26 10v10M20 10v10" stroke="currentColor" stroke-width="1.2"/></svg></span>
+                                <span class="op-name">Bay</span><span class="op-sub">200×120cm</span>
+                            </button>
+                        </div>
+                        <p class="room-sketch-hint" id="room-sketch-tool-hint">Kapı/pencere kartı seçip duvara tıklayın. Seçimde üstte kopyala · ayna · sil.</p>
                     </aside>
                     <div class="room-sketch-stage">
                         <canvas id="room-sketch-canvas" aria-label="Oda planı tuvali"></canvas>
+                        <div id="room-sketch-selbar" aria-hidden="true">
+                            <button type="button" data-sketch-sel="copy" title="Kopyala">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="10" height="10" rx="1.5"/><path d="M5 15V5h10"/></svg>
+                            </button>
+                            <button type="button" data-sketch-sel="flip" title="Ayna">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4v16"/><path d="M8 8H5l3 4-3 4h3M16 8h3l-3 4 3 4h-3" stroke-dasharray="0"/><path d="M12 4v16" stroke-dasharray="2 2"/></svg>
+                            </button>
+                            <span class="sel-div" aria-hidden="true"></span>
+                            <button type="button" data-sketch-sel="delete" title="Sil">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
+                            </button>
+                        </div>
                         <div id="room-sketch-status"></div>
                     </div>
                 </div>
-                <form id="studio-plan-handoff" class="room-handoff">
-                    <p style="margin:0;flex:1;min-width:160px;color:#5e6a64;font-size:12px">Ölçüler çizimden gelir; gerekirse düzeltin.</p>
+                <form id="studio-plan-handoff" class="room-handoff" aria-label="Ölçü ayarı">
                     <label>JSON<input id="studio-plan-json" type="file" accept="application/json,.json"></label>
                     <label>Ön (cm)<input name="onduvar" type="number" min="80" max="800" value="300" required></label>
                     <label>Sol (cm)<input name="solduvar" type="number" min="80" max="800" value="300"></label>
                     <label>Sağ (cm)<input name="sagduvar" type="number" min="80" max="800" value="300"></label>
                     <label>Yükseklik<input name="odaboy" type="number" min="160" max="320" value="320"></label>
-                    <button type="submit" class="is-accent" style="background:var(--accent);color:#fff;border:0;border-radius:999px;padding:7px 14px;font-weight:700">3D odaya uygula</button>
                     <button type="button" id="btn-sketch-apply" class="btn-mini" style="background:#1c1c1c">Çizimi uygula</button>
                     <button type="button" class="btn-mini" id="btn-apply-room-handoff" style="background:#444">Kayıtlı ölçü</button>
+                    <button type="submit" class="is-accent" style="background:var(--accent);color:#fff;border:0;border-radius:999px;padding:7px 14px;font-weight:700;margin-left:auto">3D odaya uygula</button>
                 </form>
             </div>
             <div class="stage-layout">
@@ -485,13 +725,9 @@
             </div>
             <div id="selection-bar" class="hidden" aria-label="Seçili modül">
                 <span id="selection-bar-name"></span>
-                <button type="button" data-sb-door="solid">Ahşap</button>
-                <button type="button" data-sb-door="glass">Cam</button>
-                <button type="button" data-sb-door="none">Kapaksız</button>
-                <button type="button" data-sb="open">Kapak</button>
+                <button type="button" data-sb="open" title="Kapağı aç/kapat">Aç</button>
                 <button type="button" data-sb="clone">Klon</button>
                 <button type="button" data-sb="delete" class="sb-danger">Sil</button>
-                <button type="button" data-sb="panel">Detay</button>
             </div>
             <div id="view-bar" aria-label="Kamera">
                 <button type="button" data-view="perspective" class="is-on">3D</button>
@@ -504,15 +740,12 @@
             <div id="measure-layer" class="hidden"></div>
             <div id="selection-ui" class="hidden" aria-hidden="true"><span id="selection-name"></span></div>
             <div id="quick-rail" class="hidden" aria-label="Hızlı işlemler">
-                <button type="button" data-qr-door="solid" title="Ahşap kapak">Ahşap</button>
-                <button type="button" data-qr-door="glass" title="Cam kapak">Cam</button>
                 <div class="qr-mini" id="qr-wood-sw"></div>
                 <div class="qr-mini" id="qr-glass-sw"></div>
                 <div class="qr-mini" id="qr-alum-sw"></div>
                 <button type="button" data-qr="open" title="Kapak aç/kapa">Kapak</button>
                 <button type="button" data-qr="clone" title="Klonla">Klon</button>
                 <button type="button" data-qr="delete" class="qr-danger" title="Sil">Sil</button>
-                <button type="button" data-qr="panel" title="Sağ panel">Ayar</button>
             </div>
             <button type="button" id="height-handle" class="hidden" aria-label="Yükseklik">↕</button>
             <div id="hold-select" class="hidden"></div>
@@ -649,8 +882,8 @@
         openplanSrc: @json($openplanSrc ?? ''),
     };
 </script>
-<script src="{{ asset('js/meemare-plan-bridge.js') }}?v=5" defer></script>
-<script src="{{ asset('js/openplan-import.js') }}?v=1" defer></script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=241"></script>
+<script src="{{ asset('js/meemare-plan-bridge.js') }}?v=6" defer></script>
+<script src="{{ asset('js/openplan-import.js') }}?v=2" defer></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=270"></script>
 </body>
 </html>

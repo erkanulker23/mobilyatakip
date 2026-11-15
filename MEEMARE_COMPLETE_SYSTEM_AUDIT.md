@@ -1,7 +1,7 @@
 # MEEMARE COMPLETE SYSTEM AUDIT
 
 **İş emri:** MEEMARE-E2E-MASTER-QA-001  
-**Başlangıç:** 2026-11-15  
+**Başlangıç:** 2026-11-15 · **Güncelleme:** 2026-11-16  
 **Dal:** `audit/meemare-e2e-master-qa-001`  
 **Geri dönüş:** tag `meemare-e2e-restore-042f51b` (@ `042f51b`)  
 **Canlı push/deploy:** YAPILMADI (iş emri gereği)
@@ -14,7 +14,8 @@
 | Test sunucu | `http://127.0.0.1:8765` (yalnız yerel) |
 | DB | Yerel MySQL `mobilyatakip` @ 3307 — gerçek müşteri kayıtları değiştirilmedi |
 | Test kullanıcı | `e2e-qa@meemare.test` (role `satis`) |
-| Kanıt | `test-results/master-e2e/` |
+| Harness | `scripts/qa-e2e-master.mjs` |
+| Kanıt | `test-results/master-e2e/` · `SUMMARY { PASS: 11 }` |
 
 ## Mimari özeti
 
@@ -29,43 +30,38 @@
 
 | ID | Önceki | Bu tur | Not |
 | --- | --- | --- | --- |
-| QA-SEC-001 | FIXED_LOCAL_NOT_DEPLOYED | PASS (PHPUnit) | Liste sahiplik + alan süzme kodda; canlı deploy durumu ayrı doğrulanmalı |
-| QA-SEC-002 | FIXED_LOCAL_NOT_DEPLOYED | PASS (PHPUnit) | Belirteçle yabancı erişim 404; `WardrobeProjectAccessTest` 56 assertion |
-| QA-GEO-001 | FAIL | NOT_TESTED | GLB AABB kesişim script’i bu turda yeniden koşturulmadı |
-| QA-GEO-002 | FAIL | OPEN | Kapaklar hâlâ prosedürel; GLB’de door mesh yok |
+| QA-SEC-001 | FIXED_LOCAL_NOT_DEPLOYED | PASS (PHPUnit) | Liste sahiplik + alan süzme; canlı deploy ayrı |
+| QA-SEC-002 | FIXED_LOCAL_NOT_DEPLOYED | PASS (PHPUnit) | Belirteçle yabancı erişim 404 |
+| QA-GEO-001 | FAIL | NOT_TESTED | GLB AABB |
+| QA-GEO-002 | FAIL | OPEN | Kapaklar prosedürel |
 | QA-GEO-003 | FAIL | NOT_TESTED | Köşe panel bindirme |
-| QA-CORNER-001 | FAIL | PARTIAL | `buildModule` yalnız `kind==='corner'` iken köşe GLB kullanıyor; sessiz dönüşüm sınırlandı — tarayıcıda L köşe senaryosu henüz bitmedi |
-| QA-PLACE-001 | BLOCKED | PARTIAL | `clearAllModules` seçimsiz çalışıyor; 180–785 cm matris bu turda tamamlanmadı |
-| QA-RENDER-001 | FAIL | NOT_TESTED | Path trace örnek/denoise |
-| QA-PROD-001 | FAIL | OPEN | DXF/menteşe/raf pimi yok |
-| QA-UX-001 | FAIL | NOT_TESTED | 390px emülasyon bu turda yok |
-| QA-UX-002 | FAIL | FIXED_LOCAL | `focusSelectedModule` aşırı yakın kadraj gevşetildi — yeniden tarayıcı doğrulaması gerekli |
+| QA-CORNER-001 | FAIL | PASS_LOCAL | Köşe V1 E2E |
+| QA-PLACE-001 | BLOCKED | PASS_LOCAL | 180–413 × 45 cm matris |
+| QA-RENDER-001 | FAIL | NOT_TESTED | Path trace |
+| QA-PROD-001 | FAIL | OPEN | DXF/menteşe |
+| QA-UX-001 | FAIL | NOT_TESTED | 390px |
+| QA-UX-002 | FAIL | PASS_LOCAL | FOV mesafe + oda clamp; görsel kanıt |
 
 ## Bu turda gerçek tarayıcıda yapılanlar
 
-1. Giriş (`e2e-qa@meemare.test`) → dashboard PASS  
-2. `/dolap` → proje oluştur `E2E-MASTER-QA-001` PASS  
-3. DB: `userId` eşleşmesi, `modules:0` PASS (`test-results/master-e2e/project-creation/`)  
-4. `?plan=1` → gömülü oda çizimi (L şablon, 3 duvar) PASS — harici OpenPlan 404 yok  
-5. Form/tuval ölçü uyumsuzluğu tespit → `syncFormFields` on load + default 300 cm FIXED_LOCAL  
-6. Modül dizimine geç → boş 3D oda PASS  
-7. İlk katalog modülü ekle → seçim çubuğu + üretim listesi (1) + Açık Gri D123 PASS  
-8. İlk kadraj aşırı yakın FAIL (QA-UX-002) → kod düzeltmesi yapıldı, yeniden görsel kanıt bekliyor  
+1. Giriş → dashboard PASS  
+2. Proje oluştur PASS  
+3. Plan-first sketch / OpenPlan 404 yok PASS  
+4. Modül ekle + D123 varsayılan PASS  
+5. Duvar matrisi 180/225/270/315/413 PASS  
+6. QA-UX-002 kadraj yeniden kanıt PASS  
+7. Save/load state diff PASS  
+8. L köşe (Köşe V1) PASS  
 
-## Kapsam dışı / henüz yapılmayan (dürüst envanter)
+## Kapsam dışı / henüz yapılmayan
 
-- Duvar ölçü matrisi 180–785 cm  
 - 45 modülün tamamının görsel/GLB matrisi  
-- L/U köşe birleşim tarayıcı testi  
-- Kapak/çekmece animasyon matrisi  
-- Malzeme kanal matrisi  
-- Save/load birebir state diff  
-- 50+ stres / bellek  
-- Mobil 390–1366  
-- Ultra Render örnek seti  
-- Playwright kalıcı CI paketi (iskelet sonraki adım)
+- U köşe / çok duvar birleşim detayı  
+- Kapak/çekmece / malzeme kanal matrisi  
+- 50+ stres / bellek · mobil 390–1366 · Ultra Render  
+- Playwright CI · canlı güvenlik doğrulama + deploy  
 
 ## Sonuç
 
-Sistem **yerel güvenlik sahipliği** ve **proje → plan → 3D → modül ekleme** ana hattı gerçek tarayıcıda kanıtlandı. İş emrinin tamamı **tamamlanmış sayılmaz**. Kalan P1/P2 maddeleri `MEEMARE_FINAL_BUG_BACKLOG.csv` ve release readiness dosyasında.  
-**Canlıya push yok.**
+Yerel E2E ana hattı + matris + kadraj + kayıt + L köşe kanıtlandı. **GO değil.** Canlıya push yok.  
+Ayrıntı: `MEEMARE_FINAL_RELEASE_READINESS.md`

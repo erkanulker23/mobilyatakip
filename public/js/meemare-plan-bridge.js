@@ -10,7 +10,7 @@
         const height = Number(walls.height ?? walls.roomHeight ?? walls.heightCm);
         if (![front, left, right].some((n) => Number.isFinite(n) && n >= 80)) return;
         const data = {
-            version: 1,
+            version: 2,
             source: payload.source || 'plan-bridge',
             savedAt: Date.now(),
             walls: {
@@ -19,10 +19,15 @@
                 rightCm: right,
                 heightCm: Number.isFinite(height) && height >= 160 ? height : 320,
             },
+            openings: Array.isArray(payload.openings) ? payload.openings : [],
+            sketchWalls: Array.isArray(payload.sketchWalls) ? payload.sketchWalls : [],
         };
         if (typeof window.MeemareStudioApplyWalls === 'function') {
-            if (window.MeemareStudioApplyWalls(data.walls)) {
-                flash('Oda ölçüleri dolap sahnesine uygulandı.');
+            if (window.MeemareStudioApplyWalls(data.walls, {
+                openings: data.openings,
+                sketchWalls: data.sketchWalls,
+            })) {
+                flash('Oda ölçüsü ve açıklıklar dolap sahnesine uygulandı.');
                 if (typeof window.MeemareStudioClosePlan === 'function' && document.body.classList.contains('studio-plan-first')) {
                     window.MeemareStudioClosePlan();
                 }
@@ -34,7 +39,9 @@
         } catch (e) {
             console.warn('meemare handoff', e);
         }
-        flash('Ölçüler kaydedildi. Dolap projenizi açın veya sayfayı yenileyin.');
+        flash(data.openings.length
+            ? `Ölçüler + ${data.openings.length} açıklık kaydedildi. Dolap projenizi açın.`
+            : 'Ölçüler kaydedildi. Dolap projenizi açın veya sayfayı yenileyin.');
     }
 
     function flash(text) {
@@ -62,7 +69,12 @@
             return;
         }
         if (data.source === 'openplan3d' && data.export && data.walls) {
-            saveHandoff({ source: 'openplan3d', walls: data.walls });
+            saveHandoff({
+                source: 'openplan3d',
+                walls: data.walls,
+                openings: data.openings,
+                sketchWalls: data.sketchWalls,
+            });
         }
     });
 
@@ -70,14 +82,33 @@
     if (form) {
         form.addEventListener('submit', (event) => {
             event.preventDefault();
-            saveHandoff({
-                source: 'plan-form',
-                walls: {
-                    front: Number(form.onduvar?.value),
-                    left: Number(form.solduvar?.value),
-                    right: Number(form.sagduvar?.value),
-                },
-            });
+            // Önce iframe içindeki OpenPlan’dan tam oda (kapı/pencere) iste.
+            const frame = document.querySelector('iframe');
+            try {
+                frame?.contentWindow?.postMessage({ source: 'meemare', action: 'exportRoom' }, '*');
+                // Form ölçüleri yedek; OpenPlan yanıt vermezse yine kaydedilir.
+                setTimeout(() => {
+                    if (!localStorage.getItem(HANDOFF_KEY)) {
+                        saveHandoff({
+                            source: 'plan-form',
+                            walls: {
+                                front: Number(form.onduvar?.value),
+                                left: Number(form.solduvar?.value),
+                                right: Number(form.sagduvar?.value),
+                            },
+                        });
+                    }
+                }, 350);
+            } catch {
+                saveHandoff({
+                    source: 'plan-form',
+                    walls: {
+                        front: Number(form.onduvar?.value),
+                        left: Number(form.solduvar?.value),
+                        right: Number(form.sagduvar?.value),
+                    },
+                });
+            }
         });
     }
 

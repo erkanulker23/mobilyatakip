@@ -23,20 +23,28 @@ class PublicToolController extends Controller
         if (! is_file($index)) {
             abort(404, 'OpenPlan henüz derlenmedi. scripts/build-openplan-static.sh çalıştırın.');
         }
-        $relative = $path ? str_replace('\\', '/', $path) : 'index.html';
+        $relative = $path ? ltrim(str_replace('\\', '/', $path), '/') : 'index.html';
         if ($relative === '' || str_contains($relative, '..')) {
             abort(404);
         }
         $full = public_path('openplan/'.$relative);
         if (is_dir($full)) {
-            $full = rtrim($full, '/').'/index.html';
+            $full = rtrim($full, '/').DIRECTORY_SEPARATOR.'index.html';
         }
-        if (! is_file($full)) {
+        // SPA client route (editor, …): dosya yoksa index.html
+        $looksLikeAsset = (bool) preg_match('/\.(?:js|css|map|json|svg|png|jpe?g|webp|gif|woff2?|ttf|glb|hdr|ico|txt|html)$/i', $relative);
+        if (! is_file($full) || (! $looksLikeAsset && ! str_ends_with($relative, '.html'))) {
             $full = $index;
         }
-        $mime = File::mimeType($full) ?: 'application/octet-stream';
+        if (! is_file($full)) {
+            abort(404);
+        }
+        $mime = File::mimeType($full) ?: (str_ends_with($full, '.html') ? 'text/html; charset=UTF-8' : 'application/octet-stream');
 
-        return response()->file($full, ['Content-Type' => $mime]);
+        return response()->file($full, [
+            'Content-Type' => $mime,
+            'Cache-Control' => str_ends_with($full, '.html') ? 'no-cache' : 'public, max-age=86400',
+        ]);
     }
 
     public function cabinet(): View
@@ -90,7 +98,7 @@ class PublicToolController extends Controller
                 'title' => 'Oda planı',
                 'lead' => 'Duvar, kapı ve odayı 2D/3D çizin. Dolap stüdyosundan ayrıdır.',
                 'src' => is_file(public_path('openplan/index.html'))
-                    ? url('/openplan/')
+                    ? url('/openplan/?embed=1')
                     : 'https://app.openplan3d.com/',
                 'source' => 'https://github.com/laanlabs/openPlan3D',
                 'credit' => 'OpenPlan3D · MIT · laanlabs',
