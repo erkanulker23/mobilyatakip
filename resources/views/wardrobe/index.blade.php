@@ -47,11 +47,45 @@
             display: flex; align-items: center; gap: 8px; padding: 0 14px; background: var(--panel);
         }
         #room-plan-panel {
-            display: none; position: fixed; inset: 12px; z-index: 25; max-width: 1200px; margin: auto;
-            grid-template-rows: auto 1fr; background: #f3f1ec; border: 1px solid var(--line); border-radius: 14px;
-            box-shadow: 0 18px 48px rgba(28,28,28,.2);
+            display: none; position: fixed; inset: 12px; z-index: 25; max-width: 1280px; margin: auto;
+            grid-template-rows: auto minmax(0, 1fr) auto; background: #f3f1ec; border: 1px solid var(--line); border-radius: 14px;
+            box-shadow: 0 18px 48px rgba(28,28,28,.2); min-height: 0;
         }
         body.show-room-plan #room-plan-panel { display: grid; }
+        .room-sketch-head {
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px;
+            background: #fffcf8; border-bottom: 1px solid var(--line);
+        }
+        .room-sketch-head strong { font-size: 15px; letter-spacing: .02em; }
+        .room-sketch-head .grow-h { flex: 1; min-width: 120px; font-size: 12px; color: var(--muted); margin: 0; }
+        .room-sketch-body {
+            display: grid; grid-template-columns: 148px minmax(0, 1fr); min-height: 0; min-width: 0;
+        }
+        @media (max-width: 720px) {
+            .room-sketch-body { grid-template-columns: 1fr; grid-template-rows: auto minmax(280px, 1fr); }
+            .room-sketch-tools { flex-direction: row !important; flex-wrap: wrap; border-right: 0 !important; border-bottom: 1px solid var(--line); }
+        }
+        .room-sketch-tools {
+            display: flex; flex-direction: column; gap: 6px; padding: 10px; background: #fff; border-right: 1px solid var(--line);
+        }
+        .room-sketch-tools .sketch-kicker {
+            margin: 8px 0 2px; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+        }
+        .room-sketch-tools button {
+            border: 1px solid var(--line); background: #fff; border-radius: 10px; padding: 8px 10px; font-size: 12px; font-weight: 700; text-align: left; cursor: pointer;
+        }
+        .room-sketch-tools button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
+        .room-sketch-tools button.is-accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .room-sketch-stage { position: relative; min-height: 0; min-width: 0; background: #ebe8e2; }
+        #room-sketch-canvas { width: 100%; height: 100%; min-height: 360px; display: block; touch-action: none; cursor: crosshair; }
+        #room-sketch-status {
+            position: absolute; left: 10px; right: 10px; bottom: 10px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+            padding: 6px 10px; border-radius: 10px; background: rgba(255,252,248,.94); border: 1px solid var(--line); font-size: 11px; color: #5e5953;
+        }
+        #room-sketch-status .room-sketch-zoom { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+        #room-sketch-status .room-sketch-zoom button {
+            width: 26px; height: 26px; border-radius: 8px; border: 1px solid var(--line); background: #fff; font-weight: 700; cursor: pointer;
+        }
         .room-plan-backdrop { display: none; position: fixed; inset: 0; z-index: 24; background: rgba(28,28,28,.35); }
         body.show-room-plan .room-plan-backdrop { display: block; }
         .room-handoff {
@@ -295,21 +329,40 @@
         <div class="room-plan-backdrop" id="room-plan-backdrop" aria-hidden="true"></div>
         <section class="stage">
             <div id="room-plan-panel" aria-label="Oda planı" role="dialog">
+                <div class="room-sketch-head">
+                    <strong>Odayı çiz</strong>
+                    <p class="grow-h">Plan sayfasından bağımsız — duvar, kapı ve pencere burada. Çift tıkla çizimi bitir.</p>
+                    <button type="button" class="btn" id="btn-room-redraw">Odayı yeniden çiz</button>
+                    <button type="button" class="btn" id="btn-close-room-plan">Kapat</button>
+                </div>
+                <div class="room-sketch-body">
+                    <aside class="room-sketch-tools" aria-label="Plan araçları">
+                        <p class="sketch-kicker">Araçlar</p>
+                        <button type="button" data-sketch-tool="select" class="is-on">Seç / kaydır</button>
+                        <button type="button" data-sketch-tool="wall">Duvar çiz (W)</button>
+                        <button type="button" data-sketch-tool="door">Kapı</button>
+                        <button type="button" data-sketch-tool="window">Pencere</button>
+                        <p class="sketch-kicker">Şablon</p>
+                        <button type="button" id="btn-sketch-l">L giyinme odası</button>
+                        <button type="button" id="btn-sketch-rect">Dikdörtgen oda</button>
+                        <button type="button" id="btn-sketch-clear">Temizle</button>
+                    </aside>
+                    <div class="room-sketch-stage">
+                        <canvas id="room-sketch-canvas" aria-label="Oda planı tuvali"></canvas>
+                        <div id="room-sketch-status"></div>
+                    </div>
+                </div>
                 <form id="studio-plan-handoff" class="room-handoff">
-                    <p style="margin:0;flex:1;min-width:200px;color:#5e6a64">Duvarları çizin, OpenPlan JSON yükleyin veya ölçü girin → <strong>3D odaya uygula</strong> ile modül dizimine geçin.</p>
+                    <p style="margin:0;flex:1;min-width:160px;color:#5e6a64;font-size:12px">Ölçüler çizimden gelir; gerekirse düzeltin.</p>
                     <label>JSON<input id="studio-plan-json" type="file" accept="application/json,.json"></label>
                     <label>Ön (cm)<input name="onduvar" type="number" min="80" max="800" value="320" required></label>
                     <label>Sol (cm)<input name="solduvar" type="number" min="80" max="800" value="280"></label>
                     <label>Sağ (cm)<input name="sagduvar" type="number" min="80" max="800" value="280"></label>
                     <label>Yükseklik<input name="odaboy" type="number" min="160" max="320" value="280"></label>
-                    <button type="submit">3D odaya uygula</button>
-                    <button type="button" class="btn-mini" id="btn-apply-room-handoff" style="background:#1c1c1c">Kayıtlı plan ölçüsü</button>
-                    <button type="button" class="btn-mini" id="btn-close-room-plan" style="background:#666">Kapat</button>
+                    <button type="submit" class="is-accent" style="background:var(--accent);color:#fff;border:0;border-radius:999px;padding:7px 14px;font-weight:700">3D odaya uygula</button>
+                    <button type="button" id="btn-sketch-apply" class="btn-mini" style="background:#1c1c1c">Çizimi uygula</button>
+                    <button type="button" class="btn-mini" id="btn-apply-room-handoff" style="background:#444">Kayıtlı ölçü</button>
                 </form>
-                <div class="room-plan-cta" style="padding:12px;background:#fff;border-top:1px solid var(--line)">
-                    <p class="hint" style="margin:0 0 8px">Duvar çizimi için OpenPlan ayrı sekmede açılır. Ölçüyü buradan girip <strong>3D odaya uygula</strong> yeterli.</p>
-                    <a class="btn btn-primary" href="{{ $planUrl }}" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">OpenPlan'da çiz</a>
-                </div>
             </div>
             <div class="stage-layout">
             <div id="viewport"></div>
@@ -488,6 +541,6 @@
     };
 </script>
 <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=4" defer></script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=231"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=232"></script>
 </body>
 </html>

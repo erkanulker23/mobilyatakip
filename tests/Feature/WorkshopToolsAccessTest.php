@@ -61,6 +61,8 @@ class WorkshopToolsAccessTest extends TestCase
         $response = $this->actingAs($user)->get(route('wardrobe.design'));
         $response->assertOk()
             ->assertSee('Modül ekle', false)
+            ->assertSee('Odayı çiz', false)
+            ->assertSee('room-sketch-canvas', false)
             ->assertSee('wardrobe-studio.js', false)
             ->assertDontSee('petervanderwalt/cabinet-studio', false)
             ->assertDontSee('Cabinet Studio arayüzü', false);

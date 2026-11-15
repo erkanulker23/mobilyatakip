@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { bindRoomSketch, roomSketchOnOpen, roomSketchBeforeHandoff } from './wardrobe-room-sketch.js';
 
 const T = 1.8;
 const BACK = 0.8;
@@ -206,6 +207,7 @@ function toggleRoomPlan(open) {
         if (form.sagduvar) form.sagduvar.value = state.rightWall;
         if (form.odaboy) form.odaboy.value = state.roomHeight;
     }
+    requestAnimationFrame(() => roomSketchOnOpen(state));
 }
 
 function syncViewModeBar() {
@@ -360,7 +362,7 @@ function blankState() {
         floorStyle: 'parquet',
         panelOpacity: 1,
         modules: [],
-        roomSketch: { openings: [] },
+        roomSketch: { walls: [], openings: [] },
     };
 }
 
@@ -4664,7 +4666,9 @@ let planTool = 'move';
 let planPointer = null;
 
 function ensureSketch() {
-    if (!state.roomSketch || !Array.isArray(state.roomSketch.openings)) state.roomSketch = { openings: [] };
+    if (!state.roomSketch) state.roomSketch = { walls: [], openings: [] };
+    if (!Array.isArray(state.roomSketch.openings)) state.roomSketch.openings = [];
+    if (!Array.isArray(state.roomSketch.walls)) state.roomSketch.walls = [];
     return state.roomSketch;
 }
 
@@ -7634,6 +7638,7 @@ function bindStudioHandoff() {
     if (!form || form.dataset.bound) return;
     form.dataset.bound = '1';
     const apply = () => {
+        roomSketchBeforeHandoff(state);
         const front = Number(form.onduvar?.value);
         const left = Number(form.solduvar?.value);
         const right = Number(form.sagduvar?.value);
@@ -7682,6 +7687,13 @@ function bindStudioHandoff() {
 }
 
 function bindChrome() {
+    bindRoomSketch({
+        ensureSketch,
+        applyWallsCm,
+        scheduleSave,
+        toast,
+        toggleRoomPlan,
+    });
     bindQuickRail();
     bindStudioHandoff();
     onClick('btn-room-plan', () => toggleRoomPlan(true));
