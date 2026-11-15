@@ -451,10 +451,10 @@
                 <form id="studio-plan-handoff" class="room-handoff">
                     <p style="margin:0;flex:1;min-width:160px;color:#5e6a64;font-size:12px">Ölçüler çizimden gelir; gerekirse düzeltin.</p>
                     <label>JSON<input id="studio-plan-json" type="file" accept="application/json,.json"></label>
-                    <label>Ön (cm)<input name="onduvar" type="number" min="80" max="800" value="320" required></label>
-                    <label>Sol (cm)<input name="solduvar" type="number" min="80" max="800" value="280"></label>
-                    <label>Sağ (cm)<input name="sagduvar" type="number" min="80" max="800" value="280"></label>
-                    <label>Yükseklik<input name="odaboy" type="number" min="160" max="320" value="280"></label>
+                    <label>Ön (cm)<input name="onduvar" type="number" min="80" max="800" value="300" required></label>
+                    <label>Sol (cm)<input name="solduvar" type="number" min="80" max="800" value="300"></label>
+                    <label>Sağ (cm)<input name="sagduvar" type="number" min="80" max="800" value="300"></label>
+                    <label>Yükseklik<input name="odaboy" type="number" min="160" max="320" value="320"></label>
                     <button type="submit" class="is-accent" style="background:var(--accent);color:#fff;border:0;border-radius:999px;padding:7px 14px;font-weight:700">3D odaya uygula</button>
                     <button type="button" id="btn-sketch-apply" class="btn-mini" style="background:#1c1c1c">Çizimi uygula</button>
                     <button type="button" class="btn-mini" id="btn-apply-room-handoff" style="background:#444">Kayıtlı ölçü</button>
@@ -651,6 +651,6 @@
 </script>
 <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=5" defer></script>
 <script src="{{ asset('js/openplan-import.js') }}?v=1" defer></script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=240"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=241"></script>
 </body>
 </html>

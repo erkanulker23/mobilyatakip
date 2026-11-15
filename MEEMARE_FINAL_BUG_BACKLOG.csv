@@ -1,0 +1,13 @@
+id,priority,area,summary,status,evidence
+QA-SEC-001,P0,projects list,Liste sızıntısı,PASS_LOCAL_PHPUNIT,WardrobeProjectAccessTest
+QA-SEC-002,P0,token access,Belirteçle yabancı erişim,PASS_LOCAL_PHPUNIT,WardrobeProjectAccessTest
+QA-WALL-SYNC-001,P1,room sketch,Form ölçüleri tuval ile uyumsuz,FIXED_LOCAL,wardrobe-room-sketch.js syncFormFields
+QA-UX-002,P2,camera,Modül ekleyince aşırı yakın kadraj,FIXED_LOCAL_RETEST,focusSelectedModule
+QA-GEO-001,P1,glb,Çekmece-dikme kesişimi,OPEN,master-qa geometry
+QA-GEO-002,P1,glb,Kapak mesh yok,OPEN,
+QA-CORNER-001,P1,corner,Düz→köşe sessiz dönüşüm,PARTIAL,
+QA-PLACE-001,P1,layout,Duvar doluluk matrisi,PARTIAL,
+QA-RENDER-001,P1,render,Path trace benek/siyah,OPEN,
+QA-PROD-001,P1,mfg,DXF/donanım yok,OPEN,
+QA-UX-001,P2,mobile,Panel 3D kapatıyor,OPEN,
+E2E-SCOPE,P1,process,45 modül + save/load + mobil + stres tamamlanmadı,OPEN,MEEMARE_COMPLETE_SYSTEM_AUDIT.md

@@ -4590,15 +4590,16 @@ function focusSelectedModule() {
     const box = new THREE.Box3().setFromObject(group);
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
-    const span = Math.max(size.x, size.y, size.z, 45);
-    controls.target.copy(center);
-    camera.fov = 30;
+    // Oda bağlamı görünsün; tek panel kenarına yapışık aşırı yakın kadrajı önle (QA-UX-002).
+    const span = Math.max(size.x, size.y * 0.55, size.z, alongSize(mod), 90);
+    controls.target.set(center.x, Math.min(center.y, roomHeightLimit() * 0.42), center.z);
+    camera.fov = 32;
     camera.position.set(
-        center.x - span * 0.42,
-        center.y + span * 0.22 + 28,
-        center.z + span * 1.05,
+        center.x + span * 0.55,
+        Math.min(roomHeightLimit() * 0.55, center.y + span * 0.35 + 40),
+        center.z + span * 1.85,
     );
-    camera.near = 0.4;
+    camera.near = 1;
     camera.far = 4000;
     camera.updateProjectionMatrix();
     controls.update();

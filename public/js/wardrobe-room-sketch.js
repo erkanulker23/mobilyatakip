@@ -171,6 +171,7 @@ function loadFromStudio(state) {
         sketch.openings = (rs?.openings || []).map((o) => ({ ...o }));
     }
     assignRoles(sketch.walls);
+    syncFormFields();
     draw();
     paintStatus();
 }
