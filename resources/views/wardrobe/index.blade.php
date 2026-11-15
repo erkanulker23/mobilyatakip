@@ -37,6 +37,23 @@
             display: flex; align-items: center; gap: 8px; padding: 0 14px; background: var(--panel);
         }
         header.bar { border-bottom: 1px solid var(--line); flex-wrap: nowrap; gap: 8px; padding-top: 8px; padding-bottom: 8px; min-height: 48px; overflow-x: auto; scrollbar-width: thin; }
+        .studio-steps { display: flex; gap: 6px; flex-wrap: wrap; padding: 8px 14px; background: #f7faf8; border-bottom: 1px solid var(--line); font-size: 12px; }
+        .studio-steps button { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 12px; font-weight: 700; cursor: pointer; }
+        .studio-steps button.is-on { background: var(--accent); color: #fff; border-color: var(--accent); }
+        #room-plan-panel {
+            display: none; position: absolute; inset: 0; z-index: 8;
+            grid-template-rows: auto 1fr; background: #f3f1ec;
+        }
+        body.studio-room #room-plan-panel { display: grid; }
+        body.studio-room .stage-layout { display: none; }
+        .room-handoff {
+            display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; padding: 8px 12px;
+            background: #fffcf8; border-bottom: 1px solid var(--line); font-size: 12px;
+        }
+        .room-handoff label { display: flex; flex-direction: column; gap: 3px; font-weight: 600; color: #3d5247; }
+        .room-handoff input[type="number"] { width: 72px; border: 1px solid #cfe0d6; border-radius: 8px; padding: 6px 8px; font-size: 12px; }
+        .room-handoff button { border: 0; background: var(--accent); color: #fff; border-radius: 999px; padding: 7px 14px; font-weight: 700; cursor: pointer; font-size: 12px; }
+        #openplan-frame { width: 100%; height: 100%; border: 0; background: #fff; min-height: 0; }
         .toolbar-spacer { flex: 1; min-width: 12px; }
         @media (max-width: 900px) {
             header.bar .extra { display: none; }
@@ -66,10 +83,14 @@
             .workspace {
                 grid-template-columns: min(300px, 28vw) minmax(0, 1fr) min(320px, 30vw);
             }
+            body.studio-room .workspace {
+                grid-template-columns: minmax(0, 1fr);
+            }
         }
         .stage { position: relative; min-width: 0; min-height: 0; background: #eceae6; grid-column: 1 / -1; grid-row: 1; }
         @media (min-width: 901px) {
             .stage { grid-column: 2; }
+            body.studio-room .stage { grid-column: 1; }
         }
         .stage-layout { position: absolute; inset: 0; min-height: 0; }
         aside { background: var(--panel); min-height: 0; display: flex; flex-direction: column; z-index: 6; }
@@ -82,6 +103,8 @@
                 grid-column: 3; grid-row: 1; border-left: 1px solid var(--line);
                 transform: none; position: relative; width: auto;
             }
+            body.studio-room aside.left,
+            body.studio-room aside.right { display: none; }
             aside.right { display: flex; }
             aside .sheet-close { display: none; }
         }
@@ -215,13 +238,13 @@
         }
     </style>
 </head>
-<body class="show-library show-custom">
+<body class="show-library show-custom studio-room">
 <div id="studio">
     <header class="bar meemare-tool-bar">
         <a href="{{ route('wardrobe.index') }}" class="brand">
             <strong>Meemare modül stüdyosu</strong>
         </a>
-        <span class="lead">Y26 modülleri sürükleyip duvara dizin; kapak ve malzeme sağda. Tek gövde DXF için Üretim dolabı.</span>
+        <span class="lead">Önce oda planı ve duvar ölçüsü; sonra modül kataloğundan dizim; kapı/pencere yerleşim ekranında.</span>
         <input id="project-name" class="name-input" maxlength="80" aria-label="Proje adı" value="Dolabım">
         <div class="toolbar-spacer"></div>
         <button type="button" class="btn" id="btn-undo" disabled>Geri</button>
@@ -237,10 +260,12 @@
     </header>
     <div class="meemare-nav-row">@include('partials.meemare-apps-nav', ['activeApp' => 'tasarla'])</div>
     @include('partials.meemare-workflow', ['workflowStep' => 'tasarla'])
-    <div class="meemare-handoff-row">
-        <p style="margin:0;flex:1;color:#5e6a64">Oda duvarı <a href="{{ $planUrl }}" target="_blank" rel="noopener" style="color:#1f6b4a;font-weight:700">plan sayfasında</a> çizilir; ölçü kaydettikten sonra burada <strong>Plan ölçüsünü uygula</strong>.</p>
-        <button type="button" class="btn-apply" id="btn-apply-room-handoff">Plan ölçüsünü uygula</button>
-        <a class="btn-apply" href="{{ $planUrl }}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;background:#1c1c1c">Duvar çiz</a>
+    <div class="studio-steps" aria-label="Tasarım adımları">
+        <button type="button" data-workspace="room" class="is-on" id="step-room">1. Oda planı (duvar çiz)</button>
+        <button type="button" data-workspace="layout" id="step-layout">2. Modül dizimi (3D)</button>
+        <button type="button" data-plan="2d" id="step-openings">3. Kapı / pencere (yerleşim)</button>
+        <button type="button" class="btn-apply" id="btn-demo-dressing" title="6 kapaklı L giyinme">Örnek L giyinme</button>
+        <a class="btn-apply" href="{{ $planUrl }}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;background:#1c1c1c;margin-left:auto">Plan (ayrı sekme)</a>
     </div>
     <div class="workspace">
         <aside class="left" id="library">
@@ -255,6 +280,19 @@
             <span></span>
         </div>
         <section class="stage">
+            <div id="room-plan-panel" aria-label="Oda planı">
+                <form id="studio-plan-handoff" class="room-handoff">
+                    <p style="margin:0;flex:1;min-width:200px;color:#5e6a64">Duvarları çizin, OpenPlan JSON yükleyin veya ölçü girin → <strong>3D odaya uygula</strong> ile modül dizimine geçin.</p>
+                    <label>JSON<input id="studio-plan-json" type="file" accept="application/json,.json"></label>
+                    <label>Ön (cm)<input name="onduvar" type="number" min="80" max="800" value="320" required></label>
+                    <label>Sol (cm)<input name="solduvar" type="number" min="80" max="800" value="280"></label>
+                    <label>Sağ (cm)<input name="sagduvar" type="number" min="80" max="800" value="280"></label>
+                    <label>Yükseklik<input name="odaboy" type="number" min="160" max="320" value="280"></label>
+                    <button type="submit">3D odaya uygula</button>
+                    <button type="button" class="btn-mini" id="btn-apply-room-handoff" style="background:#1c1c1c">Kayıtlı plan ölçüsü</button>
+                </form>
+                <iframe id="openplan-frame" src="{{ $openplanSrc }}" title="Oda planı (OpenPlan)" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen"></iframe>
+            </div>
             <div class="stage-layout">
             <div id="viewport"></div>
             <div id="plan-board" class="hidden">
@@ -430,6 +468,6 @@
     };
 </script>
 <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=4" defer></script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=226"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=228"></script>
 </body>
 </html>

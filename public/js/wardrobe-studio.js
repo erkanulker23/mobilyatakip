@@ -121,6 +121,7 @@ const glbFailed = new Set();
 let glbCatalog = [];
 let showMeasures = false;
 let planMode = '3d';
+let studioWorkspace = 'room';
 let guidesOn = true;
 let perspCamera = null;
 let orthoCamera = null;
@@ -180,9 +181,34 @@ window.MeemareStudioApplyWalls = (walls) => {
         Number(walls.rightCm ?? walls.right ?? walls.sagduvar),
         Number(walls.heightCm ?? walls.height ?? walls.roomHeight),
     );
-    if (ok) toast('Oda ölçüsü uygulandı. Modülleri kataloğdan sürükleyin.');
+    if (ok) {
+        setStudioWorkspace('layout');
+        toast('Oda ölçüsü uygulandı. Modülleri kataloğdan sürükleyin.');
+    }
     return ok;
 };
+
+function setStudioWorkspace(mode) {
+    studioWorkspace = mode === 'room' ? 'room' : 'layout';
+    document.body.classList.toggle('studio-room', studioWorkspace === 'room');
+    document.body.classList.toggle('studio-layout', studioWorkspace !== 'room');
+    document.querySelectorAll('[data-workspace]').forEach((button) => {
+        button.classList.toggle('is-on', button.dataset.workspace === studioWorkspace);
+    });
+    if (studioWorkspace === 'room' && planMode === '2d') setPlanMode('3d');
+    const form = el('studio-plan-handoff');
+    if (form) {
+        if (form.onduvar) form.onduvar.value = state.wallWidth;
+        if (form.solduvar) form.solduvar.value = state.leftWall;
+        if (form.sagduvar) form.sagduvar.value = state.rightWall;
+        if (form.odaboy) form.odaboy.value = state.roomHeight;
+    }
+    if (studioWorkspace === 'layout') {
+        showModuleLibrary();
+        if (planMode !== '2d') requestAnimationFrame(resize);
+        else drawPlan();
+    }
+}
 
 function applyRoomQuery(params) {
     if (!params) return false;
@@ -5755,7 +5781,7 @@ function moduleConfigHtml(mod) {
         ${boardNote}
         ${mod.glb ? '<div id="module-parts" class="parts-panel"><p class="hint">Üretim parçaları yükleniyor…</p></div>' : ''}
         ${colorChoicesHtml(mod, cabinetHasDrawers(mod))}
-        ${mod.kind === 'end' ? '' : `<div class="field field-key"><label>Kapak</label><div class="seg"><button type="button" data-door="none" class="${mod.door === 'none' ? 'is-on' : ''}">Kapaksız</button><button type="button" data-door="solid" class="${mod.door === 'solid' ? 'is-on' : ''}">Ahşap kapak</button><button type="button" data-door="glass" class="${mod.door === 'glass' ? 'is-on' : ''}">Cam kapak</button></div></div>`}
+        ${mod.kind === 'end' ? '' : `<div class="field field-key"><label>Kapak</label><div class="seg"><button type="button" data-door="none" class="${mod.door === 'none' ? 'is-on' : ''}">Kapaksız</button><button type="button" data-door="solid" class="${mod.door === 'solid' ? 'is-on' : ''}">Ahşap kapak</button><button type="button" data-door="glass" class="${mod.door === 'glass' ? 'is-on' : ''}">Cam kapak</button>${doorCount(mod) > 1 ? `<button type="button" data-door="mixed" class="${mod.door === 'mixed' ? 'is-on' : ''}">Karışık</button>` : ''}</div></div>`}
         ${mod.kind === 'end' ? '' : `<div class="field"><label>Genişlik (cm)</label><input id="mod-w" type="number" min="30" max="200" value="${mod.width}"></div>`}
         ${mod.kind === 'end' ? '' : `<div class="field"><label>Öne / arkaya (cm)</label><input id="mod-depth" type="number" min="0" max="120" value="${depthNudge(mod)}"></div>`}
         ${shelfField}
@@ -6599,21 +6625,7 @@ async function addGlbModule(id, dropEvent) {
     noteDrop({ phase: 'load', id, cached: glbTemplates.has(item.id) });
     try {
         await ensureGlb(item);
-        const mod = createModule(item.category === 'tek' || item.category === 'y26-tek' ? 'tek-raf' : 'cift-raf');
-        mod.glb = item.id;
-        mod.glbWidth = item.width;
-        mod.glbDepth = Math.round(item.depth * 100);
-        mod.glbHeight = Math.round(item.height * 100);
-        mod.name = item.name;
-        mod.spec = item.spec;
-        mod.width = Math.round(item.width * 100);
-        mod.height = mod.glbHeight;
-        mod.door = 'none';
-        preferCatalogWood(mod);
-        mod.open = 0;
-        mod.kind = item.category === 'kose' ? 'corner' : 'wardrobe';
-        mod.wall = 'front';
-        mod.offset = 10000;
+        const mod = moduleFromCatalogItem(item);
         if (dropEvent) {
             if (!placeDropped(mod, dropEvent)) return;
         } else if (mod.kind === 'corner') {
@@ -7347,7 +7359,69 @@ async function takeRender() {
     }
 }
 
+function bindStudioHandoff() {
+    const form = el('studio-plan-handoff');
+    if (!form || form.dataset.bound) return;
+    form.dataset.bound = '1';
+    const apply = () => {
+        const front = Number(form.onduvar?.value);
+        const left = Number(form.solduvar?.value);
+        const right = Number(form.sagduvar?.value);
+        const height = Number(form.odaboy?.value);
+        if (window.MeemareStudioApplyWalls({ frontCm: front, leftCm: left, rightCm: right, heightCm: height })) {
+            ['wall-left', 'wall-front', 'wall-right', 'room-h'].forEach((id) => {
+                const node = el(id);
+                if (!node) return;
+                if (id === 'wall-left') node.value = state.leftWall;
+                if (id === 'wall-front') node.value = state.wallWidth;
+                if (id === 'wall-right') node.value = state.rightWall;
+                if (id === 'room-h') node.value = state.roomHeight;
+            });
+        }
+    };
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        apply();
+    });
+    el('studio-plan-json')?.addEventListener('change', async (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        try {
+            const data = JSON.parse(await file.text());
+            const floor = data?.floors?.[0];
+            const walls = floor?.walls || data?.walls || [];
+            const len = (w) => Math.hypot((w.end?.x ?? 0) - (w.start?.x ?? 0), (w.end?.y ?? 0) - (w.start?.y ?? 0));
+            const lengths = walls.map(len).filter((n) => n > 40).sort((a, b) => b - a);
+            if (!lengths.length) {
+                toast('JSON içinde duvar bulunamadı.');
+                return;
+            }
+            const front = Math.round(Math.max(lengths[0], lengths[1] || lengths[0]));
+            const side = Math.round(lengths.find((n) => Math.abs(n - front) > 20) || lengths[1] || front);
+            const height = Math.round(walls[0]?.height || state.roomHeight || 280);
+            if (form.onduvar) form.onduvar.value = front;
+            if (form.solduvar) form.solduvar.value = side;
+            if (form.sagduvar) form.sagduvar.value = side;
+            if (form.odaboy) form.odaboy.value = height;
+            window.MeemareStudioApplyWalls({ frontCm: front, leftCm: side, rightCm: side, heightCm: height });
+        } catch {
+            toast('Geçersiz OpenPlan JSON.');
+        }
+        event.target.value = '';
+    });
+}
+
 function bindChrome() {
+    document.body.classList.add('studio-layout');
+    bindStudioHandoff();
+    document.querySelectorAll('[data-workspace]').forEach((button) => {
+        button.addEventListener('click', () => setStudioWorkspace(button.dataset.workspace));
+    });
+    onClick('step-openings', () => {
+        setStudioWorkspace('layout');
+        setPlanMode('2d');
+        toast('Duvara tıklayın: kapı veya pencere ekleyin / kaldırın.');
+    });
     on('project-name', 'change', (event) => {
         state.name = event.target.value || 'Dolabım';
         scheduleSave();
@@ -7362,8 +7436,9 @@ function bindChrome() {
     onClick('btn-cabinet', openCabinetStudio);
     onClick('btn-apply-room-handoff', () => {
         if (applyHandoffFromStorage()) return;
-        toast('Kayıtlı plan ölçüsü yok. Önce plan sayfasında ölçü kaydedin.');
+        toast('Kayıtlı plan ölçüsü yok. Önce plan sayfasında ölçü kaydedin veya ölçü girin.');
     });
+    onClick('btn-demo-dressing', () => { void applyDressingRoomDemo(); });
     onClick('btn-export-json', downloadMeemareBundle);
     onClick('production-cabinet', openCabinetStudio);
     onClick('btn-undo', undo);
@@ -7529,6 +7604,95 @@ function catalogWoodId() {
 
 function solidDoorColor() {
     return catalogWoodId();
+}
+
+function defaultDoorForCatalogItem(item) {
+    const id = String(item?.id || '');
+    const name = String(item?.name || '');
+    if (/vitrin|cam kapak|gözlük|ayna/i.test(name)) return 'glass';
+    if (/_(06|07)$/.test(id)) return 'glass';
+    return 'solid';
+}
+
+function moduleFromCatalogItem(item, opts = {}) {
+    const isTek = item.category === 'tek' || item.category === 'y26-tek';
+    const mod = createModule(isTek ? 'tek-raf' : 'cift-raf');
+    mod.glb = item.id;
+    mod.glbWidth = item.width;
+    mod.glbDepth = Math.round(item.depth * 100);
+    mod.glbHeight = Math.round(item.height * 100);
+    mod.name = item.name;
+    mod.spec = item.spec;
+    mod.width = Math.round(item.width * 100);
+    mod.height = mod.glbHeight;
+    mod.door = opts.door ?? defaultDoorForCatalogItem(item);
+    preferCatalogWood(mod);
+    mod.open = 0;
+    mod.kind = item.category === 'kose' ? 'corner' : 'wardrobe';
+    mod.wall = opts.wall === 'left' || opts.wall === 'right' ? opts.wall : 'front';
+    mod.offset = Number.isFinite(opts.offset) ? opts.offset : 10000;
+    if (mod.kind === 'corner') {
+        mod.cornerSide = opts.cornerSide === 'right' ? 'right' : 'left';
+        mod.wall = 'front';
+    }
+    return mod;
+}
+
+async function applyDressingRoomDemo() {
+    if (!glbCatalog.length) {
+        try {
+            await loadGlbCatalog();
+            renderLibrary();
+        } catch {
+            toast('Modül kataloğu yüklenemedi.');
+            return false;
+        }
+    }
+    const plan = [
+        { id: 'kose_2', cornerSide: 'left', door: 'solid' },
+        { id: 'y26_cift_01', wall: 'front', door: 'solid' },
+        { id: 'y26_cift_06', wall: 'front', door: 'glass' },
+        { id: 'y26_tek_01', wall: 'left', door: 'solid' },
+        { id: 'y26_tek_06', wall: 'left', door: 'glass' },
+    ];
+    const missing = plan.filter((entry) => !glbCatalog.some((item) => item.id === entry.id));
+    if (missing.length) {
+        toast(`Katalogda eksik modül: ${missing.map((m) => m.id).join(', ')}`);
+        return false;
+    }
+    toast('Örnek L giyinme odası yükleniyor…');
+    await Promise.all(plan.map(async (entry) => {
+        const item = glbCatalog.find((row) => row.id === entry.id);
+        try {
+            await ensureGlb(item);
+        } catch {
+            glbFailed.add(entry.id);
+        }
+    }));
+    applyWallsCm(320, 300, 280, 280);
+    const modules = plan.map((entry) => {
+        const item = glbCatalog.find((row) => row.id === entry.id);
+        return moduleFromCatalogItem(item, entry);
+    });
+    if (!layout(modules)) {
+        applyWallsCm(380, 340, 300, 280);
+        if (!layout(modules)) {
+            toast('Örnek yerleşim sığmadı; duvar ölçülerini artırın.');
+            return false;
+        }
+    }
+    commit(() => {
+        state.modules = modules;
+        state.name = 'L giyinme odası';
+        selectedId = modules.find((m) => m.kind !== 'corner')?.id || modules[0]?.id || null;
+        const nameInput = el('project-name');
+        if (nameInput) nameInput.value = state.name;
+    });
+    frameCamera();
+    snapDoors();
+    const doors = modules.reduce((sum, mod) => sum + (mod.door === 'none' ? 0 : doorCount(mod)), 0);
+    toast(`Hazır: köşe + ${modules.length - 1} modül, ${doors} kapak (ahşap ve cam). Sürükleyerek düzenleyin.`);
+    return true;
 }
 
 function preferCatalogWood(mod) {
@@ -7832,6 +7996,7 @@ async function boot() {
     const token = params.get('proje');
     if ((recordId && await openProject(recordId)) || (token && await openProject(token))) {
         el('customer-modal').classList.add('hidden');
+        setStudioWorkspace(state.modules.length ? 'layout' : 'room');
         return;
     }
     if (loadHash()) {
@@ -7854,18 +8019,30 @@ async function boot() {
             frameCamera();
             el('customer-modal').classList.add('hidden');
             toast('Kaydedilmemiş taslak geri yüklendi.');
+            setStudioWorkspace('layout');
             return;
         }
     } catch {
         /* bozuk taslak yok sayılır */
     }
     el('customer-modal').classList.add('hidden');
+    const forceLayout = params.get('oda') === 'hazir' || params.get('demo') === 'giyinme';
+    if (params.get('demo') === 'giyinme' && !state.modules.length) {
+        await applyDressingRoomDemo();
+        setStudioWorkspace('layout');
+    } else if (forceLayout || state.modules.length > 0) {
+        setStudioWorkspace('layout');
+    } else {
+        setStudioWorkspace('room');
+        toast('1. Adım: duvarları çizin veya ölçü girin → 3D odaya uygula.');
+    }
     render();
     frameCamera();
 }
 
 window.__setCameraView = (mode) => setCameraView(mode);
 window.__studio = {
+    dressingDemo: () => applyDressingRoomDemo(),
     add: (id) => addGlbModule(id),
     remove: () => deleteSelected(),
     clear: () => {
