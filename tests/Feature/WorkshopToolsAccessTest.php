@@ -67,6 +67,7 @@ class WorkshopToolsAccessTest extends TestCase
             ->assertSee('Modül ekle', false)
             ->assertSee('Odayı çiz', false)
             ->assertSee('room-sketch-canvas', false)
+            ->assertSee('selection-bar', false)
             ->assertSee('wardrobe-studio.js', false)
             ->assertDontSee('petervanderwalt/cabinet-studio', false)
             ->assertDontSee('Cabinet Studio arayüzü', false);

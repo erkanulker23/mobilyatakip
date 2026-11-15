@@ -209,8 +209,30 @@
         #measure-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
         .measure { position: absolute; transform: translate(-50%, -50%); background: #1f6b4a; color: #fff; font-size: 11px; font-weight: 700; line-height: 1.2; padding: 2px 6px; border-radius: 999px; white-space: nowrap; }
         .btn.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
-        #selection-ui, #height-handle, #quick-rail { position: absolute; z-index: 9; }
+        #selection-ui, #height-handle, #quick-rail, #selection-bar { position: absolute; z-index: 9; }
         #selection-ui { display: none; }
+        #selection-bar {
+            left: 50%; bottom: 58px; transform: translateX(-50%);
+            display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center;
+            max-width: min(640px, calc(100% - 140px)); padding: 8px 12px; border-radius: 14px;
+            background: rgba(28, 28, 28, .93); box-shadow: var(--shadow); pointer-events: auto;
+        }
+        #selection-bar.hidden { display: none !important; }
+        body.plan-2d #selection-bar { display: none !important; }
+        #selection-bar-name {
+            font-size: 11px; font-weight: 700; color: #fff; max-width: 140px; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis; margin-right: 4px;
+        }
+        #selection-bar button {
+            border: 0; border-radius: 999px; padding: 7px 11px; font-size: 11px; font-weight: 700;
+            background: rgba(255,255,255,.14); color: #fff;
+        }
+        #selection-bar button.is-on { background: var(--accent); }
+        #selection-bar button.sb-danger { background: #9f2d2d; }
+        @media (max-width: 900px) {
+            #selection-bar { bottom: calc(118px + env(safe-area-inset-bottom)); max-width: calc(100% - 16px); }
+            #selection-bar-name { display: none; }
+        }
         #quick-rail {
             display: flex; flex-direction: column; gap: 4px; min-width: 44px; max-width: 52px;
             padding: 6px; border-radius: 12px; background: rgba(28,28,28,.88); box-shadow: var(--shadow);
@@ -390,6 +412,16 @@
                 <button type="button" id="btn-guides" class="is-on" title="Kılavuz çizgileri">Izgara</button>
                 <button type="button" id="btn-demo-dressing" title="Örnek L giyinme">Örnek</button>
             </div>
+            <div id="selection-bar" class="hidden" aria-label="Seçili modül">
+                <span id="selection-bar-name"></span>
+                <button type="button" data-sb-door="solid">Ahşap</button>
+                <button type="button" data-sb-door="glass">Cam</button>
+                <button type="button" data-sb-door="none">Kapaksız</button>
+                <button type="button" data-sb="open">Kapak</button>
+                <button type="button" data-sb="clone">Klon</button>
+                <button type="button" data-sb="delete" class="sb-danger">Sil</button>
+                <button type="button" data-sb="panel">Detay</button>
+            </div>
             <div id="view-bar" aria-label="Kamera">
                 <button type="button" data-view="perspective" class="is-on">3D</button>
                 <button type="button" id="cam-orbit-left" title="Sola dön">‹</button>
@@ -545,6 +577,6 @@
     };
 </script>
 <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=4" defer></script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=234"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=235"></script>
 </body>
 </html>

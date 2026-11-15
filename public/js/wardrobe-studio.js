@@ -4362,10 +4362,16 @@ function paintQuickRail(mod) {
     const alumHost = el('qr-alum-sw');
     if (woodHost && mod) {
         const picks = materials.filter((m) => m.group === 'melamin-kapli-panel').slice(0, 4);
-        woodHost.innerHTML = picks.map((item) => `<button type="button" data-qr-wood="${item.id}" title="${item.name || item.code}"></button>`).join('');
-        woodHost.style.display = picks.length ? 'flex' : 'none';
-        woodHost.querySelectorAll('[data-qr-wood]').forEach((btn, i) => {
-            const item = picks[i];
+        const fallback = [mod.carcassId, mod.doorColorId, state.carcassId, state.doorColorId].filter(Boolean);
+        const woodIds = picks.length ? picks.map((item) => item.id) : [...new Set(fallback)].slice(0, 4);
+        woodHost.innerHTML = woodIds.map((id) => {
+            const item = picks.find((row) => row.id === id) || materials.find((row) => row.id === id);
+            const title = item?.name || item?.code || id;
+            return `<button type="button" data-qr-wood="${id}" title="${title}"></button>`;
+        }).join('');
+        woodHost.style.display = woodIds.length ? 'flex' : 'none';
+        woodHost.querySelectorAll('[data-qr-wood]').forEach((btn) => {
+            const item = materials.find((row) => row.id === btn.dataset.qrWood);
             if (item?.image) btn.style.background = `url(${item.image}) center/cover`;
             else btn.style.background = '#c4a574';
         });
@@ -4385,11 +4391,84 @@ function paintQuickRail(mod) {
     rail.querySelectorAll('[data-qr-door]').forEach((b) => { b.style.display = mod?.kind === 'end' ? 'none' : ''; });
 }
 
+function syncSelectionBar(mod) {
+    const bar = el('selection-bar');
+    if (!bar) return;
+    const show = Boolean(mod) && planMode !== '2d';
+    bar.classList.toggle('hidden', !show);
+    const name = el('selection-bar-name');
+    if (name) name.textContent = mod ? String(mod.name || 'Dolap') : '';
+    bar.querySelectorAll('[data-sb-door]').forEach((btn) => {
+        btn.classList.toggle('is-on', mod && btn.dataset.sbDoor === mod.door);
+    });
+}
+
+function openInspectorForSelection() {
+    const mod = selected();
+    if (!mod) return;
+    sceneFocus = 'module';
+    customFor = mod.id;
+    el('inspector')?.classList.add('is-open');
+    document.body.classList.add('show-custom');
+    if (window.matchMedia('(max-width: 900px)').matches) {
+        document.body.classList.remove('show-library');
+        el('library')?.classList.remove('is-open');
+        document.body.dataset.sheet = 'material';
+    }
+}
+
+function handleModuleQuickAction(event, scope) {
+    const mod = selected();
+    if (!mod) return;
+    const root = scope || document;
+    const doorBtn = event.target.closest('[data-qr-door], [data-sb-door]');
+    if (doorBtn) {
+        const type = doorBtn.dataset.qrDoor || doorBtn.dataset.sbDoor;
+        commit(() => { mod.door = type; mod.open = 0; });
+        toast(type === 'glass' ? 'Cam kapak' : type === 'none' ? 'Kapaksız' : 'Ahşap kapak');
+        return;
+    }
+    const woodBtn = event.target.closest('[data-qr-wood]');
+    if (woodBtn) {
+        const id = woodBtn.dataset.qrWood;
+        commit(() => {
+            mod.doorColorId = id;
+            mod.carcassId = id;
+            paintColor(mod, 'doorColorId', id);
+        });
+        return;
+    }
+    const glassBtn = event.target.closest('[data-qr-glass]');
+    if (glassBtn) {
+        commit(() => { mod.glassId = glassBtn.dataset.qrGlass; state.glassId = mod.glassId; });
+        return;
+    }
+    const alumBtn = event.target.closest('[data-qr-alum]');
+    if (alumBtn) {
+        commit(() => { mod.aluminumId = alumBtn.dataset.qrAlum; state.aluminumId = mod.aluminumId; });
+        return;
+    }
+    const action = event.target.closest('[data-qr]')?.dataset.qr
+        || event.target.closest('[data-sb]')?.dataset.sb;
+    if (action === 'delete') deleteSelected();
+    if (action === 'clone') cloneSelected();
+    if (action === 'open') commit(() => { mod.open = mod.open > 0.5 ? 0 : 1; });
+    if (action === 'panel') {
+        openInspectorForSelection();
+        renderInspector();
+        requestAnimationFrame(() => {
+            root.querySelector?.('[data-insp-tab="kapak"]')?.click()
+                || el('inspector-body')?.querySelector('[data-insp-tab="kapak"]')?.click();
+        });
+    }
+}
+
 function updateHud() {
     const handle = el('height-handle');
     const rail = el('quick-rail');
     const mod = selected();
     const group = mod ? cabinetRoot.getObjectByName(`mod-${mod.id}`) : null;
+    syncSelectionBar(mod);
     if (!group) {
         handle?.classList.add('hidden');
         rail?.classList.add('hidden');
@@ -4399,11 +4478,28 @@ function updateHud() {
     const box = new THREE.Box3().setFromObject(group);
     const center = new THREE.Vector3();
     box.getCenter(center);
-    const side = project(new THREE.Vector3(box.max.x + 6, center.y, center.z));
-    const top = project(new THREE.Vector3(center.x, box.max.y + 6, center.z));
+    const rect = el('viewport')?.getBoundingClientRect();
+    const anchors = [
+        new THREE.Vector3(box.max.x + 8, center.y, center.z),
+        new THREE.Vector3(box.min.x - 8, center.y, center.z),
+        new THREE.Vector3(center.x, center.y, box.max.z + 12),
+        new THREE.Vector3(center.x, center.y + 20, center.z),
+    ];
+    let side = null;
+    anchors.forEach((point) => {
+        const p = project(point);
+        if (p.behind) return;
+        if (rect && (p.x < 8 || p.x > rect.width - 8 || p.y < 8 || p.y > rect.height - 8)) return;
+        if (!side || p.x > side.x) side = p;
+    });
+    if (!side) {
+        const centerPt = project(center);
+        if (!centerPt.behind) side = centerPt;
+    }
+    const top = project(new THREE.Vector3(center.x, box.max.y + 8, center.z));
     handle.classList.toggle('hidden', top.behind);
-    rail.classList.toggle('hidden', side.behind);
-    if (!side.behind) placeHud(rail, side.x, side.y);
+    rail.classList.toggle('hidden', !side);
+    if (side) placeHud(rail, side.x, side.y);
     if (!top.behind) placeHud(handle, top.x, top.y);
 }
 
@@ -4422,52 +4518,18 @@ function orbitCamera(delta) {
 
 function bindQuickRail() {
     const rail = el('quick-rail');
-    if (!rail || rail.dataset.bound) return;
-    rail.dataset.bound = '1';
-    rail.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const mod = selected();
-        if (!mod) return;
-        const doorBtn = event.target.closest('[data-qr-door]');
-        if (doorBtn) {
-            commit(() => { mod.door = doorBtn.dataset.qrDoor; mod.open = 0; });
-            return;
-        }
-        const woodBtn = event.target.closest('[data-qr-wood]');
-        if (woodBtn) {
-            const id = woodBtn.dataset.qrWood;
-            commit(() => {
-                mod.doorColorId = id;
-                mod.carcassId = id;
-                paintColor(mod, 'doorColorId', id);
-            });
-            return;
-        }
-        const glassBtn = event.target.closest('[data-qr-glass]');
-        if (glassBtn) {
-            commit(() => { mod.glassId = glassBtn.dataset.qrGlass; state.glassId = mod.glassId; });
-            return;
-        }
-        const alumBtn = event.target.closest('[data-qr-alum]');
-        if (alumBtn) {
-            commit(() => { mod.aluminumId = alumBtn.dataset.qrAlum; state.aluminumId = mod.aluminumId; });
-            return;
-        }
-        const action = event.target.closest('[data-qr]')?.dataset.qr;
-        if (action === 'delete') deleteSelected();
-        if (action === 'clone') cloneSelected();
-        if (action === 'open') commit(() => { mod.open = mod.open > 0.5 ? 0 : 1; });
-        if (action === 'panel') {
-            el('inspector')?.classList.add('is-open');
-            document.body.classList.add('show-custom');
-            document.body.classList.remove('show-library');
-            renderInspector();
-            requestAnimationFrame(() => {
-                el('inspector-body')?.querySelector('[data-insp-tab="kapak"]')?.click();
-            });
-        }
-    });
-    rail.addEventListener('pointerdown', (event) => event.stopPropagation());
+    const bar = el('selection-bar');
+    const bind = (node) => {
+        if (!node || node.dataset.bound) return;
+        node.dataset.bound = '1';
+        node.addEventListener('click', (event) => {
+            event.stopPropagation();
+            handleModuleQuickAction(event, el('inspector-body'));
+        });
+        node.addEventListener('pointerdown', (event) => event.stopPropagation());
+    };
+    bind(rail);
+    bind(bar);
 }
 
 function placeHud(node, x, y) {
@@ -5466,6 +5528,7 @@ function init3d() {
             allCabinetsSelected = false;
             selectedId = id;
             sceneFocus = 'module';
+            openInspectorForSelection();
             render();
         }
     }, true);
@@ -5559,6 +5622,7 @@ function init3d() {
         allCabinetsSelected = false;
         selectedId = press.id;
         sceneFocus = 'module';
+        openInspectorForSelection();
         render();
     });
     window.addEventListener('pointerup', (event) => {
@@ -6045,7 +6109,7 @@ function moduleConfigHtml(mod) {
     return `
         <p class="picked">Seçili dolap</p>
         <h2>${mod.name}</h2>
-        <p class="hint">${mod.width} × ${moduleHeight(mod)} cm — sahnede sürükle; altta duvar boyunca kaydır.</p>
+        <p class="hint">${mod.width} × ${moduleHeight(mod)} cm — sürükleyin; alttaki <strong>siyah çubuktan</strong> kapak/klon/sil.</p>
         ${allCabinetsSelected ? '<p class="hint">Tüm dolaplar seçili. Bir rengi değiştirince hepsine yazılır.</p>' : ''}
         ${boardNote}
         ${inspectorTabBar('kapak')}
