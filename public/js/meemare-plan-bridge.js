@@ -20,6 +20,12 @@
                 heightCm: Number.isFinite(height) && height >= 160 ? height : 320,
             },
         };
+        if (typeof window.MeemareStudioApplyWalls === 'function') {
+            if (window.MeemareStudioApplyWalls(data.walls)) {
+                flash('Oda ölçüleri dolap sahnesine uygulandı.');
+                return;
+            }
+        }
         try {
             localStorage.setItem(HANDOFF_KEY, JSON.stringify(data));
         } catch (e) {

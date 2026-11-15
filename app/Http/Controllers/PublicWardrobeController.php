@@ -33,12 +33,16 @@ class PublicWardrobeController extends Controller
 
     public function design(): View
     {
+        $openplan = public_path('openplan/index.html');
+
         return view('wardrobe.index', [
             'company' => Company::first(),
             'quoteUrl' => route('wardrobe.quote'),
             'materialsUrl' => route('wardrobe.materials'),
             'projectStoreUrl' => route('wardrobe.project.store'),
             'projectIndexUrl' => route('wardrobe.project.index'),
+            'openplanSrc' => is_file($openplan) ? url('/openplan/index.html') : 'https://app.openplan3d.com/',
+            'cabinetUrl' => route('tools.cabinet'),
         ]);
     }
 

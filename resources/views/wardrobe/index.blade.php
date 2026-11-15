@@ -27,15 +27,52 @@
         html, body { margin: 0; height: 100%; height: 100dvh; overflow: hidden; font-family: Montserrat, system-ui, sans-serif; color: var(--ink); background: var(--bg); }
         button, input, select { font-family: inherit; }
         button { cursor: pointer; }
-        #studio { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100dvh; min-height: 0; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+        #studio {
+            display: grid; grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+            height: 100dvh; min-height: 0;
+            padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);
+        }
         header.bar, footer.bar, .series {
             display: flex; align-items: center; gap: 8px; padding: 0 14px; background: var(--panel);
         }
-        header.bar { border-bottom: 1px solid var(--line); flex-wrap: wrap; gap: 8px; padding-top: 8px; padding-bottom: 8px; }
-        .apps-row { width: 100%; order: 10; overflow-x: auto; padding-bottom: 2px; }
-        @media (min-width: 1100px) {
-            .apps-row { width: auto; order: 0; flex: 1; justify-content: center; display: flex; }
-            header.bar .brand { order: -1; }
+        header.bar { border-bottom: 1px solid var(--line); flex-wrap: nowrap; gap: 8px; padding-top: 8px; padding-bottom: 8px; min-height: 48px; overflow-x: auto; scrollbar-width: thin; }
+        .nav-row { padding: 8px 14px; background: #f7f5f1; border-bottom: 1px solid var(--line); overflow-x: auto; }
+        .workflow-row {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+            padding: 8px 14px; background: #eef6f1; border-bottom: 1px solid #d4e8dc;
+        }
+        .workflow-row p { margin: 0; flex: 1 1 200px; font-size: 12px; color: #3d5247; min-width: 0; }
+        .workflow-steps { display: flex; gap: 6px; flex-wrap: wrap; }
+        .workflow-steps button {
+            border: 1px solid #cfe0d6; background: #fff; border-radius: 999px;
+            padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
+        }
+        .workflow-steps button.is-on { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .workflow-steps a {
+            display: inline-flex; align-items: center; border: 1px solid var(--line); background: #fff;
+            border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 700;
+            color: inherit; text-decoration: none;
+        }
+        #room-plan-panel {
+            display: none; position: absolute; inset: 0; z-index: 8;
+            grid-template-rows: auto 1fr; background: #f3f1ec;
+        }
+        body.studio-room #room-plan-panel { display: grid; }
+        body.studio-room .stage-layout { visibility: hidden; pointer-events: none; }
+        .room-handoff {
+            display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; padding: 8px 12px;
+            background: #fffcf8; border-bottom: 1px solid var(--line); font-size: 12px;
+        }
+        .room-handoff label { display: flex; flex-direction: column; gap: 3px; font-weight: 600; color: #3d5247; }
+        .room-handoff input { width: 72px; border: 1px solid #cfe0d6; border-radius: 8px; padding: 6px 8px; font-size: 12px; }
+        .room-handoff button, .room-handoff .btn-mini {
+            border: 0; background: var(--accent); color: #fff; border-radius: 999px;
+            padding: 7px 14px; font-weight: 700; cursor: pointer; font-size: 12px;
+        }
+        #openplan-frame { width: 100%; height: 100%; border: 0; background: #fff; min-height: 0; }
+        .toolbar-spacer { flex: 1; min-width: 12px; }
+        @media (max-width: 900px) {
+            header.bar .extra { display: none; }
         }
         .series { display: none; }
         footer.bar { border-top: 1px solid var(--line); justify-content: space-between; }
@@ -104,7 +141,7 @@
         #viewport canvas { display: block; }
         #view-bar { position: absolute; left: 12px; bottom: 12px; z-index: 4; display: flex; flex-wrap: wrap; gap: 6px; max-width: min(420px, calc(100% - 24px)); }
         #view-bar button, #plan-switch button { border: 1px solid var(--line); background: rgba(255,252,248,.94); border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 700; }
-        #plan-switch { position: absolute; top: 12px; right: 12px; z-index: 5; display: flex; gap: 6px; }
+        #plan-switch { position: absolute; top: 12px; right: 12px; z-index: 5; display: flex; gap: 6px; flex-wrap: wrap; max-width: min(280px, calc(100% - 24px)); justify-content: flex-end; }
         #plan-switch button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
         #plan-board { position: absolute; inset: 0; z-index: 3; background: #f3f1ec; }
         #plan-board.hidden { display: none; }
@@ -195,30 +232,34 @@
         }
     </style>
 </head>
-<body class="show-library">
+<body class="show-library studio-layout">
 <div id="studio">
     <header class="bar">
         <a href="{{ route('wardrobe.index') }}" class="brand">
             <strong>MEEMARE</strong>
             <span>3D dolap stüdyosu</span>
         </a>
-        <div class="apps-row">@include('partials.meemare-apps-nav', ['activeApp' => 'tasarla'])</div>
         <input id="project-name" class="name-input" maxlength="80" aria-label="Proje adı" value="Dolabım">
-        <div class="grow"></div>
-        <button type="button" class="btn" id="btn-new">Yeni proje</button>
+        <div class="toolbar-spacer"></div>
         <button type="button" class="btn" id="btn-undo" disabled>Geri</button>
         <button type="button" class="btn" id="btn-redo" disabled>İleri</button>
-        <button type="button" class="btn" id="btn-saved">Kayıtlar</button>
         <button type="button" class="btn" id="btn-save">Kaydet</button>
         <button type="button" class="btn" id="btn-share">Paylaş</button>
-        <a class="btn extra" href="{{ route('tools.plan') }}">Oda planı</a>
-        <a class="btn extra" href="{{ route('tools.cabinet') }}">Üretim</a>
         <button type="button" class="btn" id="btn-measures">Ölçüler</button>
         <button type="button" class="btn is-on" id="btn-lights">Işıkları kapat</button>
-        <button type="button" class="btn extra" id="btn-export-json">Proje JSON</button>
-        <button type="button" class="btn extra" id="btn-cabinet">Üretim dolabı</button>
-        <button type="button" class="btn" id="btn-shot">Render al</button>
+        <button type="button" class="btn extra" id="btn-export-json">JSON</button>
+        <button type="button" class="btn extra" id="btn-cabinet">Üretim</button>
+        <button type="button" class="btn" id="btn-shot">Render</button>
     </header>
+    <div class="nav-row">@include('partials.meemare-apps-nav', ['activeApp' => 'tasarla'])</div>
+    <div class="workflow-row">
+        <div class="workflow-steps">
+            <button type="button" data-workspace="room">1 · Oda planı çiz</button>
+            <button type="button" data-workspace="layout" class="is-on">2 · Dolap dizimi (3D)</button>
+            <a href="{{ $cabinetUrl }}">3 · Üretim dolabı</a>
+        </div>
+        <p>OpenPlan ile duvarları çizin, ölçüleri uygulayın; modülleri 3D sahneye sürükleyin; tek gövde için üretim dolabına geçin.</p>
+    </div>
     <div class="workspace">
         <aside class="left" id="library">
             <button type="button" class="sheet-close" id="close-library">Kapat</button>
@@ -232,6 +273,18 @@
             <span></span>
         </div>
         <section class="stage">
+            <div id="room-plan-panel" aria-label="Oda planı">
+                <form id="studio-plan-handoff" class="room-handoff">
+                    <label>OpenPlan JSON<input id="studio-plan-json" type="file" accept="application/json,.json"></label>
+                    <label>Ön (cm)<input name="onduvar" type="number" min="80" max="800" value="320" required></label>
+                    <label>Sol (cm)<input name="solduvar" type="number" min="80" max="800" value="280"></label>
+                    <label>Sağ (cm)<input name="sagduvar" type="number" min="80" max="800" value="280"></label>
+                    <label>Yükseklik<input name="odaboy" type="number" min="160" max="320" value="320"></label>
+                    <button type="submit">Ölçüleri 3D sahneye uygula</button>
+                </form>
+                <iframe id="openplan-frame" src="{{ $openplanSrc }}" title="Oda planı (OpenPlan)" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen"></iframe>
+            </div>
+            <div class="stage-layout">
             <div id="viewport"></div>
             <div id="plan-board" class="hidden">
                 <canvas id="plan-canvas"></canvas>
@@ -243,8 +296,8 @@
             </div>
             <div id="plan-switch">
                 <button type="button" id="btn-modules">Modüller</button>
-                <button type="button" data-plan="2d">2B</button>
-                <button type="button" data-plan="3d" class="is-on">3B</button>
+                <button type="button" data-plan="2d" title="Duvar boyunca modül kaydırma (L-oda)">Yerleşim</button>
+                <button type="button" data-plan="3d" class="is-on">3D</button>
                 <button type="button" id="btn-guides" class="is-on">Kılavuz</button>
             </div>
             <div id="view-bar">
@@ -274,6 +327,7 @@
             <button type="button" id="height-handle" class="hidden" aria-label="Yükseklik">↕</button>
             <div id="hold-select" class="hidden"></div>
             <div id="warn" class="warn hidden"></div>
+            </div>
         </section>
         <aside class="right" id="inspector">
             <button type="button" class="sheet-close" id="close-inspector">Kapat</button>
@@ -403,6 +457,7 @@
         csrf: @json(csrf_token())
     };
 </script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=221"></script>
+<script src="{{ asset('js/meemare-plan-bridge.js') }}?v=3" defer></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=222"></script>
 </body>
 </html>

@@ -27,7 +27,7 @@ OpenPlan aynı domain’de `public/openplan` ( `scripts/build-openplan-static.sh
 
 ## Stüdyo 2B (mevcut)
 
-`wardrobe-studio.js` içinde L-oda, kapı/pencere, duvar kolu sürükleme, modül taşıma — OpenPlan’daki akışa yakın; tam serbest duvar çizimi henüz yok.
+`/dolap/tasarla` içinde **1 · Oda planı** adımı OpenPlan iframe (plan sayfasıyla aynı motor); **2 · Dolap dizimi** 3D; **3 · Üretim** Cabinet Studio. Dahili «Yerleşim» görünümü yalnızca L-oda modül kaydırma içindir, serbest çizim değildir.
 
 ## Tamamlanan (sıra 2)
 
