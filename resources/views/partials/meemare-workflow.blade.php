@@ -22,9 +22,4 @@
     <a href="{{ route('wardrobe.design') }}" @class(['is-on' => $workflowStep === 'tasarla'])>3D dizim</a>
     <a href="{{ route('tools.plan') }}" @class(['is-on' => $workflowStep === 'plan'])>Oda planı</a>
     <a href="{{ route('tools.cabinet') }}" @class(['is-on' => $workflowStep === 'uretim'])>Üretim dolabı</a>
-    @if($workflowStep === 'tasarla')
-        <span class="wf-sep"></span>
-        <button type="button" data-workspace="layout" class="is-on">Sahne</button>
-        <button type="button" data-workspace="room">OpenPlan burada</button>
-    @endif
 </nav>

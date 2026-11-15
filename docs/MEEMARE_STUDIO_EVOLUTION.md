@@ -5,7 +5,7 @@
 | Sayfa | URL | Açıklama |
 | --- | --- | --- |
 | Dolap projeleri | `/dolap` | Kayıtlı odalar; yeni proje ölçü veya OpenPlan |
-| 3D tasarla | `/dolap/tasarla` | Modül stüdyosu |
+| 3D tasarla | `/dolap/tasarla` | Cabinet Studio (üretim ile aynı arayüz; proje + plan ölçü aktarımı) |
 | Oda planı | `/plan` | OpenPlan3D (iframe) |
 | Üretim dolabı | `/dolap-uretim` | Cabinet Studio |
 
@@ -29,7 +29,7 @@ OpenPlan aynı domain’de `public/openplan` ( `scripts/build-openplan-static.sh
 
 ## Stüdyo 2B (mevcut)
 
-`/dolap/tasarla` içinde **1 · Oda planı** adımı OpenPlan iframe (plan sayfasıyla aynı motor); **2 · Dolap dizimi** 3D; **3 · Üretim** Cabinet Studio. Dahili «Yerleşim» görünümü yalnızca L-oda modül kaydırma içindir, serbest çizim değildir.
+Eski Three.js oda stüdyosu (`wardrobe/index.blade.php`) repoda duruyor; canlı **`/dolap/tasarla`** = Cabinet Studio iframe (`/dolap-uretim` ile aynı motor). Oda çizimi **`/plan`**; ölçüler `meemare-tasarla-bootstrap.js` ile aktarılır.
 
 ## Tamamlanan (sıra 2)
 
