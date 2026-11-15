@@ -44,7 +44,8 @@ class PublicWardrobeController extends Controller
             'projectIndexUrl' => route('wardrobe.project.index'),
             'planUrl' => route('tools.plan'),
             'cabinetUrl' => route('tools.cabinet'),
-            'openplanSrc' => is_file($openplan) ? url('/openplan/index.html') : 'https://app.openplan3d.com/',
+            // Yalnızca yerel build; harici OpenPlan iframe 404 / yabancı arayüz üretmesin.
+            'openplanSrc' => is_file($openplan) ? url('/openplan/') : '',
         ]);
     }
 

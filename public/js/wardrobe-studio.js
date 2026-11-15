@@ -13,6 +13,8 @@ const ROOM_H_MIN = 160;
 const ROOM_H_MAX = 320;
 const ROOM_H_STD = 320;
 const PASS_RATIO = 0.82;
+const SNAP_PICK_CM = 26;
+const SNAP_WIZARD_CM = 40;
 const ALUMINUM = [
     { id: 'al-gumus', name: 'Gümüş', color: '#d5d8dc' },
     { id: 'al-inox', name: 'Inox', color: '#b7bcc2' },
@@ -117,6 +119,7 @@ let pointerDown = null;
 let pointerPress = null;
 let catalogDrag = null;
 let dropGuide = null;
+let snapHints = null;
 let catalogBound = false;
 const glbTemplates = new Map();
 const glbFailed = new Set();
@@ -212,7 +215,10 @@ function toggleRoomPlan(open) {
     const on = Boolean(open);
     document.body.classList.toggle('show-room-plan', on);
     if (!on) return;
-    setRoomPlanEditorMode(window.WARDROBE?.openplanSrc ? 'openplan' : 'sketch');
+    const preferOpenPlan = Boolean(window.WARDROBE?.openplanSrc)
+        && !document.body.classList.contains('studio-plan-first')
+        && roomPlanEditorMode === 'openplan';
+    setRoomPlanEditorMode(preferOpenPlan ? 'openplan' : 'sketch');
     const form = el('studio-plan-handoff');
     if (form) {
         if (form.onduvar) form.onduvar.value = state.wallWidth;
@@ -641,7 +647,7 @@ function layout(modules) {
                 if (at - begin < 4 && fits(begin, along)) at = begin;
                 mod.offset = at;
             } else if (mod.id === dragId) {
-                mod.offset = at;
+                mod.offset = magneticSnapOffset(mod, at);
             }
             occupied.push({ start: at, end: at + along });
             if (!dragId || mod.id === dragId) mod.offset = at;
@@ -5568,6 +5574,8 @@ function init3d() {
             snapshot();
             moduleDrag.active = true;
             dragId = moduleDrag.id;
+            const dragged = state.modules.find((item) => item.id === moduleDrag.id);
+            if (dragged) moduleDrag.origin = Number(dragged.offset) || 0;
             controls.enabled = false;
         }
         dragModule(moduleDrag.id, event);
@@ -5593,6 +5601,7 @@ function init3d() {
         pointerDown = null;
         controls.enabled = true;
         clearDragGhost();
+        clearSnapHints();
         render();
         scheduleSave();
     };
@@ -6641,6 +6650,61 @@ function hideDropGuide() {
     if (dropGuide) dropGuide.visible = false;
 }
 
+function clearSnapHints() {
+    if (!snapHints) return;
+    scene?.remove(snapHints);
+    snapHints.traverse((child) => {
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) child.material.dispose();
+    });
+    snapHints = null;
+}
+
+function placeSnapHint(mod, at, color = 0x3b82f6, opacity = 0.32) {
+    if (!scene) return;
+    if (!snapHints) {
+        snapHints = new THREE.Group();
+        snapHints.name = 'snap-hints';
+        scene.add(snapHints);
+    }
+    const along = alongSize(mod);
+    const depth = Math.max(30, Number(mod.glbDepth) || Number(state.depth) || 60);
+    const front = wallLimit();
+    const wall = wallName(mod);
+    const height = Math.max(40, moduleHeight(mod) * 0.35);
+    const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(1, 1, 1),
+        new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false })
+    );
+    mesh.scale.set(wall === 'front' ? along : depth, height, wall === 'front' ? depth : along);
+    const nudge = depthNudge(mod);
+    if (wall === 'front') mesh.position.set(at + along / 2, height / 2 + 2, nudge + depth / 2);
+    else if (wall === 'left') mesh.position.set(nudge + depth / 2, height / 2 + 2, at + along / 2);
+    else mesh.position.set(front - nudge - depth / 2, height / 2 + 2, at + along / 2);
+    snapHints.add(mesh);
+}
+
+function updateSnapHints(mod) {
+    clearSnapHints();
+    if (!mod || (dragId !== mod.id && state.modules.includes(mod))) return;
+    const raw = Number(moduleDrag?.rawOffset ?? mod.offset) || 0;
+    const locked = Number(mod.offset) || 0;
+    const slots = snapSlotsFor(mod);
+    const snapped = slots.find((s) => Math.abs(s - locked) < 0.45);
+    if (snapped != null) placeSnapHint(mod, snapped, 0x1f6b4a, 0.42);
+    const home = Number(moduleDrag?.origin ?? locked);
+    const dir = raw > home + 0.5 ? 1 : raw < home - 0.5 ? -1 : 0;
+    const candidates = slots
+        .filter((s) => Math.abs(s - locked) > 0.5)
+        .filter((s) => Math.abs(s - raw) < SNAP_WIZARD_CM)
+        .sort((a, b) => {
+            if (dir > 0) return a - b;
+            if (dir < 0) return b - a;
+            return Math.abs(a - raw) - Math.abs(b - raw);
+        });
+    candidates.slice(0, 2).forEach((s) => placeSnapHint(mod, s, 0x3b82f6, 0.28));
+}
+
 function showDropGuide(mod, pick, ok) {
     if (!scene || !pick) return;
     if (!dropGuide) {
@@ -6655,7 +6719,9 @@ function showDropGuide(mod, pick, ok) {
     const depth = Math.max(30, Number(mod.glbDepth) || Number(state.depth) || 60);
     const front = wallLimit();
     const limit = pick.wall === 'front' ? front : sideLimit(pick.wall);
-    const at = Math.max(0, Math.min(Number(pick.offset) || 0, Math.max(0, limit - along)));
+    const raw = Math.max(0, Math.min(Number(pick.offset) || 0, Math.max(0, limit - along)));
+    const at = magneticSnapOffset(mod, raw);
+    pick.offset = at;
     dropGuide.scale.set(pick.wall === 'front' ? along : depth, 8, pick.wall === 'front' ? depth : along);
     if (pick.wall === 'front') dropGuide.position.set(at + along / 2, 4, depth / 2);
     else if (pick.wall === 'left') dropGuide.position.set(depth / 2, 4, at + along / 2);
@@ -6738,13 +6804,13 @@ function initStudioLayout() {
     }
 }
 
-let roomPlanEditorMode = 'openplan';
+let roomPlanEditorMode = 'sketch';
 
 function ensureOpenPlanFrame(frame) {
     if (!frame || frame.dataset.loaded) return;
-    const src = window.WARDROBE?.openplanSrc;
-    if (!src) return;
-    frame.src = src;
+    const src = String(window.WARDROBE?.openplanSrc || '').trim();
+    if (!src || /openplan3d\.com/i.test(src)) return;
+    frame.src = src.endsWith('/') ? src : `${src.replace(/\/index\.html$/i, '')}/`;
     frame.dataset.loaded = '1';
     frame.addEventListener('load', () => {
         try {
@@ -6755,8 +6821,8 @@ function ensureOpenPlanFrame(frame) {
     }, { once: true });
 }
 
-function openPlanFrameFullscreen(frame) {
-    const node = frame?.closest('.plan-first-frame') || frame?.parentElement || frame;
+function openPlanFrameFullscreen() {
+    const node = el('room-plan-panel') || el('studio-plan-first');
     if (!node) return;
     const req = node.requestFullscreen || node.webkitRequestFullscreen;
     if (req) void req.call(node);
@@ -6848,11 +6914,15 @@ function updateWalk(dt) {
 }
 
 function setRoomPlanEditorMode(mode) {
-    roomPlanEditorMode = mode === 'sketch' ? 'sketch' : 'openplan';
+    const hasLocalOpenPlan = Boolean(String(window.WARDROBE?.openplanSrc || '').trim())
+        && !/openplan3d\.com/i.test(String(window.WARDROBE?.openplanSrc || ''));
+    roomPlanEditorMode = mode === 'openplan' && hasLocalOpenPlan ? 'openplan' : 'sketch';
     el('room-plan-openplan')?.classList.toggle('hidden', roomPlanEditorMode !== 'openplan');
     el('room-plan-sketch-wrap')?.classList.toggle('hidden', roomPlanEditorMode !== 'sketch');
+    el('room-plan-mode')?.classList.toggle('hidden', !hasLocalOpenPlan);
     document.querySelectorAll('[data-room-plan-mode]').forEach((btn) => {
         btn.classList.toggle('is-on', btn.dataset.roomPlanMode === roomPlanEditorMode);
+        if (btn.dataset.roomPlanMode === 'openplan') btn.classList.toggle('hidden', !hasLocalOpenPlan);
     });
     if (roomPlanEditorMode === 'openplan') ensureOpenPlanFrame(el('openplan-frame'));
     else requestAnimationFrame(() => roomSketchOnOpen(state));
@@ -6860,8 +6930,12 @@ function setRoomPlanEditorMode(mode) {
 
 function closePlanStudioStep(applyHandoff = true) {
     if (!document.body.classList.contains('studio-plan-first')) return;
-    if (applyHandoff) applyHandoffFromStorage();
+    if (applyHandoff) {
+        roomSketchBeforeHandoff(state);
+        applyHandoffFromStorage();
+    }
     document.body.classList.remove('studio-plan-first');
+    toggleRoomPlan(false);
     initStudioLayout();
     showModuleLibrary();
     render();
@@ -6870,16 +6944,23 @@ function closePlanStudioStep(applyHandoff = true) {
 }
 
 function finishPlanFirstStep() {
+    roomSketchBeforeHandoff(state);
+    const handoff = el('studio-plan-handoff');
+    const form = el('studio-plan-first-handoff') || handoff;
+    if (handoff && form && form !== handoff) {
+        ['onduvar', 'solduvar', 'sagduvar', 'odaboy'].forEach((name) => {
+            if (form[name] && handoff[name]) form[name].value = handoff[name].value;
+        });
+    }
     if (applyHandoffFromStorage()) return;
-    const form = el('studio-plan-first-handoff');
     if (!form) {
         closePlanStudioStep(false);
         return;
     }
-    const front = Number(form.onduvar?.value);
-    const left = Number(form.solduvar?.value);
-    const right = Number(form.sagduvar?.value);
-    const height = Number(form.odaboy?.value);
+    const front = Number(form.onduvar?.value || handoff?.onduvar?.value);
+    const left = Number(form.solduvar?.value || handoff?.solduvar?.value);
+    const right = Number(form.sagduvar?.value || handoff?.sagduvar?.value);
+    const height = Number(form.odaboy?.value || handoff?.odaboy?.value || state.roomHeight);
     if (!window.MeemareStudioApplyWalls({ frontCm: front, leftCm: left, rightCm: right, heightCm: height })) {
         closePlanStudioStep(false);
     }
@@ -6889,8 +6970,12 @@ window.MeemareStudioClosePlan = () => closePlanStudioStep(true);
 
 function maybeOpenPlanStudio(params) {
     if (!params || params.get('plan') !== '1') return;
-    document.body.classList.add('studio-plan-first');
-    ensureOpenPlanFrame(el('openplan-studio-frame'));
+    document.body.classList.add('studio-plan-first', 'show-room-plan');
+    setRoomPlanEditorMode('sketch');
+    requestAnimationFrame(() => {
+        roomSketchOnOpen(state);
+        toast('Duvar çiz (W), kapı (D), pencere (P). Bitince «Modül dizimine geç».');
+    });
     const next = new URLSearchParams(params);
     next.delete('plan');
     const qs = next.toString();
@@ -6909,6 +6994,79 @@ function maybeOpenRoomSketcher(params) {
 function wallSpan(mod) {
     const wall = wallName(mod);
     return wall === 'front' ? wallLimit() : sideLimit(wall);
+}
+
+function wallOffsetMax(mod) {
+    const along = alongSize(mod);
+    const wall = wallName(mod);
+    const front = wallLimit();
+    const rightCorner = state.modules.find((m) => m.kind === 'corner' && m.cornerSide !== 'left');
+    const rightHold = rightCorner ? alongSize(rightCorner) : 0;
+    if (wall === 'front') return Math.max(0, front - rightHold - along);
+    return Math.max(0, sideLimit(wall) - along);
+}
+
+function wallOffsetMin(mod) {
+    const wall = wallName(mod);
+    const leftCorner = state.modules.find((m) => m.kind === 'corner' && m.cornerSide === 'left');
+    return wall === 'right' && leftCorner ? 0 : (leftCorner ? alongSize(leftCorner) : 0);
+}
+
+function fitsModuleSlot(mod, at) {
+    const along = alongSize(mod);
+    const wall = wallName(mod);
+    const min = wallOffsetMin(mod);
+    const max = wallOffsetMax(mod);
+    if (at < min - 0.05 || at + along > max + along + 0.05) return false;
+    if (hitsOpening(wall, at, along)) return false;
+    return !rowMates(mod).some((other) => {
+        const o0 = Number(other.offset) || 0;
+        const o1 = o0 + alongSize(other);
+        return at < o1 - 0.35 && at + along > o0 + 0.35;
+    });
+}
+
+function snapSlotsFor(mod) {
+    const along = alongSize(mod);
+    const min = wallOffsetMin(mod);
+    const max = wallOffsetMax(mod);
+    const edges = new Set([min, max]);
+    rowMates(mod).forEach((mate) => {
+        const o = Number(mate.offset) || 0;
+        const w = alongSize(mate);
+        edges.add(o);
+        edges.add(o + w);
+        edges.add(o - along);
+        edges.add(o + w);
+    });
+    return [...edges]
+        .map((s) => Math.round(s * 10) / 10)
+        .filter((s) => fitsModuleSlot(mod, s))
+        .sort((a, b) => a - b);
+}
+
+function magneticSnapOffset(mod, rawAt) {
+    const along = alongSize(mod);
+    const at = clamp(Number(rawAt) || 0, wallOffsetMin(mod), wallOffsetMax(mod));
+    const placing = !state.modules.some((item) => item.id === mod.id);
+    const dragging = dragId === mod.id;
+    if (!placing && !dragging) return at;
+    const slots = snapSlotsFor(mod);
+    if (!slots.length) return at;
+    const nearest = slots.reduce((best, s) => (!best || Math.abs(s - at) < Math.abs(best - at) ? s : best), slots[0]);
+    if (Math.abs(nearest - at) <= SNAP_PICK_CM) return nearest;
+    const home = Number(moduleDrag?.origin ?? mod.offset) || nearest;
+    const dir = at > home + 0.8 ? 1 : at < home - 0.8 ? -1 : 0;
+    if (dir > 0) {
+        const ahead = slots.filter((s) => s >= at - 6).sort((a, b) => a - b);
+        const target = ahead.find((s) => s >= at - 6) ?? ahead[0];
+        if (target != null && Math.abs(target - at) < SNAP_WIZARD_CM) return target;
+    } else if (dir < 0) {
+        const back = slots.filter((s) => s <= at + 6).sort((a, b) => b - a);
+        const target = back.find((s) => s <= at + 6) ?? back[0];
+        if (target != null && Math.abs(target - at) < SNAP_WIZARD_CM) return target;
+    }
+    return at;
 }
 
 function rowMates(mod) {
@@ -6934,7 +7092,8 @@ function slideModule(mod, rawOffset) {
         moduleDrag.anchor = null;
     }
     if (Math.abs(at - home) < 1) {
-        mod.offset = at;
+        mod.offset = magneticSnapOffset(mod, at);
+        if (moduleDrag) moduleDrag.rawOffset = at;
         return;
     }
     if (moduleDrag && moduleDrag.origin == null) moduleDrag.origin = home;
@@ -6949,7 +7108,8 @@ function slideModule(mod, rawOffset) {
             const nextAlong = alongSize(next);
             const line = (Number(next.offset) || 0) + nextAlong * PASS_RATIO;
             if (at + along < line) {
-                mod.offset = at;
+                mod.offset = magneticSnapOffset(mod, at);
+                if (moduleDrag) moduleDrag.rawOffset = at;
                 return;
             }
             next.offset = home;
@@ -6971,7 +7131,8 @@ function slideModule(mod, rawOffset) {
             const prevStart = Number(prev.offset) || 0;
             const line = prevStart + prevAlong * (1 - PASS_RATIO);
             if (at > line) {
-                mod.offset = at;
+                mod.offset = magneticSnapOffset(mod, at);
+                if (moduleDrag) moduleDrag.rawOffset = at;
                 return;
             }
             prev.offset = prevStart + along;
@@ -6983,7 +7144,8 @@ function slideModule(mod, rawOffset) {
             return;
         }
     }
-    mod.offset = at;
+    mod.offset = magneticSnapOffset(mod, at);
+    if (moduleDrag) moduleDrag.rawOffset = at;
 }
 
 function settleOverlaps(mod) {
@@ -7040,6 +7202,7 @@ function dragModule(id, event) {
     selectedId = id;
     if (!shiftCabinets()) rebuild();
     showDragGhost(mod);
+    updateSnapHints(mod);
     renderSummary();
     updateHud();
 }
@@ -7261,6 +7424,12 @@ function placeDropped(mod, dropEvent) {
         return true;
     }
     if (!applyWallDrop(mod, pick)) {
+        toast(wallFullMessage(pick.wall));
+        return false;
+    }
+    mod.offset = magneticSnapOffset(mod, Number(mod.offset) || 0);
+    const modules = state.modules.includes(mod) ? state.modules : [...state.modules, mod];
+    if (!layout(modules)) {
         toast(wallFullMessage(pick.wall));
         return false;
     }
@@ -8110,7 +8279,7 @@ function bindChrome() {
     onClick('room-plan-backdrop', () => toggleRoomPlan(false));
     onClick('btn-plan-to-3d', () => finishPlanFirstStep());
     onClick('btn-plan-skip', () => closePlanStudioStep(false));
-    onClick('btn-plan-fullscreen', () => openPlanFrameFullscreen(el('openplan-studio-frame')));
+    onClick('btn-plan-fullscreen', () => openPlanFrameFullscreen());
     onClick('btn-plan-toggle-handoff', () => {
         el('studio-plan-first-handoff')?.classList.toggle('is-collapsed');
     });

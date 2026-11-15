@@ -567,7 +567,7 @@ export function bindRoomSketch(deps) {
     setTool('select');
     window.addEventListener('resize', () => { draw(); paintStatus(); });
     window.addEventListener('keydown', (event) => {
-        if (!canvas || !document.body.classList.contains('show-room-plan')) return;
+        if (!canvas || !(document.body.classList.contains('show-room-plan') || document.body.classList.contains('studio-plan-first'))) return;
         const key = String(event.key || '').toLowerCase();
         if (key === 'v') setTool('select');
         else if (key === 'w') setTool('wall');

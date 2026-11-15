@@ -90,7 +90,7 @@ class PublicToolController extends Controller
                 'title' => 'Oda planı',
                 'lead' => 'Duvar, kapı ve odayı 2D/3D çizin. Dolap stüdyosundan ayrıdır.',
                 'src' => is_file(public_path('openplan/index.html'))
-                    ? url('/openplan/index.html')
+                    ? url('/openplan/')
                     : 'https://app.openplan3d.com/',
                 'source' => 'https://github.com/laanlabs/openPlan3D',
                 'credit' => 'OpenPlan3D · MIT · laanlabs',
