@@ -134,12 +134,25 @@ class PublicWardrobeController extends Controller
             })
             ->latest('updatedAt')
             ->limit(20)
-            ->get(['id', 'projectName', 'updatedAt'])
-            ->map(fn (WardrobeProject $project) => [
-                'id' => $project->id,
-                'projectName' => $project->projectName,
-                'updatedAt' => optional($project->updatedAt)->toIso8601String(),
-            ])
+            ->get(['id', 'projectName', 'customerName', 'updatedAt', 'design'])
+            ->map(function (WardrobeProject $project) {
+                $design = is_array($project->design) ? $project->design : [];
+                $modules = $design['modules'] ?? [];
+
+                return [
+                    'id' => $project->id,
+                    'projectName' => $project->projectName,
+                    'customerName' => $project->customerName,
+                    'updatedAt' => optional($project->updatedAt)->toIso8601String(),
+                    'moduleCount' => is_array($modules) ? count($modules) : 0,
+                    'room' => [
+                        'frontCm' => (int) ($design['wallWidth'] ?? 0),
+                        'leftCm' => (int) ($design['leftWall'] ?? 0),
+                        'rightCm' => (int) ($design['rightWall'] ?? 0),
+                        'heightCm' => (int) ($design['roomHeight'] ?? 0),
+                    ],
+                ];
+            })
             ->values();
 
         return response()->json(['ok' => true, 'projects' => $projects]);
