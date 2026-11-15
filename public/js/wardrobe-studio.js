@@ -121,7 +121,7 @@ const glbFailed = new Set();
 let glbCatalog = [];
 let showMeasures = false;
 let planMode = '3d';
-let studioWorkspace = 'room';
+let panelOpacity = 1;
 let guidesOn = true;
 let perspCamera = null;
 let orthoCamera = null;
@@ -182,20 +182,16 @@ window.MeemareStudioApplyWalls = (walls) => {
         Number(walls.heightCm ?? walls.height ?? walls.roomHeight),
     );
     if (ok) {
-        setStudioWorkspace('layout');
+        toggleRoomPlan(false);
         toast('Oda ölçüsü uygulandı. Modülleri kataloğdan sürükleyin.');
     }
     return ok;
 };
 
-function setStudioWorkspace(mode) {
-    studioWorkspace = mode === 'room' ? 'room' : 'layout';
-    document.body.classList.toggle('studio-room', studioWorkspace === 'room');
-    document.body.classList.toggle('studio-layout', studioWorkspace !== 'room');
-    document.querySelectorAll('[data-workspace]').forEach((button) => {
-        button.classList.toggle('is-on', button.dataset.workspace === studioWorkspace);
-    });
-    if (studioWorkspace === 'room' && planMode === '2d') setPlanMode('3d');
+function toggleRoomPlan(open) {
+    const on = Boolean(open);
+    document.body.classList.toggle('show-room-plan', on);
+    if (!on) return;
     const form = el('studio-plan-handoff');
     if (form) {
         if (form.onduvar) form.onduvar.value = state.wallWidth;
@@ -203,11 +199,12 @@ function setStudioWorkspace(mode) {
         if (form.sagduvar) form.sagduvar.value = state.rightWall;
         if (form.odaboy) form.odaboy.value = state.roomHeight;
     }
-    if (studioWorkspace === 'layout') {
-        showModuleLibrary();
-        if (planMode !== '2d') requestAnimationFrame(resize);
-        else drawPlan();
-    }
+}
+
+function syncViewModeBar() {
+    document.querySelectorAll('#view-mode-switch [data-plan], #plan-switch [data-plan]').forEach((button) => {
+        button.classList.toggle('is-on', button.dataset.plan === planMode);
+    });
 }
 
 function applyRoomQuery(params) {
@@ -242,7 +239,10 @@ function applyHandoffFromStorage() {
             Number(w.rightCm ?? w.right),
             Number(w.heightCm ?? w.height),
         );
-        if (ok) toast('Plan sayfasından oda ölçüleri aktarıldı.');
+        if (ok) {
+            toggleRoomPlan(false);
+            toast('Plan sayfasından oda ölçüleri aktarıldı.');
+        }
         localStorage.removeItem(ROOM_HANDOFF_KEY);
         return ok;
     } catch {
@@ -333,6 +333,8 @@ function blankState() {
         leftWall: 300,
         rightWall: 300,
         roomHeight: ROOM_H_STD,
+        wallColor: '#f7f6f4',
+        panelOpacity: 1,
         modules: [],
         roomSketch: { openings: [] },
     };
@@ -875,7 +877,8 @@ function material(key, source, opts = {}) {
     const plain = opts.metal || opts.glass || (typeof source === 'string' && source.startsWith('#'));
     const item = plain ? null : decor(source);
     const flat = Boolean(item && isPlainDecor(item));
-    const id = `${key}|${item ? item.id : source}|${opts.glass ? 1 : 0}|${opts.metal ? 1 : 0}|${opts.transmission ?? ''}|${opts.attenuation ?? ''}|${opts.representative ? woodStudyMode() : 'plain'}`;
+    const opa = opts.glass || opts.metal ? 1 : (state.panelOpacity ?? panelOpacity ?? 1);
+    const id = `${key}|${item ? item.id : source}|${opts.glass ? 1 : 0}|${opts.metal ? 1 : 0}|${opts.transmission ?? ''}|${opts.attenuation ?? ''}|${opts.representative ? woodStudyMode() : 'plain'}|o${Math.round(opa * 100)}`;
     if (matCache.has(id)) return matCache.get(id);
     // Volume attenuation (thickness > 0) makes three-gpu-pathtracer 0.0.23 return black
     // for a pane a few millimeters thick. Thickness 0 and an infinite attenuation
@@ -928,6 +931,11 @@ function material(key, source, opts = {}) {
     } else if (item?.image) {
         mat.userData.decorUrl = item.image;
         mat.userData.finish = item.finish_hint || 'matte';
+    }
+    if (!opts.glass && !opts.metal && opa < 0.99) {
+        mat.transparent = true;
+        mat.opacity = opa;
+        mat.depthWrite = opa > 0.55;
     }
     matCache.set(id, mat);
     return mat;
@@ -5087,15 +5095,15 @@ function framePlan() {
 function setPlanMode(mode) {
     if (!perspCamera || !orthoCamera || !controls) return;
     planMode = mode === '2d' ? '2d' : '3d';
+    toggleRoomPlan(false);
     document.body.classList.toggle('plan-2d', planMode === '2d');
     document.body.classList.remove('plan-room');
     el('plan-board')?.classList.toggle('hidden', planMode !== '2d');
-    document.querySelectorAll('[data-plan]').forEach((button) => {
-        button.classList.toggle('is-on', button.dataset.plan === planMode);
-    });
+    syncViewModeBar();
     if (planMode === '2d') {
         bindPlanBoard();
         drawPlan();
+        toast('2D: modülü sürükleyin; Kapı/Pencere araçlarıyla oda açıklıkları ekleyin.');
         return;
     }
     camera = perspCamera;
@@ -5118,9 +5126,11 @@ function revealCustomizer(mod) {
 }
 
 function showModuleLibrary() {
+    toggleRoomPlan(false);
     customFor = selectedId;
     document.body.classList.add('show-library');
     document.body.classList.remove('show-custom');
+    el('library')?.classList.add('is-open');
     if (window.matchMedia('(max-width: 900px)').matches) openPhoneSheet('modules');
     requestAnimationFrame(resize);
 }
@@ -5718,6 +5728,54 @@ async function loadModuleJson(glbId) {
     }
 }
 
+function inspectorTabBar(active = 'kapak') {
+    const tabs = [
+        ['kapak', 'Kapaklar'],
+        ['ic', 'İç'],
+        ['govde', 'Konstrüksiyon'],
+        ['baza', 'Baza'],
+        ['overlay', 'Overlay'],
+        ['donanim', 'Donanım'],
+    ];
+    return `<div class="seg insp-tabs" role="tablist">${tabs.map(([id, label]) => `<button type="button" data-insp-tab="${id}" class="${active === id ? 'is-on' : ''}">${label}</button>`).join('')}</div>`;
+}
+
+function bindInspectorTabs(root) {
+    let active = 'kapak';
+    const paint = () => {
+        root.querySelectorAll('[data-insp-tab]').forEach((button) => {
+            button.classList.toggle('is-on', button.dataset.inspTab === active);
+        });
+        root.querySelectorAll('.insp-pane').forEach((pane) => {
+            pane.hidden = pane.dataset.inspPane !== active;
+        });
+    };
+    root.querySelectorAll('[data-insp-tab]').forEach((button) => {
+        button.onclick = () => {
+            active = button.dataset.inspTab;
+            paint();
+        };
+    });
+    paint();
+}
+
+function hingeScheduleHtml(mod) {
+    if (!mod || mod.kind === 'end' || mod.door === 'none') {
+        return '<p class="hint">Kapak yok — menteşe tablosu üretilmez.</p>';
+    }
+    const hMm = Math.round(moduleHeight(mod) * 10);
+    const leaves = doorCount(mod);
+    const rows = [];
+    for (let i = 0; i < leaves; i++) {
+        const hinge = hingeFor(mod, i, leaves);
+        const y1 = Math.round(hMm * 0.12);
+        const y2 = Math.round(hMm * 0.5);
+        const y3 = Math.max(y1 + 80, Math.round(hMm * 0.88));
+        rows.push(`<tr><td>${leaves > 1 ? `Kapak ${i + 1}` : 'Kapak'}</td><td>${hinge === 'right' ? 'Sağ menteşe' : 'Sol menteşe'}</td><td>${y1} · ${y2} · ${y3}</td></tr>`);
+    }
+    return `<table class="parts-table"><thead><tr><th>Parça</th><th>Yön</th><th>Y (mm)</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+}
+
 function modulePartsHtml(parts) {
     const rows = (parts || []).slice(0, 36).map((part) => {
         const w = part.width_mm ?? part.width ?? '—';
@@ -5773,37 +5831,53 @@ function moduleConfigHtml(mod) {
     const boardNote = listed?.boardMm
         ? `<p class="hint">Raf, yan panel ve çekmece önü ${listed.boardMm} mm. Arkalık ${listed.backMm} mm. Çekmece kutusu: yan ve arka 16 mm, taban 8 mm. Dekor görseli temsili dijital dokudur.</p>`
         : '';
+    const swingBlock = swingPicker(mod);
+    const doorToolsBlock = swingBlock ? '' : doorTools(mod);
     return `
         <p class="picked">Seçili dolap</p>
         <h2>${mod.name}</h2>
-        <p class="hint">${mod.width} × ${moduleHeight(mod)} cm. Yerini sahnede sürükleyerek değiştir. ${mod.door === 'none' ? 'Kapak yok. Ahşap veya cam kapağı aşağıdan seç.' : 'Kapağı aşağıdan değiştirebilirsin.'}</p>
+        <p class="hint">${mod.width} × ${moduleHeight(mod)} cm — sahnede sürükle; altta duvar boyunca kaydır.</p>
         ${allCabinetsSelected ? '<p class="hint">Tüm dolaplar seçili. Bir rengi değiştirince hepsine yazılır.</p>' : ''}
         ${boardNote}
-        ${mod.glb ? '<div id="module-parts" class="parts-panel"><p class="hint">Üretim parçaları yükleniyor…</p></div>' : ''}
-        ${colorChoicesHtml(mod, cabinetHasDrawers(mod))}
-        ${mod.kind === 'end' ? '' : `<div class="field field-key"><label>Kapak</label><div class="seg"><button type="button" data-door="none" class="${mod.door === 'none' ? 'is-on' : ''}">Kapaksız</button><button type="button" data-door="solid" class="${mod.door === 'solid' ? 'is-on' : ''}">Ahşap kapak</button><button type="button" data-door="glass" class="${mod.door === 'glass' ? 'is-on' : ''}">Cam kapak</button>${doorCount(mod) > 1 ? `<button type="button" data-door="mixed" class="${mod.door === 'mixed' ? 'is-on' : ''}">Karışık</button>` : ''}</div></div>`}
-        ${mod.kind === 'end' ? '' : `<div class="field"><label>Genişlik (cm)</label><input id="mod-w" type="number" min="30" max="200" value="${mod.width}"></div>`}
-        ${mod.kind === 'end' ? '' : `<div class="field"><label>Öne / arkaya (cm)</label><input id="mod-depth" type="number" min="0" max="120" value="${depthNudge(mod)}"></div>`}
-        ${shelfField}
-        ${drawerField}
-        ${ledPicker(mod)}
-        ${swingPicker(mod)}
-        ${!swingPicker(mod) ? doorTools(mod) : ''}
-        ${swatchPicker(ALUMINUM, aluminumOf(mod).id, 'alum', 'Alüminyum kapak', true)}
-        ${swatchPicker(GLASS, glassOf(mod).id, 'glass', 'Cam')}
-        <label class="check"><input id="mod-plinth" type="checkbox" ${mod.plinth === false ? '' : 'checked'}> Bu dolapta baza olsun</label>
-        <label class="check"><input id="mod-plinth-hidden" type="checkbox" ${mod.plinthHidden ? 'checked' : ''} ${mod.plinth === false ? 'disabled' : ''}> Gizli baza olsun</label>
-        <label class="check"><input id="mod-kulp" type="checkbox" ${mod.kulp === false ? '' : 'checked'}> Bu dolapta kulp olsun</label>
-        ${mod.kind === 'end' ? '' : `<div class="field"><label>Bu dolabın yüksekliği (cm)</label><input id="mod-h" type="number" min="${mod.dxf === 'ust' ? 40 : H_MIN}" max="${H_MAX}" value="${moduleHeight(mod)}"></div>`}
-        ${mod.kind !== 'end' && !mod.glb ? `<button type="button" class="btn" id="mod-upper" style="width:100%;margin-bottom:12px">${upperHeight(mod) ? 'Üst dolabı kaldır' : 'Üst dolap ekle'}</button>` : ''}
-        ${mod.kind !== 'end' && (mod.door === 'panjur' || mod.door === 'accordion') ? `<div class="field"><button type="button" class="btn" id="mod-open">${mod.open > 0.5 ? 'Kapağı kapat' : 'Kapağı aç'}</button></div>` : ''}
-        <div style="display:flex;gap:8px">
-            <button type="button" class="btn" id="mod-left">Sola al</button>
-            <button type="button" class="btn" id="mod-right">Sağa al</button>
+        ${inspectorTabBar('kapak')}
+        <div class="insp-pane" data-insp-pane="kapak">
+            ${mod.kind === 'end' ? '' : `<div class="field field-key"><label>Kapak</label><div class="seg"><button type="button" data-door="none" class="${mod.door === 'none' ? 'is-on' : ''}">Kapaksız</button><button type="button" data-door="solid" class="${mod.door === 'solid' ? 'is-on' : ''}">Ahşap</button><button type="button" data-door="glass" class="${mod.door === 'glass' ? 'is-on' : ''}">Cam</button>${doorCount(mod) > 1 ? `<button type="button" data-door="mixed" class="${mod.door === 'mixed' ? 'is-on' : ''}">Karışık</button>` : ''}</div></div>`}
+            ${swingBlock || doorToolsBlock}
+            ${swatchPicker(ALUMINUM, aluminumOf(mod).id, 'alum', 'Alüminyum kapak', true)}
+            ${swatchPicker(GLASS, glassOf(mod).id, 'glass', 'Cam rengi')}
+        </div>
+        <div class="insp-pane" data-insp-pane="ic" hidden>
+            ${colorChoicesHtml(mod, cabinetHasDrawers(mod))}
+            ${shelfField}
+            ${drawerField}
+            ${ledPicker(mod)}
+        </div>
+        <div class="insp-pane" data-insp-pane="govde" hidden>
+            ${mod.kind === 'end' ? '' : `<div class="field"><label>Genişlik (cm)</label><input id="mod-w" type="number" min="30" max="200" value="${mod.width}"></div>`}
+            ${mod.kind === 'end' ? '' : `<div class="field"><label>Yükseklik (cm)</label><input id="mod-h" type="number" min="${mod.dxf === 'ust' ? 40 : H_MIN}" max="${H_MAX}" value="${moduleHeight(mod)}"></div>`}
+            ${mod.glb ? '<div id="module-parts" class="parts-panel"><p class="hint">Parça listesi yükleniyor…</p></div>' : ''}
+        </div>
+        <div class="insp-pane" data-insp-pane="baza" hidden>
+            <label class="check"><input id="mod-plinth" type="checkbox" ${mod.plinth === false ? '' : 'checked'}> Baza (toe kick)</label>
+            <label class="check"><input id="mod-plinth-hidden" type="checkbox" ${mod.plinthHidden ? 'checked' : ''} ${mod.plinth === false ? 'disabled' : ''}> Gizli baza</label>
+        </div>
+        <div class="insp-pane" data-insp-pane="overlay" hidden>
+            ${mod.kind === 'end' ? '' : `<div class="field"><label>Öne / arkaya (cm)</label><input id="mod-depth" type="number" min="0" max="120" value="${depthNudge(mod)}"></div><p class="hint">Kapak bindirme ve derinlik hizası için modülü öne veya arkaya kaydırın.</p>`}
+            ${mod.kind !== 'end' && !mod.glb ? `<button type="button" class="btn" id="mod-upper" style="width:100%;margin-bottom:12px">${upperHeight(mod) ? 'Üst dolabı kaldır' : 'Üst dolap ekle'}</button>` : ''}
+            <div style="display:flex;gap:8px;margin-top:8px">
+                <button type="button" class="btn" id="mod-left">Sola kaydır</button>
+                <button type="button" class="btn" id="mod-right">Sağa kaydır</button>
+            </div>
+        </div>
+        <div class="insp-pane" data-insp-pane="donanim" hidden>
+            <label class="check"><input id="mod-kulp" type="checkbox" ${mod.kulp === false ? '' : 'checked'}> Kulp / tutamak</label>
+            <h3 style="font-size:13px;margin:12px 0 6px">Menteşe tablosu</h3>
+            ${hingeScheduleHtml(mod)}
         </div>`;
 }
 
 function bindModuleConfig(root, mod) {
+    bindInspectorTabs(root);
     root.querySelectorAll('[data-door]').forEach((button) => {
         button.onclick = () => {
             if (mod.door === button.dataset.door) return;
@@ -5937,6 +6011,8 @@ function renderInspector() {
             <div class="field"><label>Ön duvar genişliği (cm)</label><input id="wall-front" type="number" min="80" max="800" value="${wallLimit()}"></div>
             <div class="field"><label>Sağ duvar genişliği (cm)</label><input id="wall-right" type="number" min="80" max="800" value="${sideLimit('right')}"></div>
             <div class="field"><label>Oda yüksekliği (cm)</label><input id="room-h" type="number" min="${ROOM_H_MIN}" max="${ROOM_H_MAX}" value="${roomHeightLimit()}"><p class="hint">Standart ${ROOM_H_STD} cm. ${ROOM_H_MIN} ile ${ROOM_H_MAX} arasında değiştirilebilir.</p></div>
+            <div class="field"><label>Duvar rengi</label><div class="seg">${['#f7f6f4', '#e8e4dc', '#d4cfc6', '#c5d4c9', '#ffffff', '#3d4a42'].map((hex) => `<button type="button" data-wall-color="${hex}" class="${(state.wallColor || '#f7f6f4').toLowerCase() === hex ? 'is-on' : ''}" style="width:28px;height:28px;background:${hex};border:1px solid #ccc;border-radius:6px" title="${hex}"></button>`).join('')}</div></div>
+            <div class="field opacity-field"><label>Panel opaklığı (gövde)</label><input id="panel-opacity" type="range" min="25" max="100" value="${Math.round((state.panelOpacity ?? 1) * 100)}"><span id="panel-opacity-val">${Math.round((state.panelOpacity ?? 1) * 100)}%</span></div>
             ${colorChoicesHtml(state, state.modules.some((item) => cabinetHasDrawers(item)))}
             ${swatchPicker(ALUMINUM, state.aluminumId, 'alum', 'Alüminyum kapak', true)}
             ${swatchPicker(GLASS, state.glassId, 'glass', 'Cam')}
@@ -5959,6 +6035,23 @@ function renderInspector() {
         body.querySelector('#room-h').addEventListener('change', (event) => commit(() => {
             state.roomHeight = clamp(Number(event.target.value), ROOM_H_MIN, ROOM_H_MAX);
         }));
+        body.querySelectorAll('[data-wall-color]').forEach((button) => {
+            button.addEventListener('click', () => commit(() => {
+                state.wallColor = button.dataset.wallColor;
+            }));
+        });
+        const opacitySlider = body.querySelector('#panel-opacity');
+        if (opacitySlider) {
+            opacitySlider.addEventListener('input', (event) => {
+                const value = clamp(Number(event.target.value), 25, 100);
+                state.panelOpacity = value / 100;
+                panelOpacity = state.panelOpacity;
+                const label = body.querySelector('#panel-opacity-val');
+                if (label) label.textContent = `${value}%`;
+                matCache.clear();
+                rebuild();
+            });
+        }
         body.querySelector('#cab-plinth').addEventListener('change', (event) => commit(() => {
             state.plinth = event.target.checked;
             if (!state.plinth) state.plinthHidden = false;
@@ -6073,7 +6166,9 @@ function fitRoom() {
     const left = sideLimit('left');
     const right = sideLimit('right');
     const depth = roomDepthLimit();
-    if (!room.wallMat) room.wallMat = new THREE.MeshStandardMaterial({ color: '#f7f6f4', roughness: 0.9 });
+    const wallHex = state.wallColor || '#f7f6f4';
+    if (!room.wallMat) room.wallMat = new THREE.MeshStandardMaterial({ color: wallHex, roughness: 0.9 });
+    else room.wallMat.color.set(wallHex);
     const wallMat = room.wallMat;
     const build = (pieces, place) => {
         const group = new THREE.Group();
@@ -6622,6 +6717,8 @@ function placeDropped(mod, dropEvent) {
 async function addGlbModule(id, dropEvent) {
     const item = glbCatalog.find((entry) => entry.id === id);
     if (!item) return;
+    toggleRoomPlan(false);
+    if (planMode === '2d') setPlanMode('3d');
     noteDrop({ phase: 'load', id, cached: glbTemplates.has(item.id) });
     try {
         await ensureGlb(item);
@@ -7368,7 +7465,7 @@ function bindStudioHandoff() {
         const left = Number(form.solduvar?.value);
         const right = Number(form.sagduvar?.value);
         const height = Number(form.odaboy?.value);
-        if (window.MeemareStudioApplyWalls({ frontCm: front, leftCm: left, rightCm: right, heightCm: height })) {
+        if (window.MeemareStudioApplyWalls({ frontCm: front, leftCm: left, rightCm: right, heightCm: height }) !== false) {
             ['wall-left', 'wall-front', 'wall-right', 'room-h'].forEach((id) => {
                 const node = el(id);
                 if (!node) return;
@@ -7412,15 +7509,13 @@ function bindStudioHandoff() {
 }
 
 function bindChrome() {
-    document.body.classList.add('studio-layout');
     bindStudioHandoff();
-    document.querySelectorAll('[data-workspace]').forEach((button) => {
-        button.addEventListener('click', () => setStudioWorkspace(button.dataset.workspace));
-    });
-    onClick('step-openings', () => {
-        setStudioWorkspace('layout');
-        setPlanMode('2d');
-        toast('Duvara tıklayın: kapı veya pencere ekleyin / kaldırın.');
+    onClick('btn-room-plan', () => toggleRoomPlan(true));
+    onClick('btn-close-room-plan', () => toggleRoomPlan(false));
+    onClick('room-plan-backdrop', () => toggleRoomPlan(false));
+    on('view-mode-switch', 'click', (event) => {
+        const button = event.target.closest('[data-plan]');
+        if (button) setPlanMode(button.dataset.plan);
     });
     on('project-name', 'change', (event) => {
         state.name = event.target.value || 'Dolabım';
@@ -7996,7 +8091,9 @@ async function boot() {
     const token = params.get('proje');
     if ((recordId && await openProject(recordId)) || (token && await openProject(token))) {
         el('customer-modal').classList.add('hidden');
-        setStudioWorkspace(state.modules.length ? 'layout' : 'room');
+        toggleRoomPlan(false);
+        panelOpacity = state.panelOpacity ?? 1;
+        syncViewModeBar();
         return;
     }
     if (loadHash()) {
@@ -8019,25 +8116,24 @@ async function boot() {
             frameCamera();
             el('customer-modal').classList.add('hidden');
             toast('Kaydedilmemiş taslak geri yüklendi.');
-            setStudioWorkspace('layout');
+            toggleRoomPlan(false);
             return;
         }
     } catch {
         /* bozuk taslak yok sayılır */
     }
     el('customer-modal').classList.add('hidden');
-    const forceLayout = params.get('oda') === 'hazir' || params.get('demo') === 'giyinme';
+    panelOpacity = state.panelOpacity ?? 1;
+    toggleRoomPlan(false);
     if (params.get('demo') === 'giyinme' && !state.modules.length) {
         await applyDressingRoomDemo();
-        setStudioWorkspace('layout');
-    } else if (forceLayout || state.modules.length > 0) {
-        setStudioWorkspace('layout');
-    } else {
-        setStudioWorkspace('room');
-        toast('1. Adım: duvarları çizin veya ölçü girin → 3D odaya uygula.');
     }
+    syncViewModeBar();
     render();
     frameCamera();
+    if (!state.modules.length) {
+        showModuleLibrary();
+    }
 }
 
 window.__setCameraView = (mode) => setCameraView(mode);
