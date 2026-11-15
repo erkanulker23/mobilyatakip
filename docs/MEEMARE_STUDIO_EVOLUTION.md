@@ -36,6 +36,9 @@
 | 3 | UX: hızlı rail, zemin, sade kamera |
 | 4 | Modül ekleyince kadraj (`focusSelectedModule`) |
 | 5 | Bundle’da `room.walls` + openings |
+| 6 | Duvar tıklama → renk paneli; sahne temizle; köşe GLB yalnız `kind=corner` |
+| 7 | Render varsayılan 18 pass, güçlü denoise |
+| 8 | Oda çizim kısayolları V/W/D/P |
 
 ## Sırada (mimari / üretim — büyük işler)
 

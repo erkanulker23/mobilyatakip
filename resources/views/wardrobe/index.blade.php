@@ -545,6 +545,6 @@
     };
 </script>
 <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=4" defer></script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=233"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=234"></script>
 </body>
 </html>

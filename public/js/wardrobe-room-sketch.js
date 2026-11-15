@@ -566,6 +566,15 @@ export function bindRoomSketch(deps) {
     bindToolbar();
     setTool('select');
     window.addEventListener('resize', () => { draw(); paintStatus(); });
+    window.addEventListener('keydown', (event) => {
+        if (!canvas || !document.body.classList.contains('show-room-plan')) return;
+        const key = String(event.key || '').toLowerCase();
+        if (key === 'v') setTool('select');
+        else if (key === 'w') setTool('wall');
+        else if (key === 'd') setTool('door');
+        else if (key === 'p') setTool('window');
+        else if (key === 'escape') hooks?.toggleRoomPlan?.(false);
+    });
 }
 
 export function roomSketchOnOpen(state) {

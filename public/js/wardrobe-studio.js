@@ -226,9 +226,12 @@ function syncInspectorChrome(mod) {
     } else if (sceneFocus === 'floor') {
         title.textContent = 'Zemin';
         if (sub) sub.textContent = 'Parke / fayans seçin';
+    } else if (sceneFocus === 'wall') {
+        title.textContent = 'Duvar';
+        if (sub) sub.textContent = 'Renk ve opaklık';
     } else {
         title.textContent = 'Oda';
-        if (sub) sub.textContent = 'Duvar ölçüsü · zemine tıklayın';
+        if (sub) sub.textContent = 'Duvar/zemine tıklayın · ölçü düzenleyin';
     }
 }
 
@@ -4068,21 +4071,20 @@ function buildModule(mod, preview) {
     group.name = `mod-${mod.id}`;
     group.userData.moduleId = mod.id;
     if (mod.glb) {
-        const cornerWall = '';
         const cornerId = mod.kind === 'corner' ? cornerModelId(mod) : '';
         const cornerTemplate = cornerId ? glbTemplates.get(cornerId) : null;
         if (cornerId && !cornerTemplate && !glbFailed.has(cornerId) && !preview) {
             const item = glbCatalog.find((entry) => entry.id === cornerId);
             if (item) ensureGlb(item).then(() => rebuild()).catch(() => {});
         }
-        if (cornerTemplate) {
+        if (cornerTemplate && mod.kind === 'corner') {
             const stand = {
                 ...mod,
                 glb: cornerId,
                 kind: 'corner',
-                cornerSide: cornerWall === 'left' ? 'right' : cornerWall === 'right' ? 'left' : (mod.cornerSide === 'right' ? 'right' : 'left'),
+                cornerSide: mod.cornerSide === 'right' ? 'right' : 'left',
                 glbWidth: 0.9,
-                returnDepth: mod.kind === 'corner' ? (mod.width || 90) : (mod.glbDepth || state.depth || 60),
+                returnDepth: mod.width || 90,
             };
             group.add(placeGlb(cornerTemplate, stand));
             if (mod.door && mod.door !== 'none' && (preview || !doorsAreHidden(mod))) addCornerGlbDoors(group, stand, preview);
@@ -5521,11 +5523,30 @@ function init3d() {
         if (event.pointerType === 'mouse' && event.button !== 0) return;
         if (press && Math.hypot(event.clientX - press.x, event.clientY - press.y) > clickSlop) return;
         if (!press?.id) {
+            const wallId = wallUnder(event);
+            if (wallId) {
+                selectedId = null;
+                sceneFocus = 'wall';
+                allCabinetsSelected = false;
+                customFor = null;
+                el('inspector')?.classList.add('is-open');
+                if (window.matchMedia('(max-width: 900px)').matches) {
+                    document.body.classList.add('show-custom');
+                    document.body.classList.remove('show-library');
+                }
+                render();
+                return;
+            }
             if (floorUnder(event)) {
                 selectedId = null;
                 sceneFocus = 'floor';
                 allCabinetsSelected = false;
+                customFor = null;
                 el('inspector')?.classList.add('is-open');
+                if (window.matchMedia('(max-width: 900px)').matches) {
+                    document.body.classList.add('show-custom');
+                    document.body.classList.remove('show-library');
+                }
                 render();
             } else if (selectedId) {
                 selectedId = null;
@@ -6196,7 +6217,11 @@ function renderInspector() {
         config.classList.add('hidden');
         body.innerHTML = `
             <div class="room-panel">
-            <p class="hint">L oda: ön + sol + sağ ölçü. Modül: soldaki katalog.</p>
+            <p class="hint">Zemine veya duvara tıklayın · L oda ölçüleri aşağıda.</p>
+            <div class="row-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+                <button type="button" class="btn" id="btn-clear-modules" ${state.modules.length ? '' : 'disabled'}>Dolapları temizle</button>
+                <button type="button" class="btn" id="btn-open-room-sketch">Odayı çiz</button>
+            </div>
             <div class="walls-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
             <div class="field"><label>Sol (cm)</label><input id="wall-left" type="number" min="80" max="800" value="${sideLimit('left')}"></div>
             <div class="field"><label>Sağ (cm)</label><input id="wall-right" type="number" min="80" max="800" value="${sideLimit('right')}"></div>
@@ -6220,6 +6245,8 @@ function renderInspector() {
                 ${allDoorButton()}
             </details>
             </div>`;
+        body.querySelector('#btn-clear-modules')?.addEventListener('click', () => clearAllModules());
+        body.querySelector('#btn-open-room-sketch')?.addEventListener('click', () => toggleRoomPlan(true));
         body.querySelector('#wall-left').addEventListener('change', (event) => commit(() => {
             state.leftWall = clamp(Number(event.target.value), 80, 800);
         }));
@@ -6462,13 +6489,36 @@ function syncLightsButton() {
     button.textContent = lightsOn ? 'Işıkları kapat' : 'Işıkları aç';
 }
 
-function floorUnder(event) {
-    if (!renderer || !room.floor) return false;
+function pickRaycastPoint(event) {
+    if (!renderer) return null;
     const rect = renderer.domElement.getBoundingClientRect();
     pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(pointer, camera);
+    return true;
+}
+
+function floorUnder(event) {
+    if (!renderer || !room.floor) return false;
+    if (!pickRaycastPoint(event)) return false;
     return raycaster.intersectObject(room.floor, true).length > 0;
+}
+
+function wallUnder(event) {
+    if (!renderer || !room.back) return null;
+    if (!pickRaycastPoint(event)) return null;
+    const hits = [
+        ['front', room.back],
+        ['left', room.left],
+        ['right', room.right],
+    ].flatMap(([id, mesh]) => {
+        if (!mesh) return [];
+        const hit = raycaster.intersectObject(mesh, true)[0];
+        return hit ? [{ id, distance: hit.distance }] : [];
+    });
+    if (!hits.length) return null;
+    hits.sort((a, b) => a.distance - b.distance);
+    return hits[0].id;
 }
 
 function moduleUnder(event) {
@@ -7146,6 +7196,20 @@ function deleteSelected() {
     });
 }
 
+function clearAllModules() {
+    if (!state.modules.length) {
+        toast('Sahnede dolap yok.');
+        return;
+    }
+    if (!confirm('Tüm dolaplar kaldırılsın mı? Oda ölçüsü kalır.')) return;
+    commit(() => {
+        state.modules = [];
+        selectedId = null;
+        sceneFocus = 'room';
+    });
+    frameCamera();
+}
+
 function saves() {
     try { return JSON.parse(localStorage.getItem(SAVE_KEY) || '[]'); } catch { return []; }
 }
@@ -7591,7 +7655,7 @@ async function takeRender() {
         const tracer = new WebGLPathTracer(renderer);
         const tilesX = 2;
         const tilesY = 2;
-        const passes = Number(window.__ultraPasses) > 4 ? Number(window.__ultraPasses) : 12;
+        const passes = Number(window.__ultraPasses) > 4 ? Number(window.__ultraPasses) : 18;
         tracer.tiles.set(tilesX, tilesY);
         tracer.bounces = Number(window.__traceBounces) > 0 ? Number(window.__traceBounces) : 4;
         tracer.transmissiveBounces = Number(window.__traceTransmissive) > 0 ? Number(window.__traceTransmissive) : 5;
@@ -7625,9 +7689,9 @@ async function takeRender() {
                 const { FullScreenQuad } = await import('three/addons/postprocessing/Pass.js');
                 const denoise = new DenoiseMaterial();
                 denoise.uniforms.map.value = tracer.target.texture;
-                denoise.uniforms.sigma.value = Number(window.__denoiseSigma) > 0 ? Number(window.__denoiseSigma) : 1.6;
-                denoise.uniforms.kSigma.value = 1.5;
-                denoise.uniforms.threshold.value = 0.07;
+                denoise.uniforms.sigma.value = Number(window.__denoiseSigma) > 0 ? Number(window.__denoiseSigma) : 2.4;
+                denoise.uniforms.kSigma.value = 1.8;
+                denoise.uniforms.threshold.value = 0.055;
                 const quad = new FullScreenQuad(denoise);
                 quad.render(renderer);
                 quad.dispose();
@@ -8155,7 +8219,17 @@ async function persist(manual) {
             if (manual) toast(`${data.message || 'Kayıt yazılamadı.'} Tasarım ekranda duruyor.`);
             return false;
         }
+        const saveBtn = el('btn-save');
         if (manual) toast(data.message || 'Proje kaydedildi.');
+        else if (saveBtn) {
+            saveBtn.textContent = 'Kaydedildi';
+            saveBtn.classList.add('is-on');
+            clearTimeout(saveBtn.__savedTimer);
+            saveBtn.__savedTimer = setTimeout(() => {
+                saveBtn.textContent = 'Kaydet';
+                saveBtn.classList.remove('is-on');
+            }, 2200);
+        }
         return true;
     } catch {
         if (manual) toast('Kayıt yazılamadı. Tasarım ekranda duruyor. Tekrar deneyin.');
@@ -8232,6 +8306,8 @@ async function openProject(key) {
         state.phone = data.phone || state.phone;
         state.name = data.projectName || state.name;
         state.note = data.note || state.note || '';
+        ensureSketch();
+        if (!state.floorStyle) state.floorStyle = 'parquet';
         ensureModuleColors();
         await preloadModuleGlbs();
         projectToken = data.token;
@@ -8241,7 +8317,7 @@ async function openProject(key) {
         future = [];
         window.history.replaceState(null, '', `${location.pathname}?proje=${projectToken}`);
         render();
-        frameCamera();
+        focusSelectedModule();
         return true;
     } catch {
         return false;
