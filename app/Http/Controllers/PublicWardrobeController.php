@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\WardrobeProject;
 use App\Models\WardrobeQuote;
 use App\Services\AuditService;
+use App\Support\WardrobeDesign;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -255,6 +256,8 @@ class PublicWardrobeController extends Controller
         ]);
         $data['note'] = $data['note'] ?? null;
         $data['phone'] = $data['phone'] ?? '';
+        $design = $request->input('design');
+        $data['design'] = WardrobeDesign::validated(is_array($design) ? $design : []);
 
         return $data;
     }
@@ -267,6 +270,9 @@ class PublicWardrobeController extends Controller
             'note' => 'nullable|string|max:2000',
             'design' => 'required|array',
         ]);
+
+        $design = $request->input('design');
+        $data['design'] = WardrobeDesign::validated(is_array($design) ? $design : []);
 
         if (! Schema::hasTable('wardrobe_quotes')) {
             return response()->json([

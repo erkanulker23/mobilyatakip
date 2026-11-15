@@ -160,6 +160,115 @@ class WardrobeProjectAccessTest extends TestCase
         $this->assertNull(WardrobeProject::query()->find($id));
     }
 
+    public function test_design_bounds_reject_a_module_past_the_wall_and_keep_a_valid_one(): void
+    {
+        $owner = $this->makeUser('wardrobe-bounds@example.test', 'Ölçü', 'staff');
+        $created = $this->actingAs($owner)->postJson('/dolap/proje', $this->payload('Ölçü', '05550000009'));
+        $created->assertOk();
+        $token = $created->json('token');
+        $id = $created->json('id');
+
+        $tooWide = $this->payload('Ölçü', '05550000009');
+        $tooWide['design'] = [
+            'wallWidth' => 180,
+            'modules' => [[
+                'id' => 'bad',
+                'product' => 'tek-raf',
+                'kind' => 'wardrobe',
+                'wall' => 'front',
+                'width' => 200,
+                'offset' => 0,
+            ]],
+        ];
+        $this->actingAs($owner)->putJson('/dolap/proje/'.$token, $tooWide)->assertStatus(422);
+        $this->assertSame('Ölçü', WardrobeProject::query()->find($id)->projectName);
+
+        $unknown = $this->payload('Ölçü', '05550000009');
+        $unknown['design'] = [
+            'modules' => [[
+                'id' => 'ghost',
+                'product' => 'olmayan-modul',
+                'width' => 45,
+                'offset' => 0,
+            ]],
+        ];
+        $this->actingAs($owner)->putJson('/dolap/proje/'.$token, $unknown)
+            ->assertStatus(422)
+            ->assertJsonFragment(['Bilinmeyen modül kimliği.']);
+
+        $good = $this->payload('180 duvar', '05550000009');
+        $good['design'] = [
+            'wallWidth' => 180,
+            'leftWall' => 300,
+            'rightWall' => 300,
+            'roomHeight' => 260,
+            'height' => 250,
+            'depth' => 60,
+            'modules' => [
+                [
+                    'id' => 'a',
+                    'product' => 'cift-raf',
+                    'kind' => 'wardrobe',
+                    'wall' => 'front',
+                    'width' => 90,
+                    'offset' => 0,
+                    'height' => 250,
+                ],
+                [
+                    'id' => 'b',
+                    'product' => 'custom',
+                    'glb' => 'y26_tek_01',
+                    'kind' => 'wardrobe',
+                    'wall' => 'front',
+                    'width' => 90,
+                    'offset' => 90,
+                    'height' => 250,
+                ],
+            ],
+        ];
+        $this->actingAs($owner)->putJson('/dolap/proje/'.$token, $good)->assertOk();
+        $saved = WardrobeProject::query()->find($id);
+        $this->assertSame('180 duvar', $saved->projectName);
+        $this->assertCount(2, $saved->design['modules']);
+
+        $corner = $this->payload('Köşe', '05550000009');
+        $corner['design'] = [
+            'wallWidth' => 320,
+            'leftWall' => 300,
+            'rightWall' => 280,
+            'modules' => [[
+                'id' => 'kose',
+                'product' => 'custom',
+                'glb' => 'kose_2',
+                'kind' => 'corner',
+                'cornerSide' => 'left',
+                'wall' => 'front',
+                'width' => 90,
+                'offset' => 10000,
+                'height' => 250,
+            ]],
+        ];
+        $this->actingAs($owner)->putJson('/dolap/proje/'.$token, $corner)->assertOk();
+        $this->assertSame(10000, (int) WardrobeProject::query()->find($id)->design['modules'][0]['offset']);
+
+        $sentinel = $this->payload('Bozuk', '05550000009');
+        $sentinel['design'] = [
+            'wallWidth' => 320,
+            'modules' => [[
+                'id' => 'bad-offset',
+                'product' => 'tek-raf',
+                'kind' => 'wardrobe',
+                'wall' => 'front',
+                'width' => 45,
+                'offset' => 10000,
+            ]],
+        ];
+        $this->actingAs($owner)->putJson('/dolap/proje/'.$token, $sentinel)
+            ->assertStatus(422)
+            ->assertJsonFragment(['Bozuk konum verisi.']);
+        $this->assertSame('Köşe', WardrobeProject::query()->find($id)->projectName);
+    }
+
     private function makeUser(string $email, string $name, string $role): User
     {
         $user = new User([

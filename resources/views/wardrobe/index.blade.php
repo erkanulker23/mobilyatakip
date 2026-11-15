@@ -303,6 +303,7 @@
                 transform: none; position: relative; width: auto;
                 display: flex;
             }
+            body.show-library aside.right { opacity: .35; pointer-events: none; }
             aside.right .sheet-close { display: none; }
         }
         .side-head { padding: 12px 14px 0; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
@@ -313,7 +314,15 @@
         .library-search input { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: #fff; font-size: 13px; }
         .side-body { padding: 12px; overflow: auto; min-height: 0; flex: 1; }
         .side-foot { border-top: 1px solid var(--line); padding: 12px; flex: 0 0 auto; }
-        .side-foot .btn { width: 100%; }
+        .side-foot .btn, .side-foot .btn-primary { width: 100%; }
+        .side-foot-stack { display: flex; flex-direction: column; gap: 8px; }
+        .btn-add-module {
+            border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: #fff;
+            padding: 7px 12px; font-size: 12px; font-weight: 700; margin-right: 8px;
+        }
+        @media (max-width: 900px) {
+            .btn-add-module, #open-library-desk { display: none !important; }
+        }
         .catalog { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .card { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 12px; background: #fff; padding: 6px; text-align: left; cursor: grab; touch-action: none; }
         .card-add { align-self: flex-start; margin-top: 6px; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer; }
@@ -718,7 +727,7 @@
                     <button type="button" data-plan-tool="window">Pencere</button>
                 </div>
                 <span class="tb-sep" aria-hidden="true"></span>
-                <button type="button" id="btn-modules">Katalog</button>
+                <button type="button" id="btn-modules" title="Modül kataloğu">Modül Ekle</button>
                 <button type="button" id="btn-room-plan">Oda</button>
                 <button type="button" id="btn-guides" class="is-on" title="Kılavuz çizgileri">Izgara</button>
                 <button type="button" id="btn-demo-dressing" title="Örnek L giyinme">Örnek</button>
@@ -754,15 +763,17 @@
         </section>
         <aside class="right" id="inspector">
             <button type="button" class="sheet-close" id="close-inspector">Kapat</button>
-            <div class="side-head"><span id="inspector-title">Oda</span><span class="side-sub" id="inspector-sub">Duvar ölçüsü · soldan modül ekleyin</span></div>
+            <div class="side-head"><span id="inspector-title">Oda</span><span class="side-sub" id="inspector-sub">Duvar ölçüsü · Modül Ekle ile katalog açılır</span></div>
             <div class="side-body" id="inspector-body"></div>
-            <div class="side-foot">
+            <div class="side-foot side-foot-stack">
+                <button type="button" class="btn-primary" id="open-library-desk">Modül Ekle</button>
                 <button type="button" class="btn" id="btn-production">Üretim listesi</button>
             </div>
         </aside>
     </div>
     <footer class="bar">
         <div class="stat" id="summary"></div>
+        <button type="button" class="btn btn-add-module" id="open-library-bar">Modül Ekle</button>
         <div class="mobile-nav">
             <button type="button" class="btn" id="open-library">Modül Ekle</button>
             <button type="button" class="btn" id="open-material">Malzeme</button>
@@ -884,6 +895,6 @@
 </script>
 <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=6" defer></script>
 <script src="{{ asset('js/openplan-import.js') }}?v=2" defer></script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=270"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=273"></script>
 </body>
 </html>

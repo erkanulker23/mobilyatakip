@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { bindRoomSketch, roomSketchOnOpen, roomSketchBeforeHandoff } from './wardrobe-room-sketch.js?v=259';
+import { layoutModules, wallOffsetMin as sharedWallOffsetMin, wallOffsetMax as sharedWallOffsetMax } from './wardrobe-layout.js?v=1';
 
 const T = 1.8;
 const BACK = 0.8;
@@ -648,143 +649,19 @@ function cornerModelId(mod) {
     return 'kose_1';
 }
 
-function ensurePlacement(modules) {
-    const cursor = { left: 0, front: 0, right: 0 };
-    modules.forEach((mod) => {
-        if (mod.kind === 'corner' && mod.cornerSide !== 'left') mod.cornerSide = 'right';
-        if (mod.wall !== 'left' && mod.wall !== 'right') mod.wall = 'front';
-        if (!Number.isFinite(Number(mod.offset))) {
-            const wall = wallName(mod);
-            mod.offset = cursor[wall];
-            cursor[wall] += alongSize(mod);
-        }
+function layout(modules) {
+    return layoutModules(modules, {
+        front: wallLimit(),
+        left: sideLimit('left'),
+        right: sideLimit('right'),
+        depth: Number(state.depth) || 60,
+        openings: state.roomSketch?.openings || [],
+        dragId,
+        owned: state.modules,
+        magneticSnap: (mod, at) => magneticSnapOffset(mod, at),
     });
 }
 
-function layout(modules) {
-    ensurePlacement(modules);
-    const front = wallLimit();
-    const leftLen = sideLimit('left');
-    const rightLen = sideLimit('right');
-    const leftCorner = modules.find((mod) => mod.kind === 'corner' && mod.cornerSide === 'left');
-    const rightCorner = modules.find((mod) => mod.kind === 'corner' && mod.cornerSide !== 'left');
-    if (modules.filter((mod) => mod.kind === 'corner' && mod.cornerSide === 'left').length > 1) return null;
-    if (modules.filter((mod) => mod.kind === 'corner' && mod.cornerSide !== 'left').length > 1) return null;
-    const leftHold = leftCorner ? alongSize(leftCorner) : 0;
-    const rightHold = rightCorner ? alongSize(rightCorner) : 0;
-    if (leftHold + rightHold > front + 0.05) return null;
-    const spots = [];
-    if (leftCorner) spots.push({ mod: leftCorner, x: 0, z: 0, rot: 0 });
-    if (rightCorner) spots.push({ mod: rightCorner, x: front - rightHold, z: 0, rot: 0 });
-    const pack = (wall, begin, limit) => {
-        const list = modules
-            .filter((mod) => mod.kind !== 'corner' && wallName(mod) === wall)
-            .sort((a, b) => Number(a.offset) - Number(b.offset));
-        const occupied = [];
-        const fits = (at, along) => at >= begin - 0.1
-            && at + along <= limit + 0.05
-            && !hitsOpening(wall, at, along)
-            && !occupied.some((seg) => at < seg.end - 0.4 && at + along > seg.start + 0.4);
-        const placeOne = (mod) => {
-            const along = alongSize(mod);
-            const wanted = Number(mod.offset);
-            let at = Number.isFinite(wanted) ? wanted : begin;
-            at = Math.max(begin, Math.min(at, Math.max(begin, limit - along)));
-            if (Math.abs(at - wanted) > 0.05) mod.offset = at;
-            if (!fits(at, along)) {
-                if (!dragId) {
-                    let best = null;
-                    for (let cursor = begin; cursor + along <= limit + 0.05; cursor += 1) {
-                        if (!fits(cursor, along)) continue;
-                        if (best === null || Math.abs(cursor - at) < Math.abs(best - at)) best = cursor;
-                    }
-                    if (best === null) return null;
-                    at = best;
-                }
-            }
-            const movable = mod.id === dragId || !state.modules.includes(mod);
-            if (movable && !dragId) {
-                occupied.forEach((seg) => {
-                    if (at >= seg.end && at - seg.end < 4 && fits(seg.end, along)) at = seg.end;
-                    const before = seg.start - along;
-                    if (at > begin && at + along <= seg.start && seg.start - (at + along) < 4 && fits(before, along)) at = before;
-                });
-                if (at - begin < 4 && fits(begin, along)) at = begin;
-                mod.offset = at;
-            } else if (mod.id === dragId) {
-                mod.offset = magneticSnapOffset(mod, at);
-            }
-            occupied.push({ start: at, end: at + along });
-            if (!dragId || mod.id === dragId) mod.offset = at;
-            const nudge = depthNudge(mod);
-            if (wall === 'front') spots.push({ mod, x: at, z: nudge, rot: 0 });
-            else if (wall === 'left') spots.push({ mod, x: nudge, z: at + along, rot: Math.PI / 2 });
-            else spots.push({ mod, x: front - nudge, z: at, rot: -Math.PI / 2 });
-            return occupied;
-        };
-        const dragged = list.find((mod) => mod.id === dragId);
-        if (dragged && !placeOne(dragged)) return null;
-        for (const mod of list) {
-            if (mod === dragged) continue;
-            if (!placeOne(mod)) return null;
-        }
-        return occupied;
-    };
-    const savedOffsets = modules.map((mod) => mod.offset);
-    const revert = () => {
-        modules.forEach((mod, index) => { mod.offset = savedOffsets[index]; });
-        return null;
-    };
-    const runOf = (wall) => modules.filter((mod) => mod.kind !== 'corner' && wallName(mod) === wall);
-    const bodies = (list) => list.filter((mod) => mod.kind !== 'end');
-    const nearest = (list) => bodies(list).reduce((best, mod) => (!best || (Number(mod.offset) || 0) < (Number(best.offset) || 0) ? mod : best), null);
-    const farthest = (list) => bodies(list).reduce((best, mod) => {
-        if (!best) return mod;
-        const end = (Number(mod.offset) || 0) + alongSize(mod);
-        const bestEnd = (Number(best.offset) || 0) + alongSize(best);
-        return end > bestEnd ? mod : best;
-    }, null);
-    const reach = (mod) => {
-        if (!mod) return 0;
-        const body = Math.max(30, Number(mod.glbDepth) || Number(state.depth) || 60);
-        return body + depthNudge(mod);
-    };
-    const used = (list) => list.reduce((sum, mod) => sum + alongSize(mod), 0);
-    const frontList = runOf('front');
-    const leftList = runOf('left');
-    const rightList = runOf('right');
-    const leftCab = nearest(leftList);
-    const rightCab = nearest(rightList);
-    const frontLeftCab = nearest(frontList);
-    const frontRightCab = farthest(frontList);
-    const leftDepth = reach(leftCab);
-    const rightDepth = reach(rightCab);
-    const frontLeftDepth = reach(frontLeftCab);
-    const frontRightDepth = reach(frontRightCab);
-    const leftMeets = !leftCorner && leftCab && frontLeftCab
-        && (Number(leftCab.offset) || 0) <= frontLeftDepth + 0.6
-        && (Number(frontLeftCab.offset) || 0) <= leftDepth + 0.6;
-    const rightGap = frontRightCab ? front - ((Number(frontRightCab.offset) || 0) + alongSize(frontRightCab)) : Infinity;
-    const rightMeets = !rightCorner && rightCab && frontRightCab
-        && (Number(rightCab.offset) || 0) <= frontRightDepth + 0.6
-        && rightGap <= rightDepth + 0.6;
-    const frontSpan = front - leftHold - rightHold;
-    const frontUsed = used(frontList);
-    const wantLeft = leftMeets && used(leftList) <= leftLen - frontLeftDepth + 0.05 ? leftDepth : 0;
-    const wantRight = rightMeets && used(rightList) <= rightLen - frontRightDepth + 0.05 ? rightDepth : 0;
-    let frontBegin = leftHold;
-    let frontLimit = front - rightHold;
-    if (wantLeft && wantRight && frontUsed + wantLeft + wantRight <= frontSpan + 0.05) {
-        frontBegin += wantLeft;
-        frontLimit -= wantRight;
-    } else if (wantLeft && frontUsed + wantLeft <= frontSpan + 0.05) frontBegin += wantLeft;
-    else if (wantRight && frontUsed + wantRight <= frontSpan + 0.05) frontLimit -= wantRight;
-    const leftBegin = leftHold > 0 ? leftHold : (wantLeft ? frontLeftDepth : 0);
-    const rightBegin = rightHold > 0 ? rightHold : (wantRight ? frontRightDepth : 0);
-    if (!pack('front', frontBegin, frontLimit)) return revert();
-    if (!pack('left', leftBegin, leftLen) || !pack('right', rightBegin, rightLen)) return revert();
-    return spots;
-}
 
 function snapshot() {
     history.push(JSON.stringify(state));
@@ -6904,6 +6781,29 @@ function buildRoomOpeningProp(item, wallId, roomW) {
     return group;
 }
 
+function fitSketchExtraWalls() {
+    const extras = (state.roomSketch?.walls || []).filter((wall) => wall && wall.role === 'other');
+    const height = roomHeightLimit();
+    const wallT = ROOM_WALL_T;
+    const group = new THREE.Group();
+    group.name = 'room-extra-walls';
+    extras.forEach((wall) => {
+        const x1 = Number(wall.x1);
+        const y1 = Number(wall.y1);
+        const x2 = Number(wall.x2);
+        const y2 = Number(wall.y2);
+        if (![x1, y1, x2, y2].every(Number.isFinite)) return;
+        const len = Math.hypot(x2 - x1, y2 - y1);
+        if (len < 8) return;
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(len, height, wallT), room.wallMat);
+        mesh.position.set((x1 + x2) / 2, height / 2, (y1 + y2) / 2);
+        mesh.rotation.y = Math.atan2(y2 - y1, x2 - x1);
+        mesh.receiveShadow = true;
+        group.add(mesh);
+    });
+    replaceWall('extras', group);
+}
+
 function fitRoomOpenings() {
     const root = new THREE.Group();
     root.name = 'room-openings';
@@ -6964,6 +6864,7 @@ function fitRoom() {
         position: (piece) => new THREE.Vector3(width + wallT / 2, piece.y + piece.h / 2, piece.along + piece.length / 2),
     }));
     fitRoomOpenings();
+    fitSketchExtraWalls();
     if (room.floor) {
         room.floor.geometry.dispose();
         room.floor.geometry = new THREE.BoxGeometry(width, 2, depth + 40);
@@ -7591,20 +7492,16 @@ function wallSpan(mod) {
     return wall === 'front' ? wallLimit() : sideLimit(wall);
 }
 
+function wallLimits() {
+    return { front: wallLimit(), left: sideLimit('left'), right: sideLimit('right') };
+}
+
 function wallOffsetMax(mod) {
-    const along = alongSize(mod);
-    const wall = wallName(mod);
-    const front = wallLimit();
-    const rightCorner = state.modules.find((m) => m.kind === 'corner' && m.cornerSide !== 'left');
-    const rightHold = rightCorner ? alongSize(rightCorner) : 0;
-    if (wall === 'front') return Math.max(0, front - rightHold - along);
-    return Math.max(0, sideLimit(wall) - along);
+    return sharedWallOffsetMax(mod, state.modules, wallLimits());
 }
 
 function wallOffsetMin(mod) {
-    const wall = wallName(mod);
-    const leftCorner = state.modules.find((m) => m.kind === 'corner' && m.cornerSide === 'left');
-    return wall === 'right' && leftCorner ? 0 : (leftCorner ? alongSize(leftCorner) : 0);
+    return sharedWallOffsetMin(mod, state.modules);
 }
 
 function fitsModuleSlot(mod, at) {
@@ -7673,8 +7570,7 @@ function rowMates(mod) {
 function slideModule(mod, rawOffset) {
     if (!mod || mod.kind === 'corner' || mod.kind === 'end') return;
     const along = alongSize(mod);
-    const limit = Math.max(along, wallSpan(mod));
-    const at = clamp(Number(rawOffset) || 0, 0, limit - along);
+    const at = clamp(Number(rawOffset) || 0, wallOffsetMin(mod), wallOffsetMax(mod));
     const home = Number(mod.offset) || 0;
     const hold = moduleDrag?.anchor;
     if (hold && hold.id === mod.id) {
@@ -7746,9 +7642,10 @@ function slideModule(mod, rawOffset) {
 function settleOverlaps(mod) {
     if (!mod || mod.kind === 'corner' || mod.kind === 'end') return;
     const along = alongSize(mod);
-    const limit = Math.max(along, wallSpan(mod));
+    const min = wallOffsetMin(mod);
+    const max = wallOffsetMax(mod);
     for (let pass = 0; pass < 4; pass += 1) {
-        let at = clamp(Number(mod.offset) || 0, 0, limit - along);
+        let at = clamp(Number(mod.offset) || 0, min, max);
         const hit = rowMates(mod).find((other) => {
             const o0 = Number(other.offset) || 0;
             const o1 = o0 + alongSize(other);
@@ -7762,7 +7659,7 @@ function settleOverlaps(mod) {
         const o1 = o0 + alongSize(hit);
         const origin = moduleDrag?.origin;
         at = origin != null && origin >= o0 - 0.5 ? o1 : o0 - along;
-        mod.offset = clamp(at, 0, limit - along);
+        mod.offset = clamp(at, min, max);
     }
 }
 
@@ -8948,6 +8845,8 @@ function bindChrome() {
         if (button && (button.dataset.plan === '2d' || button.dataset.plan === '3d')) setPlanMode(button.dataset.plan);
     });
     onClick('btn-modules', () => showModuleLibrary());
+    onClick('open-library-desk', () => showModuleLibrary());
+    onClick('open-library-bar', () => showModuleLibrary());
     onClick('btn-guides', () => {
         guidesOn = !guidesOn;
         el('btn-guides')?.classList.toggle('is-on', guidesOn);
@@ -9335,7 +9234,8 @@ async function persist(manual) {
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok || !data.ok) {
-            if (manual) toast(`${data.message || 'Kayıt yazılamadı.'} Tasarım ekranda duruyor.`);
+            const first = data.errors ? Object.values(data.errors).flat()[0] : '';
+            toast(first || data.message || 'Kayıt yazılamadı. Tasarım ekranda duruyor.');
             return false;
         }
         const saveBtn = el('btn-save');
@@ -9739,6 +9639,31 @@ window.__studio = {
         fitRoom();
         if (planMode === '2d') drawPlan();
         return ensureSketch().openings.length;
+    },
+    extras: () => {
+        const group = room.extras;
+        if (!group) return [];
+        return group.children.map((mesh) => ({
+            name: mesh.name || group.name,
+            x: Math.round(mesh.position.x),
+            y: Math.round(mesh.position.y),
+            z: Math.round(mesh.position.z),
+            rotY: Math.round(mesh.rotation.y * 1000) / 1000,
+            w: Math.round(mesh.geometry?.parameters?.width || 0),
+            h: Math.round(mesh.geometry?.parameters?.height || 0),
+            d: Math.round(mesh.geometry?.parameters?.depth || 0),
+        }));
+    },
+    frameExtras: () => {
+        const group = room.extras;
+        if (!group?.children?.length || !camera || !controls) return false;
+        const box = new THREE.Box3().setFromObject(group);
+        const center = box.getCenter(new THREE.Vector3());
+        controls.target.copy(center);
+        camera.position.set(center.x, Math.max(center.y + 220, 260), center.z + 80);
+        camera.lookAt(center);
+        controls.update();
+        return true;
     },
     rawGlb: (id) => {
         const tpl = glbTemplates.get(id || state.modules[0]?.glb);
