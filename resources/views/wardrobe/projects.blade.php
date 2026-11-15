@@ -125,7 +125,7 @@
     <header class="hub-top">
         <div>
             <h1>Projeler</h1>
-            <p>Kayıtlı dolapları açın veya yeni müşteri için 3D tasarım başlatın. Oda çizimi tasarım ekranındaki <strong>Oda</strong> menüsünde.</p>
+            <p>Kayıtlı dolapları açın veya yeni müşteri için plan çizimiyle 3D tasarım başlatın.</p>
         </div>
         <div class="hub-top__actions">
             <a href="{{ $designUrl }}" class="btn">Boş 3D sahnede devam</a>
@@ -158,10 +158,10 @@
             <div class="composer">
                 <div class="steps" aria-hidden="true">
                     <span class="is-on">1 Müşteri</span>
-                    <span>2 Oda</span>
-                    <span>3 3D</span>
+                    <span>2 Plan çiz</span>
+                    <span>3 Modül</span>
                 </div>
-                <p class="lead">Oluşturunca doğrudan 3D tasarlama açılır; <strong>Oda → Odayı yeniden çiz</strong> ile duvar, kapı ve pencere ekleyin.</p>
+                <p class="lead">Ölçü seçimi yok — önce <strong>duvar, kapı ve pencere</strong> çizersiniz (plan sayfası ile aynı editör), sonra modül eklersiniz.</p>
                 <form id="create">
                     <div class="field">
                         <label for="customerName">Müşteri adı</label>
@@ -175,27 +175,8 @@
                         <label for="note">Not (isteğe bağlı)</label>
                         <input id="note" name="note" maxlength="2000" placeholder="Teslim, ölçü notu…">
                     </div>
-                    <p class="lead" style="margin-top:4px">Başlangıç oda ölçüsü</p>
-                    <div class="preset-grid" id="presets">
-                        <button type="button" class="preset is-on" data-preset="l">
-                            <b>L giyinme</b>
-                            <span>Ön 300 · Sol 300 · Sağ 280 cm</span>
-                        </button>
-                        <button type="button" class="preset" data-preset="rect">
-                            <b>Dikdörtgen</b>
-                            <span>350 × 280 × 280 cm</span>
-                        </button>
-                        <button type="button" class="preset" data-preset="compact">
-                            <b>Kompakt</b>
-                            <span>240 × 220 × 220 cm</span>
-                        </button>
-                        <button type="button" class="preset" data-preset="wide">
-                            <b>Geniş ön duvar</b>
-                            <span>450 × 300 × 300 cm</span>
-                        </button>
-                    </div>
                     <p class="msg" id="msg"></p>
-                    <button class="btn primary" type="submit" style="width:100%;padding:12px 16px;font-size:13px">Proje oluştur ve 3D aç</button>
+                    <button class="btn primary" type="submit" style="width:100%;padding:12px 16px;font-size:13px">Proje oluştur → plan çiz</button>
                 </form>
             </div>
         </aside>
@@ -207,16 +188,10 @@ const indexUrl = @json($projectIndexUrl);
 const designUrl = @json($designUrl);
 const csrf = document.querySelector('meta[name="csrf-token"]').content;
 
-const ROOM_PRESETS = {
-    l: { front: 300, left: 300, right: 280, height: 320 },
-    rect: { front: 350, left: 280, right: 280, height: 320 },
-    compact: { front: 240, left: 220, right: 220, height: 260 },
-    wide: { front: 450, left: 300, right: 300, height: 320 },
-};
+const DEFAULT_ROOM = { front: 300, left: 300, right: 300, height: 320 };
 
 let allProjects = [];
 let filterMode = 'all';
-let presetKey = 'l';
 
 function formatWhen(iso) {
     if (!iso) return '';
@@ -321,13 +296,6 @@ async function removeProject(item) {
     if (result.ok) load();
 }
 
-document.getElementById('presets').addEventListener('click', (event) => {
-    const btn = event.target.closest('[data-preset]');
-    if (!btn) return;
-    presetKey = btn.dataset.preset;
-    document.querySelectorAll('#presets .preset').forEach((el) => el.classList.toggle('is-on', el === btn));
-});
-
 document.querySelectorAll('[data-filter]').forEach((btn) => {
     btn.addEventListener('click', () => {
         filterMode = btn.dataset.filter;
@@ -347,7 +315,7 @@ document.getElementById('create').addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = new FormData(event.target);
     const msg = document.getElementById('msg');
-    const room = ROOM_PRESETS[presetKey] || ROOM_PRESETS.l;
+    const room = DEFAULT_ROOM;
     const name = String(form.get('projectName') || 'Dolabım');
     msg.textContent = 'Kaydediliyor…';
     const response = await fetch(storeUrl, {
@@ -389,7 +357,7 @@ document.getElementById('create').addEventListener('submit', async (event) => {
     const data = await response.json().catch(() => null);
     if (response.status === 429) { msg.textContent = 'Çok sık denendi. Bir dakika sonra tekrar dene.'; return; }
     if (!response.ok || !data?.token) { msg.textContent = data?.message || 'Proje kaydı yazılamadı.'; return; }
-    location.href = `${designUrl}?proje=${data.token}&oda=1`;
+    location.href = `${designUrl}?proje=${data.token}&plan=1`;
 });
 
 load();

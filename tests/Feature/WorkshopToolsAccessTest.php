@@ -60,12 +60,15 @@ class WorkshopToolsAccessTest extends TestCase
         $this->actingAs($user)->get(route('wardrobe.index'))
             ->assertOk()
             ->assertSee('Kayıtlı projeler', false)
-            ->assertSee('Proje oluştur ve 3D aç', false)
+            ->assertSee('Proje oluştur → plan çiz', false)
             ->assertDontSee('OpenPlan', false);
         $response = $this->actingAs($user)->get(route('wardrobe.design'));
         $response->assertOk()
             ->assertSee('Modül ekle', false)
             ->assertSee('Odayı çiz', false)
+            ->assertSee('studio-plan-first', false)
+            ->assertSee('openplan-studio-frame', false)
+            ->assertSee('data-view="walkthrough"', false)
             ->assertSee('room-sketch-canvas', false)
             ->assertSee('selection-bar', false)
             ->assertSee('wardrobe-studio.js', false)

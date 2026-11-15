@@ -23,6 +23,9 @@
         if (typeof window.MeemareStudioApplyWalls === 'function') {
             if (window.MeemareStudioApplyWalls(data.walls)) {
                 flash('Oda ölçüleri dolap sahnesine uygulandı.');
+                if (typeof window.MeemareStudioClosePlan === 'function' && document.body.classList.contains('studio-plan-first')) {
+                    window.MeemareStudioClosePlan();
+                }
                 return;
             }
         }

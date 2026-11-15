@@ -22,35 +22,41 @@
         window.MeemarePlanBridge.saveHandoff({ source: 'openplan-json', walls });
     }
 
-    const input = document.getElementById('openplan-json-file');
-    if (!input) return;
-    input.addEventListener('change', async () => {
-        const file = input.files?.[0];
-        if (!file) return;
-        try {
-            const data = JSON.parse(await file.text());
-            const walls = roomBoundsFromProject(data);
-            if (!walls) {
-                alert('Planda duvar bulunamadı.');
-                return;
-            }
-            ['onduvar', 'solduvar', 'sagduvar'].forEach((name, i) => {
-                const field = document.querySelector(`#plan-handoff [name="${name}"]`);
-                if (!field) return;
-                field.value = [walls.frontCm, walls.leftCm, walls.rightCm][i];
-            });
-            saveHandoff({
-                source: 'openplan-json',
-                walls: {
-                    frontCm: walls.frontCm,
-                    leftCm: walls.leftCm,
-                    rightCm: walls.rightCm,
-                    heightCm: walls.heightCm,
-                },
-            });
-        } catch {
-            alert('Geçersiz OpenPlan JSON.');
+    async function importJsonFile(file) {
+        const data = JSON.parse(await file.text());
+        const walls = roomBoundsFromProject(data);
+        if (!walls) {
+            alert('Planda duvar bulunamadı.');
+            return;
         }
-        input.value = '';
+        document.querySelectorAll('[name="onduvar"], [name="solduvar"], [name="sagduvar"]').forEach((field) => {
+            if (field.name === 'onduvar') field.value = walls.frontCm;
+            if (field.name === 'solduvar') field.value = walls.leftCm;
+            if (field.name === 'sagduvar') field.value = walls.rightCm;
+        });
+        saveHandoff({
+            source: 'openplan-json',
+            walls: {
+                frontCm: walls.frontCm,
+                leftCm: walls.leftCm,
+                rightCm: walls.rightCm,
+                heightCm: walls.heightCm,
+            },
+        });
+    }
+
+    ['openplan-json-file', 'studio-plan-json', 'studio-plan-first-json'].forEach((id) => {
+        const input = document.getElementById(id);
+        if (!input) return;
+        input.addEventListener('change', async () => {
+            const file = input.files?.[0];
+            if (!file) return;
+            try {
+                await importJsonFile(file);
+            } catch {
+                alert('Geçersiz OpenPlan JSON.');
+            }
+            input.value = '';
+        });
     });
 })();

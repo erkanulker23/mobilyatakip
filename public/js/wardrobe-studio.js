@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { bindRoomSketch, roomSketchOnOpen, roomSketchBeforeHandoff } from './wardrobe-room-sketch.js';
 
@@ -133,6 +134,13 @@ const FLOOR_STYLES = [
 ];
 let perspCamera = null;
 let orthoCamera = null;
+let walkLock = null;
+let walkMode = false;
+let walkSprint = false;
+const walkKeys = { forward: false, back: false, left: false, right: false };
+const WALK_EYE_CM = 158;
+const WALK_SPEED = 320;
+const WALK_SPRINT = 1.65;
 let guideLines = null;
 let customFor = null;
 let lightsOn = true;
@@ -191,7 +199,11 @@ window.MeemareStudioApplyWalls = (walls) => {
     );
     if (ok) {
         toggleRoomPlan(false);
-        toast('Oda ölçüsü uygulandı. Modülleri kataloğdan sürükleyin.');
+        if (document.body.classList.contains('studio-plan-first')) {
+            closePlanStudioStep(false);
+        } else {
+            toast('Oda ölçüsü uygulandı. Modülleri kataloğdan sürükleyin.');
+        }
     }
     return ok;
 };
@@ -200,6 +212,7 @@ function toggleRoomPlan(open) {
     const on = Boolean(open);
     document.body.classList.toggle('show-room-plan', on);
     if (!on) return;
+    setRoomPlanEditorMode(window.WARDROBE?.openplanSrc ? 'openplan' : 'sketch');
     const form = el('studio-plan-handoff');
     if (form) {
         if (form.onduvar) form.onduvar.value = state.wallWidth;
@@ -4627,6 +4640,11 @@ function placeReflectCard(center, frontZ) {
 
 function setCameraView(mode) {
     if (!camera || !controls) return;
+    if (mode === 'walkthrough') {
+        setWalkMode(true);
+        return;
+    }
+    if (walkMode) setWalkMode(false);
     clearReflectCard();
     if (mode === 'shelf' || mode === 'drawer' || mode === 'grain' || mode === 'glass' || mode === 'shirt' || mode === 'shirt-side') {
         const part = mode === 'shelf'
@@ -4722,7 +4740,8 @@ function setCameraView(mode) {
 function tick() {
     const dt = Math.min(0.05, clock.getDelta());
     paintDoors(dt);
-    controls.update();
+    updateWalk(dt);
+    if (!walkMode) controls.update();
     updateHud();
     updateMeasures();
     renderer.render(scene, camera);
@@ -5508,6 +5527,10 @@ function init3d() {
 
     const clickSlop = 8;
     renderer.domElement.addEventListener('pointerdown', (event) => {
+        if (walkMode) {
+            if (!walkLock?.isLocked && event.button === 0) walkLock?.lock();
+            return;
+        }
         if (event.pointerType === 'mouse' && event.button !== 0) return;
         if (pointerPress && pointerPress.pointerId !== event.pointerId) {
             pointerPress.moved = true;
@@ -5533,6 +5556,7 @@ function init3d() {
         }
     }, true);
     window.addEventListener('pointermove', (event) => {
+        if (walkMode) return;
         if (planMode === '2d') return;
         if (pointerPress && Math.hypot(event.clientX - pointerPress.x, event.clientY - pointerPress.y) > clickSlop) {
             pointerPress.moved = true;
@@ -6714,6 +6738,165 @@ function initStudioLayout() {
     }
 }
 
+let roomPlanEditorMode = 'openplan';
+
+function ensureOpenPlanFrame(frame) {
+    if (!frame || frame.dataset.loaded) return;
+    const src = window.WARDROBE?.openplanSrc;
+    if (!src) return;
+    frame.src = src;
+    frame.dataset.loaded = '1';
+    frame.addEventListener('load', () => {
+        try {
+            frame.contentWindow?.focus();
+        } catch {
+            /* cross-origin */
+        }
+    }, { once: true });
+}
+
+function openPlanFrameFullscreen(frame) {
+    const node = frame?.closest('.plan-first-frame') || frame?.parentElement || frame;
+    if (!node) return;
+    const req = node.requestFullscreen || node.webkitRequestFullscreen;
+    if (req) void req.call(node);
+}
+
+function bindWalkKeys() {
+    if (window.__meemareWalkKeys) return;
+    window.__meemareWalkKeys = true;
+    const setKey = (event, on) => {
+        if (!walkMode) return;
+        const t = event.target;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+        const map = {
+            KeyW: 'forward',
+            ArrowUp: 'forward',
+            KeyS: 'back',
+            ArrowDown: 'back',
+            KeyA: 'left',
+            ArrowLeft: 'left',
+            KeyD: 'right',
+            ArrowRight: 'right',
+        };
+        const key = map[event.code];
+        if (key) walkKeys[key] = on;
+        if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') walkSprint = on;
+    };
+    window.addEventListener('keydown', (e) => setKey(e, true));
+    window.addEventListener('keyup', (e) => setKey(e, false));
+}
+
+function clampWalkCamera() {
+    if (!camera) return;
+    const w = wallLimit();
+    const d = roomDepthLimit();
+    const pad = 14;
+    camera.position.x = clamp(camera.position.x, pad, Math.max(pad + 1, w - pad));
+    camera.position.z = clamp(camera.position.z, pad, Math.max(pad + 1, d - pad));
+    camera.position.y = WALK_EYE_CM;
+}
+
+function placeWalkCamera() {
+    if (!camera) return;
+    const w = wallLimit();
+    const d = roomDepthLimit();
+    camera.position.set(w * 0.48, WALK_EYE_CM, d * 0.55);
+    camera.lookAt(w * 0.5, WALK_EYE_CM, d * 0.15);
+    camera.rotation.order = 'YXZ';
+}
+
+function setWalkMode(on) {
+    const next = Boolean(on);
+    if (walkMode === next) return;
+    walkMode = next;
+    document.body.classList.toggle('walk-mode', walkMode);
+    document.querySelectorAll('#view-bar [data-view]').forEach((btn) => {
+        btn.classList.toggle('is-on', walkMode ? btn.dataset.view === 'walkthrough' : btn.dataset.view === 'perspective');
+    });
+    if (!walkMode) {
+        walkLock?.unlock();
+        document.body.classList.remove('walk-locked');
+        Object.keys(walkKeys).forEach((k) => { walkKeys[k] = false; });
+        walkSprint = false;
+        if (controls) controls.enabled = true;
+        setCameraView('perspective');
+        return;
+    }
+    if (planMode === '2d') setPlanMode('3d');
+    placeWalkCamera();
+    if (controls) controls.enabled = false;
+    if (!walkLock && camera && renderer) {
+        walkLock = new PointerLockControls(camera, renderer.domElement);
+        walkLock.addEventListener('lock', () => {
+            document.body.classList.add('walk-locked');
+            toast('WASD ile gezin · Shift koş · Esc çık');
+        });
+        walkLock.addEventListener('unlock', () => document.body.classList.remove('walk-locked'));
+    }
+    toast('Tuvalde tıklayın — oda içi gezinti (plan sayfası gibi).');
+}
+
+function updateWalk(dt) {
+    if (!walkMode || !walkLock?.isLocked) return;
+    const speed = (walkSprint ? WALK_SPEED * WALK_SPRINT : WALK_SPEED) * dt;
+    if (walkKeys.forward) walkLock.moveForward(speed);
+    if (walkKeys.back) walkLock.moveForward(-speed);
+    if (walkKeys.left) walkLock.moveRight(-speed);
+    if (walkKeys.right) walkLock.moveRight(speed);
+    clampWalkCamera();
+}
+
+function setRoomPlanEditorMode(mode) {
+    roomPlanEditorMode = mode === 'sketch' ? 'sketch' : 'openplan';
+    el('room-plan-openplan')?.classList.toggle('hidden', roomPlanEditorMode !== 'openplan');
+    el('room-plan-sketch-wrap')?.classList.toggle('hidden', roomPlanEditorMode !== 'sketch');
+    document.querySelectorAll('[data-room-plan-mode]').forEach((btn) => {
+        btn.classList.toggle('is-on', btn.dataset.roomPlanMode === roomPlanEditorMode);
+    });
+    if (roomPlanEditorMode === 'openplan') ensureOpenPlanFrame(el('openplan-frame'));
+    else requestAnimationFrame(() => roomSketchOnOpen(state));
+}
+
+function closePlanStudioStep(applyHandoff = true) {
+    if (!document.body.classList.contains('studio-plan-first')) return;
+    if (applyHandoff) applyHandoffFromStorage();
+    document.body.classList.remove('studio-plan-first');
+    initStudioLayout();
+    showModuleLibrary();
+    render();
+    frameCamera();
+    toast('Soldan modül ekleyin.');
+}
+
+function finishPlanFirstStep() {
+    if (applyHandoffFromStorage()) return;
+    const form = el('studio-plan-first-handoff');
+    if (!form) {
+        closePlanStudioStep(false);
+        return;
+    }
+    const front = Number(form.onduvar?.value);
+    const left = Number(form.solduvar?.value);
+    const right = Number(form.sagduvar?.value);
+    const height = Number(form.odaboy?.value);
+    if (!window.MeemareStudioApplyWalls({ frontCm: front, leftCm: left, rightCm: right, heightCm: height })) {
+        closePlanStudioStep(false);
+    }
+}
+
+window.MeemareStudioClosePlan = () => closePlanStudioStep(true);
+
+function maybeOpenPlanStudio(params) {
+    if (!params || params.get('plan') !== '1') return;
+    document.body.classList.add('studio-plan-first');
+    ensureOpenPlanFrame(el('openplan-studio-frame'));
+    const next = new URLSearchParams(params);
+    next.delete('plan');
+    const qs = next.toString();
+    history.replaceState(null, '', `${location.pathname}${qs ? `?${qs}` : ''}`);
+}
+
 function maybeOpenRoomSketcher(params) {
     if (!params || params.get('oda') !== '1') return;
     toggleRoomPlan(true);
@@ -7845,31 +8028,45 @@ async function takeRender() {
     }
 }
 
-function bindStudioHandoff() {
-    const form = el('studio-plan-handoff');
+function syncWallInputsFromState(form) {
+    if (!form) return;
+    if (form.onduvar) form.onduvar.value = state.wallWidth;
+    if (form.solduvar) form.solduvar.value = state.leftWall;
+    if (form.sagduvar) form.sagduvar.value = state.rightWall;
+    if (form.odaboy) form.odaboy.value = state.roomHeight;
+}
+
+function bindStudioHandoffForm(formId, { sketchHandoff = false } = {}) {
+    const form = el(formId);
     if (!form || form.dataset.bound) return;
     form.dataset.bound = '1';
     const apply = () => {
-        roomSketchBeforeHandoff(state);
+        if (sketchHandoff) roomSketchBeforeHandoff(state);
         const front = Number(form.onduvar?.value);
         const left = Number(form.solduvar?.value);
         const right = Number(form.sagduvar?.value);
         const height = Number(form.odaboy?.value);
-        if (window.MeemareStudioApplyWalls({ frontCm: front, leftCm: left, rightCm: right, heightCm: height }) !== false) {
-            ['wall-left', 'wall-front', 'wall-right', 'room-h'].forEach((id) => {
-                const node = el(id);
-                if (!node) return;
-                if (id === 'wall-left') node.value = state.leftWall;
-                if (id === 'wall-front') node.value = state.wallWidth;
-                if (id === 'wall-right') node.value = state.rightWall;
-                if (id === 'room-h') node.value = state.roomHeight;
-            });
-        }
+        window.MeemareStudioApplyWalls({ frontCm: front, leftCm: left, rightCm: right, heightCm: height });
+        ['wall-left', 'wall-front', 'wall-right', 'room-h'].forEach((id) => {
+            const node = el(id);
+            if (!node) return;
+            if (id === 'wall-left') node.value = state.leftWall;
+            if (id === 'wall-front') node.value = state.wallWidth;
+            if (id === 'wall-right') node.value = state.rightWall;
+            if (id === 'room-h') node.value = state.roomHeight;
+        });
     };
     form.addEventListener('submit', (event) => {
         event.preventDefault();
         apply();
     });
+}
+
+function bindStudioHandoff() {
+    bindStudioHandoffForm('studio-plan-handoff', { sketchHandoff: true });
+    bindStudioHandoffForm('studio-plan-first-handoff');
+    const form = el('studio-plan-handoff');
+    if (!form) return;
     el('studio-plan-json')?.addEventListener('change', async (event) => {
         const file = event.target.files?.[0];
         if (!file) return;
@@ -7911,6 +8108,19 @@ function bindChrome() {
     onClick('btn-room-plan', () => toggleRoomPlan(true));
     onClick('btn-close-room-plan', () => toggleRoomPlan(false));
     onClick('room-plan-backdrop', () => toggleRoomPlan(false));
+    onClick('btn-plan-to-3d', () => finishPlanFirstStep());
+    onClick('btn-plan-skip', () => closePlanStudioStep(false));
+    onClick('btn-plan-fullscreen', () => openPlanFrameFullscreen(el('openplan-studio-frame')));
+    onClick('btn-plan-toggle-handoff', () => {
+        el('studio-plan-first-handoff')?.classList.toggle('is-collapsed');
+    });
+    onClick('btn-walk', () => setWalkMode(!walkMode));
+    bindWalkKeys();
+    document.getElementById('room-plan-mode')?.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-room-plan-mode]');
+        if (!button) return;
+        setRoomPlanEditorMode(button.dataset.roomPlanMode);
+    });
     onClick('cam-orbit-left', () => orbitCamera(-0.22));
     onClick('cam-orbit-right', () => orbitCamera(0.22));
     on('project-name', 'change', (event) => {
@@ -8089,12 +8299,23 @@ function applyColorsToAll(source) {
     });
 }
 
+/** Üretim dolabı önizlemesi: düz mat gri/beyaz melamin (ahşap desen değil). */
+function productionPanelId() {
+    const codes = ['D123', 'D141', 'D152', 'D129'];
+    for (const code of codes) {
+        const hit = materials.find((item) => item.group === 'melamin-kapli-panel' && item.code === code);
+        if (hit?.id) return hit.id;
+    }
+    const plain = materials.find((item) => item.group === 'melamin-kapli-panel' && isPlainDecor(item));
+    return plain?.id || materials[0]?.id || '';
+}
+
 function catalogWoodId() {
-    return materials.find((item) => item.group === 'melamin-kapli-panel' && item.code === 'A402')?.id || '';
+    return materials.find((item) => item.group === 'melamin-kapli-panel' && item.code === 'A402')?.id || productionPanelId();
 }
 
 function solidDoorColor() {
-    return catalogWoodId();
+    return productionPanelId();
 }
 
 function defaultDoorForCatalogItem(item) {
@@ -8182,31 +8403,34 @@ async function applyDressingRoomDemo() {
     frameCamera();
     snapDoors();
     const doors = modules.reduce((sum, mod) => sum + (mod.door === 'none' ? 0 : doorCount(mod)), 0);
-    toast(`Hazır: köşe + ${modules.length - 1} modül, ${doors} kapak (ahşap ve cam). Sürükleyerek düzenleyin.`);
+    toast(`Hazır: köşe + ${modules.length - 1} modül, ${doors} kapak (mat gri gövde, cam/ahşap kapak seçilebilir).`);
     return true;
 }
 
 function preferCatalogWood(mod) {
-    const wood = catalogWoodId();
-    if (!wood || !mod) return;
-    const lake = materials.find((item) => item.group === 'melamin-kapli-panel' && item.code === 'D129')?.id || '';
-    const current = mod.carcassId || '';
-    if (current && current !== lake) return;
-    mod.carcassId = wood;
-    mod.doorColorId = wood;
-    mod.interiorId = wood;
-    mod.backId = wood;
-    mod.shelfId = wood;
-    mod.drawerColorId = wood;
+    const prod = productionPanelId();
+    if (!prod || !mod) return;
+    const oak = catalogWoodId();
+    const legacy = new Set([oak, productionPanelId(), ''].filter(Boolean));
+    const lake = materials.find((item) => item.group === 'melamin-kapli-panel' && item.code === 'D129')?.id;
+    if (lake) legacy.add(lake);
+    const apply = (field) => {
+        const cur = mod[field] || '';
+        if (cur && !legacy.has(cur) && cur !== state.carcassId && cur !== state.doorColorId) return;
+        mod[field] = prod;
+    };
+    ['carcassId', 'doorColorId', 'interiorId', 'backId', 'shelfId', 'drawerColorId'].forEach(apply);
 }
 
 function applyDefaultColors() {
-    const oak = materials.find((item) => item.id === catalogWoodId()) || materials[0];
-    if (!decorExists(state.carcassId)) state.carcassId = oak?.id || '';
-    if (!decorExists(state.doorColorId)) state.doorColorId = oak?.id || '';
-    if (!decorExists(state.interiorId)) state.interiorId = oak?.id || '';
-    if (!decorExists(state.backId)) state.backId = oak?.id || '';
-    if (!decorExists(state.shelfId)) state.shelfId = oak?.id || '';
+    const prod = productionPanelId();
+    const fallback = materials.find((item) => item.id === prod) || materials[0];
+    if (!decorExists(state.carcassId)) state.carcassId = fallback?.id || '';
+    if (!decorExists(state.doorColorId)) state.doorColorId = fallback?.id || '';
+    if (!decorExists(state.interiorId)) state.interiorId = fallback?.id || '';
+    if (!decorExists(state.backId)) state.backId = fallback?.id || '';
+    if (!decorExists(state.shelfId)) state.shelfId = fallback?.id || '';
+    if (!decorExists(state.drawerColorId)) state.drawerColorId = fallback?.id || '';
     if (!ALUMINUM.some((item) => item.id === state.aluminumId)) state.aluminumId = 'al-gumus';
     if (!GLASS.some((item) => item.id === state.glassId)) state.glassId = 'cam-fum';
     if (typeof state.plinth !== 'boolean') state.plinth = true;
@@ -8482,6 +8706,7 @@ async function boot() {
         console.warn(error);
         renderLibrary();
     }
+    if (!window.__woodMode) window.__woodMode = 'catalog';
     try {
         await loadDxfModules();
     } catch (error) {
@@ -8504,8 +8729,9 @@ async function boot() {
         syncViewModeBar();
         render();
         focusSelectedModule();
+        maybeOpenPlanStudio(params);
         maybeOpenRoomSketcher(params);
-        if (params.get('oda') !== '1') toggleRoomPlan(false);
+        if (!params.get('plan') && params.get('oda') !== '1') toggleRoomPlan(false);
         return;
     }
     if (loadHash()) {
@@ -8545,6 +8771,7 @@ async function boot() {
     if (!state.modules.length) {
         showModuleLibrary();
     }
+    maybeOpenPlanStudio(params);
     maybeOpenRoomSketcher(params);
 }
 

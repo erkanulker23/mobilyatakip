@@ -52,7 +52,7 @@
     <iframe src="{{ $tool['src'] }}" title="{{ $tool['title'] }}" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen; clipboard-read; clipboard-write"></iframe>
 </div>
 @if($tool['portal'] === 'plan')
-    <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=4" defer></script>
+    <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=5" defer></script>
     <script src="{{ asset('js/openplan-import.js') }}?v=1" defer></script>
 @endif
 @if($tool['portal'] === 'uretim')

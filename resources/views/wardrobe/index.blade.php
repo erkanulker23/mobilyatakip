@@ -95,7 +95,37 @@
         .room-handoff label { display: flex; flex-direction: column; gap: 3px; font-weight: 600; color: #3d5247; }
         .room-handoff input[type="number"] { width: 72px; border: 1px solid #cfe0d6; border-radius: 8px; padding: 6px 8px; font-size: 12px; }
         .room-handoff button { border: 0; background: var(--accent); color: #fff; border-radius: 999px; padding: 7px 14px; font-weight: 700; cursor: pointer; font-size: 12px; }
-        #openplan-frame { width: 100%; height: 100%; border: 0; background: #fff; min-height: 0; }
+        #openplan-frame, #openplan-studio-frame {
+            width: 100%; height: 100%; border: 0; background: #fff; min-height: 0;
+        }
+        #studio-plan-first {
+            display: none; position: fixed; left: 0; right: 0; bottom: 0; top: 0;
+            z-index: 28; grid-template-rows: auto minmax(0, 1fr) auto; background: #eceae6;
+            padding-top: max(52px, calc(52px + env(safe-area-inset-top)));
+        }
+        body.studio-plan-first #studio-plan-first { display: grid; }
+        .plan-first-head {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px;
+            background: #fffcf8; border-bottom: 1px solid var(--line); font-size: 12px;
+        }
+        .plan-first-head p { margin: 0; flex: 1; min-width: 200px; color: var(--muted); }
+        .plan-first-head .btn-primary { background: var(--accent); color: #fff; border: 0; border-radius: 999px; padding: 8px 16px; font-weight: 700; }
+        .plan-first-frame { min-height: 0; position: relative; }
+        .plan-first-foot.is-collapsed { display: none; }
+        .plan-first-hint { margin: 0; font-size: 11px; color: var(--muted); max-width: 58ch; line-height: 1.45; }
+        body.walk-mode #viewport { cursor: crosshair; }
+        body.walk-locked #viewport { cursor: none; }
+        body.walk-mode #walk-hud { display: flex; }
+        #walk-hud {
+            display: none; position: absolute; left: 12px; top: 12px; z-index: 12;
+            padding: 8px 12px; border-radius: 10px; background: rgba(20, 24, 22, .78); color: #fff;
+            font-size: 11px; font-weight: 600; gap: 8px; align-items: center; pointer-events: none;
+        }
+        .room-plan-mode { display: flex; gap: 6px; margin-right: auto; }
+        .room-plan-mode button { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 11px; font-weight: 700; }
+        .room-plan-mode button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
+        .room-plan-openplan { display: grid; grid-template-rows: 1fr; min-height: 320px; height: 100%; }
+        .room-plan-openplan.hidden, .room-sketch-wrap.hidden { display: none !important; }
         .toolbar-spacer { flex: 1; min-width: 12px; }
         @media (max-width: 900px) {
             header.bar .extra { display: none; }
@@ -340,6 +370,28 @@
             <button type="button" class="btn btn-quiet extra" id="btn-shot">Render</button>
         </div>
     </div>
+    <div id="studio-plan-first" aria-label="Oda planı — OpenPlan">
+        <div class="plan-first-head">
+            <strong>2. Odayı çizin</strong>
+            <p class="plan-first-hint">Plan ve OpenPlan ile aynı editör: <strong>Draw Wall</strong>, kapı/pencere. Üst çubuktan <strong>3D</strong> ve <strong>walkthrough</strong> ile oda içinde gezinin; ölçüler dolap sahnesine aktarılır.</p>
+            <button type="button" class="btn" id="btn-plan-fullscreen" title="Tam ekran">Tam ekran</button>
+            <button type="button" class="btn" id="btn-plan-toggle-handoff">Ölçü / JSON</button>
+            <button type="button" class="btn" id="btn-plan-skip">Ölçüyü atla</button>
+            <button type="button" class="btn-primary" id="btn-plan-to-3d">Modül dizimine geç →</button>
+        </div>
+        <div class="plan-first-frame">
+            <iframe id="openplan-studio-frame" title="OpenPlan oda editörü" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen; clipboard-read; clipboard-write"></iframe>
+        </div>
+        <form class="room-handoff plan-first-foot is-collapsed" id="studio-plan-first-handoff" style="border-top:1px solid var(--line)">
+            <p style="margin:0;flex:1;font-size:12px;color:var(--muted)">Export veya ölçü girip geçebilirsiniz.</p>
+            <label>JSON<input id="studio-plan-first-json" type="file" accept="application/json,.json"></label>
+            <label>Ön<input name="onduvar" type="number" min="80" max="800" value="300"></label>
+            <label>Sol<input name="solduvar" type="number" min="80" max="800" value="300"></label>
+            <label>Sağ<input name="sagduvar" type="number" min="80" max="800" value="300"></label>
+            <label>Tavan<input name="odaboy" type="number" min="160" max="320" value="320"></label>
+            <button type="submit">3D odaya uygula</button>
+        </form>
+    </div>
     <div class="workspace">
         <aside class="left" id="library">
             <button type="button" class="sheet-close" id="close-library">Kapat</button>
@@ -356,12 +408,19 @@
         <section class="stage">
             <div id="room-plan-panel" aria-label="Oda planı" role="dialog">
                 <div class="room-sketch-head">
+                    <div class="room-plan-mode" id="room-plan-mode">
+                        <button type="button" data-room-plan-mode="openplan" class="is-on">OpenPlan</button>
+                        <button type="button" data-room-plan-mode="sketch">Hızlı çizim</button>
+                    </div>
                     <strong>Odayı çiz</strong>
-                    <p class="grow-h">Plan sayfasından bağımsız — duvar, kapı ve pencere burada. Çift tıkla çizimi bitir.</p>
-                    <button type="button" class="btn" id="btn-room-redraw">Odayı yeniden çiz</button>
+                    <p class="grow-h">OpenPlan: plan sayfası ile aynı araçlar. Hızlı çizim: basit L/dikdörtgen.</p>
+                    <button type="button" class="btn" id="btn-room-redraw">Hızlı çizimi sıfırla</button>
                     <button type="button" class="btn" id="btn-close-room-plan">Kapat</button>
                 </div>
-                <div class="room-sketch-body">
+                <div id="room-plan-openplan" class="room-plan-openplan room-sketch-body">
+                    <iframe id="openplan-frame" title="OpenPlan" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen; clipboard-read; clipboard-write"></iframe>
+                </div>
+                <div id="room-plan-sketch-wrap" class="room-sketch-wrap hidden room-sketch-body">
                     <aside class="room-sketch-tools" aria-label="Plan araçları">
                         <p class="sketch-kicker">Araçlar</p>
                         <button type="button" data-sketch-tool="select" class="is-on">Seç / kaydır</button>
@@ -392,6 +451,7 @@
             </div>
             <div class="stage-layout">
             <div id="viewport"></div>
+            <div id="walk-hud" aria-hidden="true">WASD · Shift koş · Esc çıkış</div>
             <div id="plan-board" class="hidden">
                 <canvas id="plan-canvas"></canvas>
             </div>
@@ -424,6 +484,7 @@
             </div>
             <div id="view-bar" aria-label="Kamera">
                 <button type="button" data-view="perspective" class="is-on">3D</button>
+                <button type="button" data-view="walkthrough" id="btn-walk" title="Oda içi gezinti">Gezinti</button>
                 <button type="button" id="cam-orbit-left" title="Sola dön">‹</button>
                 <button type="button" id="cam-orbit-right" title="Sağa dön">›</button>
                 <button type="button" data-view="top" title="Kuş bakışı">Üst</button>
@@ -573,10 +634,12 @@
         projectBase: @json(url('/dolap')),
         modelsUrl: @json(asset('models/wardrobe')),
         photosUrl: @json(asset('images/wardrobe')),
-        csrf: @json(csrf_token())
+        csrf: @json(csrf_token()),
+        openplanSrc: @json($openplanSrc ?? url('/openplan/index.html')),
     };
 </script>
-<script src="{{ asset('js/meemare-plan-bridge.js') }}?v=4" defer></script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=235"></script>
+<script src="{{ asset('js/meemare-plan-bridge.js') }}?v=5" defer></script>
+<script src="{{ asset('js/openplan-import.js') }}?v=1" defer></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=238"></script>
 </body>
 </html>
