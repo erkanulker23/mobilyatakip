@@ -389,7 +389,7 @@ document.getElementById('create').addEventListener('submit', async (event) => {
     const data = await response.json().catch(() => null);
     if (response.status === 429) { msg.textContent = 'Çok sık denendi. Bir dakika sonra tekrar dene.'; return; }
     if (!response.ok || !data?.token) { msg.textContent = data?.message || 'Proje kaydı yazılamadı.'; return; }
-    location.href = `${designUrl}?proje=${data.token}`;
+    location.href = `${designUrl}?proje=${data.token}&oda=1`;
 });
 
 load();

@@ -4,50 +4,39 @@
 
 | Sayfa | URL | Açıklama |
 | --- | --- | --- |
-| Dolap projeleri | `/dolap` | Kayıtlı odalar; yeni proje ölçü veya OpenPlan |
-| 3D tasarla | `/dolap/tasarla` | Meemare modül stüdyosu (Y26 katalog, 3D oda); üretim sayfasıyla aynı **kabuk** mantığı |
-| Oda planı | `/plan` | OpenPlan3D (iframe) |
+| Dolap projeleri | `/dolap` | Kayıtlı projeler, arama, yeni proje + oda şablonu |
+| 3D tasarla | `/dolap/tasarla` | Meemare modül stüdyosu (Y26 katalog, 3D oda, gömülü oda çizimi) |
+| Oda planı | `/plan` | OpenPlan3D (genel plan aracı; tasarla sayfasından bağımsız) |
 | Üretim dolabı | `/dolap-uretim` | Cabinet Studio |
 
-## Erişim düzeltmesi
+## Stüdyo 3D (güncel)
 
-Atölye kullanıcıları `RestrictWorkshopUser` ile kısıtlanıyordu; `tools.plan` ve `tools.cabinet` izin listesinde yoktu → **403**. `WorkshopUser::allowedRoutePrefixes` içine `tools.` eklendi.
-
-Kontrol paneli yan menüsüne **Meemare tasarım** bölümü eklendi (tüm roller).
+- **Gömülü oda çizimi:** `Oda` → tam ekran editör (`wardrobe-room-sketch.js`): duvar, kapı, pencere, L / dikdörtgen şablon.
+- **Yeni proje akışı:** Proje oluştur → `?oda=1` ile oda çizimi açılır → **3D odaya uygula**.
+- **Hızlı çubuk:** Seçili modülün yanında kapak tipi, renk, klon, sil.
+- **Yerleşim:** Kapı/pencere açıklıkları duvara modül koymayı engeller (layout).
+- **Mobil:** Varsayılan katalog açık; 3D sahne görünür (inspector sheet alttan).
 
 ## Ortak gezinme
 
-- `meemare-apps-nav` — uygulama geçişi (projeler / 3D / plan / üretim)
-- `meemare-workflow` — aynı dört adım şeridi (tüm tasarım sayfalarında)
-- `meemare-shell-styles` — üst bar + handoff satırı (Cabinet Studio ile uyumlu)
+- `meemare-apps-nav` — projeler / 3D / plan / üretim
+- Projeler sayfasında ek workflow şeridi yok (çift menü kaldırıldı).
 
 ## Oda → dolap aktarımı
 
-`/plan` üstündeki form ölçüleri `?onduvar=&solduvar=&sagduvar=` ile `/dolap/tasarla`ya gönderir. Stüdyo `applyRoomQuery()` ile duvar cm değerlerini yükler.
+- **Tasarla içi:** Ölçüler çizimden veya formdan → `applyWallsCm` → 3D duvar + açıklık mesh.
+- **`/plan`:** İsteğe bağlı; `meemare-room-handoff` localStorage ile ölçü aktarımı.
 
-OpenPlan aynı domain’de `public/openplan` ( `scripts/build-openplan-static.sh` ) ile sunulur; dosyadan JSON import ve manuel ölçü handoff mevcut, tam postMessage export sonraki aşama.
-
-## Stüdyo 2B (mevcut)
-
-**`/dolap/tasarla`** = modül stüdyosu (Three.js + Y26). **`/dolap-uretim`** = tek gövde Cabinet Studio. Ortak üst şerit ve üç sütun; oda çizimi yalnızca **`/plan`** (ölçü → `meemare-room-handoff`).
-
-## Tamamlanan (sıra 2)
-
-| # | Özellik | Dosya |
-| --- | --- | --- |
-| 1 | Plan → stüdyo `localStorage` handoff | `public/js/meemare-plan-bridge.js` |
-| 2 | Stüdyo → üretim dolabı ölçü + handoff | `openCabinetStudio()`, `meemare-cabinet-bridge.js` |
-| 3 | Birleşik proje JSON indirme | `downloadMeemareBundle()` (`.meemare.json`) |
-| 4 | Giriş sonrası üst linkler | `public-gate-top-links.blade.php` |
-
-## Tamamlanan (sıra 3)
+## Tamamlanan (sıra 4)
 
 | # | Özellik |
 | --- | --- |
-| 1 | OpenPlan statik build (`scripts/build-openplan-static.sh`) + `/openplan/*` |
-| 2 | OpenPlan JSON → dolap ölçüsü (`openplan-import.js`) |
-| 3 | Cabinet Studio otomatik mm (`cabinet-studio-handoff.js`, proxy sayfada) |
-| 4 | Inspector üretim parçaları (`module.json` tablosu) |
-| 5 | Cycles katalog önizleme (`scripts/render-y26-catalog-previews.py`, `?v=5`) |
+| 1 | Projeler hub (arama, şablon, kart özeti) |
+| 2 | Gömülü oda sketch (plan sayfasından bağımsız) |
+| 3 | UX: hızlı rail, zemin, sade kamera |
+| 4 | Modül ekleyince kadraj (`focusSelectedModule`) |
+| 5 | Bundle’da `room.walls` + openings |
 
-OpenPlan build sunucuda bir kez çalıştırılmalı; yoksa `/plan` harici iframe’e düşer.
+## Sırada (mimari / üretim — büyük işler)
+
+Bkz. `MEEMARE_BUG_BACKLOG.csv`: parametrik modül (EK-02), kesim listesi (EK-06), köşe GLB karışması (QA-CORNER-001), render kalitesi (QA-RENDER-001).

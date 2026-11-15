@@ -286,6 +286,14 @@ function meemareBundle() {
             leftCm: state.leftWall,
             rightCm: state.rightWall,
             heightCm: state.roomHeight,
+            walls: (state.roomSketch?.walls || []).map((w) => ({
+                id: w.id,
+                role: w.role,
+                x1: w.x1,
+                y1: w.y1,
+                x2: w.x2,
+                y2: w.y2,
+            })),
             openings: (state.roomSketch?.openings || []).map((item) => ({
                 wall: item.wallId,
                 kind: item.kind,
@@ -586,7 +594,10 @@ function layout(modules) {
             .filter((mod) => mod.kind !== 'corner' && wallName(mod) === wall)
             .sort((a, b) => Number(a.offset) - Number(b.offset));
         const occupied = [];
-        const fits = (at, along) => at >= begin - 0.1 && at + along <= limit + 0.05 && !occupied.some((seg) => at < seg.end - 0.4 && at + along > seg.start + 0.4);
+        const fits = (at, along) => at >= begin - 0.1
+            && at + along <= limit + 0.05
+            && !hitsOpening(wall, at, along)
+            && !occupied.some((seg) => at < seg.end - 0.4 && at + along > seg.start + 0.4);
         const placeOne = (mod) => {
             const along = alongSize(mod);
             const wanted = Number(mod.offset);
@@ -4448,8 +4459,10 @@ function bindQuickRail() {
             el('inspector')?.classList.add('is-open');
             document.body.classList.add('show-custom');
             document.body.classList.remove('show-library');
-            const tab = rail.querySelector('[data-insp-tab="kapak"]') || el('inspector-body')?.querySelector('[data-insp-tab="kapak"]');
-            tab?.click();
+            renderInspector();
+            requestAnimationFrame(() => {
+                el('inspector-body')?.querySelector('[data-insp-tab="kapak"]')?.click();
+            });
         }
     });
     rail.addEventListener('pointerdown', (event) => event.stopPropagation());
@@ -4478,6 +4491,35 @@ function placeHud(node, x, y) {
 function frameCamera() {
     if (planMode === '2d') framePlan();
     else setCameraView('perspective');
+}
+
+function focusSelectedModule() {
+    if (planMode === '2d') {
+        framePlan();
+        return;
+    }
+    const mod = selected();
+    const group = mod ? cabinetRoot?.getObjectByName(`mod-${mod.id}`) : null;
+    if (!group || !camera || !controls) {
+        setCameraView('perspective');
+        return;
+    }
+    const box = new THREE.Box3().setFromObject(group);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const span = Math.max(size.x, size.y, size.z, 45);
+    controls.target.copy(center);
+    camera.fov = 30;
+    camera.position.set(
+        center.x - span * 0.42,
+        center.y + span * 0.22 + 28,
+        center.z + span * 1.05,
+    );
+    camera.near = 0.4;
+    camera.far = 4000;
+    camera.updateProjectionMatrix();
+    controls.update();
+    resize();
 }
 
 function focusPart(pattern) {
@@ -6294,6 +6336,20 @@ function roomOpenings(wallId) {
     return Array.isArray(items) ? items.filter((item) => item.wallId === wallId) : [];
 }
 
+function openingBlocks(wallId, margin = 10) {
+    return roomOpenings(wallId).map((item) => ({
+        start: Math.max(0, (Number(item.offset) || 0) - margin),
+        end: (Number(item.offset) || 0) + (Number(item.width) || 0) + margin,
+    }));
+}
+
+function hitsOpening(wallId, at, along) {
+    const blocks = openingBlocks(wallId);
+    if (!blocks.length) return false;
+    const end = at + along;
+    return blocks.some((block) => at < block.end - 0.5 && end > block.start + 0.5);
+}
+
 function wallPieces(length, height, openings) {
     const pieces = [];
     const sorted = openings
@@ -6527,7 +6583,30 @@ function applyWallDrop(mod, pick) {
 
 function wallFullMessage(wall) {
     const name = wall === 'left' ? 'Sol duvarda' : wall === 'right' ? 'Sağ duvarda' : 'Ön duvarda';
+    if (roomOpenings(wall).length) return `${name} yer yok — kapı/pencere boşluğu veya dolu sıra.`;
     return `${name} bu dolap için yer kalmadı.`;
+}
+
+function initStudioLayout() {
+    const mobile = window.matchMedia('(max-width: 900px)').matches;
+    document.body.classList.remove('show-library', 'show-custom');
+    if (mobile) {
+        document.body.classList.add('show-library');
+        el('library')?.classList.add('is-open');
+        el('inspector')?.classList.remove('is-open');
+    } else {
+        document.body.classList.add('show-library', 'show-custom');
+        el('inspector')?.classList.add('is-open');
+    }
+}
+
+function maybeOpenRoomSketcher(params) {
+    if (!params || params.get('oda') !== '1') return;
+    toggleRoomPlan(true);
+    const next = new URLSearchParams(params);
+    next.delete('oda');
+    const qs = next.toString();
+    history.replaceState(null, '', `${location.pathname}${qs ? `?${qs}` : ''}`);
 }
 
 function wallSpan(mod) {
@@ -6782,7 +6861,7 @@ function addCabinet(target) {
         state.modules.push(mod);
         selectedId = mod.id;
     });
-    frameCamera();
+    focusSelectedModule();
     el('library').classList.remove('is-open');
     if (!window.matchMedia('(max-width: 900px)').matches) el('inspector').classList.add('is-open');
 }
@@ -6923,10 +7002,14 @@ async function addGlbModule(id, dropEvent) {
             state.modules.push(mod);
             selectedId = mod.id;
         });
-        frameCamera();
+        focusSelectedModule();
         snapDoors();
         el('library').classList.remove('is-open');
-        if (!window.matchMedia('(max-width: 900px)').matches) el('inspector').classList.add('is-open');
+        if (!window.matchMedia('(max-width: 900px)').matches) {
+            el('inspector').classList.add('is-open');
+        } else {
+            document.body.classList.remove('show-custom');
+        }
     } catch (error) {
         noteDrop({ phase: 'error', id, message: String(error?.stack || error).slice(0, 500) });
         toast('Bu modülün modeli açılamadı. Sahne duruyor. Başka bir modül seçebilirsiniz.');
@@ -6977,7 +7060,7 @@ function addCadModule(id, dropEvent) {
         state.modules.push(mod);
         selectedId = mod.id;
     });
-    frameCamera();
+    focusSelectedModule();
     el('library').classList.remove('is-open');
     if (!window.matchMedia('(max-width: 900px)').matches) el('inspector').classList.add('is-open');
 }
@@ -6999,8 +7082,9 @@ function addProduct(productId, dropEvent) {
         state.modules.push(mod);
         selectedId = mod.id;
     });
-    frameCamera();
+    focusSelectedModule();
     el('library').classList.remove('is-open');
+    if (window.matchMedia('(max-width: 900px)').matches) document.body.classList.remove('show-custom');
 }
 
 function moveModule(id, step) {
@@ -8236,6 +8320,7 @@ async function loadMaterials() {
 
 async function boot() {
     init3d();
+    initStudioLayout();
     bindChrome();
     renderLibrary();
     try {
@@ -8275,9 +8360,12 @@ async function boot() {
     const token = params.get('proje');
     if ((recordId && await openProject(recordId)) || (token && await openProject(token))) {
         el('customer-modal').classList.add('hidden');
-        toggleRoomPlan(false);
         panelOpacity = state.panelOpacity ?? 1;
         syncViewModeBar();
+        render();
+        focusSelectedModule();
+        maybeOpenRoomSketcher(params);
+        if (params.get('oda') !== '1') toggleRoomPlan(false);
         return;
     }
     if (loadHash()) {
@@ -8317,6 +8405,7 @@ async function boot() {
     if (!state.modules.length) {
         showModuleLibrary();
     }
+    maybeOpenRoomSketcher(params);
 }
 
 window.__setCameraView = (mode) => setCameraView(mode);

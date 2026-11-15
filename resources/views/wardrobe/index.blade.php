@@ -276,6 +276,10 @@
                 transition: transform .2s ease; border-radius: 16px 16px 0 0; box-shadow: var(--shadow);
             }
             aside.is-open { transform: none; }
+            body.show-custom:not(.show-library) aside.right { transform: none; }
+            body.show-library:not(.show-custom) aside.right { transform: translateY(120%); }
+            body:not(.show-library):not(.show-custom) aside.right { transform: translateY(120%); }
+            body:not(.show-library):not(.show-custom) aside.left.is-open { transform: none; }
             aside .sheet-close { display: block; margin: 8px 12px 0 auto; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 700; }
             #project-sheet {
                 display: none; position: fixed; left: 0; right: 0; bottom: calc(72px + env(safe-area-inset-bottom));
@@ -296,7 +300,7 @@
         }
     </style>
 </head>
-<body class="show-library show-custom studio-layout">
+<body class="studio-layout">
 <div id="studio">
     <div class="studio-top">
         <a href="{{ route('wardrobe.index') }}" class="brand"><strong>3D tasarla</strong></a>
@@ -541,6 +545,6 @@
     };
 </script>
 <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=4" defer></script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=232"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=233"></script>
 </body>
 </html>
