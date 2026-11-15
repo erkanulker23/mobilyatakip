@@ -60,7 +60,7 @@ class WorkshopToolsAccessTest extends TestCase
         $this->actingAs($user)->get(route('wardrobe.index'))->assertOk();
         $response = $this->actingAs($user)->get(route('wardrobe.design'));
         $response->assertOk()
-            ->assertSee('Modül kataloğu', false)
+            ->assertSee('Modül ekle', false)
             ->assertSee('wardrobe-studio.js', false)
             ->assertDontSee('petervanderwalt/cabinet-studio', false)
             ->assertDontSee('Cabinet Studio arayüzü', false);

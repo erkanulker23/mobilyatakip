@@ -29,16 +29,23 @@
         button, input, select { font-family: inherit; }
         button { cursor: pointer; }
         #studio {
-            display: grid; grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+            display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
             height: 100dvh; min-height: 0;
             padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);
         }
-        header.bar, footer.bar, .series {
+        .studio-top {
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+            padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line);
+            min-height: 52px;
+        }
+        .studio-top .brand { flex: 0 0 auto; }
+        .studio-top .name-input { flex: 0 1 140px; min-width: 100px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: #fff; }
+        .studio-top__nav { flex: 1 1 280px; min-width: 0; overflow-x: auto; scrollbar-width: thin; }
+        .studio-top__actions { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; align-items: center; }
+        .studio-top__actions .btn-quiet { color: var(--muted); }
+        footer.bar, .series {
             display: flex; align-items: center; gap: 8px; padding: 0 14px; background: var(--panel);
         }
-        header.bar { border-bottom: 1px solid var(--line); flex-wrap: nowrap; gap: 8px; padding-top: 8px; padding-bottom: 8px; min-height: 48px; overflow-x: auto; scrollbar-width: thin; }
-        .view-mode-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 14px; background: #fffcf8; border-bottom: 1px solid var(--line); font-size: 12px; }
-        .view-mode-bar .seg button { padding: 6px 12px; }
         #room-plan-panel {
             display: none; position: fixed; inset: 12px; z-index: 25; max-width: 1200px; margin: auto;
             grid-template-rows: auto 1fr; background: #f3f1ec; border: 1px solid var(--line); border-radius: 14px;
@@ -104,6 +111,9 @@
             aside .sheet-close { display: none; }
         }
         .side-head { padding: 12px 14px 0; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+        .side-head .side-sub { display: block; font-size: 11px; font-weight: 500; text-transform: none; color: var(--muted); margin-top: 4px; }
+        .room-panel details { margin-bottom: 12px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: #fff; }
+        .room-panel summary { cursor: pointer; font-weight: 700; font-size: 13px; }
         .library-search { padding: 10px 12px 0; }
         .library-search input { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: #fff; font-size: 13px; }
         .side-body { padding: 12px; overflow: auto; min-height: 0; flex: 1; }
@@ -143,16 +153,24 @@
         .parts li.is-on { background: #e5f6ec; border: 2px solid #149152; border-radius: 8px; padding: 6px 8px; list-style-position: inside; }
         #viewport { position: absolute; inset: 0; }
         #viewport canvas { display: block; }
-        #view-bar { position: absolute; left: 12px; bottom: 12px; z-index: 4; display: flex; flex-wrap: wrap; gap: 6px; max-width: min(420px, calc(100% - 24px)); }
-        #view-bar button, #plan-switch button { border: 1px solid var(--line); background: rgba(255,252,248,.94); border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 700; }
-        #plan-switch { position: absolute; top: 12px; right: 12px; z-index: 5; display: flex; gap: 6px; flex-wrap: wrap; max-width: min(280px, calc(100% - 24px)); justify-content: flex-end; }
-        #plan-switch button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
+        #stage-toolbar {
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+            z-index: 5; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: center;
+            max-width: calc(100% - 24px); padding: 4px; border-radius: 999px;
+            background: rgba(255,252,248,.92); border: 1px solid var(--line); box-shadow: var(--shadow);
+        }
+        #stage-toolbar .seg { gap: 4px; }
+        #stage-toolbar button { border: 0; background: transparent; border-radius: 999px; padding: 7px 12px; font-size: 12px; font-weight: 700; }
+        #stage-toolbar button.is-on { background: var(--ink); color: #fff; }
+        #stage-toolbar .tb-sep { width: 1px; height: 22px; background: var(--line); margin: 0 2px; }
+        #view-bar { position: absolute; left: 12px; bottom: 12px; z-index: 4; display: flex; flex-wrap: wrap; gap: 4px; max-width: min(360px, calc(100% - 24px)); }
+        #view-bar button { border: 1px solid var(--line); background: rgba(255,252,248,.94); border-radius: 999px; padding: 6px 10px; font-size: 11px; font-weight: 700; }
+        body:not(.show-extra-views) #view-bar [data-view-extra] { display: none; }
+        #plan-tools.inline { position: static; display: none; gap: 4px; }
+        body.plan-2d #plan-tools.inline { display: flex; }
         #plan-board { position: absolute; inset: 0; z-index: 3; background: #f3f1ec; }
         #plan-board.hidden { display: none; }
         #plan-canvas { width: 100%; height: 100%; display: block; touch-action: none; }
-        #plan-tools { position: absolute; left: 12px; top: 12px; display: flex; gap: 6px; }
-        #plan-tools button { border: 1px solid var(--line); background: rgba(255,252,248,.94); border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 700; }
-        #plan-tools button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
         body.plan-2d #view-bar, body.plan-2d #selection-ui, body.plan-2d #height-handle { display: none; }
         #measure-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
         .measure { position: absolute; transform: translate(-50%, -50%); background: #1f6b4a; color: #fff; font-size: 11px; font-weight: 700; line-height: 1.2; padding: 2px 6px; border-radius: 999px; white-space: nowrap; }
@@ -203,8 +221,8 @@
         .mobile-nav { display: none; }
         .sheet-close, #project-sheet { display: none; }
         @media (max-width: 900px) {
-            header.bar { min-height: 52px; }
-            header.bar .btn:not(#btn-save), header.bar .extra { display: none; }
+            .studio-top__actions .extra, .studio-top__actions .btn-quiet { display: none; }
+            #stage-toolbar { top: auto; bottom: calc(120px + env(safe-area-inset-bottom)); left: 8px; right: 8px; transform: none; border-radius: 12px; }
             .workspace { display: flex; flex-direction: column; min-height: 0; grid-template-columns: 1fr; }
             .stage { position: relative; inset: auto; flex: 1 1 auto; min-height: 0; width: 100%; grid-column: 1; }
             aside.left, aside.right { grid-column: 1; }
@@ -228,8 +246,6 @@
             #view-bar { top: auto; bottom: calc(58px + env(safe-area-inset-bottom)); left: 8px; right: 8px; max-width: none; flex-wrap: nowrap; overflow-x: auto; gap: 4px; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent); }
             #view-bar::-webkit-scrollbar { display: none; }
             #view-bar button { padding: 6px 8px; font-size: 11px; }
-            #plan-switch { top: auto; left: auto; right: 8px; bottom: calc(116px + env(safe-area-inset-bottom)); }
-            body.plan-2d #plan-switch { bottom: calc(58px + env(safe-area-inset-bottom)); }
             .name-input { width: min(42vw, 180px); }
             body[data-sheet="material"] #inspector-body > :not([data-picker]) { display: none; }
             body[data-sheet="doors"] #inspector-body > :not(:has([data-door], [data-swing], #mod-open)) { display: none; }
@@ -239,41 +255,27 @@
 </head>
 <body class="show-library show-custom studio-layout">
 <div id="studio">
-    <header class="bar meemare-tool-bar">
-        <a href="{{ route('wardrobe.index') }}" class="brand">
-            <strong>Meemare modül stüdyosu</strong>
-        </a>
-        <span class="lead">Soldan modül ekleyin; sağda kapak ve malzeme; 3D veya yerleşim (2D) ile düzenleyin.</span>
+    <div class="studio-top">
+        <a href="{{ route('wardrobe.index') }}" class="brand"><strong>3D tasarla</strong></a>
         <input id="project-name" class="name-input" maxlength="80" aria-label="Proje adı" value="Dolabım">
-        <div class="toolbar-spacer"></div>
-        <button type="button" class="btn" id="btn-undo" disabled>Geri</button>
-        <button type="button" class="btn" id="btn-redo" disabled>İleri</button>
-        <a class="btn" id="btn-saved" href="{{ route('wardrobe.index') }}">Projeler</a>
-        <button type="button" class="btn" id="btn-save">Kaydet</button>
-        <button type="button" class="btn" id="btn-share">Paylaş</button>
-        <button type="button" class="btn" id="btn-measures">Ölçüler</button>
-        <button type="button" class="btn is-on" id="btn-lights">Işıkları kapat</button>
-        <button type="button" class="btn extra" id="btn-export-json">JSON</button>
-        <button type="button" class="btn extra" id="btn-cabinet">Üretim</button>
-        <button type="button" class="btn" id="btn-shot">Render</button>
-    </header>
-    <div class="meemare-nav-row">@include('partials.meemare-apps-nav', ['activeApp' => 'tasarla'])</div>
-    @include('partials.meemare-workflow', ['workflowStep' => 'tasarla'])
-    <div class="view-mode-bar">
-        <span style="color:var(--muted);font-weight:600">Görünüm</span>
-        <div class="seg" id="view-mode-switch">
-            <button type="button" data-plan="3d" class="is-on">3D</button>
-            <button type="button" data-plan="2d">2D yerleşim</button>
+        <div class="studio-top__nav">@include('partials.meemare-apps-nav', ['activeApp' => 'tasarla'])</div>
+        <div class="studio-top__actions">
+            <button type="button" class="btn" id="btn-undo" disabled title="Geri">↶</button>
+            <button type="button" class="btn" id="btn-redo" disabled title="İleri">↷</button>
+            <button type="button" class="btn btn-primary" id="btn-save">Kaydet</button>
+            <a class="btn btn-quiet extra" id="btn-saved" href="{{ route('wardrobe.index') }}">Projeler</a>
+            <button type="button" class="btn btn-quiet extra" id="btn-share">Paylaş</button>
+            <button type="button" class="btn btn-quiet extra" id="btn-measures">Ölçü</button>
+            <button type="button" class="btn btn-quiet is-on extra" id="btn-lights" title="Işık">💡</button>
+            <button type="button" class="btn btn-quiet extra" id="btn-cabinet">Üretim</button>
+            <button type="button" class="btn btn-quiet extra" id="btn-shot">Render</button>
         </div>
-        <button type="button" class="btn" id="btn-room-plan">Oda planı</button>
-        <button type="button" class="btn" id="btn-demo-dressing">Örnek L giyinme</button>
-        <a class="btn" href="{{ $planUrl }}" target="_blank" rel="noopener">Plan sayfası</a>
     </div>
     <div class="workspace">
         <aside class="left" id="library">
             <button type="button" class="sheet-close" id="close-library">Kapat</button>
-            <div class="side-head">Modül kataloğu</div>
-            <div class="library-search"><input id="module-search" type="search" placeholder="Modül ara" autocomplete="off"></div>
+            <div class="side-head">Modül ekle<span class="side-sub">Tıkla veya sahneye sürükle</span></div>
+            <div class="library-search"><input id="module-search" type="search" placeholder="Ara…" autocomplete="off"></div>
             <div class="side-body" id="library-body"></div>
         </aside>
         <div id="card-zoom" class="card-zoom hidden" aria-hidden="true">
@@ -301,30 +303,33 @@
             <div id="viewport"></div>
             <div id="plan-board" class="hidden">
                 <canvas id="plan-canvas"></canvas>
-                <div id="plan-tools">
-                    <button type="button" data-plan-tool="move" class="is-on" title="Modülü duvar boyunca sürükleyin">Taşı</button>
-                    <button type="button" data-plan-tool="door" title="Duvara tıklayın: kapı ekleyin / kaldırın">Kapı</button>
-                    <button type="button" data-plan-tool="window" title="Duvara tıklayın: pencere ekleyin / kaldırın">Pencere</button>
-                </div>
             </div>
-            <div id="plan-switch">
-                <button type="button" id="btn-modules">Modüller</button>
-                <button type="button" data-plan="2d" title="Duvar boyunca modül kaydırma (L-oda)">Yerleşim</button>
-                <button type="button" data-plan="3d" class="is-on">3D</button>
-                <button type="button" id="btn-guides" class="is-on">Kılavuz</button>
+            <div id="stage-toolbar" aria-label="Sahne araçları">
+                <div class="seg" id="plan-switch">
+                    <button type="button" data-plan="3d" class="is-on">3D</button>
+                    <button type="button" data-plan="2d">Yerleşim</button>
+                </div>
+                <span class="tb-sep" aria-hidden="true"></span>
+                <div id="plan-tools" class="inline">
+                    <button type="button" data-plan-tool="move" class="is-on">Taşı</button>
+                    <button type="button" data-plan-tool="door">Kapı</button>
+                    <button type="button" data-plan-tool="window">Pencere</button>
+                </div>
+                <span class="tb-sep" aria-hidden="true"></span>
+                <button type="button" id="btn-modules">Katalog</button>
+                <button type="button" id="btn-room-plan">Oda</button>
+                <button type="button" id="btn-guides" class="is-on" title="Kılavuz çizgileri">Izgara</button>
+                <button type="button" id="btn-demo-dressing" title="Örnek L giyinme">Örnek</button>
             </div>
             <div id="view-bar">
-                <button type="button" data-view="front">Ön</button>
-                <button type="button" data-view="left">Sol</button>
-                <button type="button" data-view="right">Sağ</button>
-                <button type="button" data-view="left45">Sol 45</button>
-                <button type="button" data-view="right45">Sağ 45</button>
-                <button type="button" data-view="top">Üst</button>
                 <button type="button" data-view="perspective">Perspektif</button>
-                <button type="button" data-view="shelf">Raf</button>
-                <button type="button" data-view="drawer">Çekmece</button>
-                <button type="button" data-view="grain">Ahşap</button>
-                <button type="button" data-view="glass">Cam</button>
+                <button type="button" data-view="front">Ön</button>
+                <button type="button" data-view="top">Üst</button>
+                <button type="button" data-view="left45" data-view-extra>Sol 45°</button>
+                <button type="button" data-view="right45" data-view-extra>Sağ 45°</button>
+                <button type="button" data-view="shelf" data-view-extra>Raf</button>
+                <button type="button" data-view="drawer" data-view-extra>Çekmece</button>
+                <button type="button" id="btn-view-more">+</button>
             </div>
             <div id="measure-layer" class="hidden"></div>
             <div id="selection-ui" class="hidden">
@@ -344,7 +349,7 @@
         </section>
         <aside class="right" id="inspector">
             <button type="button" class="sheet-close" id="close-inspector">Kapat</button>
-            <div class="side-head">Dolap ve oda ayarları</div>
+            <div class="side-head"><span id="inspector-title">Oda</span><span class="side-sub" id="inspector-sub">Duvar ölçüsü · soldan modül ekleyin</span></div>
             <div class="side-body" id="inspector-body"></div>
             <div class="side-foot">
                 <button type="button" class="btn" id="btn-production">Üretim listesi</button>
@@ -472,6 +477,6 @@
     };
 </script>
 <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=4" defer></script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=229"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=230"></script>
 </body>
 </html>
