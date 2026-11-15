@@ -5443,6 +5443,11 @@ function foldText(text) {
 
 function renderLibrary() {
     const host = el('library-body');
+    if (!host) return;
+    if (!glbCatalog.length) {
+        host.innerHTML = '<p class="hint">Modüller yükleniyor…</p>';
+        return;
+    }
     const query = foldText(el('module-search')?.value || '');
     const matches = (item) => !query || foldText(`${item.name} ${item.spec} ${item.width} ${item.category || ''}`).includes(query);
     const labels = { 'y26-tek': 'Yeni tek kapılı', 'y26-cift': 'Yeni çift kapılı', tek: 'Tek Kapılı', cift: 'Çift Kapılı', kose: 'Köşe' };
@@ -7865,15 +7870,17 @@ async function boot() {
     }
     try {
         await loadGlbCatalog();
-        await Promise.all(glbCatalog.map(async (item) => {
+        renderLibrary();
+        void Promise.all(glbCatalog.map(async (item) => {
             try {
                 await ensureGlb(item);
             } catch {
                 glbFailed.add(item.id);
             }
-        }));
+        })).then(() => renderLibrary());
     } catch (error) {
         console.warn(error);
+        renderLibrary();
     }
     try {
         await loadDxfModules();

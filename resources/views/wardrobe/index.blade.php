@@ -38,27 +38,27 @@
         header.bar { border-bottom: 1px solid var(--line); flex-wrap: nowrap; gap: 8px; padding-top: 8px; padding-bottom: 8px; min-height: 48px; overflow-x: auto; scrollbar-width: thin; }
         .nav-row { padding: 8px 14px; background: #f7f5f1; border-bottom: 1px solid var(--line); overflow-x: auto; }
         .workflow-row {
-            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-            padding: 8px 14px; background: #eef6f1; border-bottom: 1px solid #d4e8dc;
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+            padding: 6px 14px; background: #fffcf8; border-bottom: 1px solid var(--line);
         }
-        .workflow-row p { margin: 0; flex: 1 1 200px; font-size: 12px; color: #3d5247; min-width: 0; }
-        .workflow-steps { display: flex; gap: 6px; flex-wrap: wrap; }
+        .workflow-row p { display: none; }
+        .workflow-steps { display: flex; gap: 6px; flex-wrap: wrap; width: 100%; }
         .workflow-steps button {
-            border: 1px solid #cfe0d6; background: #fff; border-radius: 999px;
-            padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
+            border: 1px solid var(--line); background: #fff; border-radius: 8px;
+            padding: 7px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
         }
-        .workflow-steps button.is-on { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .workflow-steps button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
         .workflow-steps a {
             display: inline-flex; align-items: center; border: 1px solid var(--line); background: #fff;
-            border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 700;
-            color: inherit; text-decoration: none;
+            border-radius: 8px; padding: 7px 12px; font-size: 12px; font-weight: 600;
+            color: inherit; text-decoration: none; margin-left: auto;
         }
         #room-plan-panel {
             display: none; position: absolute; inset: 0; z-index: 8;
             grid-template-rows: auto 1fr; background: #f3f1ec;
         }
         body.studio-room #room-plan-panel { display: grid; }
-        body.studio-room .stage-layout { visibility: hidden; pointer-events: none; }
+        body.studio-room .stage-layout { display: none; }
         .room-handoff {
             display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; padding: 8px 12px;
             background: #fffcf8; border-bottom: 1px solid var(--line); font-size: 12px;
@@ -90,17 +90,39 @@
         .seg { display: flex; gap: 6px; flex-wrap: wrap; }
         .seg button { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 7px 10px; font-size: 12px; font-weight: 600; }
         .seg button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
-        .workspace { display: block; position: relative; min-height: 0; }
-        .stage { position: absolute; inset: 0; min-width: 0; min-height: 0; background: #eceae6; }
-        aside { background: var(--panel); min-height: 0; display: flex; flex-direction: column; }
+        .workspace {
+            display: grid; min-height: 0; position: relative;
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-rows: minmax(0, 1fr);
+        }
         @media (min-width: 901px) {
-            aside.left, aside.right {
-                position: absolute; top: 0; bottom: 0; width: min(320px, 34vw); z-index: 6;
-                transition: transform .2s ease; box-shadow: var(--shadow);
+            .workspace {
+                grid-template-columns: min(300px, 28vw) minmax(0, 1fr) min(320px, 30vw);
             }
-            aside.left { left: 0; border-right: 1px solid var(--line); transform: translateX(-105%); }
-            aside.right { right: 0; border-left: 1px solid var(--line); transform: translateX(105%); }
-            body.show-library aside.left, body.show-custom aside.right { transform: none; }
+            body.studio-room .workspace {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+        .stage { position: relative; min-width: 0; min-height: 0; background: #eceae6; grid-column: 1 / -1; grid-row: 1; }
+        @media (min-width: 901px) {
+            .stage { grid-column: 2; }
+            body.studio-room .stage { grid-column: 1; }
+        }
+        .stage-layout { position: absolute; inset: 0; min-height: 0; }
+        aside { background: var(--panel); min-height: 0; display: flex; flex-direction: column; z-index: 6; }
+        @media (min-width: 901px) {
+            aside.left {
+                grid-column: 1; grid-row: 1; border-right: 1px solid var(--line);
+                box-shadow: none;
+            }
+            aside.right {
+                grid-column: 3; grid-row: 1; border-left: 1px solid var(--line);
+                transform: none; position: relative; width: auto;
+            }
+            body.studio-room aside.left,
+            body.studio-room aside.right { display: none; }
+            body:not(.show-custom) aside.right { transform: translateX(100%); position: absolute; right: 0; top: 0; bottom: 0; width: min(320px, 30vw); }
+            body.show-custom aside.right { position: relative; transform: none; width: auto; }
             aside .sheet-close { display: block; }
         }
         .side-head { padding: 12px 14px 0; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
@@ -201,8 +223,9 @@
         @media (max-width: 900px) {
             header.bar { min-height: 52px; }
             header.bar .btn:not(#btn-save), header.bar .extra { display: none; }
-            .workspace { display: flex; min-height: 0; }
-            .stage { position: relative; inset: auto; flex: 1 1 auto; min-height: 0; width: 100%; }
+            .workspace { display: flex; flex-direction: column; min-height: 0; grid-template-columns: 1fr; }
+            .stage { position: relative; inset: auto; flex: 1 1 auto; min-height: 0; width: 100%; grid-column: 1; }
+            aside.left, aside.right { grid-column: 1; }
             #viewport { min-height: 0; }
             aside {
                 position: fixed; left: 0; right: 0; bottom: calc(72px + env(safe-area-inset-bottom));
@@ -254,11 +277,11 @@
     <div class="nav-row">@include('partials.meemare-apps-nav', ['activeApp' => 'tasarla'])</div>
     <div class="workflow-row">
         <div class="workflow-steps">
-            <button type="button" data-workspace="room">1 · Oda planı çiz</button>
-            <button type="button" data-workspace="layout" class="is-on">2 · Dolap dizimi (3D)</button>
-            <a href="{{ $cabinetUrl }}">3 · Üretim dolabı</a>
+            <button type="button" data-workspace="layout" class="is-on">3D dizim</button>
+            <button type="button" data-workspace="room">Oda planı (OpenPlan)</button>
+            <a href="{{ route('tools.plan') }}">Plan tam ekran</a>
+            <a href="{{ $cabinetUrl }}">Üretim dolabı</a>
         </div>
-        <p>OpenPlan ile duvarları çizin, ölçüleri uygulayın; modülleri 3D sahneye sürükleyin; tek gövde için üretim dolabına geçin.</p>
     </div>
     <div class="workspace">
         <aside class="left" id="library">
@@ -458,6 +481,6 @@
     };
 </script>
 <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=3" defer></script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=222"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=223"></script>
 </body>
 </html>

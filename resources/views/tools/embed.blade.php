@@ -14,7 +14,7 @@
     <style>
         * { box-sizing: border-box; }
         html, body { margin: 0; height: 100%; font-family: Montserrat, system-ui, sans-serif; background: #f3f1ec; color: #17211c; }
-        .shell { display: grid; grid-template-rows: auto auto 1fr; height: 100%; min-height: 100dvh; }
+        .shell { display: grid; grid-template-rows: auto auto auto 1fr; height: 100%; min-height: 100dvh; }
         .bar {
             display: flex; align-items: center; gap: 12px; padding: 10px 14px;
             background: #fffcf8; border-bottom: 1px solid #e4e1da; flex-wrap: wrap;
@@ -51,7 +51,7 @@
     </div>
     @if($tool['portal'] === 'plan')
     <form class="handoff" id="plan-handoff" action="{{ route('wardrobe.design') }}" method="get">
-        <p>OpenPlan’da çizdiğiniz odanın ön duvar ve yan duvar ölçülerini (cm) yazıp dolap stüdyosuna aktarın. Dışa aktarılmış <strong>OpenPlan JSON</strong> dosyasını da yükleyebilirsiniz.</p>
+        <p>Duvarları çizmek için alttaki tuvali kullanın. Ölçüleri yazıp <strong>3D dolaba aktar</strong> deyin veya JSON yükleyin.</p>
         <label style="display:flex;flex-direction:column;gap:3px;font-weight:600;color:#3d5247">OpenPlan JSON<input id="openplan-json-file" type="file" accept="application/json,.json"></label>
         <label>Ön duvar (cm)<input type="number" name="onduvar" min="80" max="800" value="320" required></label>
         <label>Sol yan (cm)<input type="number" name="solduvar" min="80" max="800" value="280"></label>
@@ -62,7 +62,7 @@
     <iframe src="{{ $tool['src'] }}" title="{{ $tool['title'] }}" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen; clipboard-read; clipboard-write"></iframe>
 </div>
 @if($tool['portal'] === 'plan')
-    <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=2" defer></script>
+    <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=3" defer></script>
     <script src="{{ asset('js/openplan-import.js') }}?v=1" defer></script>
 @endif
 @if($tool['portal'] === 'uretim')
