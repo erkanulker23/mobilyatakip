@@ -4,7 +4,7 @@
   "overlapMm": 4,
   "roomSlackMm": 15,
   "snapDistanceMm": 120,
-  "neighborSnapMm": 80,
+  "neighborSnapMm": 150,
   "assemblyGapMm": 0,
   "cellMm": 500
 }

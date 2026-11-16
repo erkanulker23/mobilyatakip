@@ -256,7 +256,7 @@ function openFrame() {
     frame.hidden = false;
     wait.hidden = true;
     if (project) quoteOpen.hidden = false;
-    frame.src = `${base}?embed=1${design}&v=310`;
+    frame.src = `${base}?embed=1${design}&v=311`;
     frame.addEventListener('load', () => {
         postToPlan();
         setTimeout(postToPlan, 400);
