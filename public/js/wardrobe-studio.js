@@ -7663,16 +7663,28 @@ function finishPlanFirstStep() {
 
 window.MeemareStudioClosePlan = () => closePlanStudioStep(true);
 
+function fillRoomFormsFromState() {
+    [el('studio-plan-handoff'), el('studio-plan-first-handoff')].forEach((form) => {
+        if (!form) return;
+        if (form.onduvar) form.onduvar.value = state.wallWidth;
+        if (form.solduvar) form.solduvar.value = state.leftWall;
+        if (form.sagduvar) form.sagduvar.value = state.rightWall;
+        if (form.odaboy) form.odaboy.value = state.roomHeight;
+    });
+}
+
+function openRoomEditor() {
+    fillRoomFormsFromState();
+    document.body.classList.add('studio-plan-first', 'show-room-plan');
+    setRoomPlanEditorMode('sketch');
+    requestAnimationFrame(() => {
+        toast('Kapı veya pencereyi seçin, boyutunu değiştirin. Bitince 3D düzenlemeye geçin.');
+    });
+}
+
 function maybeOpenPlanStudio(params) {
     if (!params || params.get('plan') !== '1') return;
-    document.body.classList.add('studio-plan-first', 'show-room-plan');
-    setRoomPlanEditorMode(preferredRoomPlanMode());
-    requestAnimationFrame(() => {
-        if (roomPlanEditorMode === 'sketch') roomSketchOnOpen(state);
-        toast(roomPlanEditorMode === 'openplan'
-            ? 'Plan editörü (/plan ile aynı). Duvar · kapı · pencere; bitince «Modül dizimine geç».'
-            : 'Duvar çiz (W), kapı/pencere önayarları. Bitince «Modül dizimine geç».');
-    });
+    openRoomEditor();
     const next = new URLSearchParams(params);
     next.delete('plan');
     const qs = next.toString();
