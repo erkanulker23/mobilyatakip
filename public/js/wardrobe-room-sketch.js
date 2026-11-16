@@ -93,20 +93,20 @@ function buildTShape(front, depth, stem = 140) {
 }
 
 const OPENING_PRESETS = {
-    door_single: { kind: 'door', style: 'single', width: 90, height: 210, sill: 0, label: 'Tek 90', sub: '90cm swing' },
-    door_double: { kind: 'door', style: 'double', width: 150, height: 210, sill: 0, label: 'Çift 150', sub: '150cm swing' },
-    door_sliding: { kind: 'door', style: 'sliding', width: 180, height: 210, sill: 0, label: 'Sürgü 180', sub: '180cm slide' },
-    door_french: { kind: 'door', style: 'french', width: 150, height: 210, sill: 0, label: 'French', sub: '150cm glass' },
-    door_pocket: { kind: 'door', style: 'pocket', width: 90, height: 210, sill: 0, label: 'Pocket', sub: '90cm recess' },
-    door_bifold: { kind: 'door', style: 'bifold', width: 180, height: 210, sill: 0, label: 'Bifold', sub: '180cm fold' },
-    door_opening: { kind: 'door', style: 'opening', width: 100, height: 210, sill: 0, label: 'Doorway', sub: '100cm open' },
-    door_garage: { kind: 'door', style: 'garage', width: 240, height: 210, sill: 0, label: 'Garage', sub: '240cm overhead' },
-    window_std: { kind: 'window', style: 'standard', width: 120, height: 120, sill: 90, label: 'Standard', sub: '120×120cm' },
-    window_fixed: { kind: 'window', style: 'fixed', width: 100, height: 100, sill: 90, label: 'Fixed', sub: '100×100cm' },
-    window_casement: { kind: 'window', style: 'casement', width: 80, height: 130, sill: 90, label: 'Casement', sub: '80×130cm' },
-    window_sliding: { kind: 'window', style: 'sliding', width: 180, height: 120, sill: 90, label: 'Sliding', sub: '180×120cm' },
-    window_wide: { kind: 'window', style: 'fixed', width: 180, height: 120, sill: 90, label: 'Wide', sub: '180×120cm' },
-    window_bay: { kind: 'window', style: 'bay', width: 200, height: 120, sill: 90, label: 'Bay', sub: '200×120cm' },
+    door_single: { kind: 'door', style: 'single', width: 90, height: 210, sill: 0, label: 'Tek kanat', sub: '90 cm' },
+    door_double: { kind: 'door', style: 'double', width: 150, height: 210, sill: 0, label: 'Çift kanat', sub: '150 cm' },
+    door_sliding: { kind: 'door', style: 'sliding', width: 180, height: 210, sill: 0, label: 'Sürgülü', sub: '180 cm' },
+    door_french: { kind: 'door', style: 'french', width: 150, height: 210, sill: 0, label: 'Camlı kapı', sub: '150 cm' },
+    door_pocket: { kind: 'door', style: 'pocket', width: 90, height: 210, sill: 0, label: 'Gizli kapı', sub: '90 cm' },
+    door_bifold: { kind: 'door', style: 'bifold', width: 180, height: 210, sill: 0, label: 'Katlanır', sub: '180 cm' },
+    door_opening: { kind: 'door', style: 'opening', width: 100, height: 210, sill: 0, label: 'Açıklık', sub: '100 cm' },
+    door_garage: { kind: 'door', style: 'garage', width: 240, height: 210, sill: 0, label: 'Garaj', sub: '240 cm' },
+    window_std: { kind: 'window', style: 'standard', width: 120, height: 120, sill: 90, label: 'Standart', sub: '120×120 cm' },
+    window_fixed: { kind: 'window', style: 'fixed', width: 100, height: 100, sill: 90, label: 'Sabit', sub: '100×100 cm' },
+    window_casement: { kind: 'window', style: 'casement', width: 80, height: 130, sill: 90, label: 'Kanatlı', sub: '80×130 cm' },
+    window_sliding: { kind: 'window', style: 'sliding', width: 180, height: 120, sill: 90, label: 'Sürgülü', sub: '180×120 cm' },
+    window_wide: { kind: 'window', style: 'fixed', width: 180, height: 120, sill: 90, label: 'Geniş', sub: '180×120 cm' },
+    window_bay: { kind: 'window', style: 'bay', width: 200, height: 120, sill: 90, label: 'Çıkma', sub: '200×120 cm' },
 };
 
 const sketch = {
@@ -502,7 +502,7 @@ function toolHint(tool = sketch.tool) {
     }
     if (tool === 'door') {
         const p = OPENING_PRESETS[sketch.openingPreset];
-        return `Kapı (${p?.label || 'Tek 90'}): duvara tıklayın. Esc = seç.`;
+        return `Kapı (${p?.label || 'Tek kanat'}): duvara tıklayın. Esc = seç.`;
     }
     if (tool === 'window') {
         const p = OPENING_PRESETS[sketch.openingPreset];

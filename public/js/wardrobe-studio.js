@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { bindRoomSketch, roomSketchOnOpen, roomSketchBeforeHandoff } from './wardrobe-room-sketch.js?v=260';
+import { bindRoomSketch, roomSketchOnOpen, roomSketchBeforeHandoff } from './wardrobe-room-sketch.js?v=261';
 import { layoutModules, doorCountForWidth, resizeOpeningSpan, wallOffsetMin as sharedWallOffsetMin, wallOffsetMax as sharedWallOffsetMax } from './wardrobe-layout.js?v=3';
 
 const T = 1.8;
@@ -6620,7 +6620,7 @@ function renderInspector() {
             </details>
             </div>`;
         body.querySelector('#btn-clear-modules')?.addEventListener('click', () => clearAllModules());
-        body.querySelector('#btn-open-room-sketch')?.addEventListener('click', () => toggleRoomPlan(true));
+        body.querySelector('#btn-open-room-sketch')?.addEventListener('click', () => openRoomEditor());
         body.querySelector('#wall-left').addEventListener('change', (event) => commit(() => {
             state.leftWall = clamp(Number(event.target.value), 80, 800);
         }));
@@ -7513,7 +7513,7 @@ function setWalkMode(on) {
         walkLock = new PointerLockControls(camera, renderer.domElement);
         walkLock.addEventListener('lock', () => {
             document.body.classList.add('walk-locked');
-            toast('WASD ile gezin · Shift koş · Esc çık');
+            toast('W A S D ile gezin · Shift hız · Esc çıkış');
         });
         walkLock.addEventListener('unlock', () => document.body.classList.remove('walk-locked'));
     }
@@ -8781,7 +8781,7 @@ async function takeRender() {
         prepareTraceTextures();
         renderer.setAnimationLoop(null);
         button.textContent = 'Işık ayarlanıyor';
-        toast('Dolaba göre kadraj ve ışık kuruldu. Render birkaç dakika sürebilir.');
+        toast('Dolaba göre kadraj ve ışık kuruldu. Görüntü birkaç dakika sürebilir.');
         const { WebGLPathTracer, GradientEquirectTexture } = await import('three-gpu-pathtracer');
         let glassGuard = 0;
         let meshCount = 0;
@@ -9007,7 +9007,7 @@ function bindStudioHandoff() {
             const len = (w) => Math.hypot((w.end?.x ?? 0) - (w.start?.x ?? 0), (w.end?.y ?? 0) - (w.start?.y ?? 0));
             const lengths = walls.map(len).filter((n) => n > 40).sort((a, b) => b - a);
             if (!lengths.length) {
-                toast('JSON içinde duvar bulunamadı.');
+                toast('Dosyada duvar bulunamadı.');
                 return;
             }
             const front = Math.round(Math.max(lengths[0], lengths[1] || lengths[0]));
@@ -9019,7 +9019,7 @@ function bindStudioHandoff() {
             if (form.odaboy) form.odaboy.value = height;
             window.MeemareStudioApplyWalls({ frontCm: front, leftCm: side, rightCm: side, heightCm: height });
         } catch {
-            toast('Geçersiz OpenPlan JSON.');
+            toast('Geçersiz plan dosyası.');
         }
         event.target.value = '';
     });

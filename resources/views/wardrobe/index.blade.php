@@ -743,7 +743,7 @@
             <button type="button" class="btn btn-quiet extra" id="btn-measures">Ölçü</button>
             <button type="button" class="btn btn-quiet is-on extra" id="btn-lights" title="Işık">💡</button>
             <button type="button" class="btn btn-quiet extra" id="btn-cabinet">Üretim</button>
-            <button type="button" class="btn btn-quiet extra" id="btn-shot">Render</button>
+            <button type="button" class="btn btn-quiet extra" id="btn-shot">Görüntü</button>
         </div>
         <div class="studio-top__nav">@include('partials.meemare-apps-nav', ['activeApp' => 'tasarla', 'compact' => true])</div>
     </div>
@@ -759,14 +759,14 @@
             <strong>2. Oda planı</strong>
             <p class="plan-first-hint">Kapı veya pencereyi seçin, genişlik ve yüksekliği değiştirin. Bitince 3D düzenlemeye geçin.</p>
             <button type="button" class="btn" id="btn-plan-fullscreen" title="Tam ekran">Tam ekran</button>
-            <button type="button" class="btn" id="btn-plan-toggle-handoff">Ölçü / JSON</button>
+            <button type="button" class="btn" id="btn-plan-toggle-handoff">Ölçü / dosya</button>
             <button type="button" class="btn" id="btn-plan-skip">Ölçüyü atla</button>
             <button type="button" class="btn-primary" id="btn-plan-to-3d">3D düzenlemeye geç →</button>
         </div>
         <div class="plan-first-frame" aria-hidden="true"></div>
         <form class="room-handoff plan-first-foot is-collapsed" id="studio-plan-first-handoff" style="border-top:1px solid var(--line)">
-            <p style="margin:0;flex:1;font-size:12px;color:var(--muted)">Export veya ölçü girip geçebilirsiniz.</p>
-            <label>JSON<input id="studio-plan-first-json" type="file" accept="application/json,.json"></label>
+            <p style="margin:0;flex:1;font-size:12px;color:var(--muted)">Ölçü dosyasını yükleyin veya elle girin.</p>
+            <label>Dosya<input id="studio-plan-first-json" type="file" accept="application/json,.json"></label>
             <label>Ön<input name="onduvar" type="number" min="80" max="800" value="300"></label>
             <label>Sol<input name="solduvar" type="number" min="80" max="800" value="300"></label>
             <label>Sağ<input name="sagduvar" type="number" min="80" max="800" value="300"></label>
@@ -792,22 +792,22 @@
                 <div class="room-sketch-head">
                     <strong>Oda planı</strong>
                     <div class="room-plan-mode" id="room-plan-mode">
-                        <button type="button" data-room-plan-mode="openplan" class="is-on">Plan</button>
+                        <button type="button" data-room-plan-mode="openplan" class="is-on">Gelişmiş</button>
                         <button type="button" data-room-plan-mode="sketch">Basit</button>
                     </div>
                     <div class="room-plan-head-actions">
-                        <button type="button" class="btn" id="btn-room-measures" title="Ölçü / JSON">Ölçü</button>
+                        <button type="button" class="btn" id="btn-room-measures" title="Ölçü veya dosya">Ölçü</button>
                         <button type="button" class="btn" id="btn-room-redraw">Yeniden çiz</button>
                         <button type="button" class="btn-apply-plan" id="btn-apply-plan-header">3D düzenlemeye geç</button>
                         <button type="button" class="btn" id="btn-close-room-plan">Kapat</button>
                     </div>
                 </div>
                 <div id="room-plan-openplan" class="room-plan-openplan room-sketch-body">
-                    <iframe id="openplan-frame" title="OpenPlan" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen; clipboard-read; clipboard-write"></iframe>
+                    <iframe id="openplan-frame" title="Oda planı" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen; clipboard-read; clipboard-write"></iframe>
                 </div>
                 <div id="room-plan-sketch-wrap" class="room-sketch-wrap room-sketch-body hidden">
-                    <aside class="room-sketch-tools" aria-label="Plan araçları">
-                        <p class="sketch-kicker">Build</p>
+                    <aside class="room-sketch-tools" aria-label="Oda araçları">
+                        <p class="sketch-kicker">Çizim</p>
                         <button type="button" data-sketch-tool="select" class="is-on">Seç (V)</button>
                         <button type="button" data-sketch-tool="wall">Duvar çiz (W)</button>
                         <button type="button" id="btn-sketch-finish-draw">Çizimi bitir (Esc)</button>
@@ -831,62 +831,62 @@
                             </button>
                         </div>
                         <button type="button" id="btn-sketch-clear">Temizle</button>
-                        <p class="sketch-kicker">Doors</p>
+                        <p class="sketch-kicker">Kapılar</p>
                         <div class="room-sketch-presets room-opening-presets">
                             <button type="button" data-opening-preset="door_single" class="is-on" title="Tek kanat 90 cm">
                                 <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M8 6h4v18H8zM12 6v18" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 6a14 14 0 0 1 14 14" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></span>
-                                <span class="op-name">Single</span><span class="op-sub">90cm swing</span>
+                                <span class="op-name">Tek kanat</span><span class="op-sub">90 cm</span>
                             </button>
                             <button type="button" data-opening-preset="door_double" title="Çift kanat 150 cm">
                                 <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M6 6h4v18H6zM30 6h4v18h-4z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 6a10 10 0 0 1 10 10M30 6a10 10 0 0 0-10 10" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></span>
-                                <span class="op-name">Double</span><span class="op-sub">150cm swing</span>
+                                <span class="op-name">Çift kanat</span><span class="op-sub">150 cm</span>
                             </button>
                             <button type="button" data-opening-preset="door_sliding" title="Sürgülü 180 cm">
                                 <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><rect x="6" y="8" width="16" height="14" fill="none" stroke="currentColor" stroke-width="2"/><rect x="18" y="10" width="14" height="10" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 15h18" stroke="currentColor" stroke-width="1.4"/></svg></span>
-                                <span class="op-name">Sliding</span><span class="op-sub">180cm slide</span>
+                                <span class="op-name">Sürgülü</span><span class="op-sub">180 cm</span>
                             </button>
-                            <button type="button" data-opening-preset="door_french" title="French 150 cm">
+                            <button type="button" data-opening-preset="door_french" title="Camlı kapı 150 cm">
                                 <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M8 6h8v18H8zM24 6h8v18h-8z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 12h8M8 18h8M24 12h8M24 18h8" stroke="currentColor" stroke-width="1.2"/></svg></span>
-                                <span class="op-name">French</span><span class="op-sub">150cm glass</span>
+                                <span class="op-name">Camlı kapı</span><span class="op-sub">150 cm</span>
                             </button>
-                            <button type="button" data-opening-preset="door_pocket" title="Pocket 90 cm">
+                            <button type="button" data-opening-preset="door_pocket" title="Gizli kapı 90 cm">
                                 <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M6 6v18M12 6h4v18h-4z" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
-                                <span class="op-name">Pocket</span><span class="op-sub">90cm recess</span>
+                                <span class="op-name">Gizli kapı</span><span class="op-sub">90 cm</span>
                             </button>
-                            <button type="button" data-opening-preset="door_bifold" title="Bifold 180 cm">
+                            <button type="button" data-opening-preset="door_bifold" title="Katlanır kapı 180 cm">
                                 <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M6 6h5v18H6zM16 6h5v18h-5zM26 6h5v18h-5z" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
-                                <span class="op-name">Bifold</span><span class="op-sub">180cm fold</span>
+                                <span class="op-name">Katlanır</span><span class="op-sub">180 cm</span>
                             </button>
-                            <button type="button" data-opening-preset="door_opening" title="Doorway 100 cm">
+                            <button type="button" data-opening-preset="door_opening" title="Boş açıklık 100 cm">
                                 <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M12 6v18M28 6v18" fill="none" stroke="currentColor" stroke-width="2.5"/></svg></span>
-                                <span class="op-name">Doorway</span><span class="op-sub">100cm open</span>
+                                <span class="op-name">Açıklık</span><span class="op-sub">100 cm</span>
                             </button>
-                            <button type="button" data-opening-preset="door_garage" title="Garage 240 cm">
+                            <button type="button" data-opening-preset="door_garage" title="Garaj kapısı 240 cm">
                                 <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><rect x="8" y="7" width="24" height="16" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11h24M8 15h24M8 19h24" stroke="currentColor" stroke-width="1.3"/></svg></span>
-                                <span class="op-name">Garage</span><span class="op-sub">240cm overhead</span>
+                                <span class="op-name">Garaj</span><span class="op-sub">240 cm</span>
                             </button>
                         </div>
-                        <p class="sketch-kicker">Windows</p>
+                        <p class="sketch-kicker">Pencereler</p>
                         <div class="room-sketch-presets room-opening-presets">
-                            <button type="button" data-opening-preset="window_std" title="Standard 120 cm">
+                            <button type="button" data-opening-preset="window_std" title="Standart pencere 120 cm">
                                 <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><rect x="8" y="8" width="24" height="14" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 12h24M8 18h24M20 8v14" stroke="currentColor" stroke-width="1.4"/></svg></span>
-                                <span class="op-name">Standard</span><span class="op-sub">120×120cm</span>
+                                <span class="op-name">Standart</span><span class="op-sub">120×120 cm</span>
                             </button>
-                            <button type="button" data-opening-preset="window_fixed" title="Fixed 100 cm">
+                            <button type="button" data-opening-preset="window_fixed" title="Sabit pencere 100 cm">
                                 <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><rect x="10" y="9" width="20" height="12" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 15h20M20 9v12" stroke="currentColor" stroke-width="1.4"/></svg></span>
-                                <span class="op-name">Fixed</span><span class="op-sub">100×100cm</span>
+                                <span class="op-name">Sabit</span><span class="op-sub">100×100 cm</span>
                             </button>
-                            <button type="button" data-opening-preset="window_casement" title="Casement 80 cm">
+                            <button type="button" data-opening-preset="window_casement" title="Kanatlı pencere 80 cm">
                                 <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><rect x="12" y="6" width="16" height="18" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 15h16M20 6v18" stroke="currentColor" stroke-width="1.4"/></svg></span>
-                                <span class="op-name">Casement</span><span class="op-sub">80×130cm</span>
+                                <span class="op-name">Kanatlı</span><span class="op-sub">80×130 cm</span>
                             </button>
-                            <button type="button" data-opening-preset="window_sliding" title="Sliding 180 cm">
+                            <button type="button" data-opening-preset="window_sliding" title="Sürgülü pencere 180 cm">
                                 <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><rect x="4" y="9" width="32" height="12" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 15h32M20 9v12" stroke="currentColor" stroke-width="1.4"/></svg></span>
-                                <span class="op-name">Sliding</span><span class="op-sub">180×120cm</span>
+                                <span class="op-name">Sürgülü</span><span class="op-sub">180×120 cm</span>
                             </button>
-                            <button type="button" data-opening-preset="window_bay" title="Bay 200 cm">
+                            <button type="button" data-opening-preset="window_bay" title="Çıkma pencere 200 cm">
                                 <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M6 20h28M10 20l4-10h12l4 10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M14 10v10M26 10v10M20 10v10" stroke="currentColor" stroke-width="1.2"/></svg></span>
-                                <span class="op-name">Bay</span><span class="op-sub">200×120cm</span>
+                                <span class="op-name">Çıkma</span><span class="op-sub">200×120 cm</span>
                             </button>
                         </div>
                         <p class="room-sketch-hint" id="room-sketch-tool-hint">Kapı/pencere kartı seçip duvara tıklayın. Seçince uçlardan çekin veya genişlik ve yüksekliği yazın.</p>
@@ -912,7 +912,7 @@
                     </div>
                 </div>
                 <form id="studio-plan-handoff" class="room-handoff" aria-label="Ölçü ayarı">
-                    <label>JSON<input id="studio-plan-json" type="file" accept="application/json,.json"></label>
+                    <label>Dosya<input id="studio-plan-json" type="file" accept="application/json,.json"></label>
                     <label>Ön (cm)<input name="onduvar" type="number" min="80" max="800" value="300" required></label>
                     <label>Sol (cm)<input name="solduvar" type="number" min="80" max="800" value="300"></label>
                     <label>Sağ (cm)<input name="sagduvar" type="number" min="80" max="800" value="300"></label>
@@ -954,7 +954,7 @@
             <div id="selection-bar" class="hidden" aria-label="Seçili modül">
                 <span id="selection-bar-name"></span>
                 <button type="button" data-sb="open" title="Kapağı aç/kapat">Aç</button>
-                <button type="button" data-sb="clone">Klon</button>
+                <button type="button" data-sb="clone">Kopya</button>
                 <button type="button" data-sb="delete" class="sb-danger">Sil</button>
             </div>
             <div id="view-bar" aria-label="Kamera">
@@ -972,7 +972,7 @@
                 <div class="qr-mini" id="qr-glass-sw"></div>
                 <div class="qr-mini" id="qr-alum-sw"></div>
                 <button type="button" data-qr="open" title="Kapak aç/kapa">Kapak</button>
-                <button type="button" data-qr="clone" title="Klonla">Klon</button>
+                <button type="button" data-qr="clone" title="Kopyala">Kopya</button>
                 <button type="button" data-qr="delete" class="qr-danger" title="Sil">Sil</button>
             </div>
             <button type="button" id="height-handle" class="hidden" aria-label="Yükseklik">↕</button>
@@ -1025,7 +1025,7 @@
     <button type="button" class="btn" id="sheet-saved">Kayıtlar</button>
     <button type="button" class="btn" id="sheet-share">Paylaş</button>
     <button type="button" class="btn" id="sheet-quote">Fiyat teklifi</button>
-    <button type="button" class="btn" id="sheet-shot">Render al</button>
+    <button type="button" class="btn" id="sheet-shot">Görüntü al</button>
     <button type="button" class="sheet-close" id="close-project">Kapat</button>
 </div>
 
@@ -1129,6 +1129,6 @@
 </script>
 <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=6" defer></script>
 <script src="{{ asset('js/openplan-import.js') }}?v=2" defer></script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=279"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=280"></script>
 </body>
 </html>
