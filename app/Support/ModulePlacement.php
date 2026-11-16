@@ -325,7 +325,8 @@ class ModulePlacement
             return null;
         }
 
-        return ['minX' => $minX + $inset, 'maxX' => $maxX - $inset, 'minY' => $minY + $inset, 'maxY' => $maxY - $inset];
+        // The back may sit in the wall thickness. Past the centerline is still outside.
+        return ['minX' => $minX, 'maxX' => $maxX, 'minY' => $minY, 'maxY' => $maxY];
     }
 
     /** @param list<array<string, mixed>> $walls

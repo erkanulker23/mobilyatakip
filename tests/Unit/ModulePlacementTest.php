@@ -57,6 +57,14 @@ class ModulePlacementTest extends TestCase
         $this->assertSame('corner', ModulePlacement::issue($leftHit, [$this->module('left', ['corner' => true, 'cornerSide' => 'left', 'xCm' => 0, 'yCm' => 0, 'widthCm' => 90, 'depthCm' => 90])], []));
         $this->assertSame('ok', ModulePlacement::issue($leftHit, [$this->module('right', ['corner' => true, 'cornerSide' => 'right', 'xCm' => 0, 'yCm' => 0, 'widthCm' => 90, 'depthCm' => 90])], []));
         $this->assertSame('outside', ModulePlacement::issue($this->module('out', ['xCm' => 20, 'yCm' => 20]), [], $this->room(300)));
+        $wide = [
+            ['id' => 'south', 'start' => ['x' => 0, 'y' => 0], 'end' => ['x' => 600, 'y' => 0], 'thickness' => 12],
+            ['id' => 'east', 'start' => ['x' => 600, 'y' => 0], 'end' => ['x' => 600, 'y' => 375], 'thickness' => 12],
+            ['id' => 'north', 'start' => ['x' => 600, 'y' => 375], 'end' => ['x' => 0, 'y' => 375], 'thickness' => 12],
+            ['id' => 'west', 'start' => ['x' => 0, 'y' => 375], 'end' => ['x' => 0, 'y' => 0], 'thickness' => 12],
+        ];
+        $this->assertSame('ok', ModulePlacement::issue($this->module('flush', ['xCm' => 45, 'yCm' => 36, 'rotation' => 180, 'widthCm' => 90, 'depthCm' => 60]), [], $wide));
+        $this->assertSame('outside', ModulePlacement::issue($this->module('past', ['xCm' => 45, 'yCm' => -36, 'rotation' => 180, 'widthCm' => 90, 'depthCm' => 60]), [], $wide));
     }
 
     public function test_server_validation_rejects_a_new_overlap_and_still_opens_an_old_design(): void

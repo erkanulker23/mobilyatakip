@@ -60,7 +60,7 @@ function designPayload(design, name) {
             backImage: mod.planBackImage || '',
             drawerImage: mod.planDrawerImage || '',
             shelfImage: mod.planShelfImage || '',
-            ...(mod.planDoorStyle === 'glass' || mod.planDoorStyle === 'wood' ? { doorStyle: mod.planDoorStyle } : (mod.door === 'glass' ? { doorStyle: 'glass' } : {})),
+            ...(mod.planDoorStyle === 'glass' || mod.planDoorStyle === 'wood' || mod.planDoorStyle === 'none' ? { doorStyle: mod.planDoorStyle } : (mod.door === 'glass' ? { doorStyle: 'glass' } : {})),
             ...(mod.aluminumId || mod.planAluminum ? { aluminumId: mod.planAluminum || mod.aluminumId } : {}),
             ...(mod.glassId || mod.planGlass ? { glassId: mod.planGlass || mod.glassId } : {}),
             led: mod.planLed === true || mod.led === true,
@@ -81,6 +81,8 @@ function designPayload(design, name) {
             right: Number(design?.rightWall) || 300,
             height: Number(design?.roomHeight) || 280,
         },
+        wallSegments: Array.isArray(design?.roomSketch?.walls) ? design.roomSketch.walls : [],
+        openings: Array.isArray(design?.roomSketch?.openings) ? design.roomSketch.openings : [],
         modules,
     };
 }
@@ -92,6 +94,20 @@ function signatureOf(data) {
         l: Math.round(Number(walls.left) || 0),
         r: Math.round(Number(walls.right) || 0),
         h: Math.round(Number(walls.height) || 0),
+        sketch: (data?.wallSegments || []).map((segment) => ({
+            id: segment.id || '',
+            x1: Math.round(Number(segment.x1) || 0),
+            y1: Math.round(Number(segment.y1) || 0),
+            x2: Math.round(Number(segment.x2) || 0),
+            y2: Math.round(Number(segment.y2) || 0),
+            h: Math.round(Number(segment.height) || 0),
+        })),
+        openings: (data?.openings || []).map((opening) => ({
+            wallId: opening.wallId || '',
+            kind: opening.kind || '',
+            w: Math.round(Number(opening.width) || 0),
+            p: Math.round((Number(opening.position) || 0) * 1000),
+        })),
         m: (data?.modules || []).map((mod) => ({
             id: mod.catalogId || '',
             x: Math.round(Number(mod.x) || 0),
@@ -154,7 +170,7 @@ function moduleFromPlan(item, index, roomWidth) {
         planBackImage: item.backImage || '',
         planDrawerImage: item.drawerImage || '',
         planShelfImage: item.shelfImage || '',
-        ...(item.doorStyle === 'glass' || item.doorStyle === 'wood' ? { door: item.doorStyle === 'glass' ? 'glass' : 'solid', planDoorStyle: item.doorStyle } : {}),
+        ...(item.doorStyle === 'glass' || item.doorStyle === 'wood' || item.doorStyle === 'none' ? { door: item.doorStyle === 'glass' ? 'glass' : item.doorStyle === 'none' ? 'none' : 'solid', planDoorStyle: item.doorStyle } : {}),
         ...(item.aluminumId ? { aluminumId: item.aluminumId, planAluminum: item.aluminumId } : {}),
         ...(item.glassId ? { glassId: item.glassId, planGlass: item.glassId } : {}),
         led: item.led === true,
@@ -188,13 +204,25 @@ function applyDesign(data) {
                 x2: Number(segment.x2) || 0,
                 y2: Number(segment.y2) || 0,
                 thickness: Number(segment.thickness) || 12,
+                height: Number(segment.height) || Number(walls.height) || 280,
+                ...(Number.isFinite(Number(segment.startHeight)) ? { startHeight: Number(segment.startHeight) } : {}),
+                ...(Number.isFinite(Number(segment.endHeight)) ? { endHeight: Number(segment.endHeight) } : {}),
             })),
             openings: (Array.isArray(data.openings) ? data.openings : []).map((opening) => {
                 const wall = data.wallSegments.find((segment) => segment.id === opening.wallId);
                 const length = wall ? Math.hypot((Number(wall.x2) || 0) - (Number(wall.x1) || 0), (Number(wall.y2) || 0) - (Number(wall.y1) || 0)) : 0;
                 const width = Number(opening.width) || 0;
-                const center = (Number(opening.position) || 0) * length;
-                return { wallId: String(opening.wallId || ''), offset: Math.max(0, center - width / 2), width };
+                const center = Number.isFinite(Number(opening.position)) ? Number(opening.position) * length : (Number(opening.offset) || 0) + width / 2;
+                return {
+                    wallId: String(opening.wallId || ''),
+                    offset: Math.max(0, center - width / 2),
+                    width,
+                    kind: opening.kind === 'window' ? 'window' : 'door',
+                    position: length > 0 ? center / length : 0,
+                    height: Number(opening.height) || 0,
+                    sill: Number(opening.sill) || 0,
+                    type: String(opening.type || ''),
+                };
             }).filter((opening) => opening.width >= 20),
         };
     } else {
@@ -256,7 +284,7 @@ function openFrame() {
     frame.hidden = false;
     wait.hidden = true;
     if (project) quoteOpen.hidden = false;
-    frame.src = `${base}?embed=1${design}&v=311`;
+    frame.src = `${base}?embed=1${design}&v=316`;
     frame.addEventListener('load', () => {
         postToPlan();
         setTimeout(postToPlan, 400);
