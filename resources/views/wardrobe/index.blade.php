@@ -219,7 +219,7 @@
         body.room-plan-openplan-mode #btn-room-redraw { display: none; }
         body.room-plan-openplan-mode #room-module-rail { display: none !important; }
         body.room-plan-openplan-mode #room-plan-panel {
-            grid-template-rows: auto minmax(0, 1fr) auto !important;
+            grid-template-rows: minmax(0, 1fr) !important;
         }
         .room-module-rail {
             display: flex; align-items: center; gap: 8px; padding: 6px 10px;
@@ -254,7 +254,13 @@
             padding-top: 0;
         }
         body.studio-plan-first.room-plan-openplan-mode #room-plan-panel {
-            grid-template-rows: auto minmax(0, 1fr) auto;
+            top: 0;
+            grid-template-rows: minmax(0, 1fr) !important;
+        }
+        body.room-plan-openplan-mode .room-sketch-head,
+        body.room-plan-openplan-mode #studio-plan-handoff,
+        body.studio-plan-first.room-plan-openplan-mode #studio-plan-first {
+            display: none !important;
         }
         body.studio-plan-first .workspace,
         body.studio-plan-first .studio-top { visibility: hidden; }
@@ -814,6 +820,7 @@
                     <strong>Oda planı</strong>
                     <div class="room-plan-mode" id="room-plan-mode" hidden></div>
                     <div class="room-plan-head-actions">
+                        <a class="btn" href="{{ route('wardrobe.index') }}">Projeler</a>
                         <button type="button" class="btn" id="btn-room-measures" title="Ölçü veya dosya">Ölçü</button>
                         <button type="button" class="btn" id="btn-room-redraw">Yeniden çiz</button>
                         <button type="button" class="btn-apply-plan" id="btn-apply-plan-header">3D düzenlemeye geç</button>
@@ -1151,6 +1158,6 @@
 </script>
 <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=6" defer></script>
 <script src="{{ asset('js/openplan-import.js') }}?v=2" defer></script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=284"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=285"></script>
 </body>
 </html>
