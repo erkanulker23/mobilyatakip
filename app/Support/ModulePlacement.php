@@ -209,8 +209,14 @@ class ModulePlacement
             if (! $hit) {
                 continue;
             }
+            if (! empty($module['corner']) || ! empty($other['corner'])) {
+                return 'corner';
+            }
+            if (self::adjacentWallMeeting($module, $other, $walls)) {
+                continue;
+            }
 
-            return ! empty($module['corner']) || ! empty($other['corner']) ? 'corner' : 'overlap';
+            return 'overlap';
         }
 
         return 'ok';
@@ -354,6 +360,43 @@ class ModulePlacement
         }
 
         return false;
+    }
+
+    /**
+     * Straight cabinets flush on two different walls may cross at the corner.
+     * A shared run on the same wall is still an overlap.
+     *
+     * @param  array<string, mixed>  $module
+     * @param  array<string, mixed>  $other
+     * @param  list<array<string, mixed>>  $walls
+     */
+    private static function adjacentWallMeeting(array $module, array $other, array $walls): bool
+    {
+        $moduleNear = false;
+        $otherNear = false;
+        $allow = ((int) self::rules()['overlapMm']) / (int) self::rules()['cmToMm'];
+        foreach ($walls as $wall) {
+            $leftNear = self::near($module, $wall);
+            $rightNear = self::near($other, $wall);
+            if ($leftNear) {
+                $moduleNear = true;
+            }
+            if ($rightNear) {
+                $otherNear = true;
+            }
+            if (! $leftNear || ! $rightNear) {
+                continue;
+            }
+            $left = self::along($module['xCm'], $module['yCm'], $wall)['along'];
+            $right = self::along($other['xCm'], $other['yCm'], $wall)['along'];
+            $overlap = min($left + $module['widthCm'] / 2, $right + $other['widthCm'] / 2)
+                - max($left - $module['widthCm'] / 2, $right - $other['widthCm'] / 2);
+            if ($overlap > $allow) {
+                return false;
+            }
+        }
+
+        return $moduleNear && $otherNear;
     }
 
     private static function near(array $module, array $wall): bool

@@ -56,6 +56,11 @@ class ModulePlacementTest extends TestCase
         $leftHit = $this->module('left-hit', ['xCm' => -20, 'yCm' => -20, 'widthCm' => 10, 'depthCm' => 10]);
         $this->assertSame('corner', ModulePlacement::issue($leftHit, [$this->module('left', ['corner' => true, 'cornerSide' => 'left', 'xCm' => 0, 'yCm' => 0, 'widthCm' => 90, 'depthCm' => 90])], []));
         $this->assertSame('ok', ModulePlacement::issue($leftHit, [$this->module('right', ['corner' => true, 'cornerSide' => 'right', 'xCm' => 0, 'yCm' => 0, 'widthCm' => 90, 'depthCm' => 90])], []));
+        $alongTop = $this->module('top', ['xCm' => 330, 'yCm' => 36, 'widthCm' => 90, 'depthCm' => 60]);
+        $alongSide = $this->module('side', ['xCm' => 364, 'yCm' => 70, 'rotation' => 90, 'widthCm' => 90, 'depthCm' => 60]);
+        $this->assertSame('ok', ModulePlacement::issue($alongSide, [$alongTop], $room));
+        $sameWall = $this->module('same', ['xCm' => 160, 'yCm' => 36, 'widthCm' => 90, 'depthCm' => 60]);
+        $this->assertSame('overlap', ModulePlacement::issue($sameWall, [$this->module('first-wall', ['xCm' => 100, 'yCm' => 36, 'widthCm' => 90, 'depthCm' => 60])], $room));
         $this->assertSame('outside', ModulePlacement::issue($this->module('out', ['xCm' => 20, 'yCm' => 20]), [], $this->room(300)));
         $wide = [
             ['id' => 'south', 'start' => ['x' => 0, 'y' => 0], 'end' => ['x' => 600, 'y' => 0], 'thickness' => 12],
