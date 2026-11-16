@@ -66,6 +66,9 @@ function designPayload(design, name) {
             led: mod.planLed === true || mod.led === true,
             plinth: mod.planPlinth !== false && mod.plinth !== false,
             plinthHidden: mod.planPlinthHidden === true || mod.plinthHidden === true,
+            ...(Number.isInteger(mod.planShelfCount) ? { shelfCount: mod.planShelfCount } : {}),
+            ...(Number.isInteger(mod.planDrawerCount) ? { drawerCount: mod.planDrawerCount } : {}),
+            ...(mod.planCornerSide === 'left' || mod.planCornerSide === 'right' ? { cornerSide: mod.planCornerSide } : {}),
         };
     }).filter(Boolean);
     return {
@@ -111,6 +114,9 @@ function signatureOf(data) {
             led: mod.led === true,
             plinth: mod.plinth !== false,
             hidden: mod.plinthHidden === true,
+            shelves: Number.isInteger(mod.shelfCount) ? mod.shelfCount : null,
+            drawers: Number.isInteger(mod.drawerCount) ? mod.drawerCount : null,
+            corner: mod.cornerSide || '',
         })),
     });
 }
@@ -157,6 +163,9 @@ function moduleFromPlan(item, index, roomWidth) {
         planPlinth: item.plinth !== false,
         plinthHidden: item.plinthHidden === true,
         planPlinthHidden: item.plinthHidden === true,
+        ...(Number.isInteger(item.shelfCount) ? { planShelfCount: item.shelfCount } : {}),
+        ...(Number.isInteger(item.drawerCount) ? { planDrawerCount: item.drawerCount } : {}),
+        ...(item.cornerSide === 'left' || item.cornerSide === 'right' ? { planCornerSide: item.cornerSide } : {}),
     };
 }
 
@@ -169,7 +178,28 @@ function applyDesign(data) {
     project.design.roomHeight = clamp(walls.height, project.design.roomHeight || 280, 160, 320);
     if (data.name) project.design.name = String(data.name).replace(/[<>]/g, '').slice(0, 80);
     project.design.modules = (data.modules || []).map((item, index) => moduleFromPlan(item, index, front)).filter(Boolean);
-    project.design.roomSketch = project.design.roomSketch || { walls: [], openings: [] };
+    project.design.placementRules = 1;
+    if (Array.isArray(data.wallSegments) && data.wallSegments.length) {
+        project.design.roomSketch = {
+            walls: data.wallSegments.map((segment) => ({
+                id: String(segment.id || ''),
+                x1: Number(segment.x1) || 0,
+                y1: Number(segment.y1) || 0,
+                x2: Number(segment.x2) || 0,
+                y2: Number(segment.y2) || 0,
+                thickness: Number(segment.thickness) || 12,
+            })),
+            openings: (Array.isArray(data.openings) ? data.openings : []).map((opening) => {
+                const wall = data.wallSegments.find((segment) => segment.id === opening.wallId);
+                const length = wall ? Math.hypot((Number(wall.x2) || 0) - (Number(wall.x1) || 0), (Number(wall.y2) || 0) - (Number(wall.y1) || 0)) : 0;
+                const width = Number(opening.width) || 0;
+                const center = (Number(opening.position) || 0) * length;
+                return { wallId: String(opening.wallId || ''), offset: Math.max(0, center - width / 2), width };
+            }).filter((opening) => opening.width >= 20),
+        };
+    } else {
+        project.design.roomSketch = project.design.roomSketch || { walls: [], openings: [] };
+    }
 }
 
 async function persist() {
@@ -226,7 +256,7 @@ function openFrame() {
     frame.hidden = false;
     wait.hidden = true;
     if (project) quoteOpen.hidden = false;
-    frame.src = `${base}?embed=1${design}&v=302`;
+    frame.src = `${base}?embed=1${design}&v=310`;
     frame.addEventListener('load', () => {
         postToPlan();
         setTimeout(postToPlan, 400);

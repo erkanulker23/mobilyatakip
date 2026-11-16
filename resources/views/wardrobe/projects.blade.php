@@ -128,7 +128,7 @@
             <p>Kayıtlı dolapları açın veya yeni müşteri için plan çizimiyle 3D tasarım başlatın.</p>
         </div>
         <div class="hub-top__actions">
-            <a href="{{ $designUrl }}" class="btn">Boş 3D sahnede devam</a>
+            <a href="{{ $designUrl }}?plan=1" class="btn">Boş planda devam</a>
             <button type="button" class="btn primary" id="jump-create">+ Yeni proje</button>
         </div>
     </header>

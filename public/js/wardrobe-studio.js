@@ -243,14 +243,7 @@ window.MeemareStudioApplyWalls = (walls, extras) => {
         applyRoomSketchExtras(extras || walls);
         roomSketchMatchWalls(state.wallWidth, state.leftWall, state.rightWall);
         fitRoom?.();
-        toggleRoomPlan(false);
-        if (document.body.classList.contains('studio-plan-first')) {
-            closePlanStudioStep(false);
-        } else {
-            toast(extras?.openings?.length
-                ? `Oda + ${extras.openings.length} kapı/pencere uygulandı.`
-                : 'Oda ölçüsü uygulandı. Modülleri kataloğdan sürükleyin.');
-        }
+        if (!document.body.classList.contains('studio-plan-first')) openRoomEditor();
     }
     return ok;
 };
@@ -338,10 +331,6 @@ function applyHandoffFromStorage() {
                 sketchWalls: data.sketchWalls,
             });
             fitRoom?.();
-            toggleRoomPlan(false);
-            toast(Array.isArray(data.openings) && data.openings.length
-                ? `Plan aktarıldı · ${data.openings.length} kapı/pencere`
-                : 'Plan sayfasından oda ölçüleri aktarıldı.');
         }
         localStorage.removeItem(ROOM_HANDOFF_KEY);
         return ok;
@@ -7342,12 +7331,148 @@ function preferredRoomPlanMode() {
     return hasLocalOpenPlan() ? 'openplan' : 'sketch';
 }
 
+function hasWardrobeDesign() {
+    return Boolean(projectToken || (state.modules && state.modules.length));
+}
+
+function wardrobeDesignPayload() {
+    const modules = (state.modules || []).map((mod) => ({
+        catalogId: mod.glb || mod.product || mod.dxf || (mod.kind === 'corner' ? 'kose_1' : mod.kind === 'wardrobe' ? 'tek_v1' : ''),
+        wall: mod.wall || (mod.cornerSide === 'left' ? 'left' : mod.cornerSide === 'right' ? 'right' : 'front'),
+        offset: Number(mod.offset) || 0,
+        width: Number(mod.width) || 60,
+        depth: Number(mod.glbDepth || mod.depth || state.depth) || 60,
+        height: Number(mod.height || state.height) || 250,
+        x: Number.isFinite(Number(mod.planX)) ? Number(mod.planX) : undefined,
+        y: Number.isFinite(Number(mod.planY)) ? Number(mod.planY) : undefined,
+        rotation: Number(mod.planRotation) || 0,
+        color: mod.planColor || '',
+        finishImage: mod.planFinish || '',
+        backColor: mod.planBack || '',
+        drawerColor: mod.planDrawer || '',
+        shelfColor: mod.planShelf || '',
+        backImage: mod.planBackImage || '',
+        drawerImage: mod.planDrawerImage || '',
+        shelfImage: mod.planShelfImage || '',
+    })).filter((mod) => mod.catalogId);
+    return {
+        source: 'meemare',
+        action: 'openDesign',
+        name: state.name || 'Dolabım',
+        walls: {
+            front: Number(state.wallWidth) || 300,
+            left: Number(state.leftWall) || 300,
+            right: Number(state.rightWall) || 300,
+            height: Number(state.roomHeight) || 280,
+        },
+        modules,
+    };
+}
+
+let lastPlanRevision = 0;
+
+function planModuleFromDesign(item) {
+    const catalogId = String(item?.catalogId || '');
+    const corner = catalogId.startsWith('kose');
+    const pair = catalogId.startsWith('cift') || catalogId.startsWith('y26_cift');
+    const mod = createModule(corner ? 'kose-raf' : pair ? 'cift-raf' : 'tek-raf');
+    mod.glb = catalogId;
+    mod.name = item.name || mod.name;
+    mod.width = Number(item.width) || mod.width;
+    mod.height = Number(item.height) || mod.height;
+    mod.glbWidth = mod.width;
+    mod.glbDepth = Number(item.depth) || 60;
+    mod.glbHeight = mod.height;
+    mod.kind = corner ? 'corner' : 'wardrobe';
+    mod.wall = 'front';
+    mod.offset = 0;
+    mod.door = 'none';
+    mod.planX = Number(item.x);
+    mod.planY = Number(item.y);
+    mod.planRotation = Number(item.rotation) || 0;
+    mod.planColor = item.color || '';
+    mod.planBack = item.backColor || '';
+    mod.planDrawer = item.drawerColor || '';
+    mod.planShelf = item.shelfColor || '';
+    mod.planFinish = item.finishImage || '';
+    mod.planBackImage = item.backImage || '';
+    mod.planDrawerImage = item.drawerImage || '';
+    mod.planShelfImage = item.shelfImage || '';
+    return mod;
+}
+
+function planSignature(modules) {
+    return JSON.stringify((modules || []).map((mod) => ({
+        id: mod.glb || '',
+        x: Math.round(Number(mod.planX) || 0),
+        y: Math.round(Number(mod.planY) || 0),
+        r: Math.round(Number(mod.planRotation) || 0),
+        w: Math.round(Number(mod.width) || 0),
+        d: Math.round(Number(mod.glbDepth) || 0),
+        h: Math.round(Number(mod.height) || 0),
+        c: mod.planColor || '',
+        b: mod.planBack || '',
+        dr: mod.planDrawer || '',
+        s: mod.planShelf || '',
+        f: mod.planFinish || '',
+        bi: mod.planBackImage || '',
+        di: mod.planDrawerImage || '',
+        si: mod.planShelfImage || '',
+    })));
+}
+
+function applyPlanDesign(data) {
+    if (!projectToken || !Array.isArray(data.modules)) return;
+    if (Number(data.revision) && Number(data.revision) < lastPlanRevision) return;
+    if (Number(data.revision)) lastPlanRevision = Number(data.revision);
+    const modules = data.modules.filter((item) => item?.catalogId).map(planModuleFromDesign);
+    const walls = data.walls || {};
+    const nextWalls = {
+        front: Number(walls.front) || Number(state.wallWidth) || 300,
+        left: Number(walls.left) || Number(state.leftWall) || 300,
+        right: Number(walls.right) || Number(state.rightWall) || 300,
+        height: Number(walls.height) || Number(state.roomHeight) || 280,
+    };
+    const sameModules = planSignature(modules) === planSignature(state.modules);
+    const sameWalls = nextWalls.front === Number(state.wallWidth)
+        && nextWalls.left === Number(state.leftWall)
+        && nextWalls.right === Number(state.rightWall)
+        && nextWalls.height === Number(state.roomHeight);
+    if (sameModules && sameWalls) return;
+    state.modules = modules;
+    state.wallWidth = nextWalls.front;
+    state.leftWall = nextWalls.left;
+    state.rightWall = nextWalls.right;
+    state.roomHeight = nextWalls.height;
+    if (data.name) state.name = String(data.name).slice(0, 80);
+    scheduleSave();
+}
+
+function listenPlanDesign() {
+    if (window.__planDesignListener) return;
+    window.__planDesignListener = true;
+    window.addEventListener('message', (event) => {
+        const data = event.data;
+        if (!data || data.source !== 'openplan3d' || data.action !== 'designChanged') return;
+        const frame = el('openplan-frame');
+        if (frame?.contentWindow && event.source !== frame.contentWindow) return;
+        applyPlanDesign(data);
+    });
+}
+
 function openPlanEmbedUrl() {
     const src = String(window.WARDROBE?.openplanSrc || '').trim().replace(/\/index\.html$/i, '');
     if (!src) return '';
     const base = src.endsWith('/') ? src : `${src}/`;
     // php built-in: /openplan/editor dosya gibi 404 verir → ana sayfa + embed=1.
-    return `${base}?embed=1`;
+    return `${base}?embed=1${hasWardrobeDesign() ? '&design=1' : ''}&v=297`;
+}
+
+function postPlanFrame(frame) {
+    const payload = hasWardrobeDesign()
+        ? wardrobeDesignPayload()
+        : { source: 'meemare', action: 'openEditor' };
+    frame.contentWindow?.postMessage(payload, '*');
 }
 
 function ensureOpenPlanFrame(frame) {
@@ -7355,13 +7480,19 @@ function ensureOpenPlanFrame(frame) {
     if (!hasLocalOpenPlan()) return;
     const target = openPlanEmbedUrl();
     if (!target) return;
-    if (frame.dataset.loaded === '1' && /embed=1/.test(frame.src || '')) return;
+    if (frame.dataset.loaded === '1' && frame.dataset.target === target) {
+        postPlanFrame(frame);
+        return;
+    }
+    frame.dataset.target = target;
     frame.src = target;
     frame.dataset.loaded = '1';
     frame.addEventListener('load', () => {
         try {
             frame.contentWindow?.focus();
-            frame.contentWindow?.postMessage({ source: 'meemare', action: 'openEditor' }, '*');
+            postPlanFrame(frame);
+            setTimeout(() => postPlanFrame(frame), 400);
+            setTimeout(() => postPlanFrame(frame), 1200);
         } catch {
             /* cross-origin */
         }
@@ -7579,22 +7710,19 @@ function applyRoomPlanFromHeader() {
     }
 }
 
-function closePlanStudioStep(applyHandoff = true) {
-    if (!document.body.classList.contains('studio-plan-first')) return;
-    if (applyHandoff) {
-        roomSketchBeforeHandoff(state);
-        applyHandoffFromStorage();
+function postPlanView(view) {
+    const frame = el('openplan-frame');
+    if (!frame?.contentWindow || (view !== '2d' && view !== '3d')) return;
+    try {
+        frame.contentWindow.postMessage({ source: 'meemare', view }, '*');
+    } catch {
+        /* iframe henüz hazır değil */
     }
-    document.body.classList.remove('studio-plan-first');
-    toggleRoomPlan(false);
-    initStudioLayout();
-    showModuleLibrary();
-    render();
-    frameCamera();
-    syncViewModeBar();
-    toast(state.modules?.length
-        ? '3D düzenleme. Odayı değiştirmek için 2D.'
-        : 'Soldan modül ekleyin.');
+}
+
+function closePlanStudioStep() {
+    openRoomEditor();
+    postPlanView('3d');
 }
 
 function requestOpenPlanRoomExport() {
@@ -7683,9 +7811,11 @@ function openRoomEditor() {
     setRoomPlanEditorMode('openplan');
     el('studio-plan-handoff')?.classList.remove('is-open');
     syncViewModeBar();
-    requestAnimationFrame(() => {
-        toast('2D plan. Plan sayfasıyla aynı editör. Kayıtları ayrı. Bitince 3D.');
-    });
+    if (!hasWardrobeDesign()) {
+        requestAnimationFrame(() => {
+            toast('2D plan. Duvar çizin veya Objelerden modül ekleyin.');
+        });
+    }
 }
 
 function renderRoomModuleRail() {
@@ -9131,15 +9261,8 @@ function bindChrome() {
     on('plan-switch', 'click', (event) => {
         const button = event.target.closest('[data-plan]');
         if (!button) return;
-        if (button.dataset.plan === '2d') {
-            if (planMode === '2d') setPlanMode('3d');
-            openRoomEditor();
-            return;
-        }
-        if (document.body.classList.contains('studio-plan-first')) closePlanStudioStep(true);
-        else toggleRoomPlan(false);
-        setPlanMode('3d');
-        syncViewModeBar();
+        openRoomEditor();
+        postPlanView(button.dataset.plan === '2d' ? '2d' : '3d');
     });
     el('room-module-rail')?.addEventListener('click', (event) => {
         const button = event.target.closest('[data-rail-glb]');
@@ -9715,6 +9838,7 @@ async function loadMaterials() {
 }
 
 async function boot() {
+    listenPlanDesign();
     init3d();
     initStudioLayout();
     bindChrome();
@@ -9771,6 +9895,7 @@ async function boot() {
         if (state.customerName) {
             el('customer-modal').classList.add('hidden');
             await createProject();
+            openRoomEditor();
             return;
         }
         el('customer-form').projectName.value = state.name || 'Dolabım';
@@ -9783,7 +9908,7 @@ async function boot() {
             render();
             frameCamera();
             el('customer-modal').classList.add('hidden');
-            toggleRoomPlan(false);
+            openRoomEditor();
             return;
         }
     } catch {
@@ -9791,7 +9916,7 @@ async function boot() {
     }
     el('customer-modal').classList.add('hidden');
     panelOpacity = state.panelOpacity ?? 1;
-    toggleRoomPlan(false);
+    openRoomEditor();
     if (params.get('demo') === 'giyinme' && !state.modules.length) {
         await applyDressingRoomDemo();
     }

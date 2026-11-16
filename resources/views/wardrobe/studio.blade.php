@@ -77,6 +77,6 @@
             projectsUrl: @json(route('wardrobe.index')),
         };
     </script>
-    <script type="module" src="{{ asset('js/studio-shell.js') }}?v=5"></script>
+    <script type="module" src="{{ asset('js/studio-shell.js') }}?v=13"></script>
 </body>
 </html>

@@ -756,7 +756,7 @@
         }
     </style>
 </head>
-<body class="studio-layout">
+<body class="studio-layout studio-plan-first show-room-plan room-plan-openplan-mode">
 <div id="studio">
     <div class="studio-top">
         <a href="{{ route('wardrobe.design') }}" class="brand" title="3D tasarla"><strong>Meemare</strong></a>
@@ -1156,8 +1156,8 @@
         openplanSrc: @json($openplanSrc ?? ''),
     };
 </script>
-<script src="{{ asset('js/meemare-plan-bridge.js') }}?v=6" defer></script>
+<script src="{{ asset('js/meemare-plan-bridge.js') }}?v=7" defer></script>
 <script src="{{ asset('js/openplan-import.js') }}?v=2" defer></script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=285"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=297"></script>
 </body>
 </html>

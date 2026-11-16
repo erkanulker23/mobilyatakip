@@ -47,6 +47,10 @@ class WardrobeDesign
             'modules.*.cad' => ['nullable', 'string', 'max:48', 'regex:/^[A-Za-z0-9_\-]+$/'],
             'modules.*.dxf' => ['nullable', 'string', 'max:48', 'regex:/^[A-Za-z0-9_\-]+$/'],
             'modules.*.cornerSide' => 'nullable|in:left,right',
+            'modules.*.planShelfCount' => 'nullable|integer|min:0|max:12',
+            'modules.*.planDrawerCount' => 'nullable|integer|min:0|max:8',
+            'modules.*.planCornerSide' => 'nullable|in:left,right',
+            'placementRules' => 'nullable|integer|in:1',
             'modules.*.planX' => 'nullable|numeric|min:-2000|max:8000',
             'modules.*.planY' => 'nullable|numeric|min:-2000|max:8000',
             'modules.*.planRotation' => 'nullable|numeric|min:-1080|max:1080',
@@ -64,13 +68,13 @@ class WardrobeDesign
             'series' => 'nullable|in:duz,cam,karisik,akordeon',
             'roomSketch' => 'nullable|array',
             'roomSketch.walls' => 'nullable|array|max:40',
-            'roomSketch.walls.*.x1' => 'required_with:roomSketch.walls|numeric|min:-100|max:2000',
-            'roomSketch.walls.*.y1' => 'required_with:roomSketch.walls|numeric|min:-100|max:2000',
-            'roomSketch.walls.*.x2' => 'required_with:roomSketch.walls|numeric|min:-100|max:2000',
-            'roomSketch.walls.*.y2' => 'required_with:roomSketch.walls|numeric|min:-100|max:2000',
+            'roomSketch.walls.*.x1' => 'required_with:roomSketch.walls|numeric|min:-2000|max:8000',
+            'roomSketch.walls.*.y1' => 'required_with:roomSketch.walls|numeric|min:-2000|max:8000',
+            'roomSketch.walls.*.x2' => 'required_with:roomSketch.walls|numeric|min:-2000|max:8000',
+            'roomSketch.walls.*.y2' => 'required_with:roomSketch.walls|numeric|min:-2000|max:8000',
             'roomSketch.openings' => 'nullable|array|max:40',
             'roomSketch.openings.*.wallId' => 'nullable|string|max:40',
-            'roomSketch.openings.*.offset' => 'nullable|numeric|min:-1|max:900',
+            'roomSketch.openings.*.offset' => 'nullable|numeric|min:-2000|max:8000',
             'roomSketch.openings.*.width' => 'nullable|numeric|min:20|max:400',
         ], [
             'modules.required' => 'Tasarımda modül listesi yok.',
@@ -134,6 +138,11 @@ class WardrobeDesign
             }
             if ($leftCorners > 1 || $rightCorners > 1) {
                 $validator->errors()->add('modules', 'Bir köşeye birden fazla köşe dolabı konamaz.');
+            }
+            if ((int) ($design['placementRules'] ?? 0) === 1) {
+                foreach (ModulePlacement::problems($design) as [$key, $message]) {
+                    $validator->errors()->add($key, $message);
+                }
             }
         });
 

@@ -27,10 +27,6 @@
                 openings: data.openings,
                 sketchWalls: data.sketchWalls,
             })) {
-                flash('Oda ölçüsü ve açıklıklar dolap sahnesine uygulandı.');
-                if (typeof window.MeemareStudioClosePlan === 'function' && document.body.classList.contains('studio-plan-first')) {
-                    window.MeemareStudioClosePlan();
-                }
                 return;
             }
         }

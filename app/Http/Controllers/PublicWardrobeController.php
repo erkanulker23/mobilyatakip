@@ -37,7 +37,7 @@ class PublicWardrobeController extends Controller
     {
         $openplan = public_path('openplan/index.html');
 
-        return view('wardrobe.index', [
+        return view('wardrobe.studio', [
             'company' => Company::first(),
             'quoteUrl' => route('wardrobe.quote'),
             'materialsUrl' => route('wardrobe.materials'),
