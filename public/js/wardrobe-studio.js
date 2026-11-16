@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { bindRoomSketch, roomSketchOnOpen, roomSketchBeforeHandoff } from './wardrobe-room-sketch.js?v=261';
+import { bindRoomSketch, roomSketchOnOpen, roomSketchBeforeHandoff, roomSketchMatchWalls } from './wardrobe-room-sketch.js?v=262';
 import { layoutModules, doorCountForWidth, resizeOpeningSpan, wallOffsetMin as sharedWallOffsetMin, wallOffsetMax as sharedWallOffsetMax } from './wardrobe-layout.js?v=3';
 
 const T = 1.8;
@@ -241,6 +241,7 @@ window.MeemareStudioApplyWalls = (walls, extras) => {
     );
     if (ok) {
         applyRoomSketchExtras(extras || walls);
+        roomSketchMatchWalls(state.wallWidth, state.leftWall, state.rightWall);
         fitRoom?.();
         toggleRoomPlan(false);
         if (document.body.classList.contains('studio-plan-first')) {
@@ -273,8 +274,10 @@ function toggleRoomPlan(open) {
 }
 
 function syncViewModeBar() {
+    const room = document.body.classList.contains('show-room-plan');
     document.querySelectorAll('#plan-switch [data-plan]').forEach((button) => {
-        button.classList.toggle('is-on', button.dataset.plan === planMode);
+        const on = room ? button.dataset.plan === '2d' : button.dataset.plan === '3d';
+        button.classList.toggle('is-on', on);
     });
 }
 
@@ -7588,8 +7591,9 @@ function closePlanStudioStep(applyHandoff = true) {
     showModuleLibrary();
     render();
     frameCamera();
+    syncViewModeBar();
     toast(state.modules?.length
-        ? '3D düzenleme. Odayı değiştirmek için Oda.'
+        ? '3D düzenleme. Odayı değiştirmek için 2D.'
         : 'Soldan modül ekleyin.');
 }
 
@@ -7676,10 +7680,28 @@ function fillRoomFormsFromState() {
 function openRoomEditor() {
     fillRoomFormsFromState();
     document.body.classList.add('studio-plan-first', 'show-room-plan');
-    setRoomPlanEditorMode('sketch');
+    setRoomPlanEditorMode('openplan');
+    el('studio-plan-handoff')?.classList.remove('is-open');
+    syncViewModeBar();
     requestAnimationFrame(() => {
-        toast('Kapı veya pencereyi seçin, boyutunu değiştirin. Bitince 3D düzenlemeye geçin.');
+        toast('2D plan. Plan sayfasıyla aynı editör. Kayıtları ayrı. Bitince 3D.');
     });
+}
+
+function renderRoomModuleRail() {
+    const host = el('room-module-rail-list');
+    if (!host || host.dataset.ready === '1') return;
+    const items = (glbCatalog || []).filter((item) => item?.id && item.modelPath);
+    if (!items.length) return;
+    host.dataset.ready = '1';
+    const text = (value) => String(value || '').replace(/[&<>"']/g, (ch) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[ch]));
+    host.innerHTML = items.map((item) => `
+        <button type="button" data-rail-glb="${text(item.id)}" title="${text(item.name)}">
+            <img alt="" src="${text(item.previewPath || '')}">
+            <span>${text(item.name)}</span>
+        </button>`).join('');
 }
 
 function maybeOpenPlanStudio(params) {
@@ -8971,11 +8993,11 @@ function bindStudioHandoffForm(formId, { sketchHandoff = false } = {}) {
     if (!form || form.dataset.bound) return;
     form.dataset.bound = '1';
     const apply = () => {
-        if (sketchHandoff) roomSketchBeforeHandoff(state);
         const front = Number(form.onduvar?.value);
         const left = Number(form.solduvar?.value);
         const right = Number(form.sagduvar?.value);
         const height = Number(form.odaboy?.value);
+        if (sketchHandoff) roomSketchBeforeHandoff(state);
         window.MeemareStudioApplyWalls({ frontCm: front, leftCm: left, rightCm: right, heightCm: height });
         ['wall-left', 'wall-front', 'wall-right', 'room-h'].forEach((id) => {
             const node = el(id);
@@ -9108,7 +9130,21 @@ function bindChrome() {
     });
     on('plan-switch', 'click', (event) => {
         const button = event.target.closest('[data-plan]');
-        if (button && (button.dataset.plan === '2d' || button.dataset.plan === '3d')) setPlanMode(button.dataset.plan);
+        if (!button) return;
+        if (button.dataset.plan === '2d') {
+            if (planMode === '2d') setPlanMode('3d');
+            openRoomEditor();
+            return;
+        }
+        if (document.body.classList.contains('studio-plan-first')) closePlanStudioStep(true);
+        else toggleRoomPlan(false);
+        setPlanMode('3d');
+        syncViewModeBar();
+    });
+    el('room-module-rail')?.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-rail-glb]');
+        if (!button) return;
+        addGlbModule(button.dataset.railGlb);
     });
     onClick('btn-modules', () => showModuleLibrary());
     onClick('open-library-desk', () => showModuleLibrary());
@@ -9775,6 +9811,47 @@ window.__wallRun = (wall = 'front') => state.modules
     .filter((mod) => mod.kind !== 'corner' && wallName(mod) === wall)
     .reduce((sum, mod) => sum + alongSize(mod), 0);
 window.__exportState = () => JSON.parse(JSON.stringify(state));
+window.__sceneProof = () => {
+    const groups = [];
+    cabinetRoot?.children.forEach((child) => {
+        const id = child.userData?.moduleId;
+        if (!id) return;
+        let meshes = 0;
+        child.traverse((node) => { if (node.isMesh) meshes += 1; });
+        const box = new THREE.Box3().setFromObject(child);
+        const size = box.getSize(new THREE.Vector3());
+        groups.push({
+            id,
+            x: Math.round(child.position.x * 10) / 10,
+            z: Math.round(child.position.z * 10) / 10,
+            rot: Math.round(child.rotation.y * 1000) / 1000,
+            meshes,
+            size: {
+                x: Math.round(size.x * 10) / 10,
+                y: Math.round(size.y * 10) / 10,
+                z: Math.round(size.z * 10) / 10,
+            },
+        });
+    });
+    const canvas = renderer?.domElement;
+    return {
+        groups,
+        canvas: canvas ? { cssW: canvas.clientWidth, cssH: canvas.clientHeight, bufW: canvas.width, bufH: canvas.height } : null,
+    };
+};
+window.__moduleClientPoint = (id) => {
+    const child = cabinetRoot?.children.find((node) => node.userData?.moduleId === id);
+    if (!child || !camera || !renderer) return null;
+    const box = new THREE.Box3().setFromObject(child);
+    const center = box.getCenter(new THREE.Vector3());
+    const ndc = center.clone().project(camera);
+    const rect = renderer.domElement.getBoundingClientRect();
+    return {
+        x: rect.left + (ndc.x * 0.5 + 0.5) * rect.width,
+        y: rect.top + (-ndc.y * 0.5 + 0.5) * rect.height,
+        behind: ndc.z > 1,
+    };
+};
 window.__studio = {
     dressingDemo: () => applyDressingRoomDemo(),
     add: (id) => addGlbModule(id),

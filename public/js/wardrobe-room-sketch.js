@@ -1217,6 +1217,31 @@ function bindToolbar() {
 export function bindRoomSketch(deps) {
     hooks = deps;
     canvas = document.getElementById('room-sketch-canvas');
+    window.__roomSketch = {
+        point(x, y) {
+            const p = worldToScreen(x, y);
+            const rect = canvas.getBoundingClientRect();
+            const sx = canvas.clientWidth ? rect.width / canvas.clientWidth : 1;
+            const sy = canvas.clientHeight ? rect.height / canvas.clientHeight : 1;
+            return {
+                clientX: rect.left + p.x * sx,
+                clientY: rect.top + p.y * sy,
+                inside: p.x >= 0 && p.y >= 0 && p.x <= canvas.clientWidth && p.y <= canvas.clientHeight,
+            };
+        },
+        frame(maxX, maxY) {
+            const vw = canvas.clientWidth || 800;
+            const vh = canvas.clientHeight || 500;
+            sketch.zoom = Math.max(0.45, Math.min(2.4, (vw - 96) / maxX, (vh - 96) / maxY));
+            sketch.panX = 48;
+            sketch.panY = 48;
+            draw();
+            paintStatus();
+        },
+        dims() {
+            return { ...syncDimensions(), walls: sketch.walls.length, tool: sketch.tool };
+        },
+    };
     statusEl = document.getElementById('room-sketch-status');
     hintEl = document.getElementById('room-sketch-tool-hint');
     if (!canvas) return;
@@ -1291,6 +1316,32 @@ export function bindRoomSketch(deps) {
 export function roomSketchOnOpen(state) {
     if (!canvas) return;
     loadFromStudio(state);
+}
+
+export function roomSketchMatchWalls(front, left, right) {
+    if (!canvas) return false;
+    assignRoles(sketch.walls);
+    const byRole = (role) => sketch.walls.find((wall) => wall.role === role);
+    const frontWall = byRole('front');
+    const leftWall = byRole('left');
+    const rightWall = byRole('right');
+    if (!frontWall || !leftWall || !rightWall) return false;
+    const straight = (wall, horizontal) => (horizontal
+        ? Math.abs(Number(wall.y1) - Number(wall.y2)) < 1
+        : Math.abs(Number(wall.x1) - Number(wall.x2)) < 1);
+    if (!straight(frontWall, true) || !straight(leftWall, false) || !straight(rightWall, false)) return false;
+    if (Math.abs(Number(frontWall.x1)) > 2 || Math.abs(Number(frontWall.y1)) > 2 || Math.abs(Number(leftWall.x1)) > 2) return false;
+    frontWall.x2 = front;
+    frontWall.y2 = 0;
+    leftWall.y2 = left;
+    leftWall.x2 = 0;
+    rightWall.x1 = front;
+    rightWall.x2 = front;
+    rightWall.y2 = right;
+    syncFormFields();
+    draw();
+    paintStatus();
+    return true;
 }
 
 export function roomSketchBeforeHandoff(state) {

@@ -1,20 +1,38 @@
 <!doctype html>
 <html lang="en">
 	<head>
+		<script>
+			(function () {
+				if (window.name !== 'meemare-studio-plan') return;
+				var prefix = 'meemare-studio-plan:';
+				var store = window.localStorage;
+				var get = store.getItem.bind(store);
+				var set = store.setItem.bind(store);
+				var rem = store.removeItem.bind(store);
+				store.getItem = function (key) { return get(prefix + key); };
+				store.setItem = function (key, value) { return set(prefix + key, value); };
+				store.removeItem = function (key) { return rem(prefix + key); };
+				var open = indexedDB.open.bind(indexedDB);
+				indexedDB.open = function (name, version) {
+					if (name === 'openplan3d-local') name = 'meemare-studio-plan';
+					return arguments.length > 1 ? open(name, version) : open(name);
+				};
+			})();
+		</script>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="icon" type="image/svg+xml" href="/openplan/favicon.svg" />
 		<title>open3dFloorplan</title>
-		<link href="/openplan/_app/immutable/entry/start.COhyapf-.js" rel="modulepreload">
-		<link href="/openplan/_app/immutable/chunks/DBXXGFfQ.js" rel="modulepreload">
+		<link href="/openplan/_app/immutable/entry/start.BgzHIY1j.js" rel="modulepreload">
+		<link href="/openplan/_app/immutable/chunks/BXYfWTPj.js" rel="modulepreload">
 		<link href="/openplan/_app/immutable/chunks/H4_qK649.js" rel="modulepreload">
-		<link href="/openplan/_app/immutable/chunks/BAviqcYG.js" rel="modulepreload">
-		<link href="/openplan/_app/immutable/entry/app.CjvU-nOV.js" rel="modulepreload">
+		<link href="/openplan/_app/immutable/chunks/BlE64wQL.js" rel="modulepreload">
+		<link href="/openplan/_app/immutable/entry/app.gmWbSNrK.js" rel="modulepreload">
 		<link href="/openplan/_app/immutable/chunks/DzwrHK28.js" rel="modulepreload">
 		<link href="/openplan/_app/immutable/chunks/CRAYsTSw.js" rel="modulepreload">
 		<link href="/openplan/_app/immutable/chunks/C_XD3kd5.js" rel="modulepreload">
-		<link href="/openplan/_app/immutable/nodes/0.CFLBTPTE.js" rel="modulepreload">
-		<link href="/openplan/_app/immutable/chunks/Cv9q0Prn.js" rel="modulepreload">
+		<link href="/openplan/_app/immutable/nodes/0.CFKAtqLW.js" rel="modulepreload">
+		<link href="/openplan/_app/immutable/chunks/B8cYL_Ot.js" rel="modulepreload">
 		<link href="/openplan/_app/immutable/chunks/CjZPTrBw.js" rel="modulepreload">
 		<link href="/openplan/_app/immutable/chunks/DHXjNKtR.js" rel="modulepreload">
 		<link href="/openplan/_app/env.js" rel="modulepreload">
@@ -25,7 +43,7 @@
 		<div style="display: contents">
 			<script>
 				{
-					__sveltekit_4ysq0l = {
+					__sveltekit_7pxf5e = {
 						base: "/openplan",
 						assets: "/openplan",
 						env: null
@@ -34,11 +52,11 @@
 					const element = document.currentScript.parentElement;
 
 					import("/openplan/_app/env.js").then(({ env }) => {
-						__sveltekit_4ysq0l.env = env;
+						__sveltekit_7pxf5e.env = env;
 
 						Promise.all([
-							import("/openplan/_app/immutable/entry/start.COhyapf-.js"),
-							import("/openplan/_app/immutable/entry/app.CjvU-nOV.js")
+							import("/openplan/_app/immutable/entry/start.BgzHIY1j.js"),
+							import("/openplan/_app/immutable/entry/app.gmWbSNrK.js")
 						]).then(([kit, app]) => {
 							kit.start(app, element);
 						});

@@ -85,7 +85,7 @@
         }
         #room-plan-panel {
             display: none; position: fixed; inset: 0; z-index: 25; max-width: none; margin: 0;
-            grid-template-rows: auto minmax(0, 1fr) auto; background: #eceae6; border: 0; border-radius: 0;
+            grid-template-rows: auto auto minmax(0, 1fr) auto; background: #eceae6; border: 0; border-radius: 0;
             box-shadow: none; min-height: 0; overflow: hidden;
             padding-top: env(safe-area-inset-top);
         }
@@ -217,6 +217,23 @@
             font-weight: 700; font-size: 12px; cursor: pointer; white-space: nowrap;
         }
         body.room-plan-openplan-mode #btn-room-redraw { display: none; }
+        body.room-plan-openplan-mode #room-module-rail { display: none !important; }
+        body.room-plan-openplan-mode #room-plan-panel {
+            grid-template-rows: auto minmax(0, 1fr) auto !important;
+        }
+        .room-module-rail {
+            display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+            background: #fffcf8; border-bottom: 1px solid var(--line); min-height: 64px;
+        }
+        .room-module-rail strong { font-size: 12px; white-space: nowrap; }
+        #room-module-rail-list { display: flex; gap: 6px; overflow-x: auto; min-width: 0; flex: 1; }
+        #room-module-rail-list button {
+            flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 2px;
+            width: 92px; padding: 4px; border: 1px solid var(--line); border-radius: 8px; background: #fff;
+            font-size: 10px; line-height: 1.15; text-align: center;
+        }
+        #room-module-rail-list button img { width: 72px; height: 40px; object-fit: contain; }
+        #room-module-rail-list button:hover { border-color: #1f6b4a; }
         .room-plan-mode { margin-right: 0; }
         .room-plan-mode button { opacity: .72; }
         .room-plan-mode button.is-on { opacity: 1; }
@@ -232,9 +249,12 @@
             width: auto; max-width: none; height: auto; max-height: none;
             border-radius: 0; transform: none; box-shadow: none;
             display: grid !important;
-            grid-template-rows: auto minmax(0, 1fr) auto;
+            grid-template-rows: auto auto minmax(0, 1fr) auto;
             overflow: hidden;
             padding-top: 0;
+        }
+        body.studio-plan-first.room-plan-openplan-mode #room-plan-panel {
+            grid-template-rows: auto minmax(0, 1fr) auto;
         }
         body.studio-plan-first .workspace,
         body.studio-plan-first .studio-top { visibility: hidden; }
@@ -283,6 +303,7 @@
             font-size: 11px; font-weight: 600; gap: 8px; align-items: center; pointer-events: none;
         }
         .room-plan-mode { display: flex; gap: 6px; }
+        #room-plan-mode[hidden] { display: none !important; }
         .room-plan-mode button { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 11px; font-weight: 700; }
         .room-plan-mode button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
         .room-plan-openplan { display: grid !important; grid-template-columns: 1fr !important; grid-template-rows: 1fr; min-height: 0; height: 100%; }
@@ -791,10 +812,7 @@
             <div id="room-plan-panel" aria-label="Oda planı" role="dialog">
                 <div class="room-sketch-head">
                     <strong>Oda planı</strong>
-                    <div class="room-plan-mode" id="room-plan-mode">
-                        <button type="button" data-room-plan-mode="openplan" class="is-on">Gelişmiş</button>
-                        <button type="button" data-room-plan-mode="sketch">Basit</button>
-                    </div>
+                    <div class="room-plan-mode" id="room-plan-mode" hidden></div>
                     <div class="room-plan-head-actions">
                         <button type="button" class="btn" id="btn-room-measures" title="Ölçü veya dosya">Ölçü</button>
                         <button type="button" class="btn" id="btn-room-redraw">Yeniden çiz</button>
@@ -802,8 +820,12 @@
                         <button type="button" class="btn" id="btn-close-room-plan">Kapat</button>
                     </div>
                 </div>
+                <div id="room-module-rail" class="room-module-rail" aria-label="Dolap modülleri">
+                    <strong>Dolaplar</strong>
+                    <div id="room-module-rail-list"></div>
+                </div>
                 <div id="room-plan-openplan" class="room-plan-openplan room-sketch-body">
-                    <iframe id="openplan-frame" title="Oda planı" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen; clipboard-read; clipboard-write"></iframe>
+                    <iframe id="openplan-frame" name="meemare-studio-plan" title="Oda planı" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen; clipboard-read; clipboard-write"></iframe>
                 </div>
                 <div id="room-plan-sketch-wrap" class="room-sketch-wrap room-sketch-body hidden">
                     <aside class="room-sketch-tools" aria-label="Oda araçları">
@@ -924,7 +946,7 @@
             </div>
             <div class="stage-layout">
             <div id="viewport"></div>
-            <div id="walk-hud" aria-hidden="true">WASD · Shift koş · Esc çıkış</div>
+            <div id="walk-hud" aria-hidden="true">W A S D · Shift hız · Esc çıkış</div>
             <div id="plan-board" class="hidden">
                 <canvas id="plan-canvas"></canvas>
                 <form id="plan-opening-size" class="hidden" aria-label="Kapı veya pencere ölçüsü">
@@ -937,7 +959,7 @@
             <div id="stage-toolbar" aria-label="Sahne araçları">
                 <div class="seg" id="plan-switch">
                     <button type="button" data-plan="3d" class="is-on">3D</button>
-                    <button type="button" data-plan="2d">Yerleşim</button>
+                    <button type="button" data-plan="2d">2D</button>
                 </div>
                 <span class="tb-sep" aria-hidden="true"></span>
                 <div id="plan-tools" class="inline">
@@ -1129,6 +1151,6 @@
 </script>
 <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=6" defer></script>
 <script src="{{ asset('js/openplan-import.js') }}?v=2" defer></script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=280"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=284"></script>
 </body>
 </html>
