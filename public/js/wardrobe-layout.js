@@ -1,5 +1,32 @@
 /** Duvar dizilimi. Three.js yok; stüdyo ve node testi aynı fonksiyonu çağırır. */
 
+/** Kapı/pencere açıklığını duvar üzerinde yeniden boyutlandırır. along, duvar başından cm. */
+export function resizeOpeningSpan(len, offset, width, edge, along) {
+    const span = Math.max(40, Number(len) || 40);
+    const minW = 40;
+    const maxW = Math.min(400, span);
+    const start = Math.max(0, Number(offset) || 0);
+    const size = Math.min(maxW, Math.max(minW, Number(width) || 90));
+    const at = Math.max(0, Math.min(span, Number(along) || 0));
+    if (edge === 'start') {
+        const end = Math.min(span, start + size);
+        const next = Math.max(0, Math.min(at, end - minW));
+        const nextW = Math.min(maxW, Math.max(minW, end - next));
+        return { offset: Math.max(0, end - nextW), width: nextW };
+    }
+    if (edge === 'end') {
+        const nextW = Math.min(maxW, Math.max(minW, at - start), span - start);
+        return { offset: start, width: nextW };
+    }
+    const next = Math.max(0, Math.min(at - size / 2, span - size));
+    return { offset: next, width: size };
+}
+
+/** 55 cm altı tek kapak, 55 cm ve üstü iki kapak. */
+export function doorCountForWidth(width) {
+    return Number(width) < 55 ? 1 : 2;
+}
+
 export function alongSize(mod) {
     if (mod?.kind === 'end') return 2;
     return Math.max(30, Number(mod?.width) || 45);

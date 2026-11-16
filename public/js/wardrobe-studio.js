@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { bindRoomSketch, roomSketchOnOpen, roomSketchBeforeHandoff } from './wardrobe-room-sketch.js?v=259';
-import { layoutModules, wallOffsetMin as sharedWallOffsetMin, wallOffsetMax as sharedWallOffsetMax } from './wardrobe-layout.js?v=1';
+import { bindRoomSketch, roomSketchOnOpen, roomSketchBeforeHandoff } from './wardrobe-room-sketch.js?v=260';
+import { layoutModules, doorCountForWidth, resizeOpeningSpan, wallOffsetMin as sharedWallOffsetMin, wallOffsetMax as sharedWallOffsetMax } from './wardrobe-layout.js?v=3';
 
 const T = 1.8;
 const BACK = 0.8;
@@ -16,6 +16,11 @@ const ROOM_H_STD = 320;
 const PASS_RATIO = 0.82;
 const SNAP_PICK_CM = 26;
 const SNAP_WIZARD_CM = 40;
+/** Telefon sheet davranışı; tablet/masaüstü sağ çekmece kullanır. */
+const PHONE_MQ = '(max-width: 699px)';
+function isPhone() {
+    return window.matchMedia(PHONE_MQ).matches;
+}
 const ALUMINUM = [
     { id: 'al-inox', name: 'Inox', color: '#c8ced6', roughness: 0.24 },
     { id: 'al-sampanya', name: 'Şampanya', color: '#e8d0a8', roughness: 0.28 },
@@ -452,7 +457,7 @@ function doorFor(product, series = state.series) {
 }
 
 function doorCount(mod) {
-    return mod.width < 55 ? 1 : 2;
+    return doorCountForWidth(mod?.width);
 }
 
 function swingOf(mod) {
@@ -4410,7 +4415,7 @@ function openInspectorForSelection() {
     customFor = mod.id;
     el('inspector')?.classList.add('is-open');
     document.body.classList.add('show-custom');
-    if (window.matchMedia('(max-width: 900px)').matches) {
+    if (isPhone()) {
         document.body.classList.remove('show-library');
         el('library')?.classList.remove('is-open');
         el('project-sheet')?.classList.remove('is-open');
@@ -4753,7 +4758,7 @@ function tick() {
 }
 
 function openPhoneSheet(name) {
-    const phone = window.matchMedia('(max-width: 900px)').matches;
+    const phone = isPhone();
     if (!phone) {
         if (name === 'modules') showModuleLibrary();
         else {
@@ -5134,6 +5139,20 @@ function drawPlan() {
         }
         ctx.stroke();
     });
+    const selectedOpening = ensureSketch().openings.find((item) => item.id === planOpeningId);
+    if (selectedOpening) {
+        ['start', 'end'].forEach((edge) => {
+            const point = planOpeningPoint(selectedOpening, room, edge);
+            if (!point) return;
+            ctx.beginPath();
+            ctx.fillStyle = '#fff';
+            ctx.strokeStyle = '#1f6b4a';
+            ctx.lineWidth = 2;
+            ctx.arc(point.x, point.z, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        });
+    }
     const gap = 18;
     ctx.strokeStyle = '#b7b1a8';
     ctx.lineWidth = 1;
@@ -5260,6 +5279,78 @@ function toggleOpening(wall, t) {
     }
 }
 
+let planOpeningId = null;
+
+function planOpeningPoint(item, room, edge) {
+    const wall = room[item.wallId];
+    if (!wall) return null;
+    const along = (Number(item.offset) || 0) + (edge === 'end' ? Number(item.width) || 0 : edge === 'mid' ? (Number(item.width) || 0) / 2 : 0);
+    const t = wall.length > 0 ? along / wall.length : 0;
+    return {
+        x: wall.x1 + (wall.x2 - wall.x1) * t,
+        z: wall.z1 + (wall.z2 - wall.z1) * t,
+    };
+}
+
+function planAlongCm(point, wall) {
+    const dx = wall.x2 - wall.x1;
+    const dz = wall.z2 - wall.z1;
+    const len2 = dx * dx + dz * dz || 1;
+    const t = Math.max(0, Math.min(1, ((point.x - wall.x1) * dx + (point.z - wall.z1) * dz) / len2));
+    return t * wall.length;
+}
+
+function planOpeningHit(point, room) {
+    let best = null;
+    ensureSketch().openings.forEach((item) => {
+        const start = planOpeningPoint(item, room, 'start');
+        const end = planOpeningPoint(item, room, 'end');
+        const mid = planOpeningPoint(item, room, 'mid');
+        if (!start || !end || !mid) return;
+        const startDist = Math.hypot(point.x - start.x, point.z - start.z);
+        const endDist = Math.hypot(point.x - end.x, point.z - end.z);
+        const midDist = Math.hypot(point.x - mid.x, point.z - mid.z);
+        const edge = startDist <= 14 && startDist <= endDist ? 'start' : (endDist <= 14 ? 'end' : (midDist <= 18 ? 'move' : null));
+        const dist = edge === 'start' ? startDist : (edge === 'end' ? endDist : midDist);
+        if (edge && (!best || dist < best.dist)) best = { item, edge, dist };
+    });
+    return best;
+}
+
+function syncPlanOpeningEditor() {
+    const form = el('plan-opening-size');
+    const item = ensureSketch().openings.find((entry) => entry.id === planOpeningId);
+    if (!form) return;
+    form.classList.toggle('hidden', !item);
+    if (!item) return;
+    const width = el('plan-open-w');
+    const height = el('plan-open-h');
+    const sill = el('plan-open-sill');
+    if (width && document.activeElement !== width) width.value = Math.round(Number(item.width) || 90);
+    if (height && document.activeElement !== height) height.value = Math.round(Number(item.height) || (item.kind === 'window' ? 120 : 210));
+    if (sill && document.activeElement !== sill) sill.value = Math.round(Number(item.sill) || 0);
+    form.querySelector('[data-plan-sill]')?.toggleAttribute('hidden', item.kind !== 'window');
+}
+
+function patchPlanOpening(item, patch) {
+    const room = planMetrics();
+    const wall = room[item.wallId];
+    const len = wall?.length || 800;
+    if (patch.width != null || patch.offset != null) {
+        const width = patch.width != null ? patch.width : item.width;
+        const offset = patch.offset != null ? patch.offset : item.offset;
+        const span = resizeOpeningSpan(len, offset, width, 'move', (Number(offset) || 0) + (Number(width) || 90) / 2);
+        item.offset = span.offset;
+        item.width = span.width;
+    }
+    if (patch.height != null) item.height = clamp(Math.round(patch.height), 40, 300);
+    if (patch.sill != null) item.sill = clamp(Math.round(patch.sill), 0, 220);
+    fitRoom();
+    drawPlan();
+    syncPlanOpeningEditor();
+    scheduleSave();
+}
+
 function bindPlanBoard() {
     const canvas = el('plan-canvas');
     if (!canvas || canvas.dataset.bound) return;
@@ -5274,6 +5365,31 @@ function bindPlanBoard() {
             canvas.setPointerCapture(event.pointerId);
             return;
         }
+        const openingHit = planOpeningHit(point, room);
+        if (openingHit && planTool !== 'door' && planTool !== 'window') {
+            snapshot();
+            planOpeningId = openingHit.item.id;
+            const openingWall = room[openingHit.item.wallId];
+            const grab = openingWall ? planAlongCm(point, openingWall) - (Number(openingHit.item.offset) || 0) : 0;
+            planPointer = { kind: 'opening', edge: openingHit.edge, id: openingHit.item.id, grab };
+            canvas.setPointerCapture(event.pointerId);
+            drawPlan();
+            syncPlanOpeningEditor();
+            return;
+        }
+        if (openingHit && (planTool === 'door' || planTool === 'window') && openingHit.item.kind === planTool) {
+            snapshot();
+            planOpeningId = openingHit.item.id;
+            const openingWall = room[openingHit.item.wallId];
+            const grab = openingWall ? planAlongCm(point, openingWall) - (Number(openingHit.item.offset) || 0) : 0;
+            planPointer = { kind: 'opening', edge: openingHit.edge, id: openingHit.item.id, grab };
+            canvas.setPointerCapture(event.pointerId);
+            drawPlan();
+            syncPlanOpeningEditor();
+            return;
+        }
+        planOpeningId = null;
+        syncPlanOpeningEditor();
         if (planTool === 'door' || planTool === 'window') {
             const hit = planWallHit(point, room);
             if (!hit) return;
@@ -5305,6 +5421,21 @@ function bindPlanBoard() {
         if (!planPointer) return;
         const point = planPoint(event);
         const room = planMetrics();
+        if (planPointer.kind === 'opening') {
+            const item = ensureSketch().openings.find((entry) => entry.id === planPointer.id);
+            const wall = item ? room[item.wallId] : null;
+            if (item && wall) {
+                const cursor = planAlongCm(point, wall);
+                const at = planPointer.edge === 'move' ? cursor - (Number(planPointer.grab) || 0) + (Number(item.width) || 0) / 2 : cursor;
+                const next = resizeOpeningSpan(wall.length, item.offset, item.width, planPointer.edge, at);
+                item.offset = next.offset;
+                item.width = next.width;
+                fitRoom();
+                drawPlan();
+                syncPlanOpeningEditor();
+            }
+            return;
+        }
         if (planPointer.kind === 'grip') {
             const delta = planPointer.id === 'front' ? point.x - planPointer.x : point.z - planPointer.z;
             const next = clamp(Math.round(planPointer.cm + delta / planPointer.scale), 80, 800);
@@ -5339,6 +5470,27 @@ function bindPlanBoard() {
         dragId = null;
         if (planMode === '2d') refreshPlan();
         scheduleSave();
+    });
+    ['plan-open-w', 'plan-open-h', 'plan-open-sill'].forEach((id) => {
+        el(id)?.addEventListener('input', (event) => {
+            const item = ensureSketch().openings.find((entry) => entry.id === planOpeningId);
+            const value = Number(event.target.value);
+            if (!item || !Number.isFinite(value)) return;
+            if (id === 'plan-open-w') patchPlanOpening(item, { width: value });
+            if (id === 'plan-open-h') patchPlanOpening(item, { height: value });
+            if (id === 'plan-open-sill') patchPlanOpening(item, { sill: value });
+        });
+    });
+    el('plan-open-delete')?.addEventListener('click', () => {
+        if (!planOpeningId) return;
+        commit(() => {
+            const sketch = ensureSketch();
+            sketch.openings = sketch.openings.filter((item) => item.id !== planOpeningId);
+            planOpeningId = null;
+        });
+        syncPlanOpeningEditor();
+        fitRoom();
+        drawPlan();
     });
     el('plan-tools')?.addEventListener('click', (event) => {
         const button = event.target.closest('[data-plan-tool]');
@@ -5395,7 +5547,7 @@ function setPlanMode(mode) {
 function revealCustomizer(mod) {
     if (!mod || customFor === mod.id) return;
     customFor = mod.id;
-    if (window.matchMedia('(max-width: 900px)').matches) return;
+    if (isPhone()) return;
     document.body.classList.add('show-custom');
     document.body.classList.remove('show-library');
     requestAnimationFrame(resize);
@@ -5404,7 +5556,7 @@ function revealCustomizer(mod) {
 function closeModuleLibrary() {
     el('library')?.classList.remove('is-open');
     document.body.classList.remove('show-library');
-    if (window.matchMedia('(max-width: 900px)').matches) document.body.dataset.sheet = '';
+    if (isPhone()) document.body.dataset.sheet = '';
 }
 
 function showModuleLibrary() {
@@ -5413,7 +5565,7 @@ function showModuleLibrary() {
     document.body.classList.add('show-library');
     document.body.classList.remove('show-custom');
     el('library')?.classList.add('is-open');
-    if (window.matchMedia('(max-width: 900px)').matches) {
+    if (isPhone()) {
         document.body.dataset.sheet = 'modules';
         el('inspector')?.classList.remove('is-open');
         el('project-sheet')?.classList.remove('is-open');
@@ -5664,7 +5816,7 @@ function init3d() {
                 allCabinetsSelected = false;
                 customFor = null;
                 el('inspector')?.classList.add('is-open');
-                if (window.matchMedia('(max-width: 900px)').matches) {
+                if (isPhone()) {
                     document.body.classList.add('show-custom');
                     document.body.classList.remove('show-library');
                 }
@@ -5677,7 +5829,7 @@ function init3d() {
                 allCabinetsSelected = false;
                 customFor = null;
                 el('inspector')?.classList.add('is-open');
-                if (window.matchMedia('(max-width: 900px)').matches) {
+                if (isPhone()) {
                     document.body.classList.add('show-custom');
                     document.body.classList.remove('show-library');
                 }
@@ -6578,7 +6730,7 @@ function renderInspector() {
         return;
     }
     config.classList.add('hidden');
-    if (!window.matchMedia('(max-width: 900px)').matches) {
+    if (!isPhone()) {
         el('inspector')?.classList.add('is-open');
         document.body.classList.add('show-custom');
     }
@@ -6828,7 +6980,54 @@ function withOuterCornerReturns(pieces, span, height, wallT = ROOM_WALL_T) {
     ];
 }
 
+function syncSketchWalls() {
+    const sketch = state.roomSketch;
+    if (!sketch || !Array.isArray(sketch.walls) || !sketch.walls.length) return;
+    const front = sketch.walls.find((wall) => wall.role === 'front');
+    const left = sketch.walls.find((wall) => wall.role === 'left');
+    const right = sketch.walls.find((wall) => wall.role === 'right');
+    if (!front || !left || !right) return;
+    const straight = (wall, horizontal) => (horizontal
+        ? Math.abs(Number(wall.y1) - Number(wall.y2)) < 1
+        : Math.abs(Number(wall.x1) - Number(wall.x2)) < 1);
+    if (!straight(front, true) || !straight(left, false) || !straight(right, false)) return;
+    if (Math.abs(Number(front.x1)) > 2 || Math.abs(Number(front.y1)) > 2 || Math.abs(Number(left.x1)) > 2) return;
+    const before = JSON.stringify(sketch.walls);
+    const oldFront = Math.abs(Number(front.x2) - Number(front.x1));
+    const oldLeft = Math.abs(Number(left.y2) - Number(left.y1));
+    const oldRight = Math.abs(Number(right.y2) - Number(right.y1));
+    const newFront = wallLimit();
+    const newLeft = sideLimit('left');
+    const newRight = sideLimit('right');
+    const dx = newFront - oldFront;
+    const near = (a, b) => Math.abs(Number(a) - Number(b)) < 1.5;
+    sketch.walls.forEach((wall) => {
+        if (wall.role !== 'other') return;
+        ['1', '2'].forEach((end) => {
+            const xKey = `x${end}`;
+            const yKey = `y${end}`;
+            if (near(wall[xKey], oldFront)) wall[xKey] = Number(wall[xKey]) + dx;
+            if (Number(wall[xKey]) < oldFront / 2 && near(wall[yKey], oldLeft)) wall[yKey] = newLeft;
+            else if (Number(wall[xKey]) >= oldFront / 2 && near(wall[yKey], oldRight)) wall[yKey] = newRight;
+        });
+    });
+    front.x1 = 0;
+    front.y1 = 0;
+    front.x2 = newFront;
+    front.y2 = 0;
+    left.x1 = 0;
+    left.y1 = 0;
+    left.x2 = 0;
+    left.y2 = newLeft;
+    right.x1 = newFront;
+    right.y1 = 0;
+    right.x2 = newFront;
+    right.y2 = newRight;
+    if (JSON.stringify(sketch.walls) !== before) scheduleSave();
+}
+
 function fitRoom() {
+    syncSketchWalls();
     const width = wallLimit();
     const height = roomHeightLimit();
     const left = sideLimit('left');
@@ -7118,7 +7317,7 @@ function wallFullMessage(wall) {
 }
 
 function initStudioLayout() {
-    const mobile = window.matchMedia('(max-width: 900px)').matches;
+    const mobile = isPhone();
     document.body.classList.remove('show-library', 'show-custom');
     el('library')?.classList.remove('is-open');
     if (mobile) {
@@ -7389,7 +7588,9 @@ function closePlanStudioStep(applyHandoff = true) {
     showModuleLibrary();
     render();
     frameCamera();
-    toast('Soldan modül ekleyin.');
+    toast(state.modules?.length
+        ? '3D düzenleme. Odayı değiştirmek için Oda.'
+        : 'Soldan modül ekleyin.');
 }
 
 function requestOpenPlanRoomExport() {
@@ -7815,10 +8016,55 @@ function addCabinet(target) {
     });
     focusSelectedModule();
     closeModuleLibrary();
-    if (!window.matchMedia('(max-width: 900px)').matches) {
+    if (!isPhone()) {
         document.body.classList.add('show-custom');
         el('inspector')?.classList.add('is-open');
     }
+}
+
+function liftStilesAboveDrawers(root) {
+    root.updateMatrixWorld(true);
+    const meshes = [];
+    root.traverse((child) => { if (child.isMesh) meshes.push(child); });
+    const drawers = meshes.filter((mesh) => /KUTU/.test(mesh.name || ''));
+    const stiles = meshes.filter((mesh) => /DIKME/.test(mesh.name || ''));
+    if (!drawers.length || !stiles.length) return 0;
+    const worldBox = (mesh) => new THREE.Box3().setFromObject(mesh);
+    let lifted = 0;
+    stiles.forEach((stile) => {
+        const stileBox = worldBox(stile);
+        let top = null;
+        drawers.forEach((drawer) => {
+            const drawerBox = worldBox(drawer);
+            const overlapX = Math.min(stileBox.max.x, drawerBox.max.x) - Math.max(stileBox.min.x, drawerBox.min.x);
+            const overlapY = Math.min(stileBox.max.y, drawerBox.max.y) - Math.max(stileBox.min.y, drawerBox.min.y);
+            const overlapZ = Math.min(stileBox.max.z, drawerBox.max.z) - Math.max(stileBox.min.z, drawerBox.min.z);
+            if (overlapX > 0.004 && overlapY > 0.004 && overlapZ > 0.004) {
+                top = Math.max(top ?? drawerBox.max.y, drawerBox.max.y);
+            }
+        });
+        if (top == null || top >= stileBox.max.y - 0.02) return;
+        const newMin = top + 0.004;
+        const worldMin = stileBox.min.y;
+        const worldSpan = stileBox.max.y - worldMin;
+        const keep = stileBox.max.y - newMin;
+        if (worldSpan < 0.05 || keep < 0.05) return;
+        const inverse = stile.matrixWorld.clone().invert();
+        const position = stile.geometry.attributes.position;
+        const vertex = new THREE.Vector3();
+        for (let index = 0; index < position.count; index += 1) {
+            vertex.fromBufferAttribute(position, index).applyMatrix4(stile.matrixWorld);
+            const t = (vertex.y - worldMin) / worldSpan;
+            vertex.y = newMin + t * keep;
+            vertex.applyMatrix4(inverse);
+            position.setXYZ(index, vertex.x, vertex.y, vertex.z);
+        }
+        position.needsUpdate = true;
+        stile.geometry.computeBoundingBox();
+        stile.geometry.computeBoundingSphere();
+        lifted += 1;
+    });
+    return lifted;
 }
 
 async function ensureGlb(item) {
@@ -7829,8 +8075,9 @@ async function ensureGlb(item) {
     try {
         // Parametrik GLB geri yüklendi; eski bozuk vm_v4 cache’ini kır.
         const path = String(item.modelPath || '');
-        const url = path.includes('?') ? `${path}&v=param2` : `${path}?v=param2`;
+        const url = path.includes('?') ? `${path}&v=param3` : `${path}?v=param3`;
         const gltf = await loader.loadAsync(url);
+        liftStilesAboveDrawers(gltf.scene);
         glbTemplates.set(item.id, gltf.scene);
         return gltf.scene;
     } catch (error) {
@@ -7969,7 +8216,7 @@ async function addGlbModule(id, dropEvent) {
         focusSelectedModule();
         snapDoors();
         closeModuleLibrary();
-        if (!window.matchMedia('(max-width: 900px)').matches) {
+        if (!isPhone()) {
             document.body.classList.add('show-custom');
             el('inspector')?.classList.add('is-open');
         } else {
@@ -8027,7 +8274,7 @@ function addCadModule(id, dropEvent) {
     });
     focusSelectedModule();
     closeModuleLibrary();
-    if (!window.matchMedia('(max-width: 900px)').matches) {
+    if (!isPhone()) {
         document.body.classList.add('show-custom');
         el('inspector')?.classList.add('is-open');
     }
@@ -8052,7 +8299,7 @@ function addProduct(productId, dropEvent) {
     });
     focusSelectedModule();
     closeModuleLibrary();
-    if (window.matchMedia('(max-width: 900px)').matches) document.body.classList.remove('show-custom');
+    if (isPhone()) document.body.classList.remove('show-custom');
 }
 
 function moveModule(id, step) {
@@ -8773,10 +9020,17 @@ function bindChrome() {
         scheduleSave,
         toast,
         toggleRoomPlan,
+        liveOpenings: (openings) => {
+            const sketch = ensureSketch();
+            sketch.openings = openings.map((item) => ({ ...item }));
+            fitRoom();
+            if (planMode === '2d') drawPlan();
+            scheduleSave();
+        },
     });
     bindQuickRail();
     bindStudioHandoff();
-    onClick('btn-room-plan', () => toggleRoomPlan(true));
+    onClick('btn-room-plan', () => openRoomEditor());
     onClick('btn-close-room-plan', () => toggleRoomPlan(false));
     onClick('room-plan-backdrop', () => toggleRoomPlan(false));
     onClick('btn-plan-to-3d', () => finishPlanFirstStep());
@@ -8959,7 +9213,7 @@ function bindChrome() {
         requestAnimationFrame(resize);
     });
     onClick('close-inspector', () => {
-        if (window.matchMedia('(max-width: 900px)').matches) openPhoneSheet(document.body.dataset.sheet || 'material');
+        if (isPhone()) openPhoneSheet(document.body.dataset.sheet || 'material');
         else {
             document.body.classList.remove('show-custom');
             customFor = selectedId;
@@ -9045,8 +9299,7 @@ function moduleFromCatalogItem(item, opts = {}) {
     mod.spec = item.spec;
     mod.width = Math.round(item.width * 100);
     mod.height = mod.glbHeight;
-    // İlk eklemede kapaksız (açık iç görünüm); ahşap/cam sonra seçilir.
-    mod.door = opts.door ?? 'none';
+    mod.door = opts.door ?? defaultDoorForCatalogItem(item);
     if (mod.door === 'glass' || mod.door === 'mixed') {
         if (/bronz/i.test(String(item.name || ''))) {
             mod.glassId = 'cam-bronz';
@@ -9060,7 +9313,7 @@ function moduleFromCatalogItem(item, opts = {}) {
         mod.aluminumId = mod.aluminumId || state.aluminumId || 'al-inox';
     }
     preferCatalogWood(mod, { force: true });
-    mod.open = 1;
+    mod.open = opts.open ?? 0;
     mod.kind = item.category === 'kose' ? 'corner' : 'wardrobe';
     mod.wall = opts.wall === 'left' || opts.wall === 'right' ? opts.wall : 'front';
     mod.offset = Number.isFinite(opts.offset) ? opts.offset : 10000;
@@ -9460,9 +9713,7 @@ async function boot() {
         syncViewModeBar();
         render();
         focusSelectedModule();
-        maybeOpenPlanStudio(params);
-        maybeOpenRoomSketcher(params);
-        if (!params.get('plan') && params.get('oda') !== '1') toggleRoomPlan(false);
+        openRoomEditor();
         return;
     }
     if (loadHash()) {
@@ -9664,6 +9915,49 @@ window.__studio = {
         camera.lookAt(center);
         controls.update();
         return true;
+    },
+    measure: async (id) => {
+        const item = glbCatalog.find((entry) => entry.id === id);
+        if (!item) return null;
+        await ensureGlb(item);
+        const tpl = glbTemplates.get(id);
+        if (!tpl) return null;
+        const clone = tpl.clone(true);
+        clone.updateMatrixWorld(true);
+        const rows = [];
+        clone.traverse((child) => {
+            if (!child.isMesh || !child.geometry) return;
+            const geometry = child.geometry.clone();
+            geometry.applyMatrix4(child.matrixWorld);
+            geometry.computeBoundingBox();
+            const box = geometry.boundingBox;
+            const size = box.getSize(new THREE.Vector3());
+            geometry.dispose();
+            rows.push({
+                name: child.name || '',
+                x: Math.round(size.x * 1000) / 1000,
+                y: Math.round(size.y * 1000) / 1000,
+                z: Math.round(size.z * 1000) / 1000,
+                min: [box.min.x, box.min.y, box.min.z].map((n) => Math.round(n * 1000) / 1000),
+                max: [box.max.x, box.max.y, box.max.z].map((n) => Math.round(n * 1000) / 1000),
+            });
+        });
+        const root = new THREE.Box3().setFromObject(clone);
+        const rootSize = root.getSize(new THREE.Vector3());
+        return {
+            id,
+            name: item.name,
+            category: item.category,
+            catalog: {
+                width: item.width,
+                height: item.height,
+                depth: item.depth,
+                shelves: item.shelves,
+                drawers: item.drawers,
+            },
+            root: [rootSize.x, rootSize.y, rootSize.z].map((n) => Math.round(n * 1000) / 1000),
+            parts: rows,
+        };
     },
     rawGlb: (id) => {
         const tpl = glbTemplates.get(id || state.modules[0]?.glb);

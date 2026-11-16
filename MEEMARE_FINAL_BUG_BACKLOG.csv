@@ -1,13 +1,13 @@
-id,priority,area,summary,status,evidence
-QA-SEC-001,P0,projects list,Liste sızıntısı,PASS_LOCAL_PHPUNIT,WardrobeProjectAccessTest
-QA-SEC-002,P0,token access,Belirteçle yabancı erişim,PASS_LOCAL_PHPUNIT,WardrobeProjectAccessTest
-QA-WALL-SYNC-001,P1,room sketch,Form ölçüleri tuval ile uyumsuz,FIXED_LOCAL,wardrobe-room-sketch.js syncFormFields
-QA-UX-002,P2,camera,Modül ekleyince aşırı yakın kadraj,FIXED_LOCAL_RETEST,focusSelectedModule
-QA-GEO-001,P1,glb,Çekmece-dikme kesişimi,OPEN,master-qa geometry
-QA-GEO-002,P1,glb,Kapak mesh yok,OPEN,
-QA-CORNER-001,P1,corner,Düz→köşe sessiz dönüşüm,PARTIAL,
-QA-PLACE-001,P1,layout,Duvar doluluk matrisi,PARTIAL,
-QA-RENDER-001,P1,render,Path trace benek/siyah,OPEN,
-QA-PROD-001,P1,mfg,DXF/donanım yok,OPEN,
-QA-UX-001,P2,mobile,Panel 3D kapatıyor,OPEN,
-E2E-SCOPE,P1,process,45 modül + save/load + mobil + stres tamamlanmadı,OPEN,MEEMARE_COMPLETE_SYSTEM_AUDIT.md
+id,baslik,durum,kanit
+MOBILE-PANEL,Mobil panel 3D sahneyi tamamen kapatıyor,VERIFIED,390x844 emülasyonunda sahnenin yüzde 54-59'u görünür kaldı
+DOOR-NONE,Katalog modülü kapaksız açılıyordu,VERIFIED,y26_tek_03 solid y26_tek_06 glass geri alma tamam
+STILE-DRAWER,Bes cift modulde dikme cekmece kutusunu kesiyordu,VERIFIED,y26_cift_02 03 04 06 09 yeniden olcumde cakisma yok
+SNAP-DRAG,4 cm yapisma fare ile denenmedi,OPEN,node testi 3.9 yapisir 4.0 yapismaz
+WALL-DRAW,Elle duvar cizme silme iptal,NOT_TESTED,
+U-PLACE,U kanadina modul konamiyor,OPEN,kanat yalnizca duvar kutusu
+DRAWER-BOX,Y26 cekmece kutusu tek prizma,OPEN,olculdu ayri yan panel yok
+EDGE-BAND,Ayri kenar bandi yok,OPEN,
+CATALOG-PNG,45 modulun PNG karsilastirmasi,NOT_TESTED,
+RENDER,Ultra Render bu turda alinmadi,NOT_TESTED,
+MATERIAL-PIXEL,Malzeme kanallari piksel ile dogrulanmadi,NOT_TESTED,
+TEK-DRAWER-COUNT,tek_v1 katalog drawers 6 geometri 2 cekmece on,OPEN,olculdu katalog alani degistirilmedi

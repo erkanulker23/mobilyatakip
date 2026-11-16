@@ -2,6 +2,7 @@
  * Meemare dolap tasarlama — gömülü oda planı (plan sayfasından bağımsız).
  * Duvar / kapı / pencere aynı araç mantığı: araç seç → yerleştir → Esc/sağ tık ile çık.
  */
+import { resizeOpeningSpan } from './wardrobe-layout.js?v=3';
 
 const SNAP = 25;
 const WALL_THICK = 12;
@@ -232,6 +233,47 @@ function selectionAnchor() {
     return null;
 }
 
+function selectedOpening() {
+    return sketch.openings.find((item) => item.id === sketch.selectedOpeningId) || null;
+}
+
+function publishOpenings() {
+    hooks?.liveOpenings?.(sketch.openings.map((item) => ({ ...item })));
+}
+
+function applyOpeningPatch(item, patch) {
+    const wall = sketch.walls.find((entry) => (entry.role || entry.id) === item.wallId || entry.id === item.wallId);
+    const len = wall ? wallLen(wall) : 800;
+    if (patch.offset != null || patch.width != null) {
+        const span = resizeOpeningSpan(
+            len,
+            patch.offset != null ? patch.offset : item.offset,
+            patch.width != null ? patch.width : item.width,
+            'move',
+            (patch.offset != null ? Number(patch.offset) : Number(item.offset) || 0) + (patch.width != null ? Number(patch.width) : Number(item.width) || 90) / 2,
+        );
+        item.offset = span.offset;
+        item.width = span.width;
+    }
+    if (patch.height != null) item.height = clamp(Math.round(patch.height), 40, 300);
+    if (patch.sill != null) item.sill = clamp(Math.round(patch.sill), 0, 220);
+    publishOpenings();
+}
+
+function fillOpeningFields() {
+    const item = selectedOpening();
+    document.querySelectorAll('[data-opening-size]').forEach((node) => {
+        node.hidden = !item || (node.dataset.openingSize === 'sill' && item.kind !== 'window');
+    });
+    if (!item) return;
+    const width = document.getElementById('opening-width');
+    const height = document.getElementById('opening-height');
+    const sill = document.getElementById('opening-sill');
+    if (width && document.activeElement !== width) width.value = Math.round(Number(item.width) || 90);
+    if (height && document.activeElement !== height) height.value = Math.round(Number(item.height) || (item.kind === 'window' ? 120 : 210));
+    if (sill && document.activeElement !== sill) sill.value = Math.round(Number(item.sill) || 0);
+}
+
 function updateSelectionBar() {
     const bar = document.getElementById('room-sketch-selbar');
     if (!bar) return;
@@ -239,6 +281,7 @@ function updateSelectionBar() {
     const has = Boolean(anchor);
     bar.classList.toggle('is-visible', has);
     bar.setAttribute('aria-hidden', has ? 'false' : 'true');
+    fillOpeningFields();
     if (!has) return;
     const stage = document.querySelector('.room-sketch-stage');
     const rect = stage?.getBoundingClientRect();
@@ -687,10 +730,53 @@ function strokeOpening(seg, color, width = 3) {
     }
 }
 
+function alongWall(wall, wx, wy) {
+    const dx = wall.x2 - wall.x1;
+    const dy = wall.y2 - wall.y1;
+    const len = Math.hypot(dx, dy) || 1;
+    const t = clamp(((wx - wall.x1) * dx + (wy - wall.y1) * dy) / (len * len), 0, 1);
+    return t * len;
+}
+
+function hitOpeningHandle(wx, wy) {
+    const item = selectedOpening();
+    const seg = item ? openingSegment(item) : null;
+    if (!seg) return null;
+    const tol = 16 / sketch.zoom;
+    const start = Math.hypot(wx - seg.x1, wy - seg.y1);
+    const end = Math.hypot(wx - seg.x2, wy - seg.y2);
+    if (start <= tol && start <= end) return 'start';
+    if (end <= tol) return 'end';
+    return null;
+}
+
 function drawOpenings() {
     sketch.openings.forEach((item) => {
         const seg = openingSegment(item);
-        strokeOpening(seg, item.kind === 'door' ? '#3c463f' : '#6d8ea8', item.id === sketch.selectedOpeningId ? 4 : 3);
+        const selected = item.id === sketch.selectedOpeningId;
+        strokeOpening(seg, item.kind === 'door' ? '#3c463f' : '#6d8ea8', selected ? 4 : 3);
+        if (!selected || !seg) return;
+        [seg.x1, seg.x2].forEach((x, index) => {
+            const y = index === 0 ? seg.y1 : seg.y2;
+            const p = worldToScreen(x, y);
+            ctx.beginPath();
+            ctx.fillStyle = '#fff';
+            ctx.strokeStyle = '#1f6b4a';
+            ctx.lineWidth = 2;
+            ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        });
+        const mid = worldToScreen((seg.x1 + seg.x2) / 2, (seg.y1 + seg.y2) / 2);
+        const label = `${Math.round(item.width)}×${Math.round(item.height || (item.kind === 'window' ? 120 : 210))}`;
+        ctx.font = '11px Montserrat, system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const wide = ctx.measureText(label).width + 10;
+        ctx.fillStyle = '#1c1c1c';
+        ctx.fillRect(mid.x - wide / 2, mid.y - 18, wide, 16);
+        ctx.fillStyle = '#fff';
+        ctx.fillText(label, mid.x, mid.y - 10);
     });
     if (sketch.hoverOpening) {
         const defs = openingDefaults(sketch.hoverOpening.kind);
@@ -882,13 +968,24 @@ function bindCanvas() {
             return;
         }
 
+        const handle = hitOpeningHandle(world.x, world.y);
+        if (handle) {
+            const item = selectedOpening();
+            sketch.drag = { kind: 'opening', edge: handle, id: item.id };
+            canvas.setPointerCapture(event.pointerId);
+            draw();
+            return;
+        }
         const openHit = hitOpening(world.x, world.y);
         if (openHit) {
             sketch.selectedOpeningId = openHit.opening.id;
             sketch.selectedId = null;
-            sketch.drag = { kind: 'pan', x: pt.x, y: pt.y, panX: sketch.panX, panY: sketch.panY };
+            const openingWall = sketch.walls.find((entry) => (entry.role || entry.id) === openHit.opening.wallId || entry.id === openHit.opening.wallId);
+            const grab = openingWall ? alongWall(openingWall, world.x, world.y) - (Number(openHit.opening.offset) || 0) : (Number(openHit.opening.width) || 90) / 2;
+            sketch.drag = { kind: 'opening', edge: 'move', id: openHit.opening.id, grab };
             canvas.setPointerCapture(event.pointerId);
             draw();
+            updateSelectionBar();
             return;
         }
         const hit = hitWall(world.x, world.y);
@@ -942,6 +1039,22 @@ function bindCanvas() {
             return;
         }
         if (!sketch.drag) return;
+        if (sketch.drag.kind === 'opening') {
+            const item = sketch.openings.find((entry) => entry.id === sketch.drag.id);
+            const wall = item && sketch.walls.find((entry) => (entry.role || entry.id) === item.wallId || entry.id === item.wallId);
+            if (item && wall) {
+                const cursor = alongWall(wall, world.x, world.y);
+                const at = sketch.drag.edge === 'move' ? cursor - (Number(sketch.drag.grab) || 0) + (Number(item.width) || 0) / 2 : cursor;
+                const next = resizeOpeningSpan(wallLen(wall), item.offset, item.width, sketch.drag.edge, at);
+                item.offset = next.offset;
+                item.width = next.width;
+                publishOpenings();
+                fillOpeningFields();
+            }
+            draw();
+            updateSelectionBar();
+            return;
+        }
         if (sketch.drag.kind === 'pan') {
             sketch.panX = sketch.drag.panX + (pt.x - sketch.drag.x);
             sketch.panY = sketch.drag.panY + (pt.y - sketch.drag.y);
@@ -1077,6 +1190,8 @@ function onToolbarClick(event) {
 function bindToolbar() {
     // Delegasyon: plan paneli CSS/DOM ile taşınsa da çalışır.
     document.addEventListener('click', (event) => {
+        const sizeInput = event.target.closest?.('[data-opening-size] input');
+        if (sizeInput) return;
         const selAct = event.target.closest?.('[data-sketch-sel]');
         if (selAct) {
             event.preventDefault();
@@ -1115,6 +1230,17 @@ export function bindRoomSketch(deps) {
     bound = true;
     bindCanvas();
     bindToolbar();
+    ['opening-width', 'opening-height', 'opening-sill'].forEach((id) => {
+        document.getElementById(id)?.addEventListener('input', (event) => {
+            const item = selectedOpening();
+            const value = Number(event.target.value);
+            if (!item || !Number.isFinite(value)) return;
+            if (id === 'opening-width') applyOpeningPatch(item, { width: value });
+            if (id === 'opening-height') applyOpeningPatch(item, { height: value });
+            if (id === 'opening-sill') applyOpeningPatch(item, { sill: value });
+            draw();
+        });
+    });
     setTool('select', { silent: true });
     window.addEventListener('resize', () => { draw(); paintStatus(); });
     window.addEventListener('keydown', (event) => {

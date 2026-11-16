@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-16",
+  "fullMatrixThisSession": false,
+  "note": "Üç duvar, cam kapak ve üç malzeme ile birebir kayıt karşılaştırması bu turda yapılmadı.",
+  "previousVerified": {
+    "saveOpenDelete": "Önceki oturumda POST 200, GET 5 modül, DELETE 200. Deneme kaydı silindi.",
+    "unknownModule": 422,
+    "cornerOffset10000": "kaydedildi ve geri okundu"
+  },
+  "thisSession": {
+    "undoAfterTwoAdds": "y26_tek_03 ve y26_tek_06 eklendi, iki geri alma ile modül listesi eski haline döndü"
+  }
+}

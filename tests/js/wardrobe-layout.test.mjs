@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { layoutModules, wallOffsetMin } from '../../public/js/wardrobe-layout.js';
+import { doorCountForWidth, layoutModules, resizeOpeningSpan, wallOffsetMin } from '../../public/js/wardrobe-layout.js';
 
 function cab(id, width, offset = 0, wall = 'front') {
     return { id, kind: 'wardrobe', wall, width, offset, product: 'cift-raf' };
@@ -60,6 +60,32 @@ test('a door opening blocks that span', () => {
     const openEnd = 120;
     const overlaps = modules[0].offset < openEnd - 0.5 && end > openStart + 0.5;
     assert.equal(overlaps, false);
+});
+
+test('door count switches at 55 cm', () => {
+    assert.equal(doorCountForWidth(54.9), 1);
+    assert.equal(doorCountForWidth(55), 2);
+    assert.equal(doorCountForWidth(55.1), 2);
+});
+
+test('a 4 cm gap snaps and a wider gap does not', () => {
+    const snap = (gap) => {
+        const a = cab('a', 90, 0);
+        const b = cab('b', 90, 90 + gap);
+        const spots = place(400, [a, b], { owned: [a] });
+        assert.ok(spots);
+        return Math.round(b.offset * 10) / 10;
+    };
+    assert.equal(snap(3.9), 90);
+    assert.equal(snap(4), 94);
+    assert.equal(snap(4.1), 94.1);
+});
+
+test('an opening end can grow and shrink along the wall', () => {
+    assert.deepEqual(resizeOpeningSpan(400, 100, 90, 'end', 220), { offset: 100, width: 120 });
+    assert.deepEqual(resizeOpeningSpan(400, 100, 90, 'start', 70), { offset: 70, width: 120 });
+    assert.deepEqual(resizeOpeningSpan(400, 100, 90, 'move', 200), { offset: 155, width: 90 });
+    assert.equal(resizeOpeningSpan(180, 0, 90, 'end', 400).width, 180);
 });
 
 test('two corners on the same side are refused', () => {
