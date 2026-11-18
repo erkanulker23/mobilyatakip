@@ -1,0 +1,37 @@
+alan,vaka,beklenen,olculen,durum,kanit
+yerlesim,180 cm duvara dort adet 45 cm,ofsetler duvar icinde ve bindirme yok,"0 45 90 135; besinci tost: On duvarda bu dolap icin yer kalmadi",PASS,tarayici 2026-11-16
+yerlesim,geri al 180 denemesinden sonra,320 cm ve 5 modul,parmak izi eslesti,PASS,tarayici
+yerlesim,L odasi on duvar 320,"kose 0-90; 90luklar 140 ve 230; bitis 320",ayni ofsetler export edildi,PASS,tarayici export
+yerlesim,L odasi sol duvar 300,iki 45lik 210 ve 255 bitis 300,ayni,PASS,tarayici export
+yerlesim,kose baska modele donusmesin,kind corner glb kose_2,corner left kose_2 offset 10000,PASS,tarayici export
+yerlesim,dokuz duvar 90 cm sigum,180 225 270 315 360 413 440 550 785,node test 5 gecti,PASS,tests/js/wardrobe-layout.test.mjs
+yerlesim,dokuz duvar tarayici tik,her duvar sahnede,yalniz 180 ve 360 tarayicide,NOT_TESTED,node disi
+yerlesim,sag kose icine girmeme,sag modul ofseti >= 90,node testi,PASS,layout testi; tarayici NOT_TESTED
+yerlesim,kapi acikligi engeli,modul 10-120 cm disinda,node testi,PASS,layout testi; tarayici NOT_TESTED
+yerlesim,4 cm yapisma,4 cmde birlesir,tiklanmadi,NOT_TESTED,
+yerlesim,surukle birak,modul tasinir,tiklanmadi,NOT_TESTED,
+yerlesim,modul silince kalanlar bozulmasin,diger ofsetler durur,tiklanmadi,NOT_TESTED,
+duvar,kroki 3D ayni sayi,on sol sag kroki = sahne,"oncesi kroki 300 sahne 320; sonra kroki 320/300/280",PASS,v=274 yenileme
+duvar,olcu degisince kroki,360 cm sag duvar x=360,olculdu; geri al 320,PASS,tarayici
+duvar,U kanat 3D mesh,role other kutulari,"110x280x8; z 300 ve z 280",PASS,studio.extras ve meemare-u-kanatlar.png
+duvar,fareyle tek duvar L U ciz,kroki araci,tiklanmadi,NOT_TESTED,
+duvar,cizimi iptal ve duvar sil,kroki araci,tiklanmadi,NOT_TESTED,
+stabilite,proje kaydet ac sil,200 sonra GET 5 modul sonra DELETE 200,ayni,PASS,fetch; kayit silindi
+stabilite,bilinmeyen modul,422 ve yazilmaz,Bilinmeyen modul kimligi,PASS,fetch ve PHP test
+stabilite,modul duvar disi 200 cm / 180,422 onceki ad durur,PHP test,PASS,WardrobeProjectAccessTest
+stabilite,kose offset 10000 kaydi,200 ve ofset durur,PHP test ve canli GET,PASS,validator duzeltmesi
+stabilite,bozuk offset 10000 dolap,422 Bozuk konum verisi,PHP test,PASS,onceki proje adi durdu
+stabilite,kapak ac kapa geri al,open 1 sonra 0,solid modulde olculdu,PASS,tarayici
+stabilite,malzeme aninda,renk degisir,ekran fotosu yok,NOT_TESTED,
+stabilite,cekmece ac kapa,cekmece hareketi,tiklanmadi,NOT_TESTED,
+stabilite,ultra render,katalog karesi,calistirilmadi,NOT_TESTED,
+model,y26_tek_01 18 mm,govde ve raf 0.018 m,olculdu; arkalik 0.008; cekmece kutusu var,PASS,rawGlb
+model,y26_cift_01 18 mm,govde raf 0.018 cekmece kutusu,olculdu,PASS,rawGlb
+model,kenar bandi geometrisi,ayri mesh,12 ucgen kutu,FAIL,rawGlb
+model,diger 43 modul PNG karsilastirma,her aci,yapilmadi,NOT_TESTED,
+model,cam metal kiyafet,katalog hissi,yapilmadi,NOT_TESTED,
+ux,kamera urune bakar,eklenen dolap kadrajda,meemare-180-iki-modul.png,PASS,ekran
+ux,mobil panel sahneyi kapatmasin,sahne gorunur kalir,panel kapatti,FAIL,meemare-u-ust-gorunum.png
+ux,geri al,duvar ve modul doner,360 den 320 e,PASS,tarayici
+render,benek siyah kose cam led golge kadraj kiyafet,katalog fotografi,calistirilmadi,NOT_TESTED,MEEMARE_RENDER_QUALITY_REPORT.md
+kapsam,fiyat CNC teklif genisletme,dokunulmaz,dokunulmadi,PASS,bilerek

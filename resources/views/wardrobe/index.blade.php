@@ -11,73 +11,184 @@
     ])
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@450;500;600;700;800&display=swap" rel="stylesheet">
     @include('partials.meemare-shell-styles')
     <style>
         :root {
-            --ink: #1c1c1c;
-            --muted: #6d6a64;
-            --line: #e6e2da;
-            --bg: #f4f3f0;
-            --panel: #fffcf8;
-            --accent: #1f6b4a;
-            --danger: #9f2d2d;
-            --shadow: 0 12px 32px rgba(28, 28, 28, .08);
+            --ink: #121816;
+            --muted: #65706a;
+            --line: #dde3df;
+            --bg: #e9eeea;
+            --panel: #f7faf8;
+            --panel-strong: #ffffff;
+            --accent: #1a7a52;
+            --accent-soft: #e4f3eb;
+            --danger: #b42318;
+            --chrome: rgba(247, 250, 248, .78);
+            --chrome-ink: rgba(18, 24, 22, .88);
+            --shadow: 0 10px 30px rgba(18, 24, 22, .08);
+            --shadow-float: 0 16px 48px rgba(18, 24, 22, .14);
+            --radius-sm: 10px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --radius-pill: 999px;
+            --touch: 44px;
+            --blur: saturate(1.35) blur(18px);
+            --ease: cubic-bezier(.22, 1, .36, 1);
+            --dock-h: 64px;
+            --top-h: 52px;
         }
         * { box-sizing: border-box; }
-        html, body { margin: 0; height: 100%; height: 100dvh; overflow: hidden; font-family: Montserrat, system-ui, sans-serif; color: var(--ink); background: var(--bg); }
+        html, body {
+            margin: 0; height: 100%; height: 100dvh; overflow: hidden;
+            font-family: Montserrat, "Segoe UI", sans-serif; color: var(--ink); background: var(--bg);
+            -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+            font-feature-settings: "ss01" on, "kern" on;
+        }
         button, input, select { font-family: inherit; }
-        button { cursor: pointer; }
+        button { cursor: pointer; transition: background .18s var(--ease), border-color .18s var(--ease), color .18s var(--ease), transform .18s var(--ease), box-shadow .18s var(--ease); }
+        button:active { transform: scale(.98); }
         #studio {
             display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
-            height: 100dvh; min-height: 0;
+            height: 100dvh; min-height: 0; width: 100%; max-width: 100vw;
+            overflow: hidden;
             padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);
         }
         .studio-top {
-            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-            padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line);
-            min-height: 52px;
+            display: flex; align-items: center; gap: 10px; flex-wrap: nowrap;
+            padding: 8px 14px; min-height: var(--top-h); height: var(--top-h);
+            background: var(--chrome); border-bottom: 1px solid rgba(221, 227, 223, .9);
+            backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+            z-index: 12;
         }
         .studio-top .brand { flex: 0 0 auto; }
-        .studio-top .name-input { flex: 0 1 140px; min-width: 100px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: #fff; }
-        .studio-top__nav { flex: 1 1 280px; min-width: 0; overflow-x: auto; scrollbar-width: thin; }
-        .studio-top__actions { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; align-items: center; }
-        .studio-top__actions .btn-quiet { color: var(--muted); }
+        .studio-top .brand strong {
+            font-size: 15px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+        }
+        .studio-top .brand span { display: none; }
+        .studio-top .name-input {
+            flex: 1 1 140px; min-width: 96px; max-width: 220px;
+            border: 1px solid transparent; border-radius: var(--radius-sm); padding: 8px 12px;
+            background: rgba(255,255,255,.72); font-size: 13px; font-weight: 600;
+        }
+        .studio-top .name-input:focus {
+            outline: none; border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+            background: #fff; box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+        .studio-top__nav { flex: 0 0 auto; min-width: 0; margin-left: auto; }
+        .studio-top__actions { display: flex; gap: 6px; flex-wrap: nowrap; align-items: center; }
+        .studio-top__actions .btn { padding: 8px 12px; min-height: 36px; }
+        .studio-top__actions .btn-quiet { color: var(--muted); background: transparent; border-color: transparent; }
+        .studio-top__actions .btn-quiet:hover { background: rgba(18,24,22,.05); color: var(--ink); }
         footer.bar, .series {
             display: flex; align-items: center; gap: 8px; padding: 0 14px; background: var(--panel);
         }
         #room-plan-panel {
-            display: none; position: fixed; inset: 12px; z-index: 25; max-width: 1280px; margin: auto;
-            grid-template-rows: auto minmax(0, 1fr) auto; background: #f3f1ec; border: 1px solid var(--line); border-radius: 14px;
-            box-shadow: 0 18px 48px rgba(28,28,28,.2); min-height: 0;
+            display: none; position: fixed; inset: 0; z-index: 25; max-width: none; margin: 0;
+            grid-template-rows: auto auto minmax(0, 1fr) auto; background: #eceae6; border: 0; border-radius: 0;
+            box-shadow: none; min-height: 0; overflow: hidden;
+            padding-top: env(safe-area-inset-top);
         }
-        body.show-room-plan #room-plan-panel { display: grid; }
+        body.show-room-plan #room-plan-panel { display: grid; visibility: visible; }
+        body.show-room-plan .workspace,
+        body.show-room-plan .studio-top,
+        body.show-room-plan footer.bar { visibility: hidden; }
+        /* Panel .workspace içinde; visibility miras alınır — açıkça görünür tut */
+        body.show-room-plan .room-plan-backdrop,
+        body.show-room-plan #room-plan-panel,
+        body.show-room-plan #room-plan-panel * { visibility: visible; }
         .room-sketch-head {
-            display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px;
-            background: #fffcf8; border-bottom: 1px solid var(--line);
+            display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; padding: 8px 12px;
+            background: #fffcf8; border-bottom: 1px solid var(--line); min-height: 48px;
         }
-        .room-sketch-head strong { font-size: 15px; letter-spacing: .02em; }
-        .room-sketch-head .grow-h { flex: 1; min-width: 120px; font-size: 12px; color: var(--muted); margin: 0; }
+        .room-sketch-head strong { font-size: 14px; letter-spacing: .02em; white-space: nowrap; }
+        .room-sketch-head .grow-h { display: none; }
         .room-sketch-body {
-            display: grid; grid-template-columns: 148px minmax(0, 1fr); min-height: 0; min-width: 0;
+            display: grid; grid-template-columns: 196px minmax(0, 1fr); min-height: 0; min-width: 0; height: 100%; overflow: hidden;
         }
+        .room-sketch-wrap.room-sketch-body { grid-template-rows: minmax(0, 1fr); }
         @media (max-width: 720px) {
-            .room-sketch-body { grid-template-columns: 1fr; grid-template-rows: auto minmax(280px, 1fr); }
-            .room-sketch-tools { flex-direction: row !important; flex-wrap: wrap; border-right: 0 !important; border-bottom: 1px solid var(--line); }
+            .room-sketch-body,
+            .room-sketch-wrap.room-sketch-body {
+                grid-template-columns: 1fr;
+                grid-template-rows: minmax(0, 1fr) auto;
+            }
+            .room-sketch-wrap .room-sketch-stage { grid-row: 1; min-height: 240px; }
+            .room-sketch-wrap .room-sketch-tools {
+                grid-row: 2; flex-direction: row !important; flex-wrap: nowrap; align-items: stretch;
+                border-right: 0 !important; border-top: 1px solid var(--line); border-bottom: 0;
+                max-height: 148px; overflow: auto; padding: 8px; gap: 8px;
+            }
+            .room-sketch-wrap .sketch-kicker { display: none; }
+            .room-sketch-wrap .room-sketch-hint { display: none; }
+            .room-sketch-wrap .room-sketch-presets { display: flex; flex-wrap: nowrap; gap: 6px; }
+            .room-sketch-wrap .room-opening-presets button { min-height: 72px; min-width: 72px; padding: 6px; }
+            .room-sketch-wrap .room-sketch-tools > button { flex: 0 0 auto; white-space: nowrap; }
         }
         .room-sketch-tools {
-            display: flex; flex-direction: column; gap: 6px; padding: 10px; background: #fff; border-right: 1px solid var(--line);
+            display: flex; flex-direction: column; gap: 6px; padding: 10px; background: #fff; border-right: 1px solid var(--line); overflow: auto; min-height: 0;
         }
         .room-sketch-tools .sketch-kicker {
             margin: 8px 0 2px; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
         }
+        .room-sketch-tools .sketch-kicker:first-child { margin-top: 0; }
         .room-sketch-tools button {
             border: 1px solid var(--line); background: #fff; border-radius: 10px; padding: 8px 10px; font-size: 12px; font-weight: 700; text-align: left; cursor: pointer;
         }
         .room-sketch-tools button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
         .room-sketch-tools button.is-accent { background: var(--accent); color: #fff; border-color: var(--accent); }
-        .room-sketch-stage { position: relative; min-height: 0; min-width: 0; background: #ebe8e2; }
-        #room-sketch-canvas { width: 100%; height: 100%; min-height: 360px; display: block; touch-action: none; cursor: crosshair; }
+        .room-sketch-presets {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+        }
+        .room-sketch-presets button {
+            display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px; text-align: center; font-size: 11px;
+        }
+        .room-sketch-presets svg { width: 36px; height: 28px; display: block; }
+        .room-opening-presets { grid-template-columns: 1fr 1fr; gap: 8px; }
+        .room-opening-presets button {
+            border: 1px solid #d7dbe3; background: #fff; border-radius: 12px; padding: 10px 8px 8px;
+            display: flex; flex-direction: column; align-items: center; gap: 6px; min-height: 92px;
+        }
+        .room-opening-presets button .op-ico {
+            width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center;
+            background: #eef6fb; color: #3a6f9a;
+        }
+        .room-opening-presets button[data-opening-preset^="door_"] .op-ico { background: #f7f0e4; color: #8a6a3b; }
+        .room-opening-presets button .op-name { font-size: 12px; font-weight: 700; color: #243038; line-height: 1.1; }
+        .room-opening-presets button .op-sub { font-size: 10px; font-weight: 600; color: #8a929a; line-height: 1.2; }
+        .room-opening-presets button.is-on { background: #1c1c1c; border-color: #1c1c1c; }
+        .room-opening-presets button.is-on .op-name,
+        .room-opening-presets button.is-on .op-sub { color: #fff; }
+        .room-opening-presets button.is-on .op-ico { background: rgba(255,255,255,.12); color: #fff; }
+        .room-sketch-hint {
+            margin: 4px 0 0; font-size: 10px; line-height: 1.35; color: var(--muted); font-weight: 600;
+        }
+        .room-sketch-stage { position: relative; min-height: 0; min-width: 0; height: 100%; background: #ebe8e2; overflow: hidden; }
+        #room-sketch-selbar {
+            position: absolute; z-index: 6; display: none; align-items: center; gap: 0; flex-wrap: wrap;
+            max-width: min(420px, calc(100% - 16px));
+            padding: 4px; border-radius: 12px; background: #fff; border: 1px solid #e4e2dc;
+            box-shadow: 0 8px 24px rgba(28,28,28,.14); transform: translateZ(0);
+        }
+        #room-sketch-selbar label.sel-size {
+            display: flex; align-items: center; gap: 4px; padding: 0 4px;
+            font-size: 10px; font-weight: 700; color: #5e5953;
+        }
+        #room-sketch-selbar label.sel-size[hidden] { display: none; }
+        #room-sketch-selbar label.sel-size input {
+            width: 58px; height: 28px; border: 1px solid #e4e2dc; border-radius: 8px;
+            padding: 0 6px; font-size: 12px; font-weight: 700;
+        }
+        #room-sketch-selbar.is-visible { display: flex; }
+        #room-sketch-selbar button {
+            width: 34px; height: 34px; border: 0; background: transparent; border-radius: 8px;
+            display: grid; place-items: center; cursor: pointer; color: #2c2a27;
+        }
+        #room-sketch-selbar button:hover { background: #f3f1ec; }
+        #room-sketch-selbar button[data-sketch-sel="delete"] { color: #b42318; }
+        #room-sketch-selbar .sel-div { width: 1px; height: 18px; background: #e4e2dc; margin: 0 2px; }
+        #room-sketch-selbar svg { width: 16px; height: 16px; display: block; }
+        #room-sketch-canvas { width: 100%; height: 100%; min-height: 0; display: block; touch-action: none; cursor: crosshair; }
         #room-sketch-status {
             position: absolute; left: 10px; right: 10px; bottom: 10px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
             padding: 6px 10px; border-radius: 10px; background: rgba(255,252,248,.94); border: 1px solid var(--line); font-size: 11px; color: #5e5953;
@@ -86,128 +197,278 @@
         #room-sketch-status .room-sketch-zoom button {
             width: 26px; height: 26px; border-radius: 8px; border: 1px solid var(--line); background: #fff; font-weight: 700; cursor: pointer;
         }
-        .room-plan-backdrop { display: none; position: fixed; inset: 0; z-index: 24; background: rgba(28,28,28,.35); }
+        .room-plan-backdrop { display: none; position: fixed; inset: 0; z-index: 24; background: #1c1c1c; }
         body.show-room-plan .room-plan-backdrop { display: block; }
         .room-handoff {
-            display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; padding: 8px 12px;
-            background: #fffcf8; border-bottom: 1px solid var(--line); font-size: 12px;
+            display: none; gap: 8px; align-items: flex-end; flex-wrap: wrap; padding: 8px 12px;
+            background: #fffcf8; border-top: 1px solid var(--line); font-size: 12px;
         }
+        .room-handoff.is-open { display: flex; }
         .room-handoff label { display: flex; flex-direction: column; gap: 3px; font-weight: 600; color: #3d5247; }
         .room-handoff input[type="number"] { width: 72px; border: 1px solid #cfe0d6; border-radius: 8px; padding: 6px 8px; font-size: 12px; }
         .room-handoff button { border: 0; background: var(--accent); color: #fff; border-radius: 999px; padding: 7px 14px; font-weight: 700; cursor: pointer; font-size: 12px; }
         #openplan-frame, #openplan-studio-frame {
-            width: 100%; height: 100%; border: 0; background: #fff; min-height: 0;
+            width: 100%; height: 100%; border: 0; background: #1a2332; min-height: 0;
         }
+        .room-plan-openplan { min-height: 0; height: 100%; }
+        .room-plan-head-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
+        .room-plan-head-actions .btn-apply-plan {
+            border: 0; background: var(--accent); color: #fff; border-radius: 999px; padding: 7px 14px;
+            font-weight: 700; font-size: 12px; cursor: pointer; white-space: nowrap;
+        }
+        body.room-plan-openplan-mode #btn-room-redraw { display: none; }
+        body.room-plan-openplan-mode #room-module-rail { display: none !important; }
+        body.room-plan-openplan-mode #room-plan-panel {
+            grid-template-rows: minmax(0, 1fr) !important;
+        }
+        .room-module-rail {
+            display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+            background: #fffcf8; border-bottom: 1px solid var(--line); min-height: 64px;
+        }
+        .room-module-rail strong { font-size: 12px; white-space: nowrap; }
+        #room-module-rail-list { display: flex; gap: 6px; overflow-x: auto; min-width: 0; flex: 1; }
+        #room-module-rail-list button {
+            flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 2px;
+            width: 92px; padding: 4px; border: 1px solid var(--line); border-radius: 8px; background: #fff;
+            font-size: 10px; line-height: 1.15; text-align: center;
+        }
+        #room-module-rail-list button img { width: 72px; height: 40px; object-fit: contain; }
+        #room-module-rail-list button:hover { border-color: #1f6b4a; }
+        .room-plan-mode { margin-right: 0; }
+        .room-plan-mode button { opacity: .72; }
+        .room-plan-mode button.is-on { opacity: 1; }
         #studio-plan-first {
             display: none; position: fixed; left: 0; right: 0; bottom: 0; top: 0;
             z-index: 28; grid-template-rows: auto minmax(0, 1fr) auto; background: #eceae6;
-            padding-top: max(52px, calc(52px + env(safe-area-inset-top)));
+            padding-top: max(40px, calc(40px + env(safe-area-inset-top)));
         }
         body.studio-plan-first #studio-plan-first { display: grid; }
         body.studio-plan-first #room-plan-panel {
             position: fixed; left: 0; right: 0; bottom: 0; z-index: 29;
-            top: max(108px, calc(108px + env(safe-area-inset-top)));
+            top: max(48px, calc(48px + env(safe-area-inset-top)));
             width: auto; max-width: none; height: auto; max-height: none;
             border-radius: 0; transform: none; box-shadow: none;
             display: grid !important;
+            grid-template-rows: auto auto minmax(0, 1fr) auto;
+            overflow: hidden;
+            padding-top: 0;
+        }
+        body.studio-plan-first.room-plan-openplan-mode #room-plan-panel {
+            top: 0;
+            grid-template-rows: minmax(0, 1fr) !important;
+        }
+        body.room-plan-openplan-mode .room-sketch-head,
+        body.room-plan-openplan-mode #studio-plan-handoff,
+        body.studio-plan-first.room-plan-openplan-mode #studio-plan-first {
+            display: none !important;
+        }
+        body.studio-plan-first .workspace,
+        body.studio-plan-first .studio-top { visibility: hidden; }
+        body.studio-plan-first #studio-plan-first,
+        body.studio-plan-first #studio-plan-first *,
+        body.studio-plan-first #room-plan-panel,
+        body.studio-plan-first #room-plan-panel * { visibility: visible; }
+        body.studio-plan-first .room-sketch-body {
+            min-height: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        body.studio-plan-first .room-sketch-tools {
+            overflow: auto;
+            max-height: 100%;
         }
         body.studio-plan-first .room-plan-backdrop { display: none !important; }
         body.studio-plan-first #btn-close-room-plan { display: none; }
-        body.studio-plan-first #room-plan-mode { display: none; }
         body.studio-plan-first .room-sketch-head > strong,
         body.studio-plan-first .room-sketch-head > .grow-h { display: none; }
         .plan-first-head {
-            display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px;
+            display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; padding: 6px 10px;
             background: #fffcf8; border-bottom: 1px solid var(--line); font-size: 12px;
+            min-height: 44px;
         }
-        .plan-first-head p { margin: 0; flex: 1; min-width: 200px; color: var(--muted); }
-        .plan-first-head .btn-primary { background: var(--accent); color: #fff; border: 0; border-radius: 999px; padding: 8px 16px; font-weight: 700; }
+        .plan-first-head > strong { font-size: 13px; white-space: nowrap; }
+        .plan-first-head p { margin: 0; flex: 1; min-width: 0; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .plan-first-head .btn { padding: 6px 10px; font-size: 11px; }
+        .plan-first-head .btn-primary { background: var(--accent); color: #fff; border: 0; border-radius: 999px; padding: 7px 14px; font-weight: 700; white-space: nowrap; }
+        @media (max-width: 900px) {
+            .plan-first-head { flex-wrap: wrap; }
+            .plan-first-hint { display: none; }
+        }
         .plan-first-frame { min-height: 0; position: relative; display: none; }
         body.studio-plan-first .plan-first-frame { display: block; }
         .plan-first-foot.is-collapsed { display: none; }
         .plan-first-hint { margin: 0; font-size: 11px; color: var(--muted); max-width: 58ch; line-height: 1.45; }
         body.walk-mode #viewport { cursor: crosshair; }
         body.walk-locked #viewport { cursor: none; }
+        body.space-pan #viewport canvas { cursor: grab !important; }
+        body.space-pan #viewport canvas:active { cursor: grabbing !important; }
         body.walk-mode #walk-hud { display: flex; }
         #walk-hud {
             display: none; position: absolute; left: 12px; top: 12px; z-index: 12;
             padding: 8px 12px; border-radius: 10px; background: rgba(20, 24, 22, .78); color: #fff;
             font-size: 11px; font-weight: 600; gap: 8px; align-items: center; pointer-events: none;
         }
-        .room-plan-mode { display: flex; gap: 6px; margin-right: auto; }
+        .room-plan-mode { display: flex; gap: 6px; }
+        #room-plan-mode[hidden] { display: none !important; }
         .room-plan-mode button { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 11px; font-weight: 700; }
         .room-plan-mode button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
-        .room-plan-openplan { display: grid; grid-template-rows: 1fr; min-height: 320px; height: 100%; }
+        .room-plan-openplan { display: grid !important; grid-template-columns: 1fr !important; grid-template-rows: 1fr; min-height: 0; height: 100%; }
         .room-plan-openplan.hidden, .room-sketch-wrap.hidden { display: none !important; }
         .toolbar-spacer { flex: 1; min-width: 12px; }
         @media (max-width: 900px) {
             header.bar .extra { display: none; }
         }
         .series { display: none; }
-        footer.bar { border-top: 1px solid var(--line); justify-content: space-between; }
+        footer.bar {
+            border-top: 1px solid rgba(221, 227, 223, .95); justify-content: space-between;
+            background: var(--chrome); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+            min-height: 56px;
+        }
         .brand { display: flex; flex-direction: column; line-height: 1.1; text-decoration: none; color: inherit; }
         .brand strong { font-size: 13px; letter-spacing: .08em; }
         .brand span { font-size: 11px; color: var(--muted); }
         .name-input { border: 0; background: transparent; font-weight: 600; font-size: 14px; width: 160px; }
         .name-input:focus { outline: none; }
         .grow { flex: 1; }
-        .btn, .btn-primary { border-radius: 8px; border: 1px solid var(--line); background: #fff; padding: 7px 10px; font-size: 12px; font-weight: 600; }
-        .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-        .btn:disabled { opacity: .4; cursor: default; }
-        .series button { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+        .btn, .btn-primary {
+            border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--panel-strong);
+            padding: 8px 12px; font-size: 12px; font-weight: 600; letter-spacing: .01em;
+        }
+        .btn:hover { border-color: #c5cec8; }
+        .btn-primary {
+            background: var(--accent); color: #fff; border-color: var(--accent);
+            box-shadow: 0 6px 16px rgba(26, 122, 82, .22);
+        }
+        .btn-primary:hover { filter: brightness(1.05); }
+        .btn:disabled { opacity: .4; cursor: default; transform: none; box-shadow: none; }
+        .series button { border: 1px solid var(--line); background: #fff; border-radius: var(--radius-pill); padding: 6px 12px; font-size: 12px; font-weight: 600; white-space: nowrap; }
         .series button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
         .seg { display: flex; gap: 6px; flex-wrap: wrap; }
-        .seg button { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 7px 10px; font-size: 12px; font-weight: 600; }
+        .seg button { border: 1px solid var(--line); background: #fff; border-radius: var(--radius-sm); padding: 8px 12px; font-size: 12px; font-weight: 600; }
         .seg button.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
+        .seg-compact { gap: 4px; }
+        .seg-compact button { padding: 6px 9px; font-size: 11px; border-radius: 9px; }
         .workspace {
             display: grid; min-height: 0; position: relative;
             grid-template-columns: minmax(0, 1fr);
             grid-template-rows: minmax(0, 1fr);
         }
-        @media (min-width: 901px) {
-            .workspace {
-                grid-template-columns: min(300px, 28vw) minmax(0, 1fr) min(320px, 30vw);
-            }
+        /* Masaüstü */
+        @media (min-width: 1100px) {
+            .workspace { grid-template-columns: minmax(0, 1fr) min(340px, 28vw); }
         }
-        .stage { position: relative; min-width: 0; min-height: 0; background: #eceae6; grid-column: 1 / -1; grid-row: 1; }
-        @media (min-width: 901px) {
-            .stage { grid-column: 2; }
+        .stage {
+            position: relative; min-width: 0; min-height: 0; grid-column: 1 / -1; grid-row: 1;
+            background:
+                radial-gradient(120% 80% at 50% 0%, #f4f7f5 0%, transparent 55%),
+                linear-gradient(180deg, #e7ece9 0%, #dfe6e2 100%);
+        }
+        @media (min-width: 1100px) {
+            .stage { grid-column: 1; }
         }
         .stage-layout { position: absolute; inset: 0; min-height: 0; }
-        aside { background: var(--panel); min-height: 0; display: flex; flex-direction: column; z-index: 6; }
-        @media (min-width: 901px) {
-            aside.left {
-                grid-column: 1; grid-row: 1; border-right: 1px solid var(--line);
-                box-shadow: none;
-            }
-            aside.right {
-                grid-column: 3; grid-row: 1; border-left: 1px solid var(--line);
-                transform: none; position: relative; width: auto;
-            }
-            aside.right { display: flex; }
-            aside .sheet-close { display: none; }
+        aside {
+            background: var(--panel); min-height: 0; display: flex; flex-direction: column; z-index: 6;
         }
-        .side-head { padding: 12px 14px 0; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
-        .side-head .side-sub { display: block; font-size: 11px; font-weight: 500; text-transform: none; color: var(--muted); margin-top: 4px; }
-        .room-panel details { margin-bottom: 12px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: #fff; }
+        @media (min-width: 700px) {
+            aside.left {
+                position: absolute; top: 0; right: 0; bottom: 0;
+                width: min(360px, 42vw); grid-column: unset; grid-row: 1;
+                border-left: 1px solid var(--line); border-right: none;
+                border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+                box-shadow: var(--shadow-float);
+                transform: translateX(105%);
+                transition: transform .28s var(--ease);
+                z-index: 8; background: var(--panel-strong);
+            }
+            aside.left.is-open,
+            body.show-library aside.left { transform: none; }
+            aside.left .sheet-close {
+                display: block; margin: 12px 14px 0 auto; border: 1px solid var(--line); background: #fff;
+                border-radius: var(--radius-pill); padding: 8px 14px; font-size: 12px; font-weight: 700;
+            }
+            aside.left::before {
+                content: ""; position: absolute; left: 14px; top: 14px; width: 36px; height: 4px; border-radius: 99px;
+                background: #d5ddd8; opacity: .0;
+            }
+        }
+        @media (min-width: 1100px) {
+            aside.right {
+                grid-column: 2; grid-row: 1; border-left: 1px solid var(--line);
+                transform: none; position: relative; width: auto; display: flex;
+                background: color-mix(in srgb, var(--panel) 92%, #fff);
+            }
+            body.show-library aside.right { opacity: .4; pointer-events: none; filter: saturate(.85); }
+            aside.right .sheet-close { display: none; }
+        }
+        /* Tablet: inspector da sağ çekmece */
+        @media (min-width: 700px) and (max-width: 1099px) {
+            .workspace { grid-template-columns: minmax(0, 1fr); }
+            .stage { grid-column: 1; }
+            aside.right {
+                position: absolute; top: 0; right: 0; bottom: 0; width: min(380px, 46vw);
+                border-left: 1px solid var(--line); border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+                box-shadow: var(--shadow-float); transform: translateX(105%);
+                transition: transform .28s var(--ease); z-index: 7; background: var(--panel-strong);
+            }
+            aside.right.is-open,
+            body.show-custom:not(.show-library) aside.right { transform: none; }
+            aside.right .sheet-close { display: block; margin: 12px 14px 0 auto; border: 1px solid var(--line); background: #fff; border-radius: var(--radius-pill); padding: 8px 14px; font-size: 12px; font-weight: 700; }
+            body.show-library aside.right { transform: translateX(105%); }
+            .btn-add-module { display: inline-flex !important; }
+            #open-library-desk { display: none !important; }
+            footer.bar { gap: 10px; }
+        }
+        .side-head {
+            padding: 16px 16px 0; font-size: 11px; font-weight: 700; letter-spacing: .08em;
+            text-transform: uppercase; color: var(--muted);
+        }
+        .side-head .side-sub {
+            display: block; font-size: 12px; font-weight: 500; text-transform: none;
+            color: var(--muted); margin-top: 6px; letter-spacing: 0; line-height: 1.4;
+        }
+        .room-panel details { margin-bottom: 12px; border: 1px solid var(--line); border-radius: var(--radius-md); padding: 10px 12px; background: #fff; }
         .room-panel summary { cursor: pointer; font-weight: 700; font-size: 13px; }
-        .library-search { padding: 10px 12px 0; }
-        .library-search input { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: #fff; font-size: 13px; }
-        .side-body { padding: 12px; overflow: auto; min-height: 0; flex: 1; }
-        .side-foot { border-top: 1px solid var(--line); padding: 12px; flex: 0 0 auto; }
-        .side-foot .btn { width: 100%; }
-        .catalog { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .card { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 12px; background: #fff; padding: 6px; text-align: left; cursor: grab; touch-action: none; }
-        .card-add { align-self: flex-start; margin-top: 6px; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer; }
-        .card:hover { border-color: #c8c2b6; }
-        .card img { width: 100%; height: 168px; object-fit: contain; background: #fff; border-radius: 8px; }
+        .library-search { padding: 12px 16px 0; }
+        .library-search input {
+            width: 100%; border: 1px solid var(--line); border-radius: var(--radius-sm);
+            padding: 11px 14px; background: #fff; font-size: 14px;
+        }
+        .library-search input:focus {
+            outline: none; border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+        .side-body { padding: 14px 16px; overflow: auto; min-height: 0; flex: 1; }
+        .side-foot { border-top: 1px solid var(--line); padding: 14px 16px; flex: 0 0 auto; }
+        .side-foot .btn, .side-foot .btn-primary { width: 100%; min-height: 42px; }
+        .side-foot-stack { display: flex; flex-direction: column; gap: 8px; }
+        .btn-add-module {
+            border-radius: var(--radius-sm); border: 1px solid var(--accent); background: var(--accent); color: #fff;
+            padding: 9px 14px; font-size: 12px; font-weight: 700; margin-right: 8px;
+            box-shadow: 0 6px 16px rgba(26, 122, 82, .2);
+        }
+        @media (max-width: 699px) {
+            .btn-add-module, #open-library-desk { display: none !important; }
+        }
+        .catalog { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .card {
+            display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--radius-md);
+            background: #fff; padding: 8px; text-align: left; cursor: grab; touch-action: none;
+            transition: border-color .18s var(--ease), box-shadow .18s var(--ease), transform .18s var(--ease);
+        }
+        .card-add {
+            align-self: stretch; margin-top: 8px; border: 1px solid var(--line); background: var(--accent-soft);
+            color: var(--accent); border-radius: var(--radius-pill); padding: 8px 10px; font-size: 12px; font-weight: 700; cursor: pointer;
+        }
+        .card:hover { border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); box-shadow: var(--shadow); }
+        .card img { width: 100%; height: 150px; object-fit: contain; background: #f3f6f4; border-radius: var(--radius-sm); }
         .card-zoom { position: fixed; z-index: 40; width: min(440px, 48vw); padding: 10px; background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 18px 48px rgba(28, 28, 28, .18); pointer-events: none; }
         .card-zoom img { display: block; width: 100%; height: min(72vh, 760px); object-fit: contain; background: #f7f5f2; border-radius: 12px; }
         .card-zoom strong { display: block; margin-top: 8px; font-size: 14px; }
         .card-zoom span { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
         .catalog-switch { display: flex; gap: 6px; margin: 0 0 8px; }
         .catalog-switch button { flex: 1; border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 7px 6px; font-size: 12px; font-weight: 700; }
-        .catalog-switch button.is-on { background: #149152; color: #fff; border-color: #149152; }
+        .catalog-switch button.is-on { background: var(--accent); color: #fff; border-color: var(--accent); }
         .catalog-kicker { margin: 12px 0 6px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
         .card.is-broken { outline: 2px solid #c0392b; }
         .card strong { display: block; margin-top: 6px; font-size: 12px; font-weight: 600; }
@@ -222,59 +483,133 @@
         .parts-table { width: 100%; border-collapse: collapse; font-size: 10px; }
         .parts-table th, .parts-table td { border-bottom: 1px solid var(--line); padding: 4px 3px; text-align: left; vertical-align: top; }
         .parts-table th { color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
-        .insp-tabs { margin: 0 0 10px; }
-        .insp-tabs button { font-size: 11px; padding: 6px 8px; }
+        .insp-mod-head { margin: 0 0 8px; }
+        .insp-mod-head h2 { margin: 0 0 4px; font-size: 15px; }
+        .insp-mod-head .hint { margin: 0; font-size: 11px; line-height: 1.35; }
+        .insp-mod-head .picked { margin: 0 0 4px; }
+        .insp-tech { margin: 8px 0 0; border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; background: #fff; }
+        .insp-tech summary { cursor: pointer; font-size: 11px; font-weight: 700; color: var(--muted); }
+        .insp-tech p { margin: 6px 0 0; font-size: 11px; color: var(--muted); line-height: 1.4; }
+        .insp-tabs {
+            position: sticky; top: 0; z-index: 2; margin: 0 0 12px; padding: 8px 0 10px;
+            background: linear-gradient(180deg, var(--panel-strong) 70%, transparent);
+            flex-wrap: nowrap; overflow-x: auto; gap: 6px; scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        .insp-tabs::-webkit-scrollbar { display: none; }
+        .insp-tabs button {
+            flex: 0 0 auto; font-size: 12px; padding: 9px 12px; white-space: nowrap;
+            border-radius: var(--radius-pill); min-height: 36px;
+        }
         .insp-pane[hidden] { display: none !important; }
+        .insp-pane { min-height: 80px; padding-bottom: 12px; }
         .opacity-field input[type="range"] { width: 100%; }
         .parts li { margin: 0 0 8px; }
         .parts li.is-on { background: #e5f6ec; border: 2px solid #149152; border-radius: 8px; padding: 6px 8px; list-style-position: inside; }
         #viewport { position: absolute; inset: 0; }
         #viewport canvas { display: block; }
         #stage-toolbar {
-            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-            z-index: 5; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: center;
-            max-width: calc(100% - 24px); padding: 4px; border-radius: 999px;
-            background: rgba(255,252,248,.92); border: 1px solid var(--line); box-shadow: var(--shadow);
+            position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+            z-index: 5; display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; justify-content: center;
+            max-width: calc(100% - 28px); padding: 5px; border-radius: var(--radius-pill);
+            background: var(--chrome); border: 1px solid rgba(221,227,223,.95); box-shadow: var(--shadow);
+            backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+            overflow-x: auto; scrollbar-width: none;
         }
-        #stage-toolbar .seg { gap: 4px; }
-        #stage-toolbar button { border: 0; background: transparent; border-radius: 999px; padding: 7px 12px; font-size: 12px; font-weight: 700; }
+        #stage-toolbar::-webkit-scrollbar { display: none; }
+        #stage-toolbar .seg { gap: 4px; flex-wrap: nowrap; }
+        #stage-toolbar button {
+            border: 0; background: transparent; border-radius: var(--radius-pill);
+            padding: 9px 14px; font-size: 12px; font-weight: 700; white-space: nowrap; min-height: 36px;
+        }
         #stage-toolbar button.is-on { background: var(--ink); color: #fff; }
-        #stage-toolbar .tb-sep { width: 1px; height: 22px; background: var(--line); margin: 0 2px; }
-        #view-bar { position: absolute; left: 12px; bottom: 12px; z-index: 4; display: flex; flex-wrap: wrap; gap: 4px; max-width: min(360px, calc(100% - 24px)); }
-        #view-bar button { border: 1px solid var(--line); background: rgba(255,252,248,.94); border-radius: 999px; padding: 6px 10px; font-size: 11px; font-weight: 700; }
+        #stage-toolbar .tb-sep { width: 1px; height: 22px; background: var(--line); margin: 0 2px; flex: 0 0 auto; }
+        #view-bar {
+            position: absolute; left: 14px; bottom: 14px; z-index: 4;
+            display: flex; flex-wrap: wrap; gap: 6px; max-width: min(420px, calc(100% - 28px));
+            padding: 5px; border-radius: var(--radius-pill);
+            background: var(--chrome); border: 1px solid rgba(221,227,223,.9);
+            backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+            box-shadow: var(--shadow);
+        }
+        #view-bar button {
+            border: 0; background: transparent; border-radius: var(--radius-pill);
+            padding: 8px 12px; font-size: 11px; font-weight: 700; min-height: 34px;
+        }
+        #view-bar button.is-on { background: var(--ink); color: #fff; }
         body:not(.show-extra-views) #view-bar [data-view-extra] { display: none; }
         #plan-tools.inline { position: static; display: none; gap: 4px; }
         body.plan-2d #plan-tools.inline { display: flex; }
         #plan-board { position: absolute; inset: 0; z-index: 3; background: #f3f1ec; }
         #plan-board.hidden { display: none; }
         #plan-canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+        #plan-opening-size {
+            position: absolute; left: 12px; top: 12px; z-index: 6; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+            padding: 6px; border-radius: 12px; background: #fff; border: 1px solid var(--line); box-shadow: var(--shadow);
+        }
+        #plan-opening-size.hidden { display: none; }
+        #plan-opening-size label { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: var(--muted); }
+        #plan-opening-size label[hidden] { display: none; }
+        #plan-opening-size input { width: 64px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 13px; font-weight: 700; }
+        #plan-opening-size button { border: 0; background: #9f2d2d; color: #fff; border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 700; }
         body.plan-2d #view-bar, body.plan-2d #selection-ui, body.plan-2d #height-handle { display: none; }
         #measure-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
         .measure { position: absolute; transform: translate(-50%, -50%); background: #1f6b4a; color: #fff; font-size: 11px; font-weight: 700; line-height: 1.2; padding: 2px 6px; border-radius: 999px; white-space: nowrap; }
         .btn.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
-        #selection-ui, #height-handle, #quick-rail, #selection-bar { position: absolute; z-index: 9; }
+        #selection-ui, #height-handle, #quick-rail, #selection-bar, #radial-ring { position: absolute; z-index: 9; }
         #selection-ui { display: none; }
         #selection-bar {
-            left: 50%; bottom: 58px; transform: translateX(-50%);
-            display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center;
-            max-width: min(640px, calc(100% - 140px)); padding: 8px 12px; border-radius: 14px;
-            background: rgba(28, 28, 28, .93); box-shadow: var(--shadow); pointer-events: auto;
+            left: 50%; bottom: 78px; transform: translateX(-50%);
+            display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; justify-content: center;
+            max-width: min(420px, calc(100% - 160px)); padding: 6px 8px; border-radius: var(--radius-pill);
+            background: var(--chrome-ink); box-shadow: var(--shadow-float); pointer-events: auto;
+            backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
         }
         #selection-bar.hidden { display: none !important; }
-        body.plan-2d #selection-bar { display: none !important; }
+        body.plan-2d #selection-bar, body.plan-2d #radial-ring { display: none !important; }
         #selection-bar-name {
             font-size: 11px; font-weight: 700; color: #fff; max-width: 140px; white-space: nowrap;
             overflow: hidden; text-overflow: ellipsis; margin-right: 4px;
         }
         #selection-bar button {
-            border: 0; border-radius: 999px; padding: 7px 11px; font-size: 11px; font-weight: 700;
-            background: rgba(255,255,255,.14); color: #fff;
+            border: 0; border-radius: var(--radius-pill); padding: 9px 13px; font-size: 11px; font-weight: 700;
+            background: rgba(255,255,255,.14); color: #fff; min-height: 34px;
         }
         #selection-bar button.is-on { background: var(--accent); }
-        #selection-bar button.sb-danger { background: #9f2d2d; }
-        @media (max-width: 900px) {
-            #selection-bar { bottom: calc(118px + env(safe-area-inset-bottom)); max-width: calc(100% - 16px); }
+        #selection-bar button.sb-danger { background: var(--danger); }
+        /* Planner5D tarzı: seçim etrafında dairesel hızlı araçlar */
+        #radial-ring {
+            width: 0; height: 0; pointer-events: none;
+            transform: translate(-50%, -50%);
+        }
+        #radial-ring.hidden { display: none !important; }
+        #radial-ring button {
+            position: absolute; left: 0; top: 0; width: 42px; height: 42px; margin: 0;
+            border: 0; border-radius: 50%; pointer-events: auto;
+            background: #fff; color: #1a1a1a; box-shadow: 0 6px 18px rgba(0,0,0,.22);
+            font-size: 11px; font-weight: 800; line-height: 1; cursor: pointer;
+            display: grid; place-items: center;
+            transform: translate(-50%, -50%) rotate(var(--a)) translateY(var(--r, -78px)) rotate(calc(-1 * var(--a)));
+            transition: transform .18s var(--ease), background .15s ease, color .15s ease;
+        }
+        #radial-ring button:hover { background: var(--accent); color: #fff; }
+        #radial-ring button.sb-danger { color: #b42318; }
+        #radial-ring button.sb-danger:hover { background: var(--danger); color: #fff; }
+        #radial-ring .radial-core {
+            position: absolute; left: 0; top: 0; width: 10px; height: 10px; border-radius: 50%;
+            background: var(--accent); box-shadow: 0 0 0 3px rgba(31,107,74,.25);
+            transform: translate(-50%, -50%); pointer-events: none;
+        }
+        @media (max-width: 699px) {
+            #selection-bar { bottom: calc(148px + env(safe-area-inset-bottom)); max-width: calc(100% - 16px); }
             #selection-bar-name { display: none; }
+            #radial-ring { display: none !important; }
+        }
+        @media (min-width: 700px) {
+            #selection-bar { display: none !important; }
+        }
+        @media (min-width: 700px) and (max-width: 1099px) {
+            #radial-ring button { --r: -68px; width: 40px; height: 40px; }
         }
         #quick-rail {
             display: flex; flex-direction: column; gap: 4px; min-width: 44px; max-width: 52px;
@@ -291,7 +626,11 @@
         #quick-rail .qr-mini { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; }
         #quick-rail .qr-mini button { width: 18px; height: 18px; padding: 0; border-radius: 4px; border: 1px solid rgba(255,255,255,.35); }
         #hold-select { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 4; background: #1f6b4a; color: #fff; border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 600; pointer-events: none; }
-        .picked { display: inline-block; margin: 0 0 6px; background: #149152; color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; }
+        .picked {
+            display: inline-block; margin: 0 0 8px; background: var(--accent-soft); color: var(--accent);
+            font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+            padding: 4px 9px; border-radius: var(--radius-pill);
+        }
         #height-handle {
             width: 32px; height: 32px; border-radius: 50%; border: 1px solid #d5d0c6; background: #fff;
             transform: translate(-50%, -50%); font-size: 16px; box-shadow: var(--shadow);
@@ -299,13 +638,23 @@
         .warn { position: absolute; left: 12px; right: 12px; bottom: 12px; background: #fff6f4; color: var(--danger); border: 1px solid #f0c8c4; border-radius: 10px; padding: 8px 10px; font-size: 12px; z-index: 2; }
         .field { margin-bottom: 12px; }
         .field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
-        .field-key { margin-bottom: 14px; padding: 10px; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
-        .field-key > label { font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
-        .field input, .field select { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: #fff; font-size: 13px; }
-        .swatches { display: flex; flex-wrap: wrap; gap: 6px; }
-        .swatch { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #d5d0c8; }
-        .field-key .swatch { width: 36px; height: 36px; }
-        .swatch.is-on { box-shadow: 0 0 0 2px var(--accent); }
+        .field-key {
+            margin-bottom: 14px; padding: 12px; background: #fff; border: 1px solid var(--line);
+            border-radius: var(--radius-md);
+        }
+        .field-key > label { font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 10px; }
+        .field input, .field select {
+            width: 100%; border: 1px solid var(--line); border-radius: var(--radius-sm);
+            padding: 10px 12px; background: #fff; font-size: 14px; min-height: 42px;
+        }
+        .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+        .swatch {
+            width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff;
+            box-shadow: 0 0 0 1px #cfd6d1; transition: transform .15s var(--ease), box-shadow .15s var(--ease);
+        }
+        .field-key .swatch { width: 40px; height: 40px; }
+        .swatch:hover { transform: scale(1.06); }
+        .swatch.is-on { box-shadow: 0 0 0 2px var(--accent), 0 4px 12px rgba(26,122,82,.25); }
         .decors { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; max-height: 168px; overflow: auto; }
         .decor-kicker { grid-column: 1 / -1; margin: 4px 0 0; font-size: 11px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--muted); }
         .decor { display: flex; gap: 6px; align-items: center; border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 4px; text-align: left; }
@@ -328,49 +677,117 @@
         .check input { width: auto; }
         .mobile-nav { display: none; }
         .sheet-close, #project-sheet { display: none; }
-        @media (max-width: 900px) {
+        .dock-ico { width: 20px; height: 20px; display: block; margin: 0 auto 3px; }
+        .dock-ico svg { width: 100%; height: 100%; display: block; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+        /* Telefon */
+        @media (max-width: 699px) {
+            :root { --top-h: 48px; }
+            .studio-top { padding: 6px 10px; gap: 8px; }
             .studio-top__actions .extra, .studio-top__actions .btn-quiet { display: none; }
-            #stage-toolbar { top: auto; bottom: calc(120px + env(safe-area-inset-bottom)); left: 8px; right: 8px; transform: none; border-radius: 12px; }
+            #stage-toolbar {
+                top: auto; bottom: calc(86px + env(safe-area-inset-bottom));
+                left: 10px; right: 10px; transform: none; border-radius: var(--radius-md);
+                justify-content: flex-start;
+            }
             .workspace { display: flex; flex-direction: column; min-height: 0; grid-template-columns: 1fr; }
             .stage { position: relative; inset: auto; flex: 1 1 auto; min-height: 0; width: 100%; grid-column: 1; }
             aside.left, aside.right { grid-column: 1; }
             #viewport { min-height: 0; }
-            aside {
-                position: fixed; left: 0; right: 0; bottom: calc(72px + env(safe-area-inset-bottom));
-                height: min(42dvh, 380px); z-index: 20; transform: translateY(120%);
-                transition: transform .2s ease; border-radius: 16px 16px 0 0; box-shadow: var(--shadow);
+            aside.right {
+                position: fixed; left: 0; right: 0;
+                bottom: calc(var(--dock-h) + env(safe-area-inset-bottom));
+                height: min(58dvh, 520px); z-index: 20; transform: translateY(110%);
+                transition: transform .28s var(--ease);
+                border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+                box-shadow: var(--shadow-float); background: var(--panel-strong);
             }
-            aside.is-open { transform: none; }
+            aside.right.is-open,
             body.show-custom:not(.show-library) aside.right { transform: none; }
-            body.show-library:not(.show-custom) aside.right { transform: translateY(120%); }
-            body:not(.show-library):not(.show-custom) aside.right { transform: translateY(120%); }
-            body:not(.show-library):not(.show-custom) aside.left.is-open { transform: none; }
-            aside .sheet-close { display: block; margin: 8px 12px 0 auto; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 700; }
+            aside.right::before {
+                content: ""; position: absolute; left: 50%; top: 8px; width: 40px; height: 4px;
+                margin-left: -20px; border-radius: 99px; background: #d0d8d3;
+            }
+            aside.left {
+                position: fixed; top: 0; right: 0; left: auto;
+                bottom: calc(var(--dock-h) + env(safe-area-inset-bottom));
+                width: min(94vw, 400px); height: auto;
+                max-height: calc(100dvh - var(--dock-h) - env(safe-area-inset-bottom));
+                z-index: 21; transform: translateX(110%);
+                transition: transform .28s var(--ease);
+                border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+                box-shadow: var(--shadow-float); background: var(--panel-strong);
+            }
+            aside.left.is-open,
+            body.show-library aside.left { transform: none; }
+            body.show-library:not(.show-custom) aside.right { transform: translateY(110%); }
+            body:not(.show-library):not(.show-custom) aside.right { transform: translateY(110%); }
+            aside .sheet-close {
+                display: block; margin: 14px 14px 0 auto; border: 1px solid var(--line); background: #fff;
+                border-radius: var(--radius-pill); padding: 8px 14px; font-size: 12px; font-weight: 700;
+            }
             #project-sheet {
-                display: none; position: fixed; left: 0; right: 0; bottom: calc(72px + env(safe-area-inset-bottom));
-                z-index: 20; background: var(--panel); border-radius: 16px 16px 0 0; box-shadow: var(--shadow); padding: 12px;
+                display: none; position: fixed; left: 0; right: 0;
+                bottom: calc(var(--dock-h) + env(safe-area-inset-bottom));
+                z-index: 20; background: var(--panel-strong);
+                border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+                box-shadow: var(--shadow-float); padding: 14px;
             }
             #project-sheet.is-open { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-            .mobile-nav { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; width: 100%; }
-            .mobile-nav .btn { padding: 8px 4px; font-size: 11px; }
-            footer.bar { display: block; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
-            footer.bar .stat, footer.bar #btn-quote { display: none; }
-            #view-bar { top: auto; bottom: calc(58px + env(safe-area-inset-bottom)); left: 8px; right: 8px; max-width: none; flex-wrap: nowrap; overflow-x: auto; gap: 4px; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent); }
+            footer.bar {
+                display: block; padding: 0; border: 0; background: transparent;
+                min-height: 0; position: relative; z-index: 22;
+            }
+            footer.bar .stat, footer.bar #btn-quote, footer.bar .btn-add-module { display: none; }
+            .mobile-nav {
+                display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px;
+                width: auto; margin: 0 8px calc(8px + env(safe-area-inset-bottom));
+                padding: 6px; border-radius: 22px;
+                background: var(--chrome-ink); box-shadow: var(--shadow-float);
+                backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+                box-sizing: border-box;
+            }
+            .mobile-nav .btn {
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                gap: 1px; min-height: var(--touch); padding: 6px 2px;
+                border: 0; background: transparent; color: rgba(255,255,255,.7);
+                border-radius: 16px; font-size: 10px; font-weight: 700;
+            }
+            body.show-library .mobile-nav #open-library,
+            body.show-custom .mobile-nav #open-material,
+            body.show-custom .mobile-nav #open-doors,
+            body.show-custom .mobile-nav #open-measures {
+                background: rgba(255,255,255,.12); color: #fff;
+            }
+            #view-bar {
+                top: auto; bottom: calc(78px + env(safe-area-inset-bottom));
+                left: 10px; right: 10px; max-width: none; flex-wrap: nowrap;
+                overflow-x: auto; gap: 4px; scrollbar-width: none;
+                border-radius: var(--radius-md); justify-content: flex-start;
+            }
             #view-bar::-webkit-scrollbar { display: none; }
-            #view-bar button { padding: 6px 8px; font-size: 11px; }
-            .name-input { width: min(42vw, 180px); }
-            body[data-sheet="material"] #inspector-body > :not([data-picker]) { display: none; }
-            body[data-sheet="doors"] #inspector-body > :not(:has([data-door], [data-swing], #mod-open)) { display: none; }
-            body[data-sheet="measure"] #inspector-body > :not(:has(#wall-left, #wall-front, #wall-right, #room-h, #cab-h, #cab-d, #mod-w, #mod-h)) { display: none; }
+            .name-input, .studio-top .name-input { width: min(38vw, 160px); max-width: 160px; }
+            .card img { height: 132px; }
+        }
+        @media (min-width: 700px) and (max-width: 1099px) {
+            .studio-top__actions .extra { display: none; }
+            .mobile-nav { display: none !important; }
+            footer.bar { padding: 10px 16px; }
+            #open-library-desk { display: none !important; }
+            .btn-add-module { display: inline-flex !important; }
+        }
+        @media (min-width: 1100px) {
+            .mobile-nav { display: none !important; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            button, aside.left, aside.right { transition: none !important; }
         }
     </style>
 </head>
-<body class="studio-layout">
+<body class="studio-layout studio-plan-first show-room-plan room-plan-openplan-mode">
 <div id="studio">
     <div class="studio-top">
-        <a href="{{ route('wardrobe.index') }}" class="brand"><strong>3D tasarla</strong></a>
+        <a href="{{ route('wardrobe.design') }}" class="brand" title="3D tasarla"><strong>Meemare</strong></a>
         <input id="project-name" class="name-input" maxlength="80" aria-label="Proje adı" value="Dolabım">
-        <div class="studio-top__nav">@include('partials.meemare-apps-nav', ['activeApp' => 'tasarla'])</div>
         <div class="studio-top__actions">
             <button type="button" class="btn" id="btn-undo" disabled title="Geri">↶</button>
             <button type="button" class="btn" id="btn-redo" disabled title="İleri">↷</button>
@@ -380,22 +797,30 @@
             <button type="button" class="btn btn-quiet extra" id="btn-measures">Ölçü</button>
             <button type="button" class="btn btn-quiet is-on extra" id="btn-lights" title="Işık">💡</button>
             <button type="button" class="btn btn-quiet extra" id="btn-cabinet">Üretim</button>
-            <button type="button" class="btn btn-quiet extra" id="btn-shot">Render</button>
+            <button type="button" class="btn btn-quiet extra" id="btn-shot">Görüntü</button>
         </div>
+        <div class="studio-top__nav">@include('partials.meemare-apps-nav', ['activeApp' => 'tasarla', 'compact' => true])</div>
     </div>
+    <script>
+        document.addEventListener('click', (event) => {
+            document.querySelectorAll('details.meemare-apps--compact[open]').forEach((node) => {
+                if (!node.contains(event.target)) node.removeAttribute('open');
+            });
+        });
+    </script>
     <div id="studio-plan-first" aria-label="Oda planı — dolap tasarla">
         <div class="plan-first-head">
-            <strong>2. Odayı çizin</strong>
-            <p class="plan-first-hint">Bu ekran <strong>dolap tasarla</strong> içinde: duvar, kapı ve pencere çizin (W / D / P). Bitince yeşil düğme ile modül dizimine geçin.</p>
+            <strong>2. Oda planı</strong>
+            <p class="plan-first-hint">Kapı veya pencereyi seçin, genişlik ve yüksekliği değiştirin. Bitince 3D düzenlemeye geçin.</p>
             <button type="button" class="btn" id="btn-plan-fullscreen" title="Tam ekran">Tam ekran</button>
-            <button type="button" class="btn" id="btn-plan-toggle-handoff">Ölçü / JSON</button>
+            <button type="button" class="btn" id="btn-plan-toggle-handoff">Ölçü / dosya</button>
             <button type="button" class="btn" id="btn-plan-skip">Ölçüyü atla</button>
-            <button type="button" class="btn-primary" id="btn-plan-to-3d">Modül dizimine geç →</button>
+            <button type="button" class="btn-primary" id="btn-plan-to-3d">3D düzenlemeye geç →</button>
         </div>
         <div class="plan-first-frame" aria-hidden="true"></div>
         <form class="room-handoff plan-first-foot is-collapsed" id="studio-plan-first-handoff" style="border-top:1px solid var(--line)">
-            <p style="margin:0;flex:1;font-size:12px;color:var(--muted)">Export veya ölçü girip geçebilirsiniz.</p>
-            <label>JSON<input id="studio-plan-first-json" type="file" accept="application/json,.json"></label>
+            <p style="margin:0;flex:1;font-size:12px;color:var(--muted)">Ölçü dosyasını yükleyin veya elle girin.</p>
+            <label>Dosya<input id="studio-plan-first-json" type="file" accept="application/json,.json"></label>
             <label>Ön<input name="onduvar" type="number" min="80" max="800" value="300"></label>
             <label>Sol<input name="solduvar" type="number" min="80" max="800" value="300"></label>
             <label>Sağ<input name="sagduvar" type="number" min="80" max="800" value="300"></label>
@@ -419,57 +844,156 @@
         <section class="stage">
             <div id="room-plan-panel" aria-label="Oda planı" role="dialog">
                 <div class="room-sketch-head">
-                    <div class="room-plan-mode" id="room-plan-mode">
-                        <button type="button" data-room-plan-mode="sketch" class="is-on">Oda çizimi</button>
-                        <button type="button" data-room-plan-mode="openplan">Plan (OpenPlan)</button>
+                    <strong>Oda planı</strong>
+                    <div class="room-plan-mode" id="room-plan-mode" hidden></div>
+                    <div class="room-plan-head-actions">
+                        <a class="btn" href="{{ route('wardrobe.index') }}">Projeler</a>
+                        <button type="button" class="btn" id="btn-room-measures" title="Ölçü veya dosya">Ölçü</button>
+                        <button type="button" class="btn" id="btn-room-redraw">Yeniden çiz</button>
+                        <button type="button" class="btn-apply-plan" id="btn-apply-plan-header">3D düzenlemeye geç</button>
+                        <button type="button" class="btn" id="btn-close-room-plan">Kapat</button>
                     </div>
-                    <strong>Odayı çiz</strong>
-                    <p class="grow-h">Duvar, kapı ve pencere — dolap tasarlama içinde. Plan sekmesi yalnızca yerel OpenPlan varsa.</p>
-                    <button type="button" class="btn" id="btn-room-redraw">Yeniden çiz</button>
-                    <button type="button" class="btn" id="btn-close-room-plan">Kapat</button>
                 </div>
-                <div id="room-plan-openplan" class="room-plan-openplan room-sketch-body hidden">
-                    <iframe id="openplan-frame" title="OpenPlan" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen; clipboard-read; clipboard-write"></iframe>
+                <div id="room-module-rail" class="room-module-rail" aria-label="Dolap modülleri">
+                    <strong>Dolaplar</strong>
+                    <div id="room-module-rail-list"></div>
                 </div>
-                <div id="room-plan-sketch-wrap" class="room-sketch-wrap room-sketch-body">
-                    <aside class="room-sketch-tools" aria-label="Plan araçları">
-                        <p class="sketch-kicker">Araçlar</p>
-                        <button type="button" data-sketch-tool="select" class="is-on">Seç / kaydır</button>
+                <div id="room-plan-openplan" class="room-plan-openplan room-sketch-body">
+                    <iframe id="openplan-frame" name="meemare-studio-plan" title="Oda planı" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen; clipboard-read; clipboard-write"></iframe>
+                </div>
+                <div id="room-plan-sketch-wrap" class="room-sketch-wrap room-sketch-body hidden">
+                    <aside class="room-sketch-tools" aria-label="Oda araçları">
+                        <p class="sketch-kicker">Çizim</p>
+                        <button type="button" data-sketch-tool="select" class="is-on">Seç (V)</button>
                         <button type="button" data-sketch-tool="wall">Duvar çiz (W)</button>
-                        <button type="button" data-sketch-tool="door">Kapı</button>
-                        <button type="button" data-sketch-tool="window">Pencere</button>
-                        <p class="sketch-kicker">Şablon</p>
-                        <button type="button" id="btn-sketch-l">L giyinme odası</button>
-                        <button type="button" id="btn-sketch-rect">Dikdörtgen oda</button>
+                        <button type="button" id="btn-sketch-finish-draw">Çizimi bitir (Esc)</button>
+                        <p class="sketch-kicker">Oda şablonları</p>
+                        <div class="room-sketch-presets">
+                            <button type="button" id="btn-sketch-rect" title="Dikdörtgen oda">
+                                <svg viewBox="0 0 40 30" aria-hidden="true"><rect x="6" y="5" width="28" height="20" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>
+                                Dikdörtgen
+                            </button>
+                            <button type="button" id="btn-sketch-l" title="L oda">
+                                <svg viewBox="0 0 40 30" aria-hidden="true"><path d="M8 5h14v12h10v8H8z" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>
+                                L oda
+                            </button>
+                            <button type="button" id="btn-sketch-u" title="U oda">
+                                <svg viewBox="0 0 40 30" aria-hidden="true"><path d="M8 5h8v14h8V5h8v20H8z" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>
+                                U oda
+                            </button>
+                            <button type="button" id="btn-sketch-t" title="T oda">
+                                <svg viewBox="0 0 40 30" aria-hidden="true"><path d="M6 5h28v8H26v12H14V13H6z" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>
+                                T oda
+                            </button>
+                        </div>
                         <button type="button" id="btn-sketch-clear">Temizle</button>
+                        <p class="sketch-kicker">Kapılar</p>
+                        <div class="room-sketch-presets room-opening-presets">
+                            <button type="button" data-opening-preset="door_single" class="is-on" title="Tek kanat 90 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M8 6h4v18H8zM12 6v18" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 6a14 14 0 0 1 14 14" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></span>
+                                <span class="op-name">Tek kanat</span><span class="op-sub">90 cm</span>
+                            </button>
+                            <button type="button" data-opening-preset="door_double" title="Çift kanat 150 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M6 6h4v18H6zM30 6h4v18h-4z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 6a10 10 0 0 1 10 10M30 6a10 10 0 0 0-10 10" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></span>
+                                <span class="op-name">Çift kanat</span><span class="op-sub">150 cm</span>
+                            </button>
+                            <button type="button" data-opening-preset="door_sliding" title="Sürgülü 180 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><rect x="6" y="8" width="16" height="14" fill="none" stroke="currentColor" stroke-width="2"/><rect x="18" y="10" width="14" height="10" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 15h18" stroke="currentColor" stroke-width="1.4"/></svg></span>
+                                <span class="op-name">Sürgülü</span><span class="op-sub">180 cm</span>
+                            </button>
+                            <button type="button" data-opening-preset="door_french" title="Camlı kapı 150 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M8 6h8v18H8zM24 6h8v18h-8z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 12h8M8 18h8M24 12h8M24 18h8" stroke="currentColor" stroke-width="1.2"/></svg></span>
+                                <span class="op-name">Camlı kapı</span><span class="op-sub">150 cm</span>
+                            </button>
+                            <button type="button" data-opening-preset="door_pocket" title="Gizli kapı 90 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M6 6v18M12 6h4v18h-4z" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
+                                <span class="op-name">Gizli kapı</span><span class="op-sub">90 cm</span>
+                            </button>
+                            <button type="button" data-opening-preset="door_bifold" title="Katlanır kapı 180 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M6 6h5v18H6zM16 6h5v18h-5zM26 6h5v18h-5z" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
+                                <span class="op-name">Katlanır</span><span class="op-sub">180 cm</span>
+                            </button>
+                            <button type="button" data-opening-preset="door_opening" title="Boş açıklık 100 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M12 6v18M28 6v18" fill="none" stroke="currentColor" stroke-width="2.5"/></svg></span>
+                                <span class="op-name">Açıklık</span><span class="op-sub">100 cm</span>
+                            </button>
+                            <button type="button" data-opening-preset="door_garage" title="Garaj kapısı 240 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><rect x="8" y="7" width="24" height="16" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11h24M8 15h24M8 19h24" stroke="currentColor" stroke-width="1.3"/></svg></span>
+                                <span class="op-name">Garaj</span><span class="op-sub">240 cm</span>
+                            </button>
+                        </div>
+                        <p class="sketch-kicker">Pencereler</p>
+                        <div class="room-sketch-presets room-opening-presets">
+                            <button type="button" data-opening-preset="window_std" title="Standart pencere 120 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><rect x="8" y="8" width="24" height="14" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 12h24M8 18h24M20 8v14" stroke="currentColor" stroke-width="1.4"/></svg></span>
+                                <span class="op-name">Standart</span><span class="op-sub">120×120 cm</span>
+                            </button>
+                            <button type="button" data-opening-preset="window_fixed" title="Sabit pencere 100 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><rect x="10" y="9" width="20" height="12" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 15h20M20 9v12" stroke="currentColor" stroke-width="1.4"/></svg></span>
+                                <span class="op-name">Sabit</span><span class="op-sub">100×100 cm</span>
+                            </button>
+                            <button type="button" data-opening-preset="window_casement" title="Kanatlı pencere 80 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><rect x="12" y="6" width="16" height="18" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 15h16M20 6v18" stroke="currentColor" stroke-width="1.4"/></svg></span>
+                                <span class="op-name">Kanatlı</span><span class="op-sub">80×130 cm</span>
+                            </button>
+                            <button type="button" data-opening-preset="window_sliding" title="Sürgülü pencere 180 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><rect x="4" y="9" width="32" height="12" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 15h32M20 9v12" stroke="currentColor" stroke-width="1.4"/></svg></span>
+                                <span class="op-name">Sürgülü</span><span class="op-sub">180×120 cm</span>
+                            </button>
+                            <button type="button" data-opening-preset="window_bay" title="Çıkma pencere 200 cm">
+                                <span class="op-ico"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M6 20h28M10 20l4-10h12l4 10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M14 10v10M26 10v10M20 10v10" stroke="currentColor" stroke-width="1.2"/></svg></span>
+                                <span class="op-name">Çıkma</span><span class="op-sub">200×120 cm</span>
+                            </button>
+                        </div>
+                        <p class="room-sketch-hint" id="room-sketch-tool-hint">Kapı/pencere kartı seçip duvara tıklayın. Seçince uçlardan çekin veya genişlik ve yüksekliği yazın.</p>
                     </aside>
                     <div class="room-sketch-stage">
                         <canvas id="room-sketch-canvas" aria-label="Oda planı tuvali"></canvas>
+                        <div id="room-sketch-selbar" aria-hidden="true">
+                            <label class="sel-size" data-opening-size="width">Genişlik<input id="opening-width" type="number" min="40" max="400" step="1" aria-label="Kapı veya pencere genişliği"></label>
+                            <label class="sel-size" data-opening-size="height">Yükseklik<input id="opening-height" type="number" min="40" max="300" step="1" aria-label="Kapı veya pencere yüksekliği"></label>
+                            <label class="sel-size" data-opening-size="sill" hidden>Eşik<input id="opening-sill" type="number" min="0" max="220" step="1" aria-label="Pencere eşik yüksekliği"></label>
+                            <button type="button" data-sketch-sel="copy" title="Kopyala">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="10" height="10" rx="1.5"/><path d="M5 15V5h10"/></svg>
+                            </button>
+                            <button type="button" data-sketch-sel="flip" title="Ayna">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4v16"/><path d="M8 8H5l3 4-3 4h3M16 8h3l-3 4 3 4h-3" stroke-dasharray="0"/><path d="M12 4v16" stroke-dasharray="2 2"/></svg>
+                            </button>
+                            <span class="sel-div" aria-hidden="true"></span>
+                            <button type="button" data-sketch-sel="delete" title="Sil">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
+                            </button>
+                        </div>
                         <div id="room-sketch-status"></div>
                     </div>
                 </div>
-                <form id="studio-plan-handoff" class="room-handoff">
-                    <p style="margin:0;flex:1;min-width:160px;color:#5e6a64;font-size:12px">Ölçüler çizimden gelir; gerekirse düzeltin.</p>
-                    <label>JSON<input id="studio-plan-json" type="file" accept="application/json,.json"></label>
-                    <label>Ön (cm)<input name="onduvar" type="number" min="80" max="800" value="320" required></label>
-                    <label>Sol (cm)<input name="solduvar" type="number" min="80" max="800" value="280"></label>
-                    <label>Sağ (cm)<input name="sagduvar" type="number" min="80" max="800" value="280"></label>
-                    <label>Yükseklik<input name="odaboy" type="number" min="160" max="320" value="280"></label>
-                    <button type="submit" class="is-accent" style="background:var(--accent);color:#fff;border:0;border-radius:999px;padding:7px 14px;font-weight:700">3D odaya uygula</button>
+                <form id="studio-plan-handoff" class="room-handoff" aria-label="Ölçü ayarı">
+                    <label>Dosya<input id="studio-plan-json" type="file" accept="application/json,.json"></label>
+                    <label>Ön (cm)<input name="onduvar" type="number" min="80" max="800" value="300" required></label>
+                    <label>Sol (cm)<input name="solduvar" type="number" min="80" max="800" value="300"></label>
+                    <label>Sağ (cm)<input name="sagduvar" type="number" min="80" max="800" value="300"></label>
+                    <label>Yükseklik<input name="odaboy" type="number" min="160" max="320" value="320"></label>
                     <button type="button" id="btn-sketch-apply" class="btn-mini" style="background:#1c1c1c">Çizimi uygula</button>
                     <button type="button" class="btn-mini" id="btn-apply-room-handoff" style="background:#444">Kayıtlı ölçü</button>
+                    <button type="submit" class="is-accent" style="background:var(--accent);color:#fff;border:0;border-radius:999px;padding:7px 14px;font-weight:700;margin-left:auto">3D odaya uygula</button>
                 </form>
             </div>
             <div class="stage-layout">
             <div id="viewport"></div>
-            <div id="walk-hud" aria-hidden="true">WASD · Shift koş · Esc çıkış</div>
+            <div id="walk-hud" aria-hidden="true">W A S D · Shift hız · Esc çıkış</div>
             <div id="plan-board" class="hidden">
                 <canvas id="plan-canvas"></canvas>
+                <form id="plan-opening-size" class="hidden" aria-label="Kapı veya pencere ölçüsü">
+                    <label>Genişlik <input id="plan-open-w" type="number" min="40" max="400" step="1"></label>
+                    <label>Yükseklik <input id="plan-open-h" type="number" min="40" max="300" step="1"></label>
+                    <label data-plan-sill>Eşik <input id="plan-open-sill" type="number" min="0" max="220" step="1"></label>
+                    <button type="button" id="plan-open-delete">Sil</button>
+                </form>
             </div>
             <div id="stage-toolbar" aria-label="Sahne araçları">
                 <div class="seg" id="plan-switch">
                     <button type="button" data-plan="3d" class="is-on">3D</button>
-                    <button type="button" data-plan="2d">Yerleşim</button>
+                    <button type="button" data-plan="2d">2D</button>
                 </div>
                 <span class="tb-sep" aria-hidden="true"></span>
                 <div id="plan-tools" class="inline">
@@ -478,20 +1002,25 @@
                     <button type="button" data-plan-tool="window">Pencere</button>
                 </div>
                 <span class="tb-sep" aria-hidden="true"></span>
-                <button type="button" id="btn-modules">Katalog</button>
+                <button type="button" id="btn-modules" title="Modül kataloğu">Modül Ekle</button>
                 <button type="button" id="btn-room-plan">Oda</button>
                 <button type="button" id="btn-guides" class="is-on" title="Kılavuz çizgileri">Izgara</button>
                 <button type="button" id="btn-demo-dressing" title="Örnek L giyinme">Örnek</button>
             </div>
             <div id="selection-bar" class="hidden" aria-label="Seçili modül">
                 <span id="selection-bar-name"></span>
-                <button type="button" data-sb-door="solid">Ahşap</button>
-                <button type="button" data-sb-door="glass">Cam</button>
-                <button type="button" data-sb-door="none">Kapaksız</button>
-                <button type="button" data-sb="open">Kapak</button>
-                <button type="button" data-sb="clone">Klon</button>
+                <button type="button" data-sb="open" title="Kapağı aç/kapat">Aç</button>
+                <button type="button" data-sb="clone">Kopya</button>
                 <button type="button" data-sb="delete" class="sb-danger">Sil</button>
-                <button type="button" data-sb="panel">Detay</button>
+            </div>
+            <div id="radial-ring" class="hidden" aria-label="Seçim araçları">
+                <span class="radial-core" aria-hidden="true"></span>
+                <button type="button" data-sb="open" style="--a: -90deg" title="Kapak aç/kapat">Kapak</button>
+                <button type="button" data-sb="clone" style="--a: -30deg" title="Kopyala">Kopya</button>
+                <button type="button" data-sb="panel" style="--a: 30deg" title="Özellikler">Özellik</button>
+                <button type="button" data-sb="delete" class="sb-danger" style="--a: 90deg" title="Sil">Sil</button>
+                <button type="button" data-sb-door="wood" style="--a: 150deg" title="Ahşap kapak">Ahşap</button>
+                <button type="button" data-sb-door="glass" style="--a: 210deg" title="Cam kapak">Cam</button>
             </div>
             <div id="view-bar" aria-label="Kamera">
                 <button type="button" data-view="perspective" class="is-on">3D</button>
@@ -504,15 +1033,12 @@
             <div id="measure-layer" class="hidden"></div>
             <div id="selection-ui" class="hidden" aria-hidden="true"><span id="selection-name"></span></div>
             <div id="quick-rail" class="hidden" aria-label="Hızlı işlemler">
-                <button type="button" data-qr-door="solid" title="Ahşap kapak">Ahşap</button>
-                <button type="button" data-qr-door="glass" title="Cam kapak">Cam</button>
                 <div class="qr-mini" id="qr-wood-sw"></div>
                 <div class="qr-mini" id="qr-glass-sw"></div>
                 <div class="qr-mini" id="qr-alum-sw"></div>
                 <button type="button" data-qr="open" title="Kapak aç/kapa">Kapak</button>
-                <button type="button" data-qr="clone" title="Klonla">Klon</button>
+                <button type="button" data-qr="clone" title="Kopyala">Kopya</button>
                 <button type="button" data-qr="delete" class="qr-danger" title="Sil">Sil</button>
-                <button type="button" data-qr="panel" title="Sağ panel">Ayar</button>
             </div>
             <button type="button" id="height-handle" class="hidden" aria-label="Yükseklik">↕</button>
             <div id="hold-select" class="hidden"></div>
@@ -521,22 +1047,39 @@
         </section>
         <aside class="right" id="inspector">
             <button type="button" class="sheet-close" id="close-inspector">Kapat</button>
-            <div class="side-head"><span id="inspector-title">Oda</span><span class="side-sub" id="inspector-sub">Duvar ölçüsü · soldan modül ekleyin</span></div>
+            <div class="side-head"><span id="inspector-title">Oda</span><span class="side-sub" id="inspector-sub">Duvar ölçüsü · Modül Ekle ile katalog açılır</span></div>
             <div class="side-body" id="inspector-body"></div>
-            <div class="side-foot">
+            <div class="side-foot side-foot-stack">
+                <button type="button" class="btn-primary" id="open-library-desk">Modül Ekle</button>
                 <button type="button" class="btn" id="btn-production">Üretim listesi</button>
             </div>
         </aside>
     </div>
     <footer class="bar">
         <div class="stat" id="summary"></div>
-        <div class="mobile-nav">
-            <button type="button" class="btn" id="open-library">Modül Ekle</button>
-            <button type="button" class="btn" id="open-material">Malzeme</button>
-            <button type="button" class="btn" id="open-doors">Kapaklar</button>
-            <button type="button" class="btn" id="open-measures">Ölçüler</button>
-            <button type="button" class="btn" id="open-project">Proje</button>
-        </div>
+        <button type="button" class="btn btn-add-module" id="open-library-bar">Modül Ekle</button>
+        <nav class="mobile-nav" aria-label="Mobil araçlar">
+            <button type="button" class="btn" id="open-library">
+                <span class="dock-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>
+                <span class="dock-label">Modül</span>
+            </button>
+            <button type="button" class="btn" id="open-material">
+                <span class="dock-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></span>
+                <span class="dock-label">Malzeme</span>
+            </button>
+            <button type="button" class="btn" id="open-doors">
+                <span class="dock-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M15 12h.01"/></svg></span>
+                <span class="dock-label">Kapak</span>
+            </button>
+            <button type="button" class="btn" id="open-measures">
+                <span class="dock-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20 20 4"/><path d="M14 4h6v6M10 20H4v-6"/></svg></span>
+                <span class="dock-label">Ölçü</span>
+            </button>
+            <button type="button" class="btn" id="open-project">
+                <span class="dock-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16v12H4z"/><path d="M8 7V5h8v2"/></svg></span>
+                <span class="dock-label">Proje</span>
+            </button>
+        </nav>
         <button type="button" class="btn-primary" id="btn-quote">Fiyat teklifi al</button>
     </footer>
 </div>
@@ -547,7 +1090,7 @@
     <button type="button" class="btn" id="sheet-saved">Kayıtlar</button>
     <button type="button" class="btn" id="sheet-share">Paylaş</button>
     <button type="button" class="btn" id="sheet-quote">Fiyat teklifi</button>
-    <button type="button" class="btn" id="sheet-shot">Render al</button>
+    <button type="button" class="btn" id="sheet-shot">Görüntü al</button>
     <button type="button" class="sheet-close" id="close-project">Kapat</button>
 </div>
 
@@ -649,8 +1192,8 @@
         openplanSrc: @json($openplanSrc ?? ''),
     };
 </script>
-<script src="{{ asset('js/meemare-plan-bridge.js') }}?v=5" defer></script>
-<script src="{{ asset('js/openplan-import.js') }}?v=1" defer></script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=240"></script>
+<script src="{{ asset('js/meemare-plan-bridge.js') }}?v=7" defer></script>
+<script src="{{ asset('js/openplan-import.js') }}?v=2" defer></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=298"></script>
 </body>
 </html>

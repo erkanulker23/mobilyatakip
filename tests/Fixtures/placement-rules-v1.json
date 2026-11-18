@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "cmToMm": 10,
+  "overlapMm": 4,
+  "roomSlackMm": 15,
+  "snapDistanceMm": 120,
+  "neighborSnapMm": 150,
+  "assemblyGapMm": 0,
+  "cellMm": 500
+}

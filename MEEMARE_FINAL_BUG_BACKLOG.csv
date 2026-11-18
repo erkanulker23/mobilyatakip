@@ -1,0 +1,13 @@
+id,baslik,durum,kanit
+MOBILE-PANEL,Mobil panel 3D sahneyi tamamen kapatıyor,VERIFIED,390x844 emülasyonunda sahnenin yüzde 54-59'u görünür kaldı
+DOOR-NONE,Katalog modülü kapaksız açılıyordu,VERIFIED,y26_tek_03 solid y26_tek_06 glass geri alma tamam
+STILE-DRAWER,Bes cift modulde dikme cekmece kutusunu kesiyordu,VERIFIED,y26_cift_02 03 04 06 09 yeniden olcumde cakisma yok
+SNAP-DRAG,4 cm yapisma fare ile denenmedi,OPEN,node testi 3.9 yapisir 4.0 yapismaz
+WALL-DRAW,Elle duvar cizme silme iptal,NOT_TESTED,
+U-PLACE,U kanadina modul konamiyor,OPEN,kanat yalnizca duvar kutusu
+DRAWER-BOX,Y26 cekmece kutusu tek prizma,OPEN,olculdu ayri yan panel yok
+EDGE-BAND,Ayri kenar bandi yok,OPEN,
+CATALOG-PNG,45 modulun PNG karsilastirmasi,NOT_TESTED,
+RENDER,Ultra Render bu turda alinmadi,NOT_TESTED,
+MATERIAL-PIXEL,Malzeme kanallari piksel ile dogrulanmadi,NOT_TESTED,
+TEK-DRAWER-COUNT,tek_v1 katalog drawers 6 geometri 2 cekmece on,OPEN,olculdu katalog alani degistirilmedi

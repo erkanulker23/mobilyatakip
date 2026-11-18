@@ -1,0 +1,4 @@
+module_id,in_catalog,glb_loads,preview_matches,width_cm,height_cm,depth_cm,visual_pass,notes,status
+y26_tek_01,yes,yes,NOT_TESTED,45,250,60,PARTIAL,E2E eklendi; aşırı yakın kadraj düzeltildi,PARTIAL
+y26_tek_02..20,yes,NOT_TESTED,NOT_TESTED,,,,NOT_TESTED,Y26 JSON 20 kayıt,NOT_TESTED
+meemare25/*,partial,NOT_TESTED,NOT_TESTED,,,,NOT_TESTED,~26 katalog dizini; tam 45 matrisi sonraki tur,NOT_TESTED
