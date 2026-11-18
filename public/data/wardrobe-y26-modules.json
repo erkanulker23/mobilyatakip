@@ -3,7 +3,7 @@
   "units": "m",
   "upAxis": "Y",
   "frontAxis": "-Z",
-  "note": "Y26 paketi. vm_v4 OBJ aktarımı geri alındı; parametrik GLB (panel parçaları) kullanılıyor.",
+  "note": "Y26 paketi. Tam boyutlu katalog GLB geri yüklendi (parametrik stub kaldırıldı).",
   "modules": [
     {
       "id": "y26_tek_01",
@@ -26,7 +26,7 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_057",
-      "geometrySource": "parametric-restored",
+      "geometrySource": "catalog-glb",
       "catalogRender": "cycles-v5"
     },
     {
@@ -50,7 +50,7 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_058",
-      "geometrySource": "parametric-restored",
+      "geometrySource": "catalog-glb",
       "catalogRender": "cycles-v5"
     },
     {
@@ -74,7 +74,7 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_061",
-      "geometrySource": "parametric-restored",
+      "geometrySource": "catalog-glb",
       "catalogRender": "cycles-v5"
     },
     {
@@ -98,7 +98,7 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_065",
-      "geometrySource": "parametric-restored",
+      "geometrySource": "catalog-glb",
       "catalogRender": "cycles-v5"
     },
     {
@@ -122,7 +122,7 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_066",
-      "geometrySource": "parametric-restored",
+      "geometrySource": "catalog-glb",
       "catalogRender": "cycles-v5"
     },
     {
@@ -146,7 +146,7 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_067",
-      "geometrySource": "parametric-restored",
+      "geometrySource": "catalog-glb",
       "catalogRender": "cycles-v5"
     },
     {
@@ -170,7 +170,7 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_069",
-      "geometrySource": "parametric-restored",
+      "geometrySource": "catalog-glb",
       "catalogRender": "cycles-v5"
     },
     {
@@ -194,7 +194,7 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_070",
-      "geometrySource": "parametric-restored",
+      "geometrySource": "catalog-glb",
       "catalogRender": "cycles-v5"
     },
     {
@@ -218,7 +218,7 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_071",
-      "geometrySource": "parametric-restored",
+      "geometrySource": "catalog-glb",
       "catalogRender": "cycles-v5"
     },
     {
@@ -242,7 +242,7 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_075",
-      "geometrySource": "parametric-restored",
+      "geometrySource": "catalog-glb",
       "catalogRender": "cycles-v5"
     },
     {
@@ -266,7 +266,7 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_078",
-      "geometrySource": "parametric-restored",
+      "geometrySource": "catalog-glb",
       "catalogRender": "cycles-v5"
     },
     {
@@ -290,7 +290,7 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_079",
-      "geometrySource": "parametric-restored",
+      "geometrySource": "catalog-glb",
       "catalogRender": "cycles-v5"
     },
     {
@@ -314,7 +314,7 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_080",
-      "geometrySource": "parametric-restored",
+      "geometrySource": "catalog-glb",
       "catalogRender": "cycles-v5"
     },
     {
@@ -338,7 +338,7 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_081",
-      "geometrySource": "parametric-restored",
+      "geometrySource": "catalog-glb",
       "catalogRender": "cycles-v5"
     },
     {
@@ -362,7 +362,7 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_085",
-      "geometrySource": "parametric-restored",
+      "geometrySource": "catalog-glb",
       "catalogRender": "cycles-v5"
     },
     {
@@ -386,7 +386,7 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_086",
-      "geometrySource": "parametric-restored",
+      "geometrySource": "catalog-glb",
       "catalogRender": "cycles-v5"
     },
     {
@@ -410,7 +410,7 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_011_087",
-      "geometrySource": "parametric-restored",
+      "geometrySource": "catalog-glb",
       "catalogRender": "cycles-v5"
     },
     {
@@ -434,7 +434,7 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_014_024",
-      "geometrySource": "parametric-restored",
+      "geometrySource": "catalog-glb",
       "catalogRender": "cycles-v5"
     },
     {
@@ -458,7 +458,7 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_014_025",
-      "geometrySource": "parametric-restored",
+      "geometrySource": "catalog-glb",
       "catalogRender": "cycles-v5"
     },
     {
@@ -482,7 +482,7 @@
       "boardMm": 18,
       "backMm": 8,
       "sourceViessmann": "vm_v4_014_026",
-      "geometrySource": "parametric-restored",
+      "geometrySource": "catalog-glb",
       "catalogRender": "cycles-v5"
     }
   ]
