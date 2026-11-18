@@ -14,8 +14,11 @@
         #plan-frame { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: #e7e2d8; }
         #plan-wait, #plan-error {
             position: fixed; inset: 0; display: grid; place-items: center; text-align: center; padding: 24px;
+            z-index: 5; pointer-events: none;
         }
-        #plan-error { display: none; }
+        #plan-error { display: none; pointer-events: auto; }
+        /* ID display:grid, [hidden] özniteliğini eziyordu → çift mesaj */
+        #plan-wait[hidden], #plan-error[hidden] { display: none !important; }
         #plan-error a, #quote-open {
             color: #fff; background: #1a7a52; text-decoration: none; border: 0; border-radius: 999px;
             padding: 8px 14px; font-weight: 700; cursor: pointer;
@@ -45,7 +48,7 @@
 </head>
 <body>
     <p id="plan-wait">Plan açılıyor…</p>
-    <div id="plan-error">
+    <div id="plan-error" hidden aria-live="polite">
         <div>
             <p id="plan-error-text">Proje açılamadı.</p>
             <a href="{{ route('wardrobe.index') }}">Projelere dön</a>
@@ -77,6 +80,6 @@
             projectsUrl: @json(route('wardrobe.index')),
         };
     </script>
-    <script type="module" src="{{ asset('js/studio-shell.js') }}?v=29"></script>
+    <script type="module" src="{{ asset('js/studio-shell.js') }}?v=31"></script>
 </body>
 </html>
