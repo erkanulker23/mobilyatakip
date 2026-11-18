@@ -556,7 +556,7 @@
         #measure-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
         .measure { position: absolute; transform: translate(-50%, -50%); background: #1f6b4a; color: #fff; font-size: 11px; font-weight: 700; line-height: 1.2; padding: 2px 6px; border-radius: 999px; white-space: nowrap; }
         .btn.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
-        #selection-ui, #height-handle, #quick-rail, #selection-bar { position: absolute; z-index: 9; }
+        #selection-ui, #height-handle, #quick-rail, #selection-bar, #radial-ring { position: absolute; z-index: 9; }
         #selection-ui { display: none; }
         #selection-bar {
             left: 50%; bottom: 78px; transform: translateX(-50%);
@@ -566,7 +566,7 @@
             backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
         }
         #selection-bar.hidden { display: none !important; }
-        body.plan-2d #selection-bar { display: none !important; }
+        body.plan-2d #selection-bar, body.plan-2d #radial-ring { display: none !important; }
         #selection-bar-name {
             font-size: 11px; font-weight: 700; color: #fff; max-width: 140px; white-space: nowrap;
             overflow: hidden; text-overflow: ellipsis; margin-right: 4px;
@@ -577,12 +577,39 @@
         }
         #selection-bar button.is-on { background: var(--accent); }
         #selection-bar button.sb-danger { background: var(--danger); }
+        /* Planner5D tarzı: seçim etrafında dairesel hızlı araçlar */
+        #radial-ring {
+            width: 0; height: 0; pointer-events: none;
+            transform: translate(-50%, -50%);
+        }
+        #radial-ring.hidden { display: none !important; }
+        #radial-ring button {
+            position: absolute; left: 0; top: 0; width: 42px; height: 42px; margin: 0;
+            border: 0; border-radius: 50%; pointer-events: auto;
+            background: #fff; color: #1a1a1a; box-shadow: 0 6px 18px rgba(0,0,0,.22);
+            font-size: 11px; font-weight: 800; line-height: 1; cursor: pointer;
+            display: grid; place-items: center;
+            transform: translate(-50%, -50%) rotate(var(--a)) translateY(var(--r, -78px)) rotate(calc(-1 * var(--a)));
+            transition: transform .18s var(--ease), background .15s ease, color .15s ease;
+        }
+        #radial-ring button:hover { background: var(--accent); color: #fff; }
+        #radial-ring button.sb-danger { color: #b42318; }
+        #radial-ring button.sb-danger:hover { background: var(--danger); color: #fff; }
+        #radial-ring .radial-core {
+            position: absolute; left: 0; top: 0; width: 10px; height: 10px; border-radius: 50%;
+            background: var(--accent); box-shadow: 0 0 0 3px rgba(31,107,74,.25);
+            transform: translate(-50%, -50%); pointer-events: none;
+        }
         @media (max-width: 699px) {
             #selection-bar { bottom: calc(148px + env(safe-area-inset-bottom)); max-width: calc(100% - 16px); }
             #selection-bar-name { display: none; }
+            #radial-ring { display: none !important; }
+        }
+        @media (min-width: 700px) {
+            #selection-bar { display: none !important; }
         }
         @media (min-width: 700px) and (max-width: 1099px) {
-            #selection-bar { bottom: 88px; }
+            #radial-ring button { --r: -68px; width: 40px; height: 40px; }
         }
         #quick-rail {
             display: flex; flex-direction: column; gap: 4px; min-width: 44px; max-width: 52px;
@@ -986,6 +1013,15 @@
                 <button type="button" data-sb="clone">Kopya</button>
                 <button type="button" data-sb="delete" class="sb-danger">Sil</button>
             </div>
+            <div id="radial-ring" class="hidden" aria-label="Seçim araçları">
+                <span class="radial-core" aria-hidden="true"></span>
+                <button type="button" data-sb="open" style="--a: -90deg" title="Kapak aç/kapat">Kapak</button>
+                <button type="button" data-sb="clone" style="--a: -30deg" title="Kopyala">Kopya</button>
+                <button type="button" data-sb="panel" style="--a: 30deg" title="Özellikler">Özellik</button>
+                <button type="button" data-sb="delete" class="sb-danger" style="--a: 90deg" title="Sil">Sil</button>
+                <button type="button" data-sb-door="wood" style="--a: 150deg" title="Ahşap kapak">Ahşap</button>
+                <button type="button" data-sb-door="glass" style="--a: 210deg" title="Cam kapak">Cam</button>
+            </div>
             <div id="view-bar" aria-label="Kamera">
                 <button type="button" data-view="perspective" class="is-on">3D</button>
                 <button type="button" data-view="walkthrough" id="btn-walk" title="Oda içi gezinti">Gezinti</button>
@@ -1158,6 +1194,6 @@
 </script>
 <script src="{{ asset('js/meemare-plan-bridge.js') }}?v=7" defer></script>
 <script src="{{ asset('js/openplan-import.js') }}?v=2" defer></script>
-<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=297"></script>
+<script type="module" src="{{ asset('js/wardrobe-studio.js') }}?v=298"></script>
 </body>
 </html>

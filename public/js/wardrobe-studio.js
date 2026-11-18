@@ -927,7 +927,7 @@ function material(key, source, opts = {}) {
             roughness: item.finish_hint === 'highgloss' ? 0.22 : item.finish_hint === 'gloss' ? 0.42 : 0.62,
             metalness: item.finish_hint === 'highgloss' ? 0.04 : 0,
             specularIntensity: 0.28,
-            envMapIntensity: 0.16,
+            envMapIntensity: 0.42,
             side: THREE.DoubleSide,
         })
         : new THREE.MeshStandardMaterial({
@@ -4088,17 +4088,29 @@ function buildModule(mod, preview) {
                     if (item) ensureGlb(item).then(() => rebuild()).catch(() => {});
                 }
                 const failed = glbFailed.has(mod.glb);
-                const missing = new THREE.Mesh(
-                    new THREE.BoxGeometry(box.w, box.h, box.d),
-                    new THREE.MeshBasicMaterial({
-                        color: failed ? '#a89984' : '#d2c6b4',
-                        wireframe: !failed,
+                let usedProc = false;
+                if (!failed) {
+                    try {
+                        // GLB gelene kadar prosedürel gövde — wireframe amatör görünümü yok.
+                        addWardrobe(group, { ...mod, door: mod.door || 'wood' }, box.w, box.d, true);
+                        usedProc = true;
+                    } catch (_) { /* fall through */ }
+                }
+                if (!usedProc) {
+                    const soft = new THREE.MeshStandardMaterial({
+                        color: failed ? '#a89984' : '#c9b8a0',
+                        roughness: 0.72,
+                        metalness: 0.02,
                         transparent: true,
-                        opacity: failed ? 0.35 : 0.5,
-                    })
-                );
-                missing.position.set(box.w / 2, box.h / 2, box.d / 2);
-                group.add(missing);
+                        opacity: failed ? 0.55 : 0.9,
+                        envMapIntensity: 0.28,
+                    });
+                    const missing = new THREE.Mesh(new THREE.BoxGeometry(box.w, box.h, box.d), soft);
+                    missing.position.set(box.w / 2, box.h / 2, box.d / 2);
+                    missing.castShadow = true;
+                    missing.receiveShadow = true;
+                    group.add(missing);
+                }
             } else {
                 try {
                     group.add(placeGlb(template, mod));
@@ -4393,9 +4405,11 @@ function paintQuickRail(mod) {
 
 function syncSelectionBar(mod) {
     const bar = el('selection-bar');
-    if (!bar) return;
+    const ring = el('radial-ring');
     const show = Boolean(mod) && planMode !== '2d';
-    bar.classList.toggle('hidden', !show);
+    const phone = isPhone();
+    bar?.classList.toggle('hidden', !show || !phone);
+    ring?.classList.toggle('hidden', !show || phone);
     const name = el('selection-bar-name');
     if (name) name.textContent = mod ? String(mod.name || 'Dolap') : '';
 }
@@ -4462,19 +4476,26 @@ function handleModuleQuickAction(event, scope) {
 function updateHud() {
     const handle = el('height-handle');
     const rail = el('quick-rail');
+    const ring = el('radial-ring');
     const mod = selected();
     const group = mod ? cabinetRoot.getObjectByName(`mod-${mod.id}`) : null;
     syncSelectionBar(mod);
-    // Yan şişman quick-rail kapalı — Ahşap/Cam/swatch kalabalığı yok; alttaki ince çubuk yeter.
+    // Yan şişman quick-rail kapalı — radial / mobil çubuk kullanılıyor.
     rail?.classList.add('hidden');
     if (!group) {
         handle?.classList.add('hidden');
+        ring?.classList.add('hidden');
         return;
     }
     const box = new THREE.Box3().setFromObject(group);
     const center = new THREE.Vector3();
     box.getCenter(center);
+    const mid = project(center);
     const top = project(new THREE.Vector3(center.x, box.max.y + 8, center.z));
+    if (ring && !isPhone() && planMode !== '2d') {
+        ring.classList.toggle('hidden', mid.behind);
+        if (!mid.behind) placeHud(ring, mid.x, mid.y);
+    }
     handle.classList.toggle('hidden', top.behind);
     if (!top.behind) placeHud(handle, top.x, top.y);
 }
@@ -4495,6 +4516,7 @@ function orbitCamera(delta) {
 function bindQuickRail() {
     const rail = el('quick-rail');
     const bar = el('selection-bar');
+    const ring = el('radial-ring');
     const bind = (node) => {
         if (!node || node.dataset.bound) return;
         node.dataset.bound = '1';
@@ -4506,6 +4528,7 @@ function bindQuickRail() {
     };
     bind(rail);
     bind(bar);
+    bind(ring);
 }
 
 function placeHud(node, x, y) {
