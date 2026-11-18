@@ -29,8 +29,14 @@ function slug(value, fallback) {
 function showError(text) {
     wait.hidden = true;
     frame.hidden = true;
+    errorBox.hidden = false;
     errorBox.style.display = 'grid';
     document.getElementById('plan-error-text').textContent = text;
+}
+
+function clearError() {
+    errorBox.hidden = true;
+    errorBox.style.display = 'none';
 }
 
 function catalogIdOf(mod) {
@@ -69,6 +75,8 @@ function designPayload(design, name) {
             ...(Number.isInteger(mod.planShelfCount) ? { shelfCount: mod.planShelfCount } : {}),
             ...(Number.isInteger(mod.planDrawerCount) ? { drawerCount: mod.planDrawerCount } : {}),
             ...(mod.planCornerSide === 'left' || mod.planCornerSide === 'right' ? { cornerSide: mod.planCornerSide } : {}),
+            ...(Number.isFinite(Number(mod.planTextureScale)) ? { textureScale: Number(mod.planTextureScale) } : {}),
+            ...(Number.isFinite(Number(mod.planTextureRotation)) ? { textureRotation: Number(mod.planTextureRotation) } : {}),
         };
     }).filter(Boolean);
     return {
@@ -133,6 +141,8 @@ function signatureOf(data) {
             shelves: Number.isInteger(mod.shelfCount) ? mod.shelfCount : null,
             drawers: Number.isInteger(mod.drawerCount) ? mod.drawerCount : null,
             corner: mod.cornerSide || '',
+            ts: Number.isFinite(Number(mod.textureScale)) ? Number(mod.textureScale) : null,
+            tr: Number.isFinite(Number(mod.textureRotation)) ? Number(mod.textureRotation) : null,
         })),
     });
 }
@@ -182,6 +192,8 @@ function moduleFromPlan(item, index, roomWidth) {
         ...(Number.isInteger(item.shelfCount) ? { planShelfCount: item.shelfCount } : {}),
         ...(Number.isInteger(item.drawerCount) ? { planDrawerCount: item.drawerCount } : {}),
         ...(item.cornerSide === 'left' || item.cornerSide === 'right' ? { planCornerSide: item.cornerSide } : {}),
+        ...(Number.isFinite(Number(item.textureScale)) ? { planTextureScale: Number(item.textureScale) } : {}),
+        ...(Number.isFinite(Number(item.textureRotation)) ? { planTextureRotation: Number(item.textureRotation) } : {}),
     };
 }
 
@@ -281,10 +293,11 @@ function openFrame() {
     }
     const base = src.endsWith('/') ? src : `${src}/`;
     const design = project ? '&design=1' : '';
+    clearError();
     frame.hidden = false;
     wait.hidden = true;
     if (project) quoteOpen.hidden = false;
-    frame.src = `${base}?embed=1${design}&v=326`;
+    frame.src = `${base}?embed=1${design}&v=328`;
     frame.addEventListener('load', () => {
         postToPlan();
         setTimeout(postToPlan, 400);

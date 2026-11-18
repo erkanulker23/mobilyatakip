@@ -3,7 +3,7 @@
   "units": "m",
   "upAxis": "Y",
   "frontAxis": "-Z",
-  "note": "Y26 paketi. Tam boyutlu katalog GLB geri yüklendi (parametrik stub kaldırıldı).",
+  "note": "Y26 paketi. geometrySource=catalog-glb. OpenPlan stub koruması: model.glb < 80KB yüklenmez, parametrik gövde kalır. Tam GLB (yüzlerce KB+) kullanın.",
   "modules": [
     {
       "id": "y26_tek_01",
