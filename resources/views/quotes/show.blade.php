@@ -54,7 +54,7 @@
 @include('partials.invoice-document', [
     'documentTitle' => 'TEKLİF',
     'documentNumber' => $quote->quoteNumber,
-    'documentDate' => $quote->createdAt,
+    'documentDate' => $quote->issuedAt(),
     'partyLabel' => 'Müşteri',
     'partyName' => $quote->customer?->name ?? '-',
     'partyAddress' => $quote->customer?->address,

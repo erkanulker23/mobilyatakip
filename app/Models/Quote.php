@@ -30,6 +30,7 @@ class Quote extends BaseModel
         'kdvTotal',
         'grandTotal',
         'validUntil',
+        'quoteDate',
         'notes',
         'drawingFiles',
         'isCancelled',
@@ -49,6 +50,7 @@ class Quote extends BaseModel
         'generalDiscountPercent' => 'decimal:2',
         'generalDiscountAmount' => 'decimal:2',
         'validUntil' => 'date',
+        'quoteDate' => 'date',
         'revision' => 'integer',
         'isCancelled' => 'boolean',
         'drawingFiles' => 'array',
@@ -97,6 +99,12 @@ class Quote extends BaseModel
     public function isConverted(): bool
     {
         return $this->convertedSaleId !== null;
+    }
+
+    /** Belgede görünen teklif tarihi (yoksa oluşturulma günü). */
+    public function issuedAt(): ?\Carbon\CarbonInterface
+    {
+        return $this->quoteDate ?? $this->createdAt;
     }
 
     public function generalDiscountApplied(): float

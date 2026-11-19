@@ -8,8 +8,8 @@
 @endpush
 @section('content')
 @php
-    $quoteIssuedAt = $quote->createdAt;
-    $quoteValidUntil = $quoteIssuedAt?->copy()->addDays(3);
+    $quoteIssuedAt = $quote->issuedAt();
+    $quoteValidUntil = $quote->validUntil ?? $quoteIssuedAt?->copy()->addDays(3);
 @endphp
 @include('partials.invoice-document-print', [
     'printVariant' => 'quote',
