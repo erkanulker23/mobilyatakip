@@ -14,14 +14,19 @@ return new class extends Migration
         }
 
         Schema::table('quotes', function (Blueprint $table) {
-            $table->date('quoteDate')->nullable()->after('validUntil');
+            $table->date('quoteDate')->nullable();
         });
 
         // Mevcut tekliflerde belge tarihi = oluşturulma günü.
-        DB::table('quotes')
-            ->whereNull('quoteDate')
-            ->whereNotNull('createdAt')
-            ->update(['quoteDate' => DB::raw('DATE(createdAt)')]);
+        $createdCol = Schema::hasColumn('quotes', 'createdAt')
+            ? 'createdAt'
+            : (Schema::hasColumn('quotes', 'created_at') ? 'created_at' : null);
+        if ($createdCol) {
+            DB::table('quotes')
+                ->whereNull('quoteDate')
+                ->whereNotNull($createdCol)
+                ->update(['quoteDate' => DB::raw('DATE(`'.$createdCol.'`)')]);
+        }
     }
 
     public function down(): void

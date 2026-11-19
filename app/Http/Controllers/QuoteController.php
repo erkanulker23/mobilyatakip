@@ -18,6 +18,7 @@ use App\Support\QuoteDocument;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class QuoteController extends Controller
 {
@@ -157,7 +158,6 @@ class QuoteController extends Controller
                 'generalDiscountPercent' => $validated['generalDiscountPercent'] ?? 0,
                 'generalDiscountAmount' => $validated['generalDiscountAmount'] ?? 0,
                 'revision' => 1,
-                'quoteDate' => $validated['quoteDate'] ?? now()->toDateString(),
                 'validUntil' => $validated['validUntil'] ?? null,
                 'notes' => $validated['notes'] ?? null,
                 'personnelId' => $validated['personnelId'] ?? null,
@@ -166,7 +166,7 @@ class QuoteController extends Controller
                 'subtotal' => 0,
                 'kdvTotal' => 0,
                 'grandTotal' => 0,
-            ]);
+            ] + $this->quoteDatePayload($validated['quoteDate'] ?? now()->toDateString()));
 
             $this->persistQuoteItems($quote, $items, $kdvIncluded);
 
@@ -336,7 +336,6 @@ class QuoteController extends Controller
             'kdvIncluded' => $kdvIncluded,
             'generalDiscountPercent' => $validated['generalDiscountPercent'] ?? 0,
             'generalDiscountAmount' => $validated['generalDiscountAmount'] ?? 0,
-            'quoteDate' => $validated['quoteDate'] ?? $quote->quoteDate ?? $quote->createdAt?->toDateString(),
             'validUntil' => $validated['validUntil'] ?? null,
             'notes' => $validated['notes'] ?? null,
             'personnelId' => $validated['personnelId'] ?? null,
@@ -347,7 +346,9 @@ class QuoteController extends Controller
                 DrawingFiles::entries($quote->drawingFiles),
                 'drawings/quotes'
             ),
-        ]);
+        ] + $this->quoteDatePayload(
+            $validated['quoteDate'] ?? $quote->quoteDate?->format('Y-m-d') ?? $quote->createdAt?->toDateString()
+        ));
         $quote->items()->delete();
         $this->persistQuoteItems($quote, $items, $kdvIncluded);
 
@@ -384,7 +385,6 @@ class QuoteController extends Controller
                 'generalDiscountPercent' => $quote->generalDiscountPercent ?? 0,
                 'generalDiscountAmount' => $quote->generalDiscountAmount ?? 0,
                 'revision' => 1,
-                'quoteDate' => now()->toDateString(),
                 'validUntil' => $quote->validUntil,
                 'notes' => $quote->notes,
                 'personnelId' => $quote->personnelId,
@@ -395,7 +395,7 @@ class QuoteController extends Controller
                 'kdvTotal' => $quote->kdvTotal,
                 'grandTotal' => $quote->grandTotal,
                 'drawingFiles' => $drawingFiles !== [] ? $drawingFiles : null,
-            ]);
+            ] + $this->quoteDatePayload(now()->toDateString()));
 
             foreach ($quote->items as $item) {
                 QuoteItem::create([
@@ -511,5 +511,15 @@ class QuoteController extends Controller
             $grandTotal = round($afterDisc + $kdvTotal, 2);
         }
         $quote->update(['subtotal' => $subtotal, 'kdvTotal' => $kdvTotal, 'grandTotal' => $grandTotal]);
+    }
+
+    /** @return array{quoteDate?: string|null} */
+    private function quoteDatePayload(?string $date): array
+    {
+        if (! Schema::hasColumn('quotes', 'quoteDate')) {
+            return [];
+        }
+
+        return ['quoteDate' => $date];
     }
 }

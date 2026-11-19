@@ -104,7 +104,11 @@ class Quote extends BaseModel
     /** Belgede görünen teklif tarihi (yoksa oluşturulma günü). */
     public function issuedAt(): ?\Carbon\CarbonInterface
     {
-        return $this->quoteDate ?? $this->createdAt;
+        if (\Illuminate\Support\Facades\Schema::hasColumn($this->getTable(), 'quoteDate') && $this->quoteDate) {
+            return $this->quoteDate;
+        }
+
+        return $this->createdAt;
     }
 
     public function generalDiscountApplied(): float
