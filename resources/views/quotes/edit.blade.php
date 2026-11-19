@@ -162,6 +162,11 @@
                                 @error('customerId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                             </div>
                             <div>
+                                <label class="form-label">Teklif Tarihi</label>
+                                <input type="date" name="quoteDate" value="{{ old('quoteDate', $quote->quoteDate?->format('Y-m-d') ?? $quote->createdAt?->format('Y-m-d')) }}" class="form-input min-h-[44px]">
+                                @error('quoteDate')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                            </div>
+                            <div>
                                 <label class="form-label">Geçerlilik Tarihi</label>
                                 <input type="date" name="validUntil" value="{{ old('validUntil', $quote->validUntil?->format('Y-m-d')) }}" class="form-input min-h-[44px]">
                             </div>

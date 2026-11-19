@@ -24,8 +24,8 @@ class QuoteDocument
      */
     public static function pdfParams(Quote $quote): array
     {
-        $quoteIssuedAt = $quote->createdAt;
-        $quoteValidUntil = $quoteIssuedAt?->copy()->addDays(3);
+        $quoteIssuedAt = $quote->issuedAt();
+        $quoteValidUntil = $quote->validUntil ?? $quoteIssuedAt?->copy()->addDays(3);
         $preparer = $quote->personnel?->name ?? QuoteCreator::displayNameForQuote($quote) ?? '-';
 
         $extraInfo = '<p class="muted"><strong>Teklif Tarihi:</strong> '.e($quoteIssuedAt?->format('d.m.Y') ?? '-').'</p>'

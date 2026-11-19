@@ -124,7 +124,7 @@
                     <td class="table-td">{{ $q->customer?->name ?? '-' }}</td>
                     <td class="table-td text-neutral-600">{{ $q->branch?->name ?? '—' }}</td>
                     <td class="table-td text-neutral-600">{{ \App\Support\QuoteCreator::displayNameForQuote($q, $creatorFallbackMap ?? []) ?? '—' }}</td>
-                    <td class="table-td">{{ $q->createdAt?->format('d.m.Y') ?? '-' }}</td>
+                    <td class="table-td">{{ $q->issuedAt()?->format('d.m.Y') ?? '-' }}</td>
                     <td class="table-td text-right font-medium text-neutral-900">{{ number_format($q->grandTotal ?? 0, 0, ',', '.') }} ₺</td>
                     <td class="table-td">
                         @if($q->convertedSaleId)
