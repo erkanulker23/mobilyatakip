@@ -9,6 +9,7 @@ final class QuotePrintTerms
     {
         return [
             'Sipariş bedelinin %50\'si peşin, kalan %50\'si teslimat ve montaj tamamlandığında tahsil edilir.',
+            'Ürün teslim edilmeden en az 1 gün önce sipariş bedeli tamamen kapatılmalıdır; bakiyesi kalan siparişlerde sevkiyat yapılmaz.',
             'Teklif, düzenlendiği tarihten itibaren 3 gün geçerlidir.',
             'Üretim, ön ödeme ve nihai proje onayının ardından başlar.',
             'Sipariş sonrası proje değişiklikleri ek ücret ve süre değişikliğine neden olabilir.',
