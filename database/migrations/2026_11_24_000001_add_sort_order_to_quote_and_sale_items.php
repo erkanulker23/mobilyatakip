@@ -34,17 +34,7 @@ return new class extends Migration
             $blueprint->unsignedInteger('sortOrder')->default(0);
         });
 
-        $parentIds = DB::table($table)->distinct()->pluck($parentColumn);
-        foreach ($parentIds as $parentId) {
-            $query = DB::table($table)->where($parentColumn, $parentId);
-            if (Schema::hasColumn($table, 'createdAt')) {
-                $query->orderBy('createdAt')->orderBy('id');
-            } else {
-                $query->orderBy('id');
-            }
-            foreach ($query->get(['id']) as $index => $row) {
-                DB::table($table)->where('id', $row->id)->update(['sortOrder' => $index]);
-            }
-        }
+        // Ağır satır satır backfill yok — varsayılan 0 yeter; sonraki kayıt sırayı yazar.
+        // (Büyük tablolarda timeout / yarım migration riskini önler.)
     }
 };

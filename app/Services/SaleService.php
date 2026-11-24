@@ -362,7 +362,8 @@ class SaleService
             $submittedIds = collect($itemsInput)->pluck('id')->filter()->values()->all();
 
             $hasSortOrder = Schema::hasColumn('sale_items', 'sortOrder');
-            if ($itemsInput !== [] && ! array_is_list($itemsInput)) {
+            $isList = $itemsInput === [] || array_keys($itemsInput) === range(0, count($itemsInput) - 1);
+            if ($itemsInput !== [] && ! $isList) {
                 ksort($itemsInput, SORT_NUMERIC);
             }
             foreach (array_values($itemsInput) as $index => $row) {

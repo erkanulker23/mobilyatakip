@@ -90,7 +90,7 @@ class QuoteController extends Controller
             $quoteNumber = $quote->quoteNumber;
             $quoteId = $quote->id;
             DB::transaction(function () use ($quote, $quoteId, $quoteNumber) {
-                $quote->items()->delete();
+                QuoteItem::where('quoteId', $quoteId)->delete();
                 $quote->delete();
                 $this->auditService->logDelete('quote', $quoteId, ['quoteNumber' => $quoteNumber]);
             });
@@ -331,27 +331,45 @@ class QuoteController extends Controller
         }
 
         $kdvIncluded = $request->boolean('kdvIncluded');
-        $quote->update([
-            'customerId' => $validated['customerId'],
-            'kdvIncluded' => $kdvIncluded,
-            'generalDiscountPercent' => $validated['generalDiscountPercent'] ?? 0,
-            'generalDiscountAmount' => $validated['generalDiscountAmount'] ?? 0,
-            'validUntil' => $validated['validUntil'] ?? null,
-            'notes' => $validated['notes'] ?? null,
-            'personnelId' => $validated['personnelId'] ?? null,
-            'branchId' => Personnel::resolveBranchId($validated['branchId'] ?? null, $validated['personnelId'] ?? null),
-            'status' => $validated['status'] ?? $quote->status,
-            'drawingFiles' => DrawingFiles::syncFromRequest(
-                $request,
-                DrawingFiles::entries($quote->drawingFiles),
-                'drawings/quotes'
-            ),
-        ] + $this->quoteDatePayload(
-            $validated['quoteDate'] ?? $quote->quoteDate?->format('Y-m-d') ?? $quote->createdAt?->toDateString()
-        ));
-        $quote->items()->delete();
-        $this->persistQuoteItems($quote, $items, $kdvIncluded);
+        try {
+            DB::transaction(function () use ($request, $validated, $quote, $items, $kdvIncluded) {
+                $quoteDate = $validated['quoteDate'] ?? null;
+                if (! is_string($quoteDate) || trim($quoteDate) === '') {
+                    $quoteDate = $quote->quoteDate?->format('Y-m-d')
+                        ?? $quote->createdAt?->toDateString();
+                }
 
+                $quote->update([
+                    'customerId' => $validated['customerId'],
+                    'kdvIncluded' => $kdvIncluded,
+                    'generalDiscountPercent' => $validated['generalDiscountPercent'] ?? 0,
+                    'generalDiscountAmount' => $validated['generalDiscountAmount'] ?? 0,
+                    'validUntil' => $validated['validUntil'] ?? null,
+                    'notes' => $validated['notes'] ?? null,
+                    'personnelId' => $validated['personnelId'] ?? null,
+                    'branchId' => Personnel::resolveBranchId($validated['branchId'] ?? null, $validated['personnelId'] ?? null),
+                    'status' => $validated['status'] ?? $quote->status,
+                    'drawingFiles' => DrawingFiles::syncFromRequest(
+                        $request,
+                        DrawingFiles::entries($quote->drawingFiles),
+                        'drawings/quotes'
+                    ),
+                ] + $this->quoteDatePayload($quoteDate));
+
+                // orderBy'lı ilişki delete SQL'ini bozabiliyor — doğrudan sil.
+                QuoteItem::where('quoteId', $quote->id)->delete();
+                $this->persistQuoteItems($quote, $items, $kdvIncluded);
+            });
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()->back()->withInput()->with(
+                'error',
+                'Teklif kaydedilemedi: '.$e->getMessage()
+            );
+        }
+
+        $quote->refresh();
         $this->auditService->logUpdate('quote', $quote->id, [], [
             'quoteNumber' => $quote->quoteNumber,
             'grandTotal' => $quote->grandTotal,
@@ -432,7 +450,7 @@ class QuoteController extends Controller
             return redirect()->back()->with('error', 'Satışa dönüştürülmüş teklif silinemez.');
         }
         $this->auditService->logDelete('quote', $quote->id, ['quoteNumber' => $quote->quoteNumber]);
-        $quote->items()->delete();
+        QuoteItem::where('quoteId', $quote->id)->delete();
         $quote->delete();
 
         return redirect()->route('quotes.index')->with('success', 'Teklif silindi.');
@@ -441,7 +459,8 @@ class QuoteController extends Controller
     private function mapQuoteItems(array $rawItems): array
     {
         // Form indeksleri dağınık gelse bile ekrandaki sırayı koru.
-        if ($rawItems !== [] && ! array_is_list($rawItems)) {
+        $isList = array_keys($rawItems) === range(0, count($rawItems) - 1);
+        if ($rawItems !== [] && ! $isList) {
             ksort($rawItems, SORT_NUMERIC);
         }
 
@@ -535,6 +554,11 @@ class QuoteController extends Controller
     {
         if (! Schema::hasColumn('quotes', 'quoteDate')) {
             return [];
+        }
+
+        $date = is_string($date) ? trim($date) : null;
+        if ($date === '') {
+            $date = null;
         }
 
         return ['quoteDate' => $date];

@@ -79,11 +79,16 @@ class Quote extends BaseModel
     public function items(): HasMany
     {
         $relation = $this->hasMany(QuoteItem::class, 'quoteId');
-        if (\Illuminate\Support\Facades\Schema::hasColumn('quote_items', 'sortOrder')) {
-            $relation->orderBy('sortOrder');
+        // Kolon yokken orderBy 500 verir; migrate öncesi/sonrası güvenli kalsın.
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasColumn('quote_items', 'sortOrder')) {
+                $relation->orderBy('sortOrder');
+            }
+        } catch (\Throwable) {
+            // şema okunamazsa createdAt sırası yeterli
         }
 
-        return $relation->orderBy('createdAt');
+        return $relation->orderBy('createdAt')->orderBy('id');
     }
 
     public function sales(): HasMany
