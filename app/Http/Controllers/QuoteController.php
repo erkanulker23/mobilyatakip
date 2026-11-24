@@ -270,8 +270,13 @@ class QuoteController extends Controller
             ]);
 
             return redirect()->route('sales.show', $sale)->with('success', 'Teklif satışa dönüştürüldü.');
-        } catch (\RuntimeException $e) {
-            return redirect()->back()->withInput()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()->back()->withInput()->with(
+                'error',
+                'Satışa dönüştürme başarısız: ' . $e->getMessage()
+            );
         }
     }
 

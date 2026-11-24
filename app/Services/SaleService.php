@@ -201,29 +201,34 @@ class SaleService
 
             $hasSortOrder = Schema::hasColumn('sale_items', 'sortOrder');
             foreach ($quote->items as $index => $qi) {
+                $productId = filled($qi->productId) ? (string) $qi->productId : null;
+                $qty = (int) $qi->quantity;
                 SaleItem::create([
                     'id' => (string) Str::uuid(),
                     'saleId' => $sale->id,
-                    'productId' => $qi->productId,
+                    'productId' => $productId,
                     'productName' => $qi->product?->name ?? $qi->productName ?? null,
                     'description' => $qi->description,
                     'unitPrice' => $qi->unitPrice,
-                    'quantity' => $qi->quantity,
+                    'quantity' => $qty,
                     'kdvRate' => $qi->kdvRate,
                     'lineDiscountPercent' => $qi->lineDiscountPercent,
                     'lineDiscountAmount' => $qi->lineDiscountAmount,
                     'lineTotal' => round((float) $qi->lineTotal, 2),
                 ] + ($hasSortOrder ? ['sortOrder' => (int) ($qi->sortOrder ?? $index)] : []));
-                $warehouseId = $this->stockService->findWarehouseWithStock($qi->productId, (int) $qi->quantity)
-                    ?? $this->stockService->getWarehouseForProduct($qi->productId);
-                if ($warehouseId) {
-                    $this->stockService->movement(
-                        $qi->productId,
-                        $warehouseId,
-                        'cikis',
-                        (int) $qi->quantity,
-                        ['refType' => 'satis', 'refId' => $sale->id, 'description' => "Satış {$saleNumber}"]
-                    );
+                // Ürünsüz (özel) kalemlerde stok hareketi yok — null productId TypeError/500 yapıyordu
+                if ($productId && $qty > 0) {
+                    $warehouseId = $this->stockService->findWarehouseWithStock($productId, $qty)
+                        ?? $this->stockService->getWarehouseForProduct($productId);
+                    if ($warehouseId) {
+                        $this->stockService->movement(
+                            $productId,
+                            $warehouseId,
+                            'cikis',
+                            $qty,
+                            ['refType' => 'satis', 'refId' => $sale->id, 'description' => "Satış {$saleNumber}"]
+                        );
+                    }
                 }
             }
 
