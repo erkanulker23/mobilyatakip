@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\Personnel;
 use App\Support\DrawingFiles;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class SaleService
@@ -114,7 +115,8 @@ class SaleService
                 $grandTotal = round($grandTotalOverride, 2);
             }
 
-            foreach ($computedLines as $cl) {
+            $hasSortOrder = Schema::hasColumn('sale_items', 'sortOrder');
+            foreach (array_values($computedLines) as $index => $cl) {
                 SaleItem::create([
                     'id' => (string) Str::uuid(),
                     'saleId' => $sale->id,
@@ -127,7 +129,7 @@ class SaleService
                     'lineDiscountPercent' => $cl['lineDiscPct'] ?: null,
                     'lineDiscountAmount' => $cl['lineDiscAmt'] ?: null,
                     'lineTotal' => $cl['lineTotal'],
-                ]);
+                ] + ($hasSortOrder ? ['sortOrder' => (int) $index] : []));
                 if (!empty($cl['row']['productId'])) {
                     $warehouseId = $this->stockService->findWarehouseWithStock($cl['row']['productId'], $cl['qty'])
                         ?? $this->stockService->getWarehouseForProduct($cl['row']['productId']);
@@ -197,7 +199,8 @@ class SaleService
                 )) !== [] ? $copiedDrawings : null,
             ]);
 
-            foreach ($quote->items as $qi) {
+            $hasSortOrder = Schema::hasColumn('sale_items', 'sortOrder');
+            foreach ($quote->items as $index => $qi) {
                 SaleItem::create([
                     'id' => (string) Str::uuid(),
                     'saleId' => $sale->id,
@@ -210,7 +213,7 @@ class SaleService
                     'lineDiscountPercent' => $qi->lineDiscountPercent,
                     'lineDiscountAmount' => $qi->lineDiscountAmount,
                     'lineTotal' => round((float) $qi->lineTotal, 2),
-                ]);
+                ] + ($hasSortOrder ? ['sortOrder' => (int) ($qi->sortOrder ?? $index)] : []));
                 $warehouseId = $this->stockService->findWarehouseWithStock($qi->productId, (int) $qi->quantity)
                     ?? $this->stockService->getWarehouseForProduct($qi->productId);
                 if ($warehouseId) {
@@ -358,7 +361,11 @@ class SaleService
             $existingItems = $sale->items->keyBy('id');
             $submittedIds = collect($itemsInput)->pluck('id')->filter()->values()->all();
 
-            foreach ($itemsInput as $row) {
+            $hasSortOrder = Schema::hasColumn('sale_items', 'sortOrder');
+            if ($itemsInput !== [] && ! array_is_list($itemsInput)) {
+                ksort($itemsInput, SORT_NUMERIC);
+            }
+            foreach (array_values($itemsInput) as $index => $row) {
                 $itemId = $row['id'] ?? null;
                 $unitPrice = (float) ($row['unitPrice'] ?? 0);
                 $qty = (int) ($row['quantity'] ?? 1);
@@ -400,7 +407,7 @@ class SaleService
                         'lineDiscountPercent' => $lineDiscPct ?: null,
                         'lineDiscountAmount' => $lineDiscAmt ?: null,
                         'lineTotal' => $lineTotal,
-                    ]);
+                    ] + ($hasSortOrder ? ['sortOrder' => (int) $index] : []));
                     if ($oldProductId && $oldQty > 0) {
                         $wh = $this->stockService->getWarehouseForProduct($oldProductId);
                         if ($wh) {
@@ -426,7 +433,7 @@ class SaleService
                         'lineDiscountPercent' => $lineDiscPct ?: null,
                         'lineDiscountAmount' => $lineDiscAmt ?: null,
                         'lineTotal' => $lineTotal,
-                    ]);
+                    ] + ($hasSortOrder ? ['sortOrder' => (int) $index] : []));
                     if ($productId && $qty > 0) {
                         $warehouseId = $this->stockService->findWarehouseWithStock($productId, $qty) ?? $this->stockService->getWarehouseForProduct($productId);
                         if ($warehouseId) {

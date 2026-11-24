@@ -397,7 +397,8 @@ class QuoteController extends Controller
                 'drawingFiles' => $drawingFiles !== [] ? $drawingFiles : null,
             ] + $this->quoteDatePayload(now()->toDateString()));
 
-            foreach ($quote->items as $item) {
+            $hasSortOrder = Schema::hasColumn('quote_items', 'sortOrder');
+            foreach ($quote->items as $index => $item) {
                 QuoteItem::create([
                     'quoteId' => $newQuote->id,
                     'productId' => $item->productId,
@@ -409,7 +410,7 @@ class QuoteController extends Controller
                     'lineDiscountPercent' => $item->lineDiscountPercent,
                     'lineDiscountAmount' => $item->lineDiscountAmount,
                     'lineTotal' => $item->lineTotal,
-                ]);
+                ] + ($hasSortOrder ? ['sortOrder' => (int) ($item->sortOrder ?? $index)] : []));
             }
 
             return $newQuote;
@@ -439,7 +440,16 @@ class QuoteController extends Controller
 
     private function mapQuoteItems(array $rawItems): array
     {
-        return collect($rawItems)->map(function ($item) {
+        // Form indeksleri dağınık gelse bile ekrandaki sırayı koru.
+        if ($rawItems !== [] && ! array_is_list($rawItems)) {
+            ksort($rawItems, SORT_NUMERIC);
+        }
+
+        $mapped = [];
+        foreach ($rawItems as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
             $product = ! empty($item['productId']) ? Product::find($item['productId']) : null;
             $description = ItemDescription::fromInput($item['descriptionLines'] ?? $item['description'] ?? null);
             $base = [
@@ -451,19 +461,26 @@ class QuoteController extends Controller
                 'lineDiscountAmount' => $item['lineDiscountAmount'] ?? null,
             ];
             if ($product) {
-                return array_merge($base, ['productId' => $product->id, 'productName' => null]);
+                $row = array_merge($base, ['productId' => $product->id, 'productName' => null]);
+            } else {
+                $name = trim($item['productName'] ?? '') ?: trim($item['productId'] ?? '');
+                $row = array_merge($base, ['productId' => null, 'productName' => $name]);
             }
-            $name = trim($item['productName'] ?? '') ?: trim($item['productId'] ?? '');
+            if (empty($row['productId']) && empty($row['productName'])) {
+                continue;
+            }
+            $mapped[] = $row;
+        }
 
-            return array_merge($base, ['productId' => null, 'productName' => $name]);
-        })->filter(fn ($i) => ! empty($i['productId']) || ! empty($i['productName']))->values()->all();
+        return $mapped;
     }
 
     private function persistQuoteItems(Quote $quote, array $items, bool $kdvIncluded): void
     {
         $subtotal = 0;
         $lineKdvSum = 0;
-        foreach ($items as $row) {
+        $hasSortOrder = Schema::hasColumn('quote_items', 'sortOrder');
+        foreach ($items as $index => $row) {
             $unitPrice = (float) $row['unitPrice'];
             $qty = (int) $row['quantity'];
             $kdvRate = (float) ($row['kdvRate'] ?? 18);
@@ -491,7 +508,7 @@ class QuoteController extends Controller
                 'lineDiscountPercent' => $lineDiscPct,
                 'lineDiscountAmount' => $lineDiscAmt,
                 'lineTotal' => $lineTotal,
-            ]);
+            ] + ($hasSortOrder ? ['sortOrder' => (int) $index] : []));
         }
         if ($kdvIncluded) {
             $grossBeforeGeneralDisc = round($subtotal + $lineKdvSum, 2);

@@ -19,6 +19,7 @@ class QuoteItem extends BaseModel
         'lineDiscountAmount',
         'kdvRate',
         'lineTotal',
+        'sortOrder',
     ];
 
     protected $casts = [
@@ -28,6 +29,7 @@ class QuoteItem extends BaseModel
         'lineDiscountAmount' => 'decimal:2',
         'kdvRate' => 'decimal:2',
         'quantity' => 'integer',
+        'sortOrder' => 'integer',
     ];
 
     public function quote(): BelongsTo

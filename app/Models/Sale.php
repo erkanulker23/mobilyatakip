@@ -81,7 +81,12 @@ class Sale extends BaseModel
 
     public function items(): HasMany
     {
-        return $this->hasMany(SaleItem::class, 'saleId');
+        $relation = $this->hasMany(SaleItem::class, 'saleId');
+        if (\Illuminate\Support\Facades\Schema::hasColumn('sale_items', 'sortOrder')) {
+            $relation->orderBy('sortOrder');
+        }
+
+        return $relation->orderBy('createdAt');
     }
 
     public function productionStages(): HasMany

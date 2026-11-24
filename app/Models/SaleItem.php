@@ -19,6 +19,7 @@ class SaleItem extends BaseModel
         'lineDiscountPercent',
         'lineDiscountAmount',
         'lineTotal',
+        'sortOrder',
     ];
 
     protected $casts = [
@@ -28,6 +29,7 @@ class SaleItem extends BaseModel
         'lineDiscountPercent' => 'decimal:2',
         'lineDiscountAmount' => 'decimal:2',
         'quantity' => 'integer',
+        'sortOrder' => 'integer',
     ];
 
     public function sale(): BelongsTo
