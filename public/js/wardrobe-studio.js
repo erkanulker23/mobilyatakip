@@ -954,6 +954,15 @@ function material(key, source, opts = {}) {
     } else if (item?.image) {
         mat.userData.decorUrl = item.image;
         mat.userData.finish = item.finish_hint || 'matte';
+        // Premium showroom kaplamalara hafif normal/roughness — katalog modunda bile daha gerçekçi
+        if (item.group === 'premium-showroom' && !opts.metal && !opts.glass) {
+            const scan = ensureWoodScan();
+            mat.normalMap = scan.normal;
+            mat.normalScale = new THREE.Vector2(0.22, 0.22);
+            mat.roughnessMap = scan.rough;
+            mat.roughness = 0.78;
+            mat.envMapIntensity = 0.5;
+        }
     }
     if (!opts.glass && !opts.metal && opa < 0.99) {
         mat.transparent = true;
@@ -1010,11 +1019,22 @@ function ensureWoodScan() {
         tex.anisotropy = 8;
         return tex;
     };
+    // Showroom pack (3DZIP) varsa onu tercih et — daha yüksek çözünürlük / gerçekçilik
+    const preferShowroom = true;
+    const colorUrl = preferShowroom
+        ? '/textures/wardrobe/showroom-wood-color.jpg'
+        : '/textures/wardrobe/wood094-color.jpg';
+    const normalUrl = preferShowroom
+        ? '/textures/wardrobe/showroom-wood-normal.jpg'
+        : '/textures/wardrobe/wood094-normal-gl.jpg';
+    const roughUrl = preferShowroom
+        ? '/textures/wardrobe/showroom-wood-roughness.jpg'
+        : '/textures/wardrobe/wood094-roughness-gl.jpg';
     woodScan = {
         ready: 0,
-        color: load('/textures/wardrobe/wood094-color.jpg', true),
-        normal: load('/textures/wardrobe/wood094-normal-gl.jpg', false),
-        rough: load('/textures/wardrobe/wood094-roughness-gl.jpg', false),
+        color: load(colorUrl, true),
+        normal: load(normalUrl, false),
+        rough: load(roughUrl, false),
     };
     window.__woodReady = false;
     return woodScan;
@@ -3230,7 +3250,10 @@ function bakeGlb(template, mirror, widthMeters, glbId) {
         const tw = catalog?.width || widthMeters || 0.45;
         const th = catalog?.height || 2.5;
         const td = catalog?.depth || 0.6;
-        if (size.y > 0.05 && size.x > 0.05 && size.z > 0.05
+        // Showroom paketleri gerçek ölçülü gelsin; bbox’a zorla sıkıştırma
+        if (catalog?.geometrySource === '3dzip-showroom' || catalog?.category === 'showroom') {
+            // no-op
+        } else if (size.y > 0.05 && size.x > 0.05 && size.z > 0.05
             && (size.y < th * 0.55 || size.z > td * 1.45 || size.y < size.z * 0.75)) {
             const sx = tw / size.x;
             const sy = th / size.y;
@@ -5980,8 +6003,15 @@ function renderLibrary() {
     }
     const query = foldText(el('module-search')?.value || '');
     const matches = (item) => !query || foldText(`${item.name} ${item.spec} ${item.width} ${item.category || ''}`).includes(query);
-    const labels = { 'y26-tek': 'Yeni tek kapılı', 'y26-cift': 'Yeni çift kapılı', tek: 'Tek Kapılı', cift: 'Çift Kapılı', kose: 'Köşe' };
-    const body = ['y26-tek', 'y26-cift', 'tek', 'cift', 'kose'].map((key) => {
+    const labels = {
+        showroom: 'Premium Showroom',
+        'y26-tek': 'Yeni tek kapılı',
+        'y26-cift': 'Yeni çift kapılı',
+        tek: 'Tek Kapılı',
+        cift: 'Çift Kapılı',
+        kose: 'Köşe',
+    };
+    const body = ['showroom', 'y26-tek', 'y26-cift', 'tek', 'cift', 'kose'].map((key) => {
         const cards = glbCatalog.filter((item) => item.category === key && matches(item)).map((item) => `
             <div class="card${glbFailed.has(item.id) ? ' is-broken' : ''}" data-glb="${item.id}">
                 <img src="${item.previewPath}" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/images/wardrobe/glb-preview/tek_v1.png'">
@@ -9457,8 +9487,10 @@ function productionPanelId() {
     return plain?.id || materials[0]?.id || '';
 }
 
-/** Katalog varsayılanı: Kastamonu Naturel Meşe (A402), yoksa başka ahşap desen. */
+/** Katalog varsayılanı: Premium Showroom ahşap, yoksa Kastamonu Naturel Meşe (A402). */
 function catalogWoodId() {
+    const showroom = materials.find((item) => item.group === 'premium-showroom' && /^PW/.test(item.code || ''));
+    if (showroom?.id) return showroom.id;
     const a402 = materials.find((item) => item.group === 'melamin-kapli-panel' && item.code === 'A402');
     if (a402?.id) return a402.id;
     const wood = materials.find((item) => item.group === 'melamin-kapli-panel' && !isPlainDecor(item) && /^A/.test(item.code || ''));
@@ -9477,13 +9509,15 @@ function solidDoorColor() {
 function defaultDoorForCatalogItem(item) {
     const id = String(item?.id || '');
     const name = String(item?.name || '');
+    // Showroom GLB kapakları gömülü — üstüne prosedürel kapak ekleme
+    if (item?.category === 'showroom' || item?.geometrySource === '3dzip-showroom') return 'none';
     if (/vitrin|cam kapak|gözlük|ayna/i.test(name)) return 'glass';
     if (/_(06|07)$/.test(id)) return 'glass';
     return 'solid';
 }
 
 function moduleFromCatalogItem(item, opts = {}) {
-    const isTek = item.category === 'tek' || item.category === 'y26-tek';
+    const isTek = item.category === 'tek' || item.category === 'y26-tek' || item.category === 'showroom';
     const mod = createModule(isTek ? 'tek-raf' : 'cift-raf');
     mod.glb = item.id;
     mod.glbWidth = item.width;
@@ -9813,14 +9847,22 @@ async function searchProjects(_phone, box, onOpen) {
 
 async function loadGlbCatalog() {
     const headers = { Accept: 'application/json' };
-    const [base, extra] = await Promise.all([
+    const [base, extra, showroom] = await Promise.all([
         fetch('/data/wardrobe-glb-modules.json', { headers }).then((response) => response.json()),
         fetch('/data/wardrobe-y26-modules.json', { headers }).then((response) => (response.ok ? response.json() : { modules: [] })),
+        fetch('/data/wardrobe-showroom-modules.json', { headers }).then((response) => (response.ok ? response.json() : { modules: [] })),
     ]);
     const older = Array.isArray(base.modules) ? base.modules : [];
     const newer = Array.isArray(extra.modules) ? extra.modules : [];
-    const seen = new Set(older.map((item) => item.id));
-    glbCatalog = [...newer.filter((item) => item?.id && !seen.has(item.id)), ...older];
+    const show = Array.isArray(showroom.modules) ? showroom.modules : [];
+    const merge = [];
+    const seen = new Set();
+    for (const item of [...show, ...newer, ...older]) {
+        if (!item?.id || seen.has(item.id)) continue;
+        seen.add(item.id);
+        merge.push(item);
+    }
+    glbCatalog = merge;
 }
 
 async function preloadModuleGlbs() {

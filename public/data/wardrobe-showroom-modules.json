@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "source": "3dzip-dolap-modulleri",
+  "modules": [
+    {
+      "id": "showroom_01",
+      "name": "Showroom Modül 01",
+      "category": "showroom",
+      "modelPath": "/catalog/showroom-modules/showroom_01/model.glb",
+      "previewPath": "/catalog/showroom-modules/showroom_01/preview.png",
+      "width": 1.11,
+      "height": 2.61,
+      "depth": 0.625,
+      "geometrySource": "3dzip-showroom",
+      "sourceFile": "dolap-modulleri.max"
+    },
+    {
+      "id": "showroom_02",
+      "name": "Showroom Modül 02",
+      "category": "showroom",
+      "modelPath": "/catalog/showroom-modules/showroom_02/model.glb",
+      "previewPath": "/catalog/showroom-modules/showroom_02/preview.png",
+      "width": 1.11,
+      "height": 2.675,
+      "depth": 1.7,
+      "geometrySource": "3dzip-showroom",
+      "sourceFile": "dolap-modulleri.max"
+    },
+    {
+      "id": "showroom_03",
+      "name": "Showroom Modül 03",
+      "category": "showroom",
+      "modelPath": "/catalog/showroom-modules/showroom_03/model.glb",
+      "previewPath": "/catalog/showroom-modules/showroom_03/preview.png",
+      "width": 1.11,
+      "height": 2.675,
+      "depth": 1.7,
+      "geometrySource": "3dzip-showroom",
+      "sourceFile": "dolap-modulleri.max"
+    },
+    {
+      "id": "showroom_04",
+      "name": "Showroom Modül 04",
+      "category": "showroom",
+      "modelPath": "/catalog/showroom-modules/showroom_04/model.glb",
+      "previewPath": "/catalog/showroom-modules/showroom_04/preview.png",
+      "width": 1.11,
+      "height": 2.675,
+      "depth": 1.7,
+      "geometrySource": "3dzip-showroom",
+      "sourceFile": "dolap-modulleri.max"
+    },
+    {
+      "id": "showroom_05",
+      "name": "Showroom Modül 05",
+      "category": "showroom",
+      "modelPath": "/catalog/showroom-modules/showroom_05/model.glb",
+      "previewPath": "/catalog/showroom-modules/showroom_05/preview.png",
+      "width": 1.11,
+      "height": 2.675,
+      "depth": 1.7,
+      "geometrySource": "3dzip-showroom",
+      "sourceFile": "dolap-modulleri.max"
+    }
+  ]
+}

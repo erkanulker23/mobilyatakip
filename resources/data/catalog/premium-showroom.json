@@ -1,0 +1,110 @@
+{
+  "manufacturer": {
+    "slug": "premium-showroom",
+    "name": "Premium Showroom",
+    "short_name": "SHOW"
+  },
+  "category": {
+    "slug": "premium-showroom",
+    "name": "Premium Showroom Kaplamalar",
+    "description": "3DZIP dolap modül paketinden alınan yüksek çözünürlüklü ahşap ve tekstil kaplamalar."
+  },
+  "products": [
+    {
+      "code": "PW01",
+      "name": "Gri Meşe Veneer",
+      "brand": "Showroom",
+      "series": "Premium 3DZIP",
+      "kind": "wood",
+      "image": "decors/PW01.jpg"
+    },
+    {
+      "code": "PW02",
+      "name": "Dumanlı Ceviz",
+      "brand": "Showroom",
+      "series": "Premium 3DZIP",
+      "kind": "wood",
+      "image": "decors/PW02.jpg"
+    },
+    {
+      "code": "PW03",
+      "name": "Doğal Meşe XL",
+      "brand": "Showroom",
+      "series": "Premium 3DZIP",
+      "kind": "wood",
+      "image": "decors/PW03.jpg"
+    },
+    {
+      "code": "PW04",
+      "name": "Rustik Meşe Plank",
+      "brand": "Showroom",
+      "series": "Premium 3DZIP",
+      "kind": "wood",
+      "image": "decors/PW04.jpg"
+    },
+    {
+      "code": "PW05",
+      "name": "Rustik Meşe Bump",
+      "brand": "Showroom",
+      "series": "Premium 3DZIP",
+      "kind": "wood",
+      "image": "decors/PW05.jpg"
+    },
+    {
+      "code": "PW06",
+      "name": "Açık Meşe",
+      "brand": "Showroom",
+      "series": "Premium 3DZIP",
+      "kind": "wood",
+      "image": "decors/PW06.jpg"
+    },
+    {
+      "code": "PF01",
+      "name": "Keten Antrasit",
+      "brand": "Showroom",
+      "series": "Premium 3DZIP",
+      "kind": "textile",
+      "image": "decors/PF01.jpg"
+    },
+    {
+      "code": "PF02",
+      "name": "Keten Füme",
+      "brand": "Showroom",
+      "series": "Premium 3DZIP",
+      "kind": "textile",
+      "image": "decors/PF02.jpg"
+    },
+    {
+      "code": "PF03",
+      "name": "Tekstil Charcoal",
+      "brand": "Showroom",
+      "series": "Premium 3DZIP",
+      "kind": "textile",
+      "image": "decors/PF03.jpg"
+    },
+    {
+      "code": "PF04",
+      "name": "Keçe Gri",
+      "brand": "Showroom",
+      "series": "Premium 3DZIP",
+      "kind": "textile",
+      "image": "decors/PF04.jpg"
+    },
+    {
+      "code": "PF05",
+      "name": "Örme Lavanta",
+      "brand": "Showroom",
+      "series": "Premium 3DZIP",
+      "kind": "textile",
+      "image": "decors/PF05.jpg"
+    },
+    {
+      "code": "PF06",
+      "name": "Kumaş Soft Grey",
+      "brand": "Showroom",
+      "series": "Premium 3DZIP",
+      "kind": "textile",
+      "image": "decors/PF06.jpg"
+    }
+  ]
+}

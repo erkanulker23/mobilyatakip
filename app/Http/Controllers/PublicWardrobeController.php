@@ -345,6 +345,35 @@ class PublicWardrobeController extends Controller
             ];
         }
 
+        // 3DZIP / showroom premium kaplamalar (ahşap + tekstil)
+        $premiumPath = resource_path('data/catalog/premium-showroom.json');
+        if (File::isFile($premiumPath)) {
+            $premium = json_decode(File::get($premiumPath), true);
+            $premiumItems = [];
+            foreach ($premium['products'] ?? [] as $p) {
+                if (empty($p['image'])) {
+                    continue;
+                }
+                $premiumItems[] = [
+                    'id' => 'premium-showroom-'.($p['code'] ?? uniqid()),
+                    'code' => $p['code'] ?? '',
+                    'name' => $p['name'] ?? '',
+                    'brand' => $p['brand'] ?? 'Showroom',
+                    'series' => $p['series'] ?? 'Premium',
+                    'finish_hint' => 'matte',
+                    'image' => asset('catalog/premium-showroom/'.$p['image']).'?v=1',
+                ];
+            }
+            if ($premiumItems !== []) {
+                array_unshift($groups, [
+                    'slug' => 'premium-showroom',
+                    'label' => 'Premium Showroom',
+                    'finish_hint' => 'matte',
+                    'items' => $premiumItems,
+                ]);
+            }
+        }
+
         return response()->json([
             'manufacturer' => 'Kastamonu Entegre',
             'groups' => $groups,
